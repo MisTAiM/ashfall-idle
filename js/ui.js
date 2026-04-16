@@ -517,6 +517,7 @@ class UI {
     for (const [id, q] of entries) {
       const item = GAME_DATA.items[id]; if (!item) continue;
       html += `<div class="bank-item" title="${item.desc}">
+        <div class="bi-icon">${window.renderItemSprite ? window.renderItemSprite(id, 32) : ''}</div>
         <div class="bi-name">${item.name}</div>
         <div class="bi-qty">x${this.fmt(q)}</div>
         <div class="bi-actions">
@@ -565,7 +566,7 @@ class UI {
       const id = s.equipment[slot];
       const item = id ? GAME_DATA.items[id] : null;
       html += `<div class="equip-slot"><div class="es-label">${slot[0].toUpperCase()+slot.slice(1)}</div><div class="es-item ${item?'':'es-empty'}">
-        ${item?`<span class="es-name">${item.name}</span><button class="btn btn-xs btn-danger" onclick="game.unequipItem('${slot}')">X</button>`:'<span class="es-none">Empty</span>'}
+        ${item?`<div class="es-icon">${window.renderItemSprite ? window.renderItemSprite(id, 40) : ''}</div><span class="es-name">${item.name}</span><button class="btn btn-xs btn-danger" onclick="game.unequipItem('${slot}')">X</button>`:'<span class="es-none">Empty</span>'}
       </div></div>`;
     }
     html += '</div>';

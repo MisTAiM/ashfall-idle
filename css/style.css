@@ -1115,3 +1115,126 @@ html, body {
   .alignment-grid { grid-template-columns: 1fr; }
   .tb-content { flex-wrap: wrap; }
 }
+
+/* SPRITES */
+.item-sprite svg { width: 100%; height: 100%; display: block; }
+.bi-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.es-icon {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+/* Better bank item layout with sprite */
+.bank-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: border-color 0.15s;
+}
+.bank-item:hover {
+  border-color: var(--accent-dim);
+}
+.bi-name {
+  font-size: 12px;
+  color: var(--text-bright);
+  text-align: center;
+  line-height: 1.2;
+}
+.bi-qty {
+  font-size: 11px;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+.bi-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.bank-grid {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+}
+
+/* Equipment slot with icon */
+.es-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Animations for combat feedback */
+@keyframes pulse-hit {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.hp-fill.player-hp {
+  background: linear-gradient(90deg, #4a8a3e, #6db850);
+}
+.hp-fill.monster-hp {
+  background: linear-gradient(90deg, #8a3a3a, #b84040);
+}
+.hp-bar {
+  position: relative;
+  height: 14px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.hp-fill {
+  height: 100%;
+  transition: width 0.15s ease-out;
+}
+.hp-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  margin-top: 2px;
+  text-align: center;
+}
+.combatant {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  flex: 1;
+}
+.combatant-name {
+  font-family: 'Cinzel', serif;
+  color: var(--text-bright);
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+.combat-arena {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 16px 0;
+}
+.combat-vs {
+  font-family: 'Cinzel', serif;
+  color: var(--accent);
+  font-size: 20px;
+  letter-spacing: 2px;
+  flex-shrink: 0;
+}
+.monster-side { border-left: 3px solid #8a3a3a; }
+.player-side { border-left: 3px solid #4a8a3e; }
+
+@media (max-width: 640px) {
+  .combat-arena { flex-direction: column; }
+  .combat-vs { transform: rotate(90deg); }
+  .bank-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
