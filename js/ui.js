@@ -121,6 +121,7 @@ class UI {
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatHit', (d) => this.showHitSplat(d));
     this.engine.on('xpGain', (d) => this.showXpGain(d));
+    this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (this.currentPage === 'equipment' || this.currentPage === 'bank') this.renderPage(this.currentPage); });
     this.engine.on('farmingChanged', () => { if (this.currentPage === 'farming') this.renderPage(this.currentPage); });
     this.engine.on('foodChanged', () => {});
@@ -1751,7 +1752,6 @@ class UI {
   }
 
   showXpGain(d) {
-    // Show floating XP text above the XP panel
     const panel = document.getElementById('combat-xp-panel');
     if (!panel) return;
     const popup = document.createElement('div');
@@ -1760,6 +1760,23 @@ class UI {
     panel.style.position = 'relative';
     panel.appendChild(popup);
     setTimeout(() => popup.remove(), 1500);
+  }
+
+  showRandomEvent(d) {
+    const overlay = document.createElement('div');
+    overlay.className = 'random-event-overlay';
+    const icons = { genie:'sparkle', treasure:'coin', merchant:'shop', stranger:'npc', afk_check:'shield' };
+    overlay.innerHTML = `<div class="re-modal">
+      <div class="re-icon">${icon(icons[d.type]||'sparkle', 48)}</div>
+      <div class="re-title">Random Event!</div>
+      <div class="re-text">${d.text}</div>
+      <button class="btn re-btn" onclick="this.closest('.random-event-overlay').remove();${d.type==='afk_check'?'game.dismissAfkCheck();':''}">
+        ${d.type === 'afk_check' ? 'I am here!' : 'Continue'}
+      </button>
+    </div>`;
+    document.body.appendChild(overlay);
+    // Auto-dismiss non-afk events after 8 seconds
+    if (d.type !== 'afk_check') setTimeout(() => overlay.remove(), 8000);
   }
 
   onTick() {

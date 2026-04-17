@@ -150,6 +150,12 @@ class GameEngine {
     this.tickBuffs(safeDt);
     this.tickAbilityCooldowns(safeDt);
     this.checkAchievements();
+    // Random events (check every ~30 seconds of play)
+    if (!this._lastEventCheck) this._lastEventCheck = now;
+    if (now - this._lastEventCheck > 30000 && (this.state.activeSkill || this.state.combat.active)) {
+      this._lastEventCheck = now;
+      this.rollRandomEvent();
+    }
     this.emit('tick', this.state);
   }
 
@@ -1104,6 +1110,60 @@ class GameEngine {
   incrementStat(sId) {
     if (!this.state.stats.totalActions[sId]) this.state.stats.totalActions[sId] = 0;
     this.state.stats.totalActions[sId]++;
+  }
+
+  // ── RANDOM EVENTS ───────────────────────────────────────
+  rollRandomEvent() {
+    const roll = Math.random();
+    if (roll < 0.08) {
+      // Genie Lamp - grants XP in active skill
+      const activeSkill = this.state.activeSkill || (this.state.combat.active ? this.state.combat.combatStyle === 'melee' ? 'attack' : this.state.combat.combatStyle : null);
+      if (activeSkill && this.state.skills[activeSkill]) {
+        const bonus = Math.floor(50 + this.state.skills[activeSkill].level * 15);
+        this.addXp(activeSkill, bonus);
+        this.emit('randomEvent', { type:'genie', text:`A mystical Genie appears! Granted ${bonus} ${GAME_DATA.skills[activeSkill]?.name} XP!` });
+      }
+    } else if (roll < 0.14) {
+      // Treasure Goblin - bonus gold
+      const gold = Math.floor(100 + this.getTotalLevel() * 5);
+      this.state.gold += gold;
+      this.state.stats.goldEarned += gold;
+      this.emit('randomEvent', { type:'treasure', text:`A Treasure Goblin drops ${gold} gold and vanishes!` });
+    } else if (roll < 0.18) {
+      // Wandering Merchant - free item
+      const items = ['potion_healing_ii','potion_strength','potion_defence','enchant_scroll','diamond','chaos_rune'];
+      const item = items[Math.floor(Math.random() * items.length)];
+      const qty = item.includes('rune') ? 10 : item.includes('potion') ? 3 : 1;
+      this.addItem(item, qty);
+      this.emit('randomEvent', { type:'merchant', text:`A Wandering Merchant gifts you ${qty}x ${GAME_DATA.items[item]?.name}!` });
+    } else if (roll < 0.22) {
+      // Mysterious Stranger - bonus XP to random skill
+      const skills = Object.keys(this.state.skills);
+      const skill = skills[Math.floor(Math.random() * skills.length)];
+      const bonus = Math.floor(30 + this.state.skills[skill].level * 10);
+      this.addXp(skill, bonus);
+      this.emit('randomEvent', { type:'stranger', text:`A Mysterious Stranger whispers ancient knowledge: +${bonus} ${GAME_DATA.skills[skill]?.name} XP!` });
+    } else if (roll < 0.25) {
+      // AFK Check - stops your current activity until dismissed
+      if (this.state.activeSkill) {
+        this.emit('randomEvent', { type:'afk_check', text:'An Ancient Guardian questions your presence! Click to confirm you are here, or your training will stop.' });
+        // Stop skill after 30 seconds if not dismissed
+        this._afkTimeout = setTimeout(() => {
+          if (this.state.activeSkill) {
+            this.stopSkill();
+            this.emit('notification', { type:'danger', text:'Ancient Guardian stopped your training - you were away too long!' });
+          }
+        }, 30000);
+      }
+    }
+  }
+
+  dismissAfkCheck() {
+    if (this._afkTimeout) {
+      clearTimeout(this._afkTimeout);
+      this._afkTimeout = null;
+      this.emit('notification', { type:'success', text:'Guardian dismissed. Training continues.' });
+    }
   }
 
   _rollRareDropTable(combatLevel) {

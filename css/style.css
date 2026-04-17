@@ -1746,62 +1746,6 @@ html, body {
   border-radius: var(--radius);
   padding: 8px;
 }
-.cxp-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-}
-.cxp-name {
-  font-family: 'Cinzel', serif;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 10px;
-  width: 28px;
-  flex-shrink: 0;
-}
-.cxp-level {
-  font-family: 'Cinzel', serif;
-  font-weight: 700;
-  color: var(--accent);
-  width: 22px;
-  text-align: center;
-  flex-shrink: 0;
-  transition: color 0.3s;
-}
-.cxp-bar {
-  flex: 1;
-  height: 6px;
-  background: var(--bg-deep);
-  border-radius: 3px;
-  overflow: hidden;
-  min-width: 40px;
-}
-.cxp-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  border-radius: 3px;
-  transition: width 0.2s ease-out;
-}
-.cxp-xp {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--text-dim);
-  width: 50px;
-  text-align: right;
-  flex-shrink: 0;
-}
-.cxp-cb {
-  border-top: 1px solid var(--border-light);
-  padding-top: 4px;
-  margin-top: 2px;
-}
-.cxp-flash {
-  color: #fff !important;
-  text-shadow: 0 0 8px var(--accent);
-  animation: levelFlash 0.8s ease-out;
-}
 
 /* Character Profile Card */
 .char-profile-card {
@@ -2365,4 +2309,57 @@ html, body {
   0% { opacity: 1; transform: translateX(-50%) translateY(0); }
   30% { opacity: 1; transform: translateX(-50%) translateY(-12px); }
   100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+}
+
+/* ── RANDOM EVENTS ────────────────────────────────────── */
+.random-event-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6,4,4,0.7);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.re-modal {
+  background: var(--bg-elevated);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(201,135,62,0.3), 0 20px 60px rgba(0,0,0,0.5);
+  animation: modalPop 0.4s ease-out;
+}
+@keyframes modalPop {
+  0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.re-icon {
+  color: var(--accent);
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 12px rgba(201,135,62,0.5));
+}
+.re-title {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+.re-text {
+  font-family: 'Crimson Text', serif;
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.re-btn {
+  padding: 10px 32px;
+  font-size: 14px;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
 }
