@@ -2427,3 +2427,87 @@ html, body {
   .lb-header, .lb-row { grid-template-columns: 28px 1fr 60px 48px; }
   .lb-cb { display: none; }
 }
+
+/* ── LEADERBOARD ──────────────────────────────────────── */
+.lb-tabs {
+  margin-bottom: 14px;
+}
+.lb-tab-section {
+  margin-bottom: 8px;
+}
+.lb-tab-label {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.lb-tab-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.lb-tab {
+  font-size: 11px;
+  padding: 4px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Crimson Text', serif;
+}
+.lb-tab:hover { border-color: var(--accent-dim); color: var(--text); }
+.lb-tab-active {
+  background: var(--accent-bg) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  font-weight: 700;
+}
+.leaderboard-table {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.lb-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 90px 70px 60px;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--bg-deep);
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+}
+.lb-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 90px 70px 60px;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.lb-row:hover { background: rgba(201,135,62,0.04); }
+.lb-row:last-child { border-bottom: none; }
+.lb-me { background: rgba(201,135,62,0.08) !important; border-left: 3px solid var(--accent); }
+.lb-gold .lb-rank { font-size: 18px; }
+.lb-silver .lb-rank { font-size: 16px; }
+.lb-bronze .lb-rank { font-size: 15px; }
+.lb-gold { background: rgba(255,215,0,0.05); }
+.lb-silver { background: rgba(192,192,192,0.04); }
+.lb-bronze { background: rgba(205,127,50,0.04); }
+.lb-rank { text-align: center; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); }
+.lb-name { font-family: 'Cinzel', serif; color: var(--text-bright); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-val { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; text-align: right; }
+.lb-total, .lb-cb { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); text-align: center; }
+@media (max-width: 640px) {
+  .lb-header, .lb-row { grid-template-columns: 32px 1fr 70px 50px; }
+  .lb-cb { display: none; }
+}

@@ -1687,34 +1687,34 @@ class UI {
     // Category tabs
     const cats = [
       {id:'totalLevel',label:'Total Level'},
-      {id:'combatLevel',label:'Combat Level'},
+      {id:'combatLevel',label:'Combat'},
       {id:'totalXp',label:'Total XP'},
-      {id:'kills',label:'Monster Kills'},
-      {id:'goldEarned',label:'Gold Earned'},
-      {id:'pvpRating',label:'PvP Rating'},
+      {id:'kills',label:'Kills'},
+      {id:'goldEarned',label:'Gold'},
+      {id:'pvpRating',label:'PvP'},
       {id:'questsCompleted',label:'Quests'},
-      {id:'skills.attack',label:'Attack'},
-      {id:'skills.strength',label:'Strength'},
-      {id:'skills.defence',label:'Defence'},
-      {id:'skills.hitpoints',label:'Hitpoints'},
-      {id:'skills.ranged',label:'Ranged'},
-      {id:'skills.magic',label:'Magic'},
-      {id:'skills.prayer',label:'Prayer'},
-      {id:'skills.mining',label:'Mining'},
-      {id:'skills.woodcutting',label:'Woodcutting'},
-      {id:'skills.fishing',label:'Fishing'},
-      {id:'skills.cooking',label:'Cooking'},
-      {id:'skills.smithing',label:'Smithing'},
-      {id:'skills.enchanting',label:'Enchanting'},
-      {id:'skills.slayer',label:'Slayer'},
+      {id:'playTime',label:'Play Time'},
+    ];
+    const skillCats = [
+      {id:'skills.attack',label:'Atk'},{id:'skills.strength',label:'Str'},{id:'skills.defence',label:'Def'},
+      {id:'skills.hitpoints',label:'HP'},{id:'skills.ranged',label:'Rng'},{id:'skills.magic',label:'Mag'},
+      {id:'skills.prayer',label:'Pray'},{id:'skills.slayer',label:'Slay'},{id:'skills.necromancy',label:'Necro'},
+      {id:'skills.mining',label:'Mine'},{id:'skills.woodcutting',label:'WC'},{id:'skills.fishing',label:'Fish'},
+      {id:'skills.cooking',label:'Cook'},{id:'skills.smithing',label:'Smith'},{id:'skills.fletching',label:'Fletch'},
+      {id:'skills.crafting',label:'Craft'},{id:'skills.alchemy',label:'Alch'},{id:'skills.enchanting',label:'Ench'},
+      {id:'skills.farming',label:'Farm'},{id:'skills.thieving',label:'Thiev'},
     ];
 
     const activeCat = this._lbCategory || 'totalLevel';
-    html += '<div class="lb-tabs">';
+    html += '<div class="lb-tabs"><div class="lb-tab-section"><div class="lb-tab-label">Stats</div><div class="lb-tab-btns">';
     for (const cat of cats) {
       html += `<button class="lb-tab ${activeCat===cat.id?'lb-tab-active':''}" onclick="ui.loadLeaderboardCategory('${cat.id}')">${cat.label}</button>`;
     }
-    html += '</div>';
+    html += '</div></div><div class="lb-tab-section"><div class="lb-tab-label">Skills</div><div class="lb-tab-btns">';
+    for (const cat of skillCats) {
+      html += `<button class="lb-tab ${activeCat===cat.id?'lb-tab-active':''}" onclick="ui.loadLeaderboardCategory('${cat.id}')">${cat.label}</button>`;
+    }
+    html += '</div></div></div>';
 
     html += '<div id="leaderboard-list"><div class="bank-empty">Loading...</div></div>';
     el.innerHTML = html;
@@ -1728,20 +1728,20 @@ class UI {
     container.innerHTML = '<div class="bank-empty">Loading...</div>';
 
     // Update active tab visually
-    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('lb-tab-active'));
     document.querySelectorAll('.lb-tab').forEach(t => {
-      if (t.textContent === (this._lbCategoryLabels||{})[category]) t.classList.add('lb-tab-active');
+      t.classList.remove('lb-tab-active');
+      if (t.getAttribute('onclick')?.includes("'"+category+"'")) t.classList.add('lb-tab-active');
     });
 
-    const board = await online.getLeaderboard(category, 25);
+    const board = await online.getLeaderboard(category, 50);
     if (board.length === 0) {
-      container.innerHTML = '<div class="bank-empty">No players yet. Click "Sync My Stats" to be first!</div>';
+      container.innerHTML = '<div class="bank-empty">No players yet. Click "Sync My Stats" to appear!</div>';
       return;
     }
 
     const isSkill = category.startsWith('skills.');
     const skillKey = isSkill ? category.split('.')[1] : null;
-    const catLabel = category === 'totalLevel' ? 'Total Lv' : category === 'combatLevel' ? 'Cb Lv' : category === 'totalXp' ? 'Total XP' : category === 'kills' ? 'Kills' : category === 'goldEarned' ? 'Gold' : category === 'pvpRating' ? 'Rating' : category === 'questsCompleted' ? 'Quests' : skillKey ? (GAME_DATA.skills[skillKey]?.name||skillKey)+' Lv' : category;
+    const catLabel = category === 'totalLevel' ? 'Total Lv' : category === 'combatLevel' ? 'Cb Lv' : category === 'totalXp' ? 'Total XP' : category === 'kills' ? 'Kills' : category === 'goldEarned' ? 'Gold' : category === 'pvpRating' ? 'Rating' : category === 'questsCompleted' ? 'Quests' : category === 'playTime' ? 'Time' : skillKey ? (GAME_DATA.skills[skillKey]?.name||skillKey)+' Lv' : category;
 
     let html = `<div class="leaderboard-table">
       <div class="lb-header"><span class="lb-rank">#</span><span class="lb-name">Player</span><span class="lb-val">${catLabel}</span><span class="lb-total">Total Lv</span><span class="lb-cb">Cb Lv</span></div>`;
@@ -1749,16 +1749,25 @@ class UI {
     board.forEach((p, i) => {
       const isMe = online.user && p.uid === online.user.uid;
       let val;
-      if (isSkill) {
-        val = p.skills?.[skillKey] || 1;
+      if (isSkill) val = p.skills?.[skillKey] || 1;
+      else val = p[category] || 0;
+
+      let displayVal;
+      if (category === 'playTime') {
+        const hrs = Math.floor(val / 3600);
+        const mins = Math.floor((val % 3600) / 60);
+        displayVal = `${hrs}h ${mins}m`;
+      } else if (category === 'totalXp' || category === 'goldEarned') {
+        displayVal = val >= 1000000 ? (val/1000000).toFixed(1)+'M' : this.fmt(val);
       } else {
-        val = p[category] || 0;
+        displayVal = this.fmt(val);
       }
+
       const medal = i === 0 ? 'lb-gold' : i === 1 ? 'lb-silver' : i === 2 ? 'lb-bronze' : '';
       html += `<div class="lb-row ${isMe?'lb-me':''} ${medal}">
-        <span class="lb-rank">${i+1}</span>
+        <span class="lb-rank">${i === 0 ? '&#x1F947;' : i === 1 ? '&#x1F948;' : i === 2 ? '&#x1F949;' : i+1}</span>
         <span class="lb-name">${this.escHtml(p.displayName||'Unknown')}</span>
-        <span class="lb-val">${typeof val==='number'?this.fmt(val):val}</span>
+        <span class="lb-val">${displayVal}</span>
         <span class="lb-total">${p.totalLevel||'?'}</span>
         <span class="lb-cb">${p.combatLevel||'?'}</span>
       </div>`;
