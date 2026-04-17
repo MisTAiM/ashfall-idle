@@ -165,17 +165,48 @@ class OnlineManager {
     if (!this.isOnline || !this.user || !game) return;
     try {
       const s = game.state;
+      const skillLevels = {};
+      const skillXp = {};
+      let totalXp = 0;
+      for (const [id, sk] of Object.entries(s.skills)) {
+        skillLevels[id] = sk.level;
+        skillXp[id] = sk.xp;
+        totalXp += sk.xp;
+      }
       await this.firestore.collection('players').doc(this.user.uid).set({
         displayName: this.displayName,
+        uid: this.user.uid,
         combatLevel: game.getCombatLevel(),
         totalLevel: game.getTotalLevel(),
+        totalXp: totalXp,
         pvpRating: this.pvpRating,
         alignment: s.alignment,
-        kills: s.stats.monstersKilled,
+        kills: s.stats.monstersKilled || 0,
         gold: s.gold,
+        goldEarned: s.stats.goldEarned || 0,
+        questsCompleted: s.quests?.completed?.length || 0,
+        dungeonClears: s.stats.dungeonsCompleted || 0,
+        playTime: Math.floor(s.stats.totalPlayTime || 0),
+        skills: skillLevels,
+        skillsXp: skillXp,
+        pvpWins: s.stats.pvpWins || 0,
+        pvpLosses: s.stats.pvpLosses || 0,
         lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
-    } catch(e) {}
+    } catch(e) { console.error('Sync profile error:', e); }
+  }
+
+  async getLeaderboard(sortField, limit) {
+    if (!this.isOnline) return [];
+    try {
+      const snap = await this.firestore.collection('players')
+        .orderBy(sortField || 'totalLevel', 'desc')
+        .limit(limit || 25)
+        .get();
+      const board = [];
+      snap.forEach(doc => board.push({ uid:doc.id, ...doc.data() }));
+      return board;
+    } catch(e) { console.error('Leaderboard error:', e); return []; }
   }
 
   async loadProfile() {
@@ -404,19 +435,6 @@ class OnlineManager {
       const results = [];
       snap.forEach(doc => results.push({ id:doc.id, ...doc.data() }));
       return results;
-    } catch(e) { return []; }
-  }
-
-  async getLeaderboard() {
-    if (!this.isOnline) return [];
-    try {
-      const snap = await this.firestore.collection('leaderboard')
-        .orderBy('rating', 'desc')
-        .limit(25)
-        .get();
-      const board = [];
-      snap.forEach(doc => board.push({ uid:doc.id, ...doc.data() }));
-      return board;
     } catch(e) { return []; }
   }
 

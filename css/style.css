@@ -2363,3 +2363,67 @@ html, body {
   font-family: 'Cinzel', serif;
   letter-spacing: 1px;
 }
+
+/* ── LEADERBOARD ──────────────────────────────────────── */
+.lb-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.lb-tab {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'Cinzel', serif;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lb-tab:hover { border-color: var(--accent-dim); color: var(--text); }
+.lb-tab-active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+.leaderboard-table { width: 100%; }
+.lb-header {
+  display: grid;
+  grid-template-columns: 36px 1fr 80px 60px 60px;
+  gap: 8px;
+  padding: 8px 12px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.lb-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 80px 60px 60px;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.15s;
+}
+.lb-row:hover { background: var(--bg-card); }
+.lb-me { background: rgba(201,135,62,0.08); border-left: 3px solid var(--accent); }
+.lb-gold .lb-rank { color: #d4a83a; font-weight: 700; }
+.lb-silver .lb-rank { color: #b0b0b0; font-weight: 700; }
+.lb-bronze .lb-rank { color: #a06a3c; font-weight: 700; }
+.lb-rank { font-family: 'Cinzel', serif; font-weight: 700; color: var(--text-dim); }
+.lb-name { color: var(--text-bright); }
+.lb-me .lb-name { color: var(--accent); }
+.lb-val { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; text-align: right; }
+.lb-total, .lb-cb { font-family: 'JetBrains Mono', monospace; color: var(--text-dim); font-size: 12px; text-align: right; }
+@media (max-width: 640px) {
+  .lb-header, .lb-row { grid-template-columns: 28px 1fr 60px 48px; }
+  .lb-cb { display: none; }
+}

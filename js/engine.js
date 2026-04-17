@@ -23,7 +23,11 @@ class GameEngine {
     this.migrateSave();
     this.processOffline();
     this.startTick();
-    this.autoSaveInterval = setInterval(() => this.save(), 30000);
+    this.autoSaveInterval = setInterval(() => {
+      this.save();
+      // Sync stats to leaderboard every auto-save
+      if (typeof online !== 'undefined' && online.isOnline) online.syncProfile();
+    }, 30000);
     this.emit('init', this.state);
     this.emit('notification', { type:'info', text:'Welcome to Ashfall.' });
     // Anti-cheat: tab visibility

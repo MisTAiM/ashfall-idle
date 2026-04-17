@@ -1671,37 +1671,95 @@ class UI {
   // ── LEADERBOARD PAGE ───────────────────────────────────
   renderLeaderboardPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Leaderboard','trophy','Top PvP fighters ranked by rating.',null);
+    let html = this.header('Leaderboard','trophy','See who dominates the Ashfall. Sync your stats to appear.',null);
 
     if (!isOnline) {
-      html += '<div class="bank-empty">Online features not available.</div>';
+      html += '<div class="bank-empty">Sign in to view and appear on leaderboards.</div>';
       el.innerHTML = html;
       return;
     }
 
+    // Sync button
+    html += `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="online.syncProfile().then(()=>ui.toast({type:'success',text:'Stats synced to leaderboard!'}))">Sync My Stats</button>
+    </div>`;
+
+    // Category tabs
+    const cats = [
+      {id:'totalLevel',label:'Total Level'},
+      {id:'combatLevel',label:'Combat Level'},
+      {id:'totalXp',label:'Total XP'},
+      {id:'kills',label:'Monster Kills'},
+      {id:'goldEarned',label:'Gold Earned'},
+      {id:'pvpRating',label:'PvP Rating'},
+      {id:'questsCompleted',label:'Quests'},
+      {id:'skills.attack',label:'Attack'},
+      {id:'skills.strength',label:'Strength'},
+      {id:'skills.defence',label:'Defence'},
+      {id:'skills.hitpoints',label:'Hitpoints'},
+      {id:'skills.ranged',label:'Ranged'},
+      {id:'skills.magic',label:'Magic'},
+      {id:'skills.prayer',label:'Prayer'},
+      {id:'skills.mining',label:'Mining'},
+      {id:'skills.woodcutting',label:'Woodcutting'},
+      {id:'skills.fishing',label:'Fishing'},
+      {id:'skills.cooking',label:'Cooking'},
+      {id:'skills.smithing',label:'Smithing'},
+      {id:'skills.enchanting',label:'Enchanting'},
+      {id:'skills.slayer',label:'Slayer'},
+    ];
+
+    const activeCat = this._lbCategory || 'totalLevel';
+    html += '<div class="lb-tabs">';
+    for (const cat of cats) {
+      html += `<button class="lb-tab ${activeCat===cat.id?'lb-tab-active':''}" onclick="ui.loadLeaderboardCategory('${cat.id}')">${cat.label}</button>`;
+    }
+    html += '</div>';
+
     html += '<div id="leaderboard-list"><div class="bank-empty">Loading...</div></div>';
     el.innerHTML = html;
-    this.loadLeaderboard();
+    this.loadLeaderboardCategory(activeCat);
   }
 
-  async loadLeaderboard() {
+  async loadLeaderboardCategory(category) {
+    this._lbCategory = category;
     const container = document.getElementById('leaderboard-list');
     if (!container) return;
-    const board = await online.getLeaderboard();
+    container.innerHTML = '<div class="bank-empty">Loading...</div>';
+
+    // Update active tab visually
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('lb-tab-active'));
+    document.querySelectorAll('.lb-tab').forEach(t => {
+      if (t.textContent === (this._lbCategoryLabels||{})[category]) t.classList.add('lb-tab-active');
+    });
+
+    const board = await online.getLeaderboard(category, 25);
     if (board.length === 0) {
-      container.innerHTML = '<div class="bank-empty">No ranked players yet. Win a PvP fight to appear here.</div>';
+      container.innerHTML = '<div class="bank-empty">No players yet. Click "Sync My Stats" to be first!</div>';
       return;
     }
-    let html = '<div class="leaderboard-table"><div class="lb-header"><span>#</span><span>Player</span><span>Rating</span><span>W/L</span><span>Combat</span></div>';
+
+    const isSkill = category.startsWith('skills.');
+    const skillKey = isSkill ? category.split('.')[1] : null;
+    const catLabel = category === 'totalLevel' ? 'Total Lv' : category === 'combatLevel' ? 'Cb Lv' : category === 'totalXp' ? 'Total XP' : category === 'kills' ? 'Kills' : category === 'goldEarned' ? 'Gold' : category === 'pvpRating' ? 'Rating' : category === 'questsCompleted' ? 'Quests' : skillKey ? (GAME_DATA.skills[skillKey]?.name||skillKey)+' Lv' : category;
+
+    let html = `<div class="leaderboard-table">
+      <div class="lb-header"><span class="lb-rank">#</span><span class="lb-name">Player</span><span class="lb-val">${catLabel}</span><span class="lb-total">Total Lv</span><span class="lb-cb">Cb Lv</span></div>`;
+
     board.forEach((p, i) => {
       const isMe = online.user && p.uid === online.user.uid;
-      const wins = p.wins || 0;
-      const losses = p.losses || 0;
-      html += `<div class="lb-row ${isMe?'lb-me':''}">
+      let val;
+      if (isSkill) {
+        val = p.skills?.[skillKey] || 1;
+      } else {
+        val = p[category] || 0;
+      }
+      const medal = i === 0 ? 'lb-gold' : i === 1 ? 'lb-silver' : i === 2 ? 'lb-bronze' : '';
+      html += `<div class="lb-row ${isMe?'lb-me':''} ${medal}">
         <span class="lb-rank">${i+1}</span>
-        <span class="lb-name">${this.escHtml(p.name||'Unknown')}</span>
-        <span class="lb-rating">${p.rating||1000}</span>
-        <span class="lb-wl">${wins}/${losses}</span>
+        <span class="lb-name">${this.escHtml(p.displayName||'Unknown')}</span>
+        <span class="lb-val">${typeof val==='number'?this.fmt(val):val}</span>
+        <span class="lb-total">${p.totalLevel||'?'}</span>
         <span class="lb-cb">${p.combatLevel||'?'}</span>
       </div>`;
     });
