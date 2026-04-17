@@ -2,10 +2,10 @@
 
 [![Deploy](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://ashfall-idle.vercel.app)
 [![License](https://img.shields.io/badge/License-MIT-c9873e)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.0-c9873e)](https://github.com/MisTAiM/ashfall-idle)
+[![Version](https://img.shields.io/badge/Version-3.0-c9873e)](https://github.com/MisTAiM/ashfall-idle)
 [![Made With](https://img.shields.io/badge/Made%20With-Vanilla%20JS-f7df1e?logo=javascript&logoColor=black)]()
 
-> **A dark fantasy idle RPG forged in ashfire.** Train 23 interlocking skills, align yourself with warring factions, wield status effects and active abilities, hunt world bosses, and shape your destiny across nine moral alignments. No framework. No bloat. Just deep, procedural idle systems in pure Vanilla JavaScript.
+> **A dark fantasy idle RPG forged in ashfire.** Train 25 interlocking skills, align yourself with warring factions, wield status effects and active abilities, hunt world bosses, and shape your destiny across nine moral alignments. No framework. No bloat. Just deep, procedural idle systems in pure Vanilla JavaScript.
 
 **Play Now → [ashfall-idle.vercel.app](https://ashfall-idle.vercel.app)**  &nbsp; · &nbsp;  **Wiki → [/wiki.html](https://ashfall-idle.vercel.app/wiki.html)**
 
@@ -42,14 +42,19 @@ No accounts. No microtransactions. No framework lock-in. Your save lives in your
 
 ### Core Gameplay
 
-- **23 Skills** across Gathering, Artisan, Combat, and Support archetypes, each with 99 levels and its own mastery subsystem
-- **195+ unique items** — logs, ores, bars, gems, fish, food, herbs, potions, runes, seeds, produce, arrows, six weapon classes, four armor sets, jewelry, capes
-- **15 monsters** across 8 combat areas, plus 7 waved dungeons and 3 World Bosses
+- **25 Skills** across Gathering, Artisan, Combat, and Support archetypes, each with 99 levels and its own mastery subsystem
+- **200+ unique items** — logs, ores, bars, gems, fish, food, herbs, potions, runes, seeds, produce, arrows, six weapon classes, four armor sets, jewelry, capes
+- **27 monsters** across 4 monster families across 12 combat areas, plus 11 waved dungeons and 3 World Bosses
 - **D&D Alignment System** — nine alignments (Lawful Good → Chaotic Evil) that shift based on your actions and grant permanent bonuses
 - **4 Factions** with 5 reputation tiers each, unlocking exclusive weapons, perks, and discounts
 - **5 NPCs** with 20 Arrowhead-style quest chains gated by prior completions
 - **4 Status Effects** — Burn (multiplicative DoT), Poison (explodes at 7 stacks), Freeze (3× next hit), Bleed
 - **8 Active Abilities** with cooldowns and 4 equippable slots, unlocked via the Tactics skill
+- **Prayer System** -- 21 prayers (Thick Skin through Piety/Rigour/Augury), bury 6 bone types for prayer points, up to 2 active prayers for passive combat buffs
+- **Pet System** -- 18 collectible pets from skilling and combat, each with a unique passive bonus, equip one at a time
+- **Slayer System** -- 5 task tiers with assigned monster kills, Slayer Coins, Slayer Shop with exclusive gear, Auto-Slayer upgrade
+- **5 Spellbooks** -- Standard, Pyromancy (Burn), Cryomancy (Freeze), Blood Magic (Lifesteal/Bleed), Void Magic (multi-status)
+- **4 Monster Families** -- Ashborn, Hollowed, Frostwraith, Bloodfang with 12 new monsters and themed combat areas
 - **3 Combat Styles** — Melee, Ranged (with ammunition), and Magic (8 spells with rune costs and status chances)
 - **Offline Progression** — your active skill runs for up to 24 hours while you're away
 - **Auto-Eat** and **Auto-Loot** — set it and forget it
@@ -113,7 +118,7 @@ There are no dependencies, no bundler, no build step. The files that ship are th
 - **Void Walkers and the Ashfall Titan** for true endgame drops
 - **World Bosses** — Blight Warden (1h respawn), Storm Reaver (2h), Ashen Overlord (4h)
 - Chase Grandmaster rank in a faction for the best exclusive weapons
-- Push all 23 skills to 99 for the hidden *Well-Rounded* achievement cluster
+- Push all 25 skills to 99 for the hidden *Well-Rounded* achievement cluster
 
 ---
 
@@ -125,7 +130,7 @@ There are no dependencies, no bundler, no build step. The files that ship are th
 | ---------- | -------------------------------------------------------------------------------- |
 | Gathering  | Woodcutting, Mining, Fishing, Foraging, Hunting                                  |
 | Artisan    | Cooking, Smithing, Fletching, Crafting, Alchemy, Enchanting                      |
-| Combat     | Attack, Strength, Defence, Hitpoints, Ranged, Magic, Tactics                     |
+| Combat     | Attack, Strength, Defence, Hitpoints, Ranged, Magic, Tactics, Prayer, Slayer     |
 | Support    | Farming, Thieving, Trading, Leadership, Diplomacy                                |
 
 Each skill uses a RuneScape-compatible XP curve — Level 99 requires ~13M XP.
@@ -286,7 +291,7 @@ ashfall-idle/
 ├── css/
 │   └── style.css         # 1240 lines of hand-written CSS, no preprocessor
 └── js/
-    ├── data.js           # 195 items, 15 monsters, 20 quests, 8 abilities, etc.
+    ├── data.js           # 201 items, 27 monsters, 48 quests, 21 prayers, 18 pets, etc.
     ├── sprites.js        # Procedural SVG generator (32 sprite types × palettes)
     ├── engine.js         # GameEngine class — all simulation logic
     └── ui.js             # UI class — all rendering and event wiring
