@@ -1974,23 +1974,23 @@ html, body {
 }
 .cxp-row {
   display: grid;
-  grid-template-columns: 18px 70px 28px 1fr 52px 30px;
+  grid-template-columns: 16px 82px 26px 1fr 48px 28px;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-size: 12px;
-  padding: 4px 8px;
+  padding: 4px 6px;
   border-radius: 4px;
   transition: all 0.2s;
 }
 .cxp-active {
   background: rgba(201,135,62,0.1);
   border-left: 3px solid var(--accent);
-  padding-left: 5px;
+  padding-left: 3px;
 }
 .cxp-icon { flex-shrink:0; display:flex; }
-.cxp-name { font-size:11px; color:var(--text-dim); white-space:nowrap; overflow:hidden; }
+.cxp-name { font-size:10px; color:var(--text-dim); white-space:nowrap; overflow:hidden; letter-spacing:0.5px; }
 .cxp-active .cxp-name { color:var(--accent); font-weight:700; }
-.cxp-level { text-align:center; font-family:'Cinzel',serif; font-weight:700; color:var(--accent); font-size:14px; }
+.cxp-level { text-align:center; font-family:'Cinzel',serif; font-weight:700; color:var(--accent); font-size:13px; }
 .cxp-bar { height:8px; background:var(--bg-deep); border-radius:4px; overflow:hidden; }
 .cxp-fill { height:100%; background:var(--border); border-radius:4px; transition:width 0.2s; }
 .cxp-fill-active { background:linear-gradient(90deg, var(--accent-dim), var(--accent)); }
@@ -2335,9 +2335,9 @@ html, body {
 /* XP panel responsive fix */
 @media (max-width: 640px) {
   .combat-xp-panel { grid-template-columns: 1fr; }
-  .cxp-row { grid-template-columns: 16px 56px 24px 1fr 40px 24px; gap: 3px; padding: 3px 4px; }
+  .cxp-row { grid-template-columns: 16px 72px 24px 1fr 42px 26px; gap: 2px; padding: 3px 4px; }
   .cxp-name { font-size: 9px; }
-  .landing-logo-svg { width: 240px; }
+  .landing-logo-svg { width: 300px; }
   .landing-btn { padding: 12px 32px; }
 }
 

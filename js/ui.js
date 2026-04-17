@@ -391,7 +391,7 @@ class UI {
       const pct = xpSkills[_sId] || 0;
       html += `<div class="cxp-row ${isGaining?'cxp-active':''}" title="${_name}: Level ${_sk.level} | ${this.fmt(_sk.xp)} XP${isGaining?' | Getting '+pct+'% XP':''}">
         <span class="cxp-icon">${icon(GAME_DATA.skills[_sId]?.icon||'sparkle',14)}</span>
-        <span class="cxp-name">${_name.toUpperCase()}</span>
+        <span class="cxp-name">${_name}</span>
         <span class="cxp-level" id="cxp-lv-${_sId}">${_sk.level}</span>
         <div class="cxp-bar"><div class="cxp-fill ${isGaining?'cxp-fill-active':''}" id="cxp-fill-${_sId}" style="width:${(_p*100).toFixed(1)}%"></div></div>
         <span class="cxp-xp" id="cxp-xp-${_sId}">${this.fmt(_sk.xp)}</span>
