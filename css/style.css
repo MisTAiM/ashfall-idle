@@ -1662,3 +1662,73 @@ html, body {
   .bank-tabs { gap: 2px; }
   .bank-tab { font-size: 10px; padding: 4px 8px; }
 }
+
+/* ── v3.3 LEVEL TRACKER + MONSTER ART ─────────────────── */
+
+/* Compact Level Tracker Grid in sidebar */
+.level-tracker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 6px 10px;
+  margin: 0 8px 8px;
+  background: var(--bg-deep);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-light);
+}
+.lt-skill {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 4px;
+  font-size: 10px;
+  border-radius: 2px;
+  cursor: default;
+  transition: background 0.15s;
+}
+.lt-skill:hover { background: var(--bg-card); }
+.lt-abbr {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+.lt-lvl {
+  font-family: 'Cinzel', serif;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* Monster Art in Combat */
+.monster-art {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 8px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  animation: monsterIdle 3s ease-in-out infinite;
+}
+.monster-art svg {
+  width: 100%;
+  height: 100%;
+}
+@keyframes monsterIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Monster button improvements - show HP/style */
+.monster-btn {
+  text-align: left !important;
+}
+.monster-btn small {
+  color: var(--text-dim);
+}
+
+/* Necromancy accent */
+.action-card[style*="5a2a5a"] .ac-name { color: #b585e0; }
+
+@media (max-width: 768px) {
+  .level-tracker { grid-template-columns: repeat(3, 1fr); }
+}

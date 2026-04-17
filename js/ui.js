@@ -37,6 +37,7 @@ const ICONS = {
   book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
   settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
   stats:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',
+  skull:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="8"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="9" r="1.5" fill="currentColor"/><path d="M9 16h6"/><path d="M10 16v4"/><path d="M14 16v4"/></svg>',
   npc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 22c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>',
   faction:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18"/><path d="M5 4h12l-2 4 2 4H5"/></svg>',
   worldboss:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6 6 1-4.5 4.5 1.5 6.5-6-3-6 3 1.5-6.5L3 9l6-1z"/></svg>',
@@ -68,11 +69,13 @@ const NAV = [
     {id:'abilities',label:'Abilities',icon:'banner'},
     {id:'prayer',label:'Prayer',icon:'sparkle'},
     {id:'slayer',label:'Slayer',icon:'target'},
+    {id:'necromancy',label:'Necromancy',icon:'skull'},
     {id:'spellbooks',label:'Spellbooks',icon:'wand'},
   ]},
   { header:'Support', items:[
     {id:'farming',label:'Farming',icon:'seedling'},
     {id:'thieving',label:'Thieving',icon:'mask'},
+    {id:'summoning',label:'Summoning',icon:'sparkle'},
     {id:'pets',label:'Pets',icon:'paw'},
   ]},
   { header:'Social', items:[
@@ -146,7 +149,19 @@ class UI {
       <div class="pi-row"><span>${icon('coin',12)} Gold</span><span class="pi-val gold-val">${this.fmt(s.gold)}</span></div>
       <div class="pi-row"><span>Alignment</span><span class="pi-val align-val">${align.axis}</span></div>
       ${typeof online !== 'undefined' && online.isOnline ? `<div class="pi-row"><span class="online-dot">Online</span><span class="pi-val" style="font-size:11px">${online.displayName || 'Survivor'}</span></div>` : '<div class="pi-row"><span class="offline-dot">Offline</span><span class="pi-val" style="font-size:11px;color:var(--text-dim)">Local Only</span></div>'}
-    </div>`;
+    </div>
+    <div class="level-tracker" id="level-tracker">`;
+    // Compact skill level grid
+    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','cooking','smithing','fletching','crafting','alchemy','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
+    for (const sId of skillOrder) {
+      const sk = s.skills[sId];
+      if (!sk) continue;
+      const data = GAME_DATA.skills[sId];
+      if (!data) continue;
+      const abbr = data.name.substring(0, 3);
+      html += `<div class="lt-skill" id="lt-${sId}" title="${data.name}: Level ${sk.level}"><span class="lt-abbr">${abbr}</span><span class="lt-lvl">${sk.level}</span></div>`;
+    }
+    html += '</div>';
     for (const sec of NAV) {
       html += `<div class="nav-section"><div class="nav-header">${sec.header}</div>`;
       for (const item of sec.items) {
@@ -230,6 +245,8 @@ class UI {
     else if (pageId === 'slayer') this.renderSlayerPage(main);
     else if (pageId === 'pets') this.renderPetsPage(main);
     else if (pageId === 'spellbooks') this.renderSpellbooksPage(main);
+    else if (pageId === 'necromancy') this.renderNecromancyPage(main);
+    else if (pageId === 'summoning') { main.innerHTML = this.header('Summoning','sparkle','Create combat familiars from charms dropped by monsters. Coming soon - train other skills to prepare.','summoning'); }
     else if (pageId === 'account') this.renderAccountPage(main);
     else if (pageId === 'chat') this.renderChatPage(main);
     else if (pageId === 'pvp_arena') this.renderPvPPage(main);
@@ -405,6 +422,7 @@ class UI {
         </div>
         <div class="combat-vs">VS</div>
         <div class="combatant monster-side">
+          ${GAME_DATA.monsterArt?.[c.monster] ? `<div class="monster-art">${GAME_DATA.monsterArt[c.monster]}</div>` : ''}
           <div class="combatant-name">${mon.name} <small>(Lv ${mon.combatLevel})</small></div>
           <div class="hp-bar"><div class="hp-fill monster-hp" id="mhp-bar" style="width:${mHp.toFixed(1)}%"></div></div>
           <div class="hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp))} / ${mon.hp}</div>
@@ -911,6 +929,30 @@ class UI {
       <p>A dark fantasy idle RPG with deep skill systems, alignment mechanics, factions, and combat. Inspired by RuneScape, Melvor Idle, and the ForgeIdle design philosophy.</p>
       <p>Version 2.0.0 &mdash; ForgeIdle Expansion</p>
     </div>`;
+    el.innerHTML = html;
+  }
+
+  // ── NECROMANCY PAGE ─────────────────────────────────────
+  renderNecromancyPage(el) {
+    const s = this.engine.state;
+    let html = this.header('Necromancy','skull','Dark combat magic. Drain life, raise undead, curse enemies. Switch to the Necromancy spellbook in combat.','necromancy');
+    html += `<div class="alignment-display" style="border-color:#5a2a5a">
+      <div class="al-current" style="color:#b585e0">The Dark Arts</div>
+      <div class="al-desc">Necromancy is trained by dealing damage with Necromancy spells in combat. Switch to the Necromancy spellbook on the Spellbooks page, then fight monsters using magic combat style.</div>
+      <button class="btn btn-sm" style="margin-top:8px" onclick="game.switchSpellbook('necromancy');ui.currentPage='spellbooks';ui.renderSidebar();ui.renderPage('spellbooks')">Switch to Necromancy Spellbook</button>
+    </div>`;
+    html += '<h2 class="section-title">Necromancy Spells</h2><div class="actions-grid">';
+    for (const sp of (GAME_DATA.necromancySpells || [])) {
+      const locked = s.skills.magic.level < sp.level;
+      html += `<div class="action-card ${locked?'locked':''}" style="border-left:3px solid #5a2a5a">
+        <div class="ac-header"><span class="ac-name">${sp.name}</span><span class="ac-level">Lv ${sp.level}</span></div>
+        <p class="area-desc">${sp.desc}</p>
+        <div class="ac-footer"><span>Max Hit: ${sp.maxHit}</span><span>${sp.runes.map(r=>(GAME_DATA.items[r.item]?.name||r.item)+' x'+r.qty).join(', ')}</span></div>
+        ${sp.lifesteal?`<div class="faction-perk">Lifesteal: ${(sp.lifesteal*100).toFixed(0)}%</div>`:''}
+        ${locked?`<div class="locked-overlay">Magic ${sp.level}</div>`:''}
+      </div>`;
+    }
+    html += '</div>';
     el.innerHTML = html;
   }
 
@@ -1488,6 +1530,19 @@ class UI {
         if (csRng) csRng.textContent = s.skills.ranged.level;
         const csMag = document.getElementById('cs-mag');
         if (csMag) csMag.textContent = s.skills.magic.level;
+      }
+    }
+
+    // ── LEVEL TRACKER in sidebar (live) ──
+    for (const sId of Object.keys(GAME_DATA.skills)) {
+      const el = document.getElementById('lt-' + sId);
+      if (el && s.skills[sId]) {
+        const lvl = el.querySelector('.lt-lvl');
+        if (lvl && lvl.textContent !== String(s.skills[sId].level)) {
+          lvl.textContent = s.skills[sId].level;
+          el.classList.add('level-up-flash');
+          setTimeout(() => el.classList.remove('level-up-flash'), 800);
+        }
       }
     }
 

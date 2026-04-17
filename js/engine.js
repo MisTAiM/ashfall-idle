@@ -485,12 +485,36 @@ class GameEngine {
     }
 
     const lootBonus = GAME_DATA.alignments[this.state.alignment]?.bonus?.lootQty || 0;
+    const petLootBonus = this.getPetBonus('lootQty');
     const drops = monster.drops || monster.rewards || [];
     for (const drop of drops) {
-      const ch = drop.chance * (1 + lootBonus/100);
+      // Improved drop formula: base chance * (1 + loot bonuses) * luck scaling
+      let ch = drop.chance * (1 + (lootBonus + petLootBonus) / 100);
+      // Mastery/kill count luck: each 100 kills of this monster adds 0.5% to rare drops
+      const killCount = (this.state.stats.uniqueKills?.[mId]) || 0;
+      if (drop.chance < 0.10) ch *= (1 + Math.min(0.5, killCount * 0.005));
+      // Slayer task bonus: +15% drop chance when on task
+      if (this.state.slayerTask?.monster === mId) ch *= 1.15;
+      // Slayer helm bonus
+      if (this.state.equipment.head === 'slayer_helm' && this.state.slayerTask?.monster === mId) ch *= 1.10;
+
       if (Math.random() < ch) {
-        this.addItem(drop.item, drop.qty);
-        if (drop.chance < 0.1) this.emit('notification', { type:'rare', text:`Rare drop: ${GAME_DATA.items[drop.item]?.name || drop.item}!` });
+        let qty = drop.qty;
+        // Quantity scaling for stackable resources
+        if (qty > 1 && GAME_DATA.items[drop.item]?.type === 'resource') {
+          qty = Math.floor(qty * (1 + lootBonus/100));
+        }
+        this.addItem(drop.item, qty);
+        if (drop.chance < 0.05) this.emit('notification', { type:'rare', text:`Rare drop: ${GAME_DATA.items[drop.item]?.name || drop.item}!` });
+        else if (drop.chance < 0.10) this.emit('notification', { type:'rare', text:`Uncommon: ${GAME_DATA.items[drop.item]?.name || drop.item}!` });
+      }
+    }
+    // Universal Rare Drop Table (1/200 chance per kill, better monsters = better table)
+    if (Math.random() < 0.005 * (1 + monster.combatLevel / 100)) {
+      const rdt = this._rollRareDropTable(monster.combatLevel);
+      if (rdt) {
+        this.addItem(rdt.item, rdt.qty);
+        this.emit('notification', { type:'achievement', text:`RARE DROP TABLE: ${GAME_DATA.items[rdt.item]?.name}!` });
       }
     }
 
@@ -606,25 +630,67 @@ class GameEngine {
     if (this.state.skills.tactics.level < ab.tacticsReq) return;
     c.abilityCooldowns[id] = ab.cooldown;
     const eff = ab.effect;
+    let totalDmg = 0;
+
+    // Status effects on monster
     if (eff.burn)   this.applyStatus('monster', 'burn',   eff.burn,   10);
     if (eff.poison) this.applyStatus('monster', 'poison', eff.poison, 12);
     if (eff.freeze) this.applyStatus('monster', 'freeze', eff.freeze, 8);
-    if (eff.magicDmg) {
-      const dmg = eff.magicDmg + Math.floor(this.state.skills.magic.level * 0.5);
-      c.monsterHp -= dmg;
-      this.emit('combatHit', { who:'player', dmg });
+
+    // Direct damage (fireball, shadow step, soul drain)
+    if (eff.directDmg) {
+      const baseDmg = eff.directDmg + Math.floor(this.state.skills.magic.level * 0.5);
+      totalDmg += baseDmg;
     }
-    if (eff.heal) c.playerHp = Math.min(this.getMaxHp(), c.playerHp + Math.floor(this.getMaxHp() * eff.heal));
-    if (eff.buff) c.activeBuffs.push({ ...eff.buff, remaining: eff.buff.duration });
+
+    // Instant physical damage (quick shot, double shot)
+    if (eff.instantDmg) {
+      const style = c.combatStyle;
+      let maxHit;
+      if (style === 'ranged') {
+        const rL = this.state.skills.ranged.level;
+        const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
+        maxHit = Math.max(1, Math.floor(0.5 + rL * (rB + 64) / 640));
+      } else {
+        const sL = this.state.skills.strength.level;
+        const sB = this.getStatTotal('strengthBonus');
+        maxHit = Math.max(1, Math.floor(0.5 + sL * (sB + 64) / 640));
+      }
+      const mult = eff.dmgMult || 1;
+      const hits = eff.hits || 1;
+      for (let i = 0; i < hits; i++) {
+        totalDmg += Math.floor(this.randInt(1, maxHit) * mult);
+      }
+    }
+
+    // Execute - multiplied damage if target below threshold
     if (eff.execute) {
       const m = GAME_DATA.monsters[c.monster] || GAME_DATA.worldBosses.find(b=>b.id===c.monster);
       if (m && c.monsterHp <= m.hp * 0.30) {
-        const dmg = this.state.skills.strength.level * eff.execute;
-        c.monsterHp -= dmg;
-        this.emit('combatHit', { who:'player', dmg });
+        totalDmg += Math.floor(this.state.skills.strength.level * eff.execute);
+      } else {
+        this.emit('notification', { type:'warn', text:'Target above 30% HP.' });
       }
     }
-    this.emit('notification', { type:'info', text:`Used ${ab.name}!` });
+
+    // Apply total damage to monster
+    if (totalDmg > 0) {
+      c.monsterHp -= totalDmg;
+      this.emit('combatHit', { who:'player', dmg: totalDmg });
+      // Lifesteal
+      if (eff.lifesteal) {
+        const healed = Math.floor(totalDmg * eff.lifesteal);
+        c.playerHp = Math.min(this.getMaxHp(), c.playerHp + healed);
+      }
+    }
+
+    // Heal ability
+    if (eff.heal) c.playerHp = Math.min(this.getMaxHp(), c.playerHp + Math.floor(this.getMaxHp() * eff.heal));
+
+    // Buff ability (war cry, power strike, rallying cry)
+    if (eff.buff) c.activeBuffs.push({ ...eff.buff, remaining: eff.buff.duration });
+
+    this.emit('notification', { type:'info', text:`Used ${ab.name}${totalDmg>0?' ('+totalDmg+' dmg)':''}!` });
   }
 
   tickBuffs(dt) {
@@ -988,6 +1054,38 @@ class GameEngine {
     if (!this.state.stats.totalActions[sId]) this.state.stats.totalActions[sId] = 0;
     this.state.stats.totalActions[sId]++;
   }
+
+  _rollRareDropTable(combatLevel) {
+    // Universal rare drops scaled by combat level
+    const table = [
+      { item:'topaz',         qty:1, weight:30, minLevel:1  },
+      { item:'sapphire',      qty:1, weight:20, minLevel:10 },
+      { item:'ruby',          qty:1, weight:15, minLevel:20 },
+      { item:'emerald',       qty:1, weight:10, minLevel:30 },
+      { item:'diamond',       qty:1, weight:5,  minLevel:45 },
+      { item:'onyx',          qty:1, weight:2,  minLevel:70 },
+      { item:'potion_healing_ii', qty:3, weight:15, minLevel:1 },
+      { item:'potion_healing_iii',qty:2, weight:8,  minLevel:30 },
+      { item:'potion_strength',   qty:2, weight:10, minLevel:10 },
+      { item:'potion_speed',      qty:1, weight:5,  minLevel:40 },
+      { item:'death_rune',    qty:10, weight:8,  minLevel:25 },
+      { item:'chaos_rune',    qty:15, weight:10, minLevel:15 },
+      { item:'enchant_scroll',qty:1,  weight:3,  minLevel:35 },
+      { item:'dragon_bones',  qty:2,  weight:4,  minLevel:50 },
+      { item:'obsidian_ore',  qty:3,  weight:3,  minLevel:55 },
+      { item:'void_bones',    qty:1,  weight:2,  minLevel:65 },
+      { item:'ancient_ring',  qty:1,  weight:1,  minLevel:80 },
+    ];
+    const eligible = table.filter(e => combatLevel >= e.minLevel);
+    if (eligible.length === 0) return null;
+    const totalWeight = eligible.reduce((s, e) => s + e.weight, 0);
+    let roll = Math.random() * totalWeight;
+    for (const entry of eligible) {
+      roll -= entry.weight;
+      if (roll <= 0) return { item: entry.item, qty: entry.qty };
+    }
+    return eligible[eligible.length - 1];
+  }
   on(event, fn) { if (!this.listeners[event]) this.listeners[event] = []; this.listeners[event].push(fn); }
   emit(event, data) { if (this.listeners[event]) for (const fn of this.listeners[event]) fn(data); }
   getTotalLevel() { return Object.values(this.state.skills).reduce((sum, s) => sum + s.level, 0); }
@@ -1195,6 +1293,7 @@ class GameEngine {
       cryomancy: GAME_DATA.cryomancySpells,
       blood_magic: GAME_DATA.bloodMagicSpells,
       void_magic: GAME_DATA.voidMagicSpells,
+      necromancy: GAME_DATA.necromancySpells,
     };
     return map[book] || GAME_DATA.spells;
   }
