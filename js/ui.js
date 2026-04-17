@@ -363,123 +363,204 @@ class UI {
 
   renderCombatPage(el) {
     const s = this.engine.state, c = s.combat;
-    let html = this.header('Combat','combat','Fight monsters for XP, gold, and loot.', null);
-    // Combat skills with LIVE XP bars
-    const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer'];
+    const xpMode = c.xpMode || 'controlled';
+    // Determine which skills get XP based on style + mode
+    let xpSkills = {};
+    if (c.combatStyle === 'melee') {
+      if (xpMode==='accurate')   xpSkills = {attack:90,defence:10};
+      else if (xpMode==='aggressive') xpSkills = {strength:90,defence:10};
+      else if (xpMode==='defensive')  xpSkills = {defence:90,attack:10};
+      else xpSkills = {attack:33,strength:33,defence:34};
+    } else if (c.combatStyle === 'ranged') {
+      if (xpMode==='accurate')   xpSkills = {ranged:90,defence:10};
+      else if (xpMode==='rapid') xpSkills = {ranged:100};
+      else xpSkills = {ranged:50,defence:50};
+    } else xpSkills = {magic:80,defence:20};
+    xpSkills.hitpoints = 33; // always
+
+    let html = `<div class="combat-page">`;
+    // ── XP TRACKER with highlighted active skills ──
     html += '<div class="combat-xp-panel" id="combat-xp-panel">';
+    const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer'];
     for (const _sId of _cSkills) {
       const _sk = s.skills[_sId]; if (!_sk) continue;
       const _p = this.engine.getXpProgress(_sId);
       const _name = GAME_DATA.skills[_sId]?.name || _sId;
-      html += `<div class="cxp-row"><span class="cxp-name">${_name.substring(0,3)}</span><span class="cxp-level" id="cxp-lv-${_sId}">${_sk.level}</span><div class="cxp-bar"><div class="cxp-fill" id="cxp-fill-${_sId}" style="width:${(_p*100).toFixed(1)}%"></div></div><span class="cxp-xp" id="cxp-xp-${_sId}">${this.fmt(_sk.xp)}</span></div>`;
+      const isGaining = xpSkills[_sId] > 0;
+      const pct = xpSkills[_sId] || 0;
+      const xpToNext = _sk.level >= 99 ? 'MAX' : this.fmt(this.engine.getXpForLevel(_sk.level + 1) - _sk.xp);
+      html += `<div class="cxp-row ${isGaining?'cxp-active':''}" title="${_name}: ${this.fmt(_sk.xp)} XP | ${xpToNext} to next${isGaining?' | Getting '+pct+'% of combat XP':''}">
+        <span class="cxp-icon">${icon(GAME_DATA.skills[_sId]?.icon||'sparkle',14)}</span>
+        <span class="cxp-name">${_name}</span>
+        <span class="cxp-level" id="cxp-lv-${_sId}">${_sk.level}</span>
+        <div class="cxp-bar"><div class="cxp-fill ${isGaining?'cxp-fill-active':''}" id="cxp-fill-${_sId}" style="width:${(_p*100).toFixed(1)}%"></div></div>
+        <span class="cxp-xp" id="cxp-xp-${_sId}">${this.fmt(_sk.xp)}</span>
+        ${isGaining?`<span class="cxp-pct">${pct}%</span>`:''}
+      </div>`;
     }
-    html += `<div class="cxp-row cxp-cb"><span class="cxp-name">Cb</span><span class="cxp-level">${this.engine.getCombatLevel()}</span></div></div>`;
-    html += `<div class="combat-style-select">
-      <div class="style-group"><span class="style-label">Style:</span>
-      <button class="btn btn-sm ${c.combatStyle==='melee'?'btn-active':''}" onclick="ui.setStyle('melee')">Melee</button>
-      <button class="btn btn-sm ${c.combatStyle==='ranged'?'btn-active':''}" onclick="ui.setStyle('ranged')">Ranged</button>
-      <button class="btn btn-sm ${c.combatStyle==='magic'?'btn-active':''}" onclick="ui.setStyle('magic')">Magic</button></div>`;
-    // XP Mode selector
-    const xpMode = c.xpMode || 'controlled';
-    html += '<div class="style-group"><span class="style-label">XP:</span>';
+    html += '</div>';
+
+    // ── CONTROLS ROW ──
+    html += '<div class="combat-controls">';
+    // Style
+    html += '<div class="cc-group"><div class="cc-label">Combat Style</div><div class="cc-btns">';
+    for (const [id,label,ic] of [['melee','Melee','sword'],['ranged','Ranged','target'],['magic','Magic','wand']]) {
+      html += `<button class="cc-btn ${c.combatStyle===id?'cc-btn-active':''}" onclick="ui.setStyle('${id}')">${icon(ic,14)} ${label}</button>`;
+    }
+    html += '</div></div>';
+    // XP Mode
+    html += '<div class="cc-group"><div class="cc-label">XP Mode</div><div class="cc-btns">';
     if (c.combatStyle === 'melee') {
-      for (const [id,label] of [['accurate','Atk'],['aggressive','Str'],['defensive','Def'],['controlled','Shared']]) {
-        html += `<button class="btn btn-xs ${xpMode===id?'btn-active':''}" onclick="ui.setXpMode('${id}')">${label}</button>`;
+      for (const [id,label,desc] of [['accurate','Attack','90% Atk XP'],['aggressive','Strength','90% Str XP'],['defensive','Defence','90% Def XP'],['controlled','Shared','Equal split']]) {
+        html += `<button class="cc-btn ${xpMode===id?'cc-btn-active':''}" onclick="ui.setXpMode('${id}')" title="${desc}">${label}</button>`;
       }
     } else if (c.combatStyle === 'ranged') {
-      for (const [id,label] of [['accurate','Accurate'],['rapid','Rapid'],['longrange','Longrange']]) {
-        html += `<button class="btn btn-xs ${xpMode===id?'btn-active':''}" onclick="ui.setXpMode('${id}')">${label}</button>`;
+      for (const [id,label,desc] of [['accurate','Accurate','90% Rng + Def'],['rapid','Rapid','100% Ranged'],['longrange','Longrange','50/50 Rng+Def']]) {
+        html += `<button class="cc-btn ${xpMode===id?'cc-btn-active':''}" onclick="ui.setXpMode('${id}')" title="${desc}">${label}</button>`;
       }
-    } else { html += '<span style="font-size:11px;color:var(--text-dim)">80% Magic / 20% Def</span>'; }
+    } else {
+      html += '<span class="cc-info">80% Magic / 20% Defence</span>';
+    }
     html += '</div></div>';
+    html += '</div>';
+
+    // ── SPELL SELECT (magic only) ──
     if (c.combatStyle === 'magic') {
       const bookName = GAME_DATA.spellbooks[s.activeSpellbook||'standard']?.name || 'Standard';
-      html += `<div class="spell-select"><span class="spell-label">${bookName}:</span>`;
+      html += `<div class="combat-section"><div class="cs-header">${icon('wand',14)} ${bookName} Spellbook</div><div class="spell-grid">`;
       const spells = this.engine.getSpellsForActiveBook();
       for (const sp of spells) {
         const locked = s.skills.magic.level < sp.level;
         const active = c.selectedSpell === sp.id;
-        html += `<button class="btn btn-sm spell-btn ${active?'btn-active':''} ${locked?'locked':''}" ${locked?'disabled':''} onclick="ui.selectSpell('${sp.id}')" title="${sp.desc}">${sp.name}</button>`;
+        html += `<button class="spell-card ${active?'spell-active':''} ${locked?'locked':''}" ${locked?'disabled':''} onclick="ui.selectSpell('${sp.id}')" title="${sp.desc}">
+          <div class="sc-name">${sp.name}</div>
+          <div class="sc-info">Lv${sp.level} | Hit: ${sp.maxHit}</div>
+        </button>`;
       }
-      html += '</div>';
+      html += '</div></div>';
     }
-    // Prayer quick-select panel in combat
-    html += `<div class="prayer-combat-panel">
-      <span class="style-label">Prayers (<span id="pp-live">${s.prayerPoints}</span> pts, ${s.activePrayers.length}/2):</span>
-      <div class="prayer-quick-btns">`;
+
+    // ── PRAYER BAR ──
+    html += `<div class="combat-section"><div class="cs-header">${icon('sparkle',14)} Prayers <span class="cs-sub" id="pp-live">${s.prayerPoints} pts</span> <span class="cs-sub">${s.activePrayers.length}/2</span></div><div class="prayer-grid">`;
     for (const p of GAME_DATA.prayers) {
       if (s.skills.prayer.level < p.level) continue;
       const active = s.activePrayers.includes(p.id);
-      html += `<button class="btn btn-xs prayer-btn ${active?'prayer-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc} (${p.pointCost} pts/atk)">${p.name}</button>`;
+      html += `<button class="prayer-card ${active?'prayer-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc} (${p.pointCost} pts/atk)">
+        <div class="pc-name">${p.name}</div>
+        <div class="pc-cost">${p.pointCost}pp</div>
+      </button>`;
     }
-    if (s.skills.prayer.level < 1 || !GAME_DATA.prayers) html += '<span style="font-size:11px;color:var(--text-dim)">Train Prayer to unlock</span>';
-    html += `</div></div>`;
-    html += `<div class="food-bar">
-      <span class="food-label">Food:</span>
-      ${s.food.equipped ? `<span class="food-item">${GAME_DATA.items[s.food.equipped]?.name} x<span id="food-qty">${s.food.qty}</span> <small>(+${GAME_DATA.items[s.food.equipped]?.heals||0} hp)</small></span>` : '<span class="food-empty">None (equip from Bank)</span>'}
-      <button class="btn btn-sm" onclick="game.eatFood()">Eat</button>
-      <label class="auto-eat-label"><input type="checkbox" ${c.autoEat?'checked':''} onchange="ui.toggleAutoEat()"> Auto-Eat</label>
-    </div>`;
+    if (s.skills.prayer.level < 1) html += '<div class="cc-info">Train Prayer to unlock</div>';
+    html += '</div></div>';
+
+    // ── FOOD + EQUIPMENT STATS ──
+    html += `<div class="combat-loadout">
+      <div class="cl-food">
+        <div class="cs-header">${icon('heart',14)} Food</div>
+        ${s.food.equipped ? `<div class="cl-food-item">${window.renderItemSprite?window.renderItemSprite(s.food.equipped,24):''} ${GAME_DATA.items[s.food.equipped]?.name} x<span id="food-qty">${s.food.qty}</span> <small>(+${GAME_DATA.items[s.food.equipped]?.heals||0} hp)</small></div>` : '<div class="cc-info">None equipped</div>'}
+        <div class="cl-food-btns">
+          <button class="btn btn-xs" onclick="game.eatFood()">Eat</button>
+          <label class="auto-eat-label"><input type="checkbox" ${c.autoEat?'checked':''} onchange="ui.toggleAutoEat()"> Auto-Eat @ 40%</label>
+        </div>
+      </div>
+      <div class="cl-stats">
+        <div class="cs-header">${icon('shield',14)} Equipment Bonuses</div>
+        <div class="cl-stat-chips">`;
+    for (const [stat,label] of [['attackBonus','Atk'],['strengthBonus','Str'],['defenceBonus','Def'],['rangedBonus','Rng'],['magicBonus','Mag'],['damageReduction','DR']]) {
+      const v = this.engine.getStatTotal(stat);
+      html += `<span class="stat-chip ${v>0?'':'stat-zero'}">+${v} ${label}</span>`;
+    }
+    html += `<span class="stat-chip stat-speed">${this.engine.getPlayerAttackSpeed().toFixed(1)}s spd</span>`;
+    html += '</div></div></div>';
+
+    // ── ACTIVE COMBAT ──
     if (c.active && c.monster) {
       const mon = GAME_DATA.monsters[c.monster] || GAME_DATA.worldBosses.find(b=>b.id===c.monster);
       const max = this.engine.getMaxHp();
-      const pHp = Math.max(0, c.playerHp / max * 100);
-      const mHp = Math.max(0, c.monsterHp / mon.hp * 100);
-      html += `<div class="combat-arena">
-        <div class="combatant player-side">
-          <div class="combatant-name">You <small>(${this.engine.getPlayerAttackSpeed().toFixed(1)}s)</small></div>
-          <div class="hp-bar"><div class="hp-fill player-hp" id="php-bar" style="width:${pHp.toFixed(1)}%"></div></div>
-          <div class="hp-text" id="php-text">${Math.max(0,Math.floor(c.playerHp))} / ${max}</div>
+      const pHpPct = Math.max(0, c.playerHp / max * 100);
+      const mHpPct = Math.max(0, c.monsterHp / mon.hp * 100);
+      const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
+      const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
+
+      html += `<div class="combat-arena-v2">
+        <div class="ca-side ca-player">
+          <div class="ca-name">${typeof online!=='undefined'&&online.displayName?online.displayName:'You'}</div>
+          <div class="ca-level">Combat Lv ${this.engine.getCombatLevel()}</div>
+          <div class="ca-hp-container">
+            <div class="ca-hp-bar"><div class="ca-hp-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
+            <div class="ca-hp-text" id="php-text">${Math.max(0,Math.floor(c.playerHp))} / ${max}</div>
+          </div>
           <div class="splat-area" id="player-splats"></div>
           ${this.renderStatusEffects(c.statusEffects.player)}
         </div>
-        <div class="combat-vs">VS</div>
-        <div class="combatant monster-side">
-          ${GAME_DATA.monsterArt?.[c.monster] ? `<div class="monster-art">${GAME_DATA.monsterArt[c.monster]}</div>` : ''}
-          <div class="combatant-name">${mon.name} <small>(Lv ${mon.combatLevel})</small></div>
-          <div class="hp-bar"><div class="hp-fill monster-hp" id="mhp-bar" style="width:${mHp.toFixed(1)}%"></div></div>
-          <div class="hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp))} / ${mon.hp}</div>
+        <div class="ca-center">
+          <div class="ca-vs-badge">VS</div>
+          <div class="ca-kills">Kills: <span id="kill-count">${s.stats.monstersKilled}</span></div>
+        </div>
+        <div class="ca-side ca-monster">
+          ${GAME_DATA.monsterArt?.[c.monster] ? `<div class="monster-art">${GAME_DATA.monsterArt[c.monster]}</div>` : `<div class="monster-art-placeholder">${icon('combat',48)}</div>`}
+          <div class="ca-name">${mon.name}</div>
+          <div class="ca-level">Level ${mon.combatLevel} | ${mon.style}</div>
+          <div class="ca-hp-container">
+            <div class="ca-hp-bar ca-hp-monster"><div class="ca-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
+            <div class="ca-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp))} / ${mon.hp}</div>
+          </div>
           <div class="splat-area" id="monster-splats"></div>
           ${this.renderStatusEffects(c.statusEffects.monster)}
         </div>
       </div>`;
-      // Ability bar
-      html += '<div class="ability-bar">';
+
+      // ── ABILITY BAR ──
+      html += '<div class="ability-bar-v2">';
       for (let i = 0; i < 4; i++) {
         const aid = s.equippedAbilities[i];
         const ab = aid ? GAME_DATA.abilities.find(a=>a.id===aid) : null;
         const cd = ab ? (c.abilityCooldowns[aid] || 0) : 0;
         if (ab) {
-          html += `<button class="ability-slot ${cd>0?'on-cd':''}" onclick="game.useAbility(${i})" title="${ab.desc}">
-            <div class="ab-name">${ab.name}</div>
-            ${cd>0?`<div class="ab-cd">${Math.ceil(cd)}s</div>`:`<div class="ab-cd">Ready</div>`}
+          const cdPct = cd > 0 ? Math.min(100, (cd / ab.cooldown) * 100) : 0;
+          html += `<button class="ab-slot-v2 ${cd>0?'ab-cd':''}" onclick="game.useAbility(${i})" title="${ab.desc}">
+            <div class="ab-cd-overlay" style="height:${cdPct}%"></div>
+            <div class="ab-content"><div class="ab-name">${ab.name}</div>
+            <div class="ab-timer">${cd>0?Math.ceil(cd)+'s':'Ready'}</div></div>
           </button>`;
         } else {
-          html += `<div class="ability-slot empty">Slot ${i+1}<br><small>Equip in Abilities</small></div>`;
+          html += `<div class="ab-slot-v2 ab-empty"><div class="ab-content">Slot ${i+1}</div></div>`;
         }
       }
       html += '</div>';
+
       if (c.dungeon) {
         const d = GAME_DATA.dungeons.find(x=>x.id===c.dungeon);
-        html += `<div class="dungeon-progress">Dungeon: ${d.name} - Wave ${c.dungeonWave+1}/${d.waves.length}</div>`;
+        html += `<div class="dungeon-progress-v2"><span>Dungeon: ${d.name}</span><span>Wave ${c.dungeonWave+1} / ${d.waves.length}</span></div>`;
       }
-      html += `<button class="btn btn-danger" onclick="game.stopCombat()">Flee</button>`;
+      // Slayer task progress
+      if (s.slayerTask && s.slayerTask.monster === c.monster) {
+        const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
+        html += `<div class="slayer-combat-bar"><span>${icon('target',14)} Slayer: ${s.slayerTask.killed}/${s.slayerTask.amount}</span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" style="width:${pct}%"></div></div></div>`;
+      }
+      html += `<button class="btn btn-danger btn-flee" onclick="game.stopCombat()">${icon('combat',16)} Flee Combat</button>`;
     } else {
-      html += '<h2 class="section-title">Combat Areas</h2><div class="actions-grid">';
+      // ── AREA SELECT ──
+      html += '<h2 class="section-title">Combat Areas</h2><div class="area-grid">';
       for (const area of GAME_DATA.combatAreas) {
         const locked = this.engine.getCombatLevel() < area.levelReq;
-        html += `<div class="action-card area-card ${locked?'locked':''}">
-          <div class="ac-header"><span class="ac-name">${area.name}</span><span class="ac-level">Cb Lv ${area.levelReq}</span></div>
-          <p class="area-desc">${area.desc}</p>
-          <div class="area-monsters">`;
+        html += `<div class="area-card-v2 ${locked?'area-locked':''}">
+          <div class="area-header"><span class="area-name">${area.name}</span><span class="area-req">Cb ${area.levelReq}+</span></div>
+          <div class="area-desc">${area.desc}</div>
+          <div class="area-monsters-v2">`;
         for (const mId of area.monsters) {
           const m = GAME_DATA.monsters[mId];
-          html += `<button class="btn btn-sm monster-btn" ${locked?'disabled':''} onclick="game.startCombat('${area.id}','${mId}')">${m.name} <small>(Lv ${m.combatLevel})</small></button>`;
+          html += `<button class="monster-btn-v2" ${locked?'disabled':''} onclick="game.startCombat('${area.id}','${mId}')">
+            ${GAME_DATA.monsterArt?.[mId] ? `<span class="mb-art">${GAME_DATA.monsterArt[mId]}</span>` : ''}
+            <span class="mb-name">${m.name}</span>
+            <span class="mb-info">Lv${m.combatLevel} | ${m.hp}hp | ${m.style}</span>
+          </button>`;
         }
-        html += `</div>${locked?`<div class="locked-overlay">Combat Lv ${area.levelReq}</div>`:''}</div>`;
+        html += '</div></div>';
       }
       html += '</div>';
     }
+    html += '</div>';
     el.innerHTML = html;
   }
 
@@ -665,8 +746,15 @@ class UI {
           ${item.slot ? `<button class="btn btn-xs" onclick="game.equipItem('${id}')">Equip</button>` : ''}
           ${item.type==='food'||item.type==='potion' ? `<button class="btn btn-xs" onclick="game.equipFood('${id}')">Eat/Use</button>` : ''}
           ${GAME_DATA.boneValues && GAME_DATA.boneValues[id] ? `<button class="btn btn-xs" onclick="game.buryBones('${id}',${q})">Bury All</button>` : ''}
-          ${item.sellPrice>0 ? `<button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',1)">Sell ${item.sellPrice}g</button>` : ''}
-          ${item.sellPrice>0&&q>=10 ? `<button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',${q})">Sell All</button>` : ''}
+          ${item.sellPrice>0 ? `<div class="bi-sell-row">
+            <button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',1)">1</button>
+            <button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',5)">5</button>
+            <button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',${Math.min(q,50)})">50</button>
+            <button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',${q})">All</button>
+            <input type="number" class="qty-input" min="1" max="${q}" value="1" id="sell-qty-${id}" style="width:45px">
+            <button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',parseInt(document.getElementById('sell-qty-${id}').value)||1)">Sell</button>
+            <small class="sell-price">${item.sellPrice}g ea</small>
+          </div>` : ''}
         </div>
       </div>`;
     }
@@ -1205,10 +1293,13 @@ class UI {
     }
     html += '</div>';
 
-    // Bio
+    // Bio + Save
     html += `<h2 class="section-title">Bio</h2>
-      <div style="display:flex;gap:8px"><textarea id="bio-input" class="chat-input" rows="3" placeholder="Write about your character..." style="flex:1;resize:vertical">${this.escHtml(p.bio||'')}</textarea>
-      <button class="btn btn-sm" onclick="game.state.profile.bio=document.getElementById('bio-input').value;ui.toast({type:'success',text:'Bio saved.'})">Save</button></div>`;
+      <div style="display:flex;gap:8px"><textarea id="bio-input" class="chat-input" rows="3" placeholder="Write about your character..." style="flex:1;resize:vertical">${this.escHtml(p.bio||'')}</textarea></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" onclick="ui.saveCharacter()">Save & Update Profile</button>
+        ${typeof online !== 'undefined' && online.isOnline ? '<button class="btn btn-sm" onclick="online.saveToCloud();online.syncProfile()">Sync to Cloud</button>' : ''}
+      </div>`;
 
     // Equipment requirements quick reference
     html += '<h2 class="section-title">Equipment Level Guide</h2><div class="equip-guide">';
@@ -1234,6 +1325,18 @@ class UI {
     if (!game.state.profile) game.state.profile = {};
     game.state.profile[key] = value;
     this.renderPage('character');
+  }
+
+  saveCharacter() {
+    const bio = document.getElementById('bio-input')?.value || '';
+    game.state.profile.bio = bio;
+    game.save();
+    if (typeof online !== 'undefined' && online.isOnline) {
+      online.syncProfile();
+      online.saveToCloud();
+    }
+    this.renderSidebar();
+    this.toast({ type:'success', text:'Character saved and synced.' });
   }
 
   // ── GUILDS PAGE ────────────────────────────────────────
@@ -1714,7 +1817,7 @@ class UI {
         const fqEl = document.getElementById('food-qty');
         if (fqEl) fqEl.textContent = s.food.qty;
         // Combat XP bars (live updating)
-        for (const sId of ['attack','strength','defence','hitpoints','ranged','magic','prayer']) {
+        for (const sId of ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer']) {
           const sk = s.skills[sId]; if (!sk) continue;
           const lvEl = document.getElementById('cxp-lv-' + sId);
           const fillEl = document.getElementById('cxp-fill-' + sId);
@@ -1725,6 +1828,9 @@ class UI {
           if (fillEl) fillEl.style.width = (this.engine.getXpProgress(sId) * 100).toFixed(1) + '%';
           if (xpEl) xpEl.textContent = this.fmt(sk.xp);
         }
+        // Kill counter
+        const killEl = document.getElementById('kill-count');
+        if (killEl) killEl.textContent = s.stats.monstersKilled;
       }
     }
 

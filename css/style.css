@@ -1958,3 +1958,207 @@ html, body {
   .combat-xp-panel { grid-template-columns: repeat(2, 1fr); }
   .cc-label { width: 80px; }
 }
+
+/* ── v4.1 COMBAT OVERHAUL ─────────────────────────────── */
+
+/* XP Panel - highlight active skills */
+.combat-xp-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 3px;
+  margin-bottom: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+.cxp-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.cxp-active {
+  background: rgba(201,135,62,0.08);
+  border-left: 2px solid var(--accent);
+}
+.cxp-icon { flex-shrink:0; display:flex; }
+.cxp-name { width:60px; font-size:11px; color:var(--text-dim); }
+.cxp-active .cxp-name { color:var(--accent); font-weight:700; }
+.cxp-level { width:22px; text-align:center; font-family:'Cinzel',serif; font-weight:700; color:var(--accent); }
+.cxp-bar { flex:1; height:6px; background:var(--bg-deep); border-radius:3px; overflow:hidden; min-width:30px; }
+.cxp-fill { height:100%; background:var(--border); border-radius:3px; transition:width 0.2s; }
+.cxp-fill-active { background:linear-gradient(90deg, var(--accent-dim), var(--accent)); }
+.cxp-xp { width:48px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--text-dim); }
+.cxp-pct { width:28px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--accent); font-weight:700; }
+
+/* Combat Controls */
+.combat-controls {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;
+}
+.cc-group { flex:1; min-width:200px; }
+.cc-label { font-family:'Cinzel',serif; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:4px; }
+.cc-btns { display:flex; gap:4px; flex-wrap:wrap; }
+.cc-btn {
+  display:flex; align-items:center; gap:4px; padding:6px 12px;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  color:var(--text); font-size:12px; cursor:pointer; transition:all 0.15s;
+}
+.cc-btn:hover { border-color:var(--accent-dim); color:var(--accent); }
+.cc-btn-active { background:var(--accent-bg); border-color:var(--accent); color:var(--accent); font-weight:700; }
+.cc-info { font-size:11px; color:var(--text-dim); padding:6px; }
+
+/* Combat Sections */
+.combat-section {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:10px; margin-bottom:10px;
+}
+.cs-header { font-family:'Cinzel',serif; font-size:12px; color:var(--text-bright); display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+.cs-sub { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--accent); }
+
+/* Spell Grid */
+.spell-grid { display:flex; flex-wrap:wrap; gap:4px; }
+.spell-card {
+  padding:6px 10px; background:var(--bg-deep); border:1px solid var(--border);
+  border-radius:4px; cursor:pointer; transition:all 0.15s; text-align:center;
+}
+.spell-card:hover:not(.locked) { border-color:var(--accent-dim); }
+.spell-active { border-color:var(--accent)!important; background:var(--accent-bg)!important; }
+.sc-name { font-size:11px; color:var(--text-bright); font-family:'Cinzel',serif; }
+.sc-info { font-size:9px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+
+/* Prayer Grid */
+.prayer-grid { display:flex; flex-wrap:wrap; gap:3px; }
+.prayer-card {
+  padding:4px 8px; background:var(--bg-deep); border:1px solid var(--border);
+  border-radius:3px; cursor:pointer; transition:all 0.15s; text-align:center;
+}
+.prayer-card:hover { border-color:var(--accent-dim); }
+.prayer-active { border-color:var(--accent)!important; background:var(--accent)!important; color:var(--bg-deep)!important; box-shadow:0 0 10px rgba(201,135,62,0.4); }
+.pc-name { font-size:10px; font-family:'Cinzel',serif; }
+.pc-cost { font-size:8px; font-family:'JetBrains Mono',monospace; color:var(--text-dim); }
+.prayer-active .pc-cost { color:var(--bg-deep); }
+
+/* Combat Loadout */
+.combat-loadout { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.cl-food, .cl-stats { flex:1; min-width:200px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:10px; }
+.cl-food-item { display:flex; align-items:center; gap:6px; font-size:13px; margin:6px 0; }
+.cl-food-btns { display:flex; align-items:center; gap:8px; }
+.cl-stat-chips { display:flex; flex-wrap:wrap; gap:3px; }
+.stat-chip { font-size:10px; font-family:'JetBrains Mono',monospace; padding:2px 6px; background:var(--bg-deep); border-radius:3px; color:var(--accent); }
+.stat-zero { color:var(--text-dim); }
+.stat-speed { color:var(--green); }
+
+/* Combat Arena V2 */
+.combat-arena-v2 {
+  display:flex; gap:16px; align-items:stretch; margin:16px 0;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; position:relative; overflow:hidden;
+}
+.combat-arena-v2::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse at center, rgba(201,135,62,0.03) 0%, transparent 70%);
+  pointer-events:none;
+}
+.ca-side { flex:1; text-align:center; position:relative; z-index:1; }
+.ca-player { border-right:1px solid var(--border-light); padding-right:16px; }
+.ca-monster { padding-left:16px; }
+.ca-name { font-family:'Cinzel',serif; font-size:16px; color:var(--text-bright); margin-bottom:4px; }
+.ca-level { font-size:11px; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; }
+.ca-hp-container { margin:8px 0; }
+.ca-hp-bar { height:18px; background:var(--bg-deep); border-radius:9px; overflow:hidden; border:1px solid var(--border); position:relative; }
+.ca-hp-fill { height:100%; border-radius:8px; transition:width 0.15s ease-out, background 0.3s; }
+.ca-hp-text { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text); text-align:center; margin-top:4px; }
+.ca-center { display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+.ca-vs-badge {
+  font-family:'Cinzel',serif; font-size:24px; font-weight:700; color:var(--accent);
+  width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+  border:2px solid var(--accent); border-radius:50%;
+  background:var(--accent-bg); text-shadow:0 0 8px rgba(201,135,62,0.3);
+}
+.ca-kills { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-dim); margin-top:8px; }
+.monster-art { width:80px; height:80px; margin:0 auto 8px; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5)); animation:monsterIdle 3s ease-in-out infinite; }
+.monster-art-placeholder { width:80px; height:80px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; color:var(--text-dim); opacity:0.3; }
+
+/* Ability Bar V2 */
+.ability-bar-v2 { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:12px 0; }
+.ab-slot-v2 {
+  position:relative; overflow:hidden; background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:10px 8px; text-align:center; cursor:pointer; transition:all 0.15s;
+}
+.ab-slot-v2:hover:not(.ab-cd):not(.ab-empty) { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+.ab-cd-overlay { position:absolute; bottom:0; left:0; right:0; background:rgba(140,50,50,0.3); transition:height 0.15s; pointer-events:none; }
+.ab-content { position:relative; z-index:1; }
+.ab-slot-v2 .ab-name { font-family:'Cinzel',serif; font-size:11px; color:var(--text-bright); }
+.ab-slot-v2 .ab-timer { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--accent); }
+.ab-cd .ab-timer { color:var(--red); }
+.ab-empty { border-style:dashed; cursor:default; }
+.ab-empty .ab-content { color:var(--text-dim); font-size:11px; }
+
+/* Area Grid V2 */
+.area-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px; }
+.area-card-v2 {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px; transition:all 0.2s;
+}
+.area-card-v2:hover:not(.area-locked) { border-color:var(--accent-dim); transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.15); }
+.area-locked { opacity:0.5; }
+.area-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.area-name { font-family:'Cinzel',serif; font-size:14px; color:var(--text-bright); }
+.area-req { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--accent); background:var(--accent-bg); padding:2px 6px; border-radius:3px; }
+.area-desc { font-size:12px; color:var(--text-dim); margin-bottom:8px; line-height:1.4; }
+.area-monsters-v2 { display:flex; flex-direction:column; gap:4px; }
+.monster-btn-v2 {
+  display:flex; align-items:center; gap:8px; padding:8px 10px;
+  background:var(--bg-deep); border:1px solid var(--border); border-radius:4px;
+  cursor:pointer; transition:all 0.15s; text-align:left; width:100%;
+}
+.monster-btn-v2:hover:not(:disabled) { border-color:var(--accent-dim); background:var(--accent-bg); }
+.mb-art { width:32px; height:32px; flex-shrink:0; }
+.mb-art svg { width:100%; height:100%; }
+.mb-name { font-family:'Cinzel',serif; font-size:12px; color:var(--text-bright); }
+.mb-info { font-size:10px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+
+/* Dungeon + Slayer bars */
+.dungeon-progress-v2 { display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); font-size:12px; color:var(--text); margin-bottom:8px; }
+.slayer-combat-bar { display:flex; align-items:center; gap:8px; padding:6px 10px; background:var(--bg-card); border:1px solid var(--accent-dim); border-radius:var(--radius); font-size:12px; margin-bottom:8px; }
+
+/* Flee button */
+.btn-flee { display:flex; align-items:center; gap:6px; justify-content:center; width:100%; padding:10px; font-size:14px; }
+
+@media (max-width: 768px) {
+  .combat-arena-v2 { flex-direction:column; }
+  .ca-player { border-right:none; border-bottom:1px solid var(--border-light); padding:0 0 12px; }
+  .ca-monster { padding:12px 0 0; }
+  .ca-center { flex-direction:row; gap:12px; padding:8px 0; }
+  .ability-bar-v2 { grid-template-columns:repeat(2,1fr); }
+  .combat-xp-panel { grid-template-columns:1fr; }
+}
+
+/* ── QUANTITY CONTROLS ────────────────────────────────── */
+.bi-sell-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+  margin-top: 4px;
+}
+.qty-input {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 3px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  text-align: center;
+}
+.qty-input:focus { border-color: var(--accent); outline: none; }
+.sell-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+}

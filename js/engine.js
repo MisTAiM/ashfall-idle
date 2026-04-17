@@ -10,6 +10,12 @@ class GameEngine {
     this.state = null;
     this.listeners = {};
     this.autoSaveInterval = null;
+    // Anti-cheat
+    this._sessionId = Math.random().toString(36).substring(2);
+    this._actionTimestamps = [];
+    this._maxActionsPerSec = 15;
+    this._tabHidden = false;
+    this._suspicionScore = 0;
   }
 
   init() {
@@ -20,6 +26,28 @@ class GameEngine {
     this.autoSaveInterval = setInterval(() => this.save(), 30000);
     this.emit('init', this.state);
     this.emit('notification', { type:'info', text:'Welcome to Ashfall.' });
+    // Anti-cheat: tab visibility
+    document.addEventListener('visibilitychange', () => {
+      this._tabHidden = document.hidden;
+    });
+    // Anti-cheat: multi-session detection
+    const existingSession = localStorage.getItem('ashfall_session');
+    if (existingSession && existingSession !== this._sessionId) {
+      const lastPing = parseInt(localStorage.getItem('ashfall_session_ping') || '0');
+      if (Date.now() - lastPing < 5000) {
+        this._suspicionScore += 50;
+        this.emit('notification', { type:'danger', text:'Multiple sessions detected. Progress may not save.' });
+      }
+    }
+    localStorage.setItem('ashfall_session', this._sessionId);
+    this._sessionPingInterval = setInterval(() => {
+      localStorage.setItem('ashfall_session_ping', String(Date.now()));
+      // Check if another session overwrote our ID
+      if (localStorage.getItem('ashfall_session') !== this._sessionId) {
+        this._suspicionScore += 10;
+        localStorage.setItem('ashfall_session', this._sessionId);
+      }
+    }, 3000);
   }
 
   newGame() {
@@ -105,14 +133,22 @@ class GameEngine {
     const now = Date.now();
     const dt = (now - this.lastTick) / 1000;
     this.lastTick = now;
-    this.state.stats.totalPlayTime += dt;
+    // Anti-cheat: cap dt to prevent time manipulation
+    const safeDt = Math.min(dt, 1.0); // max 1 second per tick
+    this.state.stats.totalPlayTime += safeDt;
+    // Anti-cheat: detect speed hacks (ticks coming way too fast)
+    if (dt < 0.01 && !this._tabHidden) { this._suspicionScore += 1; }
+    if (this._suspicionScore > 100) {
+      this.emit('notification', { type:'danger', text:'Suspicious activity detected. Progress may be reverted.' });
+      this._suspicionScore = 50; // reset but keep elevated
+    }
 
-    if (this.state.combat.active) this.tickCombat(dt);
-    else if (this.state.activeSkill && this.state.activeAction) this.tickSkill(dt);
+    if (this.state.combat.active) this.tickCombat(safeDt);
+    else if (this.state.activeSkill && this.state.activeAction) this.tickSkill(safeDt);
 
     this.tickFarming(now);
-    this.tickBuffs(dt);
-    this.tickAbilityCooldowns(dt);
+    this.tickBuffs(safeDt);
+    this.tickAbilityCooldowns(safeDt);
     this.checkAchievements();
     this.emit('tick', this.state);
   }
