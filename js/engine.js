@@ -515,6 +515,20 @@ class GameEngine {
       this.addXp('defence', Math.floor(xp * 0.2));
     }
     this.addXp('hitpoints', Math.floor(xp * 0.33));
+    // Emit XP gain notification so player can SEE what they got
+    const xpParts = [];
+    if (style === 'melee') {
+      if (xpMode === 'accurate')        xpParts.push(`+${Math.floor(xp*0.9)} Atk`);
+      else if (xpMode === 'aggressive') xpParts.push(`+${Math.floor(xp*0.9)} Str`);
+      else if (xpMode === 'defensive')  xpParts.push(`+${Math.floor(xp*0.9)} Def`);
+      else { xpParts.push(`+${Math.floor(xp*0.33)} Atk`); xpParts.push(`+${Math.floor(xp*0.33)} Str`); xpParts.push(`+${Math.floor(xp*0.34)} Def`); }
+    } else if (style === 'ranged') {
+      xpParts.push(`+${Math.floor(xp*0.8)} Rng`);
+    } else {
+      xpParts.push(`+${Math.floor(xp*0.8)} Mag`);
+    }
+    xpParts.push(`+${Math.floor(xp*0.33)} HP`);
+    this.emit('xpGain', { text: xpParts.join(', '), total: xp });
 
     if (monster.gold) {
       let g = this.randInt(monster.gold.min, monster.gold.max);

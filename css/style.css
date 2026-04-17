@@ -2340,3 +2340,29 @@ html, body {
   .landing-logo-svg { width: 240px; }
   .landing-btn { padding: 12px 32px; }
 }
+
+/* XP Gain Popup */
+.xp-gain-popup {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a8a3e;
+  text-shadow: 0 0 8px rgba(74,138,62,0.5);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: xpPopup 1.5s ease-out forwards;
+  z-index: 20;
+  background: rgba(10,6,4,0.85);
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(74,138,62,0.3);
+}
+@keyframes xpPopup {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  30% { opacity: 1; transform: translateX(-50%) translateY(-12px); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+}

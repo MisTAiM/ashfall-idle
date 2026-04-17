@@ -120,6 +120,7 @@ class UI {
     this.engine.on('combatStart', () => { this.currentPage = 'combat'; this.renderTrainingBar(); this.renderSidebar(); this.renderPage('combat'); });
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatHit', (d) => this.showHitSplat(d));
+    this.engine.on('xpGain', (d) => this.showXpGain(d));
     this.engine.on('equipmentChanged', () => { if (this.currentPage === 'equipment' || this.currentPage === 'bank') this.renderPage(this.currentPage); });
     this.engine.on('farmingChanged', () => { if (this.currentPage === 'farming') this.renderPage(this.currentPage); });
     this.engine.on('foodChanged', () => {});
@@ -1747,6 +1748,18 @@ class UI {
     splat.style.left = (20 + Math.random() * 60) + '%';
     area.appendChild(splat);
     setTimeout(() => splat.remove(), 900);
+  }
+
+  showXpGain(d) {
+    // Show floating XP text above the XP panel
+    const panel = document.getElementById('combat-xp-panel');
+    if (!panel) return;
+    const popup = document.createElement('div');
+    popup.className = 'xp-gain-popup';
+    popup.textContent = d.text;
+    panel.style.position = 'relative';
+    panel.appendChild(popup);
+    setTimeout(() => popup.remove(), 1500);
   }
 
   onTick() {
