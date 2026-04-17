@@ -114,6 +114,7 @@ class UI {
     this.engine.on('skillStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatStart', () => { this.currentPage = 'combat'; this.renderTrainingBar(); this.renderSidebar(); this.renderPage('combat'); });
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
+    this.engine.on('combatHit', (d) => this.showHitSplat(d));
     this.engine.on('equipmentChanged', () => { if (this.currentPage === 'equipment' || this.currentPage === 'bank') this.renderPage(this.currentPage); });
     this.engine.on('farmingChanged', () => { if (this.currentPage === 'farming') this.renderPage(this.currentPage); });
     this.engine.on('foodChanged', () => {});
@@ -339,15 +340,28 @@ class UI {
     const s = this.engine.state, c = s.combat;
     let html = this.header('Combat','combat','Fight monsters for XP, gold, and loot.', null);
     html += `<div class="combat-stats-bar">
-      <span>Atk: ${s.skills.attack.level}</span><span>Str: ${s.skills.strength.level}</span><span>Def: ${s.skills.defence.level}</span>
-      <span>HP: ${s.skills.hitpoints.level}</span><span>Rng: ${s.skills.ranged.level}</span><span>Mag: ${s.skills.magic.level}</span>
-      <span>Style: ${c.combatStyle}</span>
+      <span>Atk: <b id="cs-atk">${s.skills.attack.level}</b></span><span>Str: <b id="cs-str">${s.skills.strength.level}</b></span><span>Def: <b id="cs-def">${s.skills.defence.level}</b></span>
+      <span>HP: <b id="cs-hp">${s.skills.hitpoints.level}</b></span><span>Rng: <b id="cs-rng">${s.skills.ranged.level}</b></span><span>Mag: <b id="cs-mag">${s.skills.magic.level}</b></span>
+      <span>Cb: <b>${this.engine.getCombatLevel()}</b></span>
     </div>`;
     html += `<div class="combat-style-select">
+      <div class="style-group"><span class="style-label">Style:</span>
       <button class="btn btn-sm ${c.combatStyle==='melee'?'btn-active':''}" onclick="ui.setStyle('melee')">Melee</button>
       <button class="btn btn-sm ${c.combatStyle==='ranged'?'btn-active':''}" onclick="ui.setStyle('ranged')">Ranged</button>
-      <button class="btn btn-sm ${c.combatStyle==='magic'?'btn-active':''}" onclick="ui.setStyle('magic')">Magic</button>
-    </div>`;
+      <button class="btn btn-sm ${c.combatStyle==='magic'?'btn-active':''}" onclick="ui.setStyle('magic')">Magic</button></div>`;
+    // XP Mode selector
+    const xpMode = c.xpMode || 'controlled';
+    html += '<div class="style-group"><span class="style-label">XP:</span>';
+    if (c.combatStyle === 'melee') {
+      for (const [id,label] of [['accurate','Atk'],['aggressive','Str'],['defensive','Def'],['controlled','Shared']]) {
+        html += `<button class="btn btn-xs ${xpMode===id?'btn-active':''}" onclick="ui.setXpMode('${id}')">${label}</button>`;
+      }
+    } else if (c.combatStyle === 'ranged') {
+      for (const [id,label] of [['accurate','Accurate'],['rapid','Rapid'],['longrange','Longrange']]) {
+        html += `<button class="btn btn-xs ${xpMode===id?'btn-active':''}" onclick="ui.setXpMode('${id}')">${label}</button>`;
+      }
+    } else { html += '<span style="font-size:11px;color:var(--text-dim)">80% Magic / 20% Def</span>'; }
+    html += '</div></div>';
     if (c.combatStyle === 'magic') {
       const bookName = GAME_DATA.spellbooks[s.activeSpellbook||'standard']?.name || 'Standard';
       html += `<div class="spell-select"><span class="spell-label">${bookName}:</span>`;
@@ -359,18 +373,20 @@ class UI {
       }
       html += '</div>';
     }
-    // Prayer display in combat
-    if (s.activePrayers && s.activePrayers.length > 0) {
-      html += '<div class="prayer-combat-bar">';
-      for (const pid of s.activePrayers) {
-        const p = GAME_DATA.prayers.find(x=>x.id===pid);
-        if (p) html += `<span class="status-tag" style="background:#c9873e22;color:#c9873e">${p.name} (${p.pointCost}pp/atk)</span>`;
-      }
-      html += `<span class="food-label" style="margin-left:8px">PP: ${s.prayerPoints}</span></div>`;
+    // Prayer quick-select panel in combat
+    html += `<div class="prayer-combat-panel">
+      <span class="style-label">Prayers (<span id="pp-live">${s.prayerPoints}</span> pts, ${s.activePrayers.length}/2):</span>
+      <div class="prayer-quick-btns">`;
+    for (const p of GAME_DATA.prayers) {
+      if (s.skills.prayer.level < p.level) continue;
+      const active = s.activePrayers.includes(p.id);
+      html += `<button class="btn btn-xs prayer-btn ${active?'prayer-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc} (${p.pointCost} pts/atk)">${p.name}</button>`;
     }
+    if (s.skills.prayer.level < 1 || !GAME_DATA.prayers) html += '<span style="font-size:11px;color:var(--text-dim)">Train Prayer to unlock</span>';
+    html += `</div></div>`;
     html += `<div class="food-bar">
       <span class="food-label">Food:</span>
-      ${s.food.equipped ? `<span class="food-item">${GAME_DATA.items[s.food.equipped]?.name} x${s.food.qty}</span>` : '<span class="food-empty">None equipped</span>'}
+      ${s.food.equipped ? `<span class="food-item">${GAME_DATA.items[s.food.equipped]?.name} x<span id="food-qty">${s.food.qty}</span> <small>(+${GAME_DATA.items[s.food.equipped]?.heals||0} hp)</small></span>` : '<span class="food-empty">None (equip from Bank)</span>'}
       <button class="btn btn-sm" onclick="game.eatFood()">Eat</button>
       <label class="auto-eat-label"><input type="checkbox" ${c.autoEat?'checked':''} onchange="ui.toggleAutoEat()"> Auto-Eat</label>
     </div>`;
@@ -381,16 +397,18 @@ class UI {
       const mHp = Math.max(0, c.monsterHp / mon.hp * 100);
       html += `<div class="combat-arena">
         <div class="combatant player-side">
-          <div class="combatant-name">You</div>
-          <div class="hp-bar"><div class="hp-fill player-hp" style="width:${pHp.toFixed(1)}%"></div></div>
-          <div class="hp-text">${Math.max(0,c.playerHp)} / ${max}</div>
+          <div class="combatant-name">You <small>(${this.engine.getPlayerAttackSpeed().toFixed(1)}s)</small></div>
+          <div class="hp-bar"><div class="hp-fill player-hp" id="php-bar" style="width:${pHp.toFixed(1)}%"></div></div>
+          <div class="hp-text" id="php-text">${Math.max(0,Math.floor(c.playerHp))} / ${max}</div>
+          <div class="splat-area" id="player-splats"></div>
           ${this.renderStatusEffects(c.statusEffects.player)}
         </div>
         <div class="combat-vs">VS</div>
         <div class="combatant monster-side">
           <div class="combatant-name">${mon.name} <small>(Lv ${mon.combatLevel})</small></div>
-          <div class="hp-bar"><div class="hp-fill monster-hp" style="width:${mHp.toFixed(1)}%"></div></div>
-          <div class="hp-text">${Math.max(0,Math.ceil(c.monsterHp))} / ${mon.hp}</div>
+          <div class="hp-bar"><div class="hp-fill monster-hp" id="mhp-bar" style="width:${mHp.toFixed(1)}%"></div></div>
+          <div class="hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp))} / ${mon.hp}</div>
+          <div class="splat-area" id="monster-splats"></div>
           ${this.renderStatusEffects(c.statusEffects.monster)}
         </div>
       </div>`;
@@ -558,26 +576,75 @@ class UI {
     const s = this.engine.state;
     const entries = Object.entries(s.bank).filter(([,q])=>q>0).sort((a,b)=>a[0].localeCompare(b[0]));
     let html = this.header('Bank','bank',`${entries.length} unique items stored.`,null);
-    html += `<div class="bank-gold">${icon('coin',20)} ${this.fmt(s.gold)} Gold</div>`;
+    html += `<div class="bank-gold" id="bank-gold">${icon('coin',20)} <span id="bank-gold-val">${this.fmt(s.gold)}</span> Gold</div>`;
+
+    // Bank tabs
+    const tab = this._bankTab || 'all';
+    const tabs = [
+      {id:'all',label:'All'},
+      {id:'equipment',label:'Equipment'},
+      {id:'resources',label:'Resources'},
+      {id:'food',label:'Food/Potions'},
+      {id:'runes',label:'Runes'},
+      {id:'misc',label:'Misc'},
+    ];
+    html += '<div class="bank-tabs">';
+    for (const t of tabs) {
+      html += `<button class="bank-tab ${tab===t.id?'active':''}" onclick="ui.setBankTab('${t.id}')">${t.label}</button>`;
+    }
+    html += '</div>';
+
+    // Filter items by tab
+    const filtered = entries.filter(([id]) => {
+      const item = GAME_DATA.items[id]; if (!item) return false;
+      if (tab === 'all') return true;
+      if (tab === 'equipment') return item.type === 'weapon' || item.type === 'armor' || item.type === 'ammo';
+      if (tab === 'resources') return item.type === 'resource';
+      if (tab === 'food') return item.type === 'food' || item.type === 'potion';
+      if (tab === 'runes') return item.subtype === 'rune';
+      if (tab === 'misc') return item.type === 'seed' || (item.subtype === 'misc' && item.subtype !== 'rune');
+      return true;
+    });
+
     html += '<div class="bank-grid">';
-    for (const [id, q] of entries) {
+    for (const [id, q] of filtered) {
       const item = GAME_DATA.items[id]; if (!item) continue;
-      html += `<div class="bank-item" title="${item.desc}">
+      // Build stat string for tooltips
+      let statStr = '';
+      if (item.stats) {
+        const parts = [];
+        for (const [k,v] of Object.entries(item.stats)) {
+          if (v) parts.push(`+${v} ${k.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}`);
+        }
+        statStr = parts.join(', ');
+      }
+      if (item.heals) statStr += (statStr?', ':'') + `Heals ${item.heals}`;
+      if (item.rangedBonus && item.type === 'ammo') statStr += (statStr?', ':'') + `+${item.rangedBonus} ranged`;
+      if (item.levelReq) {
+        const reqs = Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ');
+        statStr += (statStr?' | ':'') + `Req: ${reqs}`;
+      }
+
+      html += `<div class="bank-item" title="${item.desc}${statStr?'\n'+statStr:''}">
         <div class="bi-icon">${window.renderItemSprite ? window.renderItemSprite(id, 32) : ''}</div>
         <div class="bi-name">${item.name}</div>
+        ${statStr ? `<div class="bi-stats">${statStr}</div>` : ''}
         <div class="bi-qty">x${this.fmt(q)}</div>
         <div class="bi-actions">
           ${item.slot ? `<button class="btn btn-xs" onclick="game.equipItem('${id}')">Equip</button>` : ''}
           ${item.type==='food'||item.type==='potion' ? `<button class="btn btn-xs" onclick="game.equipFood('${id}')">Eat/Use</button>` : ''}
-          ${item.sellPrice>0 ? `<button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',1)">Sell (${item.sellPrice}g)</button>` : ''}
+          ${GAME_DATA.boneValues && GAME_DATA.boneValues[id] ? `<button class="btn btn-xs" onclick="game.buryBones('${id}',${q})">Bury All</button>` : ''}
+          ${item.sellPrice>0 ? `<button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',1)">Sell ${item.sellPrice}g</button>` : ''}
           ${item.sellPrice>0&&q>=10 ? `<button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',${q})">Sell All</button>` : ''}
         </div>
       </div>`;
     }
-    if (entries.length === 0) html += '<div class="bank-empty">Your bank is empty. Start gathering!</div>';
+    if (filtered.length === 0) html += `<div class="bank-empty">${tab==='all'?'Your bank is empty. Start gathering!':'No items in this category.'}</div>`;
     html += '</div>';
     el.innerHTML = html;
   }
+
+  setBankTab(tab) { this._bankTab = tab; this.renderPage('bank'); }
 
   renderShopPage(el) {
     const s = this.engine.state;
@@ -1302,7 +1369,8 @@ class UI {
   // ── ACTIONS ────────────────────────────────────────────
   startAction(sId, aId) { this.engine.startSkill(sId, aId); }
   stopAction() { this.engine.stopSkill(); this.renderPage(this.currentPage); }
-  setStyle(s) { this.engine.state.combat.combatStyle = s; this.renderPage('combat'); }
+  setStyle(s) { this.engine.state.combat.combatStyle = s; this.engine.state.combat.xpMode = s==='melee'?'controlled':s==='ranged'?'accurate':'standard'; this.renderPage('combat'); }
+  setXpMode(m) { this.engine.state.combat.xpMode = m; this.renderPage('combat'); }
   selectSpell(id) { this.engine.state.combat.selectedSpell = id; this.renderPage('combat'); }
   toggleAutoEat() { this.engine.state.combat.autoEat = !this.engine.state.combat.autoEat; }
 
@@ -1329,57 +1397,114 @@ class UI {
     setTimeout(()=>{ t.classList.remove('toast-show'); setTimeout(()=>t.remove(), 300); }, 3500);
   }
 
+  showHitSplat(d) {
+    const area = d.who === 'player' ? document.getElementById('monster-splats') : document.getElementById('player-splats');
+    if (!area) return;
+    const splat = document.createElement('div');
+    splat.className = `hit-splat ${d.miss ? 'splat-miss' : d.dmg > 20 ? 'splat-big' : 'splat-hit'}`;
+    splat.textContent = d.miss ? 'Miss' : d.dmg;
+    splat.style.left = (20 + Math.random() * 60) + '%';
+    area.appendChild(splat);
+    setTimeout(() => splat.remove(), 900);
+  }
+
   onTick() {
     const s = this.engine.state;
-    // Update training bar progress
+
+    // ── TRAINING BAR (always visible) ──
     const tbFill = document.querySelector('.tb-fill');
     if (tbFill && s.activeSkill && s.activeAction) {
       const action = this.engine._findAction(s.activeSkill, s.activeAction);
       if (action) {
-        const reduction = 1 + (this.engine.getMasteryLevel(s.activeSkill, action.masteryId||action.id) * 0.005);
-        const t = action.time / reduction;
-        const p = Math.min(1, Math.max(0, s.actionProgress / t));
-        tbFill.style.width = (p * 100).toFixed(0) + '%';
+        const red = 1 + (this.engine.getMasteryLevel(s.activeSkill, action.masteryId||action.id) * 0.005);
+        tbFill.style.width = (Math.min(1, Math.max(0, s.actionProgress / (action.time / red))) * 100).toFixed(0) + '%';
       }
     }
-    // Update inline action bar on skill pages
+
+    // ── INLINE ACTION BAR on skill pages ──
     const aaFill = document.querySelector('.aa-fill');
     if (aaFill && s.activeSkill && s.activeAction) {
       const action = this.engine._findAction(s.activeSkill, s.activeAction);
       if (action) {
-        const reduction = 1 + (this.engine.getMasteryLevel(s.activeSkill, action.masteryId||action.id) * 0.005);
-        const t = action.time / reduction;
-        const p = Math.min(1, Math.max(0, s.actionProgress / t));
-        aaFill.style.width = (p * 100).toFixed(0) + '%';
+        const red = 1 + (this.engine.getMasteryLevel(s.activeSkill, action.masteryId||action.id) * 0.005);
+        aaFill.style.width = (Math.min(1, Math.max(0, s.actionProgress / (action.time / red))) * 100).toFixed(0) + '%';
       }
     }
-    // Combat HP updates
+
+    // ── SIDEBAR gold (always visible) ──
+    const gv = document.querySelector('.gold-val');
+    if (gv) gv.textContent = this.fmt(s.gold);
+
+    // ── XP BAR on skill pages ──
+    const xpFill = document.querySelector('.sh-xp-fill:not(.growing-fill):not(.rep-fill)');
+    if (xpFill && this.currentPage) {
+      const sk = GAME_DATA.skills[this.currentPage];
+      if (sk && s.skills[this.currentPage]) {
+        const p = this.engine.getXpProgress(this.currentPage);
+        xpFill.style.width = (p * 100).toFixed(1) + '%';
+      }
+    }
+    // Update XP text on skill pages
+    const xpText = document.querySelector('.sh-xp-text');
+    if (xpText && s.skills[this.currentPage]) {
+      const sk = s.skills[this.currentPage];
+      const next = sk.level >= 99 ? 'MAX' : this.fmt(this.engine.getXpForLevel(sk.level + 1) - sk.xp);
+      xpText.textContent = `${this.fmt(sk.xp)} XP ${sk.level<99?`(${next} to next)`:''}`;
+    }
+    // Update level display
+    const lvDisp = document.querySelector('.sh-level');
+    if (lvDisp && s.skills[this.currentPage]) lvDisp.textContent = `Level ${s.skills[this.currentPage].level}`;
+
+    // ── COMBAT PAGE live updates ──
     if (s.combat.active && s.combat.monster) {
       const mon = GAME_DATA.monsters[s.combat.monster] || GAME_DATA.worldBosses.find(b=>b.id===s.combat.monster);
-      const max = this.engine.getMaxHp();
-      const pEl = document.querySelector('.player-hp');
-      const mEl = document.querySelector('.monster-hp');
-      const hps = document.querySelectorAll('.hp-text');
-      if (pEl) pEl.style.width = Math.max(0, s.combat.playerHp/max*100).toFixed(1) + '%';
-      if (mEl) mEl.style.width = Math.max(0, s.combat.monsterHp/mon.hp*100).toFixed(1) + '%';
-      if (hps[0]) hps[0].textContent = `${Math.max(0,s.combat.playerHp)} / ${max}`;
-      if (hps[1]) hps[1].textContent = `${Math.max(0,Math.ceil(s.combat.monsterHp))} / ${mon.hp}`;
+      if (mon) {
+        const max = this.engine.getMaxHp();
+        // HP bars
+        const phpBar = document.getElementById('php-bar');
+        const mhpBar = document.getElementById('mhp-bar');
+        const phpText = document.getElementById('php-text');
+        const mhpText = document.getElementById('mhp-text');
+        if (phpBar) phpBar.style.width = Math.max(0, s.combat.playerHp / max * 100).toFixed(1) + '%';
+        if (mhpBar) mhpBar.style.width = Math.max(0, s.combat.monsterHp / mon.hp * 100).toFixed(1) + '%';
+        if (phpText) phpText.textContent = `${Math.max(0,Math.floor(s.combat.playerHp))} / ${max}`;
+        if (mhpText) mhpText.textContent = `${Math.max(0,Math.ceil(s.combat.monsterHp))} / ${mon.hp}`;
+        // Prayer points
+        const ppEl = document.getElementById('pp-live');
+        if (ppEl) ppEl.textContent = s.prayerPoints;
+        // Food qty
+        const fqEl = document.getElementById('food-qty');
+        if (fqEl) fqEl.textContent = s.food.qty;
+        // Combat stat levels
+        const csAtk = document.getElementById('cs-atk');
+        if (csAtk) csAtk.textContent = s.skills.attack.level;
+        const csStr = document.getElementById('cs-str');
+        if (csStr) csStr.textContent = s.skills.strength.level;
+        const csDef = document.getElementById('cs-def');
+        if (csDef) csDef.textContent = s.skills.defence.level;
+        const csHp = document.getElementById('cs-hp');
+        if (csHp) csHp.textContent = s.skills.hitpoints.level;
+        const csRng = document.getElementById('cs-rng');
+        if (csRng) csRng.textContent = s.skills.ranged.level;
+        const csMag = document.getElementById('cs-mag');
+        if (csMag) csMag.textContent = s.skills.magic.level;
+      }
     }
-    // Sidebar gold
-    const g = document.querySelector('.gold-val');
-    if (g) g.textContent = this.fmt(s.gold);
-    // XP bar on skill pages
-    const xpFill = document.querySelector('.sh-xp-fill:not(.growing-fill):not(.rep-fill)');
-    if (xpFill && s.activeSkill && s.skills[s.activeSkill]) {
-      const p = this.engine.getXpProgress(s.activeSkill);
-      xpFill.style.width = (p*100).toFixed(1) + '%';
-    }
-    // Farm timers
+
+    // ── FARM TIMERS ──
     document.querySelectorAll('.plot-timer').forEach((el, i) => {
       const plot = s.farming.plots[i];
       if (plot && plot.plantedAt && !plot.ready) {
         const left = Math.max(0, Math.ceil((plot.growTime - (Date.now()-plot.plantedAt))/1000));
         el.textContent = this.fmtTime(left);
+      }
+    });
+    // Farm progress bars
+    document.querySelectorAll('.growing-fill').forEach((el, i) => {
+      const plot = s.farming.plots[i];
+      if (plot && plot.plantedAt && !plot.ready) {
+        const pct = Math.min(100, (Date.now() - plot.plantedAt) / plot.growTime * 100);
+        el.style.width = pct.toFixed(1) + '%';
       }
     });
   }

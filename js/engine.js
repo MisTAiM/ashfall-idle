@@ -40,6 +40,7 @@ class GameEngine {
         playerAttackTimer:0, monsterAttackTimer:0,
         selectedSpell:null, combatStyle:'melee', autoEat:true,
         statusEffects:{player:{}, monster:{}}, abilityCooldowns:{}, activeBuffs:[],
+        xpMode:'controlled', // melee: accurate/aggressive/defensive/controlled | ranged: accurate/rapid/longrange | magic: standard
       },
       farming: { plots:[{seed:null,plantedAt:null,growTime:0,ready:false},{seed:null,plantedAt:null,growTime:0,ready:false},{seed:null,plantedAt:null,growTime:0,ready:false}] },
       mastery: {},
@@ -73,6 +74,7 @@ class GameEngine {
     if (!s.combat.statusEffects) s.combat.statusEffects = { player:{}, monster:{} };
     if (!s.combat.abilityCooldowns) s.combat.abilityCooldowns = {};
     if (!s.combat.activeBuffs) s.combat.activeBuffs = [];
+    if (!s.combat.xpMode) s.combat.xpMode = 'controlled';
     if (s.stats.worldBossKills === undefined) s.stats.worldBossKills = 0;
     if (s.stats.questsCompleted === undefined) s.stats.questsCompleted = 0;
     // v3 fields
@@ -331,7 +333,8 @@ class GameEngine {
     c.playerAttackTimer += dt;
     if (c.playerAttackTimer >= playerSpeed) { c.playerAttackTimer -= playerSpeed; this.playerAttack(monster); }
     c.monsterAttackTimer += dt;
-    if (c.monsterAttackTimer >= monster.attackSpeed) { c.monsterAttackTimer -= monster.attackSpeed; this.monsterAttack(monster); }
+    const monsterSpeed = monster.attackSpeed * 0.7; // 30% faster monsters too
+    if (c.monsterAttackTimer >= monsterSpeed) { c.monsterAttackTimer -= monsterSpeed; this.monsterAttack(monster); }
     if (c.monsterHp <= 0) this.onMonsterDeath(monster, isWB);
     if (c.playerHp <= 0) this.onPlayerDeath();
     // Drain prayer points per attack cycle
@@ -370,19 +373,28 @@ class GameEngine {
   playerAttack(monster) {
     const style = this.state.combat.combatStyle;
     let accuracy, maxHit;
+    // Prayer percentage bonuses
+    const pAtkB = this.getPrayerBonus('attackBonus');
+    const pStrB = this.getPrayerBonus('strengthBonus');
+    const pDefB = this.getPrayerBonus('defenceBonus');
+    const pRngB = this.getPrayerBonus('rangedBonus');
+    const pMagB = this.getPrayerBonus('magicBonus');
+
     if (style === 'melee') {
-      const aL = this.state.skills.attack.level, sL = this.state.skills.strength.level;
+      const aL = Math.floor(this.state.skills.attack.level * (1 + pAtkB/100));
+      const sL = Math.floor(this.state.skills.strength.level * (1 + pStrB/100));
       const aB = this.getStatTotal('attackBonus'), sB = this.getStatTotal('strengthBonus');
       accuracy = (aL + 8) * (aB + 64);
       maxHit = Math.floor(0.5 + sL * (sB + 64) / 640);
     } else if (style === 'ranged') {
-      const rL = this.state.skills.ranged.level;
+      const rL = Math.floor(this.state.skills.ranged.level * (1 + pRngB/100));
       const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
       accuracy = (rL + 8) * (rB + 64);
       maxHit = Math.floor(0.5 + rL * (rB + 64) / 640);
       this.consumeAmmo();
     } else {
-      const mL = this.state.skills.magic.level, mB = this.getStatTotal('magicBonus');
+      const mL = Math.floor(this.state.skills.magic.level * (1 + pMagB/100));
+      const mB = this.getStatTotal('magicBonus');
       const spell = this.getActiveSpell();
       accuracy = (mL + 8) * (mB + 64);
       maxHit = spell ? spell.maxHit + Math.floor(mB * 0.5) : Math.floor(mL * 0.3);
@@ -418,7 +430,7 @@ class GameEngine {
   }
 
   monsterAttack(monster) {
-    const dL = this.state.skills.defence.level;
+    const dL = Math.floor(this.state.skills.defence.level * (1 + this.getPrayerBonus('defenceBonus')/100));
     const dB = this.getStatTotal('defenceBonus');
     const dr = this.getStatTotal('damageReduction');
     const ev = (dL + 8) * (dB + 64);
@@ -427,6 +439,13 @@ class GameEngine {
     if (Math.random() < ch) {
       let dmg = this.randInt(1, monster.maxHit);
       dmg = Math.max(1, Math.floor(dmg * (100 - dr) / 100));
+      // Prayer protection
+      const protMelee = this.getPrayerBonus('protectMelee');
+      const protRanged = this.getPrayerBonus('protectRanged');
+      const protMagic = this.getPrayerBonus('protectMagic');
+      if (monster.style === 'melee' && protMelee) dmg = Math.max(1, Math.floor(dmg * (100 - protMelee) / 100));
+      if (monster.style === 'ranged' && protRanged) dmg = Math.max(1, Math.floor(dmg * (100 - protRanged) / 100));
+      if (monster.style === 'magic' && protMagic) dmg = Math.max(1, Math.floor(dmg * (100 - protMagic) / 100));
       this.state.combat.playerHp -= dmg;
       this.emit('combatHit', { who:'monster', dmg });
     }
@@ -439,15 +458,19 @@ class GameEngine {
     this.state.stats.uniqueKills[mId] = (this.state.stats.uniqueKills[mId] || 0) + 1;
 
     const style = this.state.combat.combatStyle;
+    const xpMode = this.state.combat.xpMode || 'controlled';
     const evilBonus = (GAME_DATA.alignments[this.state.alignment]?.bonus?.combatXpEvil && monster.alignment && monster.alignment.includes('E')) ? 1.15 : 1;
     const xp = Math.floor(monster.xp * evilBonus);
+    // Distribute combat XP based on selected mode
     if (style === 'melee') {
-      this.addXp('attack', Math.floor(xp * 0.4));
-      this.addXp('strength', Math.floor(xp * 0.4));
-      this.addXp('defence', Math.floor(xp * 0.2));
+      if (xpMode === 'accurate')        { this.addXp('attack', Math.floor(xp * 0.9)); this.addXp('defence', Math.floor(xp * 0.1)); }
+      else if (xpMode === 'aggressive') { this.addXp('strength', Math.floor(xp * 0.9)); this.addXp('defence', Math.floor(xp * 0.1)); }
+      else if (xpMode === 'defensive')  { this.addXp('defence', Math.floor(xp * 0.9)); this.addXp('attack', Math.floor(xp * 0.1)); }
+      else /* controlled */             { this.addXp('attack', Math.floor(xp * 0.33)); this.addXp('strength', Math.floor(xp * 0.33)); this.addXp('defence', Math.floor(xp * 0.34)); }
     } else if (style === 'ranged') {
-      this.addXp('ranged', Math.floor(xp * 0.8));
-      this.addXp('defence', Math.floor(xp * 0.2));
+      if (xpMode === 'accurate')        { this.addXp('ranged', Math.floor(xp * 0.9)); this.addXp('defence', Math.floor(xp * 0.1)); }
+      else if (xpMode === 'rapid')      { this.addXp('ranged', xp); }
+      else /* longrange */              { this.addXp('ranged', Math.floor(xp * 0.5)); this.addXp('defence', Math.floor(xp * 0.5)); }
     } else {
       this.addXp('magic', Math.floor(xp * 0.8));
       this.addXp('defence', Math.floor(xp * 0.2));
@@ -544,8 +567,10 @@ class GameEngine {
   getPlayerAttackSpeed() {
     const w = this.getEquippedItem('weapon');
     let speed = w ? w.attackSpeed : 2.4;
+    // Global speed boost - 40% faster combat
+    speed *= 0.6;
     for (const buff of this.state.combat.activeBuffs) if (buff.stat === 'speedBonus') speed *= (1 - buff.value/100);
-    return speed;
+    return Math.max(0.4, speed);
   }
 
   getStatTotal(stat) {
