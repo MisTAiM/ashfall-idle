@@ -90,6 +90,13 @@ const NAV = [
     {id:'statistics',label:'Statistics',icon:'stats'},
     {id:'settings_page',label:'Settings',icon:'settings'},
   ]},
+  { header:'Online', items:[
+    {id:'account',label:'Account',icon:'npc'},
+    {id:'chat',label:'Global Chat',icon:'scroll'},
+    {id:'pvp_arena',label:'PvP Arena',icon:'combat'},
+    {id:'bounty_board',label:'Bounty Board',icon:'coin'},
+    {id:'leaderboard',label:'Leaderboard',icon:'trophy'},
+  ]},
 ];
 
 class UI {
@@ -115,6 +122,13 @@ class UI {
     this.engine.on('slayerChanged', () => { if (this.currentPage === 'slayer') this.renderPage('slayer'); });
     this.engine.on('petFound', () => { if (this.currentPage === 'pets') this.renderPage('pets'); });
     this.engine.on('init', () => { this.renderSidebar(); this.renderTrainingBar(); this.renderPage(this.currentPage); });
+    // Online events
+    if (typeof online !== 'undefined') {
+      online.on('notification', (n) => this.toast(n));
+      online.on('authChanged', () => { this.renderSidebar(); if (this.currentPage === 'account') this.renderPage('account'); });
+      online.on('status', (s) => { if (!s.online) console.log('Offline:', s.reason); });
+      online.init();
+    }
   }
 
   renderSidebar() {
@@ -130,6 +144,7 @@ class UI {
       <div class="pi-row"><span>Total Lvl</span><span class="pi-val">${this.engine.getTotalLevel()}</span></div>
       <div class="pi-row"><span>${icon('coin',12)} Gold</span><span class="pi-val gold-val">${this.fmt(s.gold)}</span></div>
       <div class="pi-row"><span>Alignment</span><span class="pi-val align-val">${align.axis}</span></div>
+      ${typeof online !== 'undefined' && online.isOnline ? `<div class="pi-row"><span class="online-dot">Online</span><span class="pi-val" style="font-size:11px">${online.displayName || 'Survivor'}</span></div>` : '<div class="pi-row"><span class="offline-dot">Offline</span><span class="pi-val" style="font-size:11px;color:var(--text-dim)">Local Only</span></div>'}
     </div>`;
     for (const sec of NAV) {
       html += `<div class="nav-section"><div class="nav-header">${sec.header}</div>`;
@@ -184,6 +199,11 @@ class UI {
   }
 
   renderPage(pageId) {
+    // Clean up previous page listeners
+    if (typeof online !== 'undefined' && this._lastPage === 'chat' && pageId !== 'chat') {
+      online.stopChatListener();
+    }
+    this._lastPage = pageId;
     const main = document.getElementById('main-content');
     const skill = GAME_DATA.skills[pageId];
     if (skill && (skill.type === 'gathering' || skill.type === 'artisan')) this.renderSkillPage(main, pageId, skill);
@@ -209,6 +229,11 @@ class UI {
     else if (pageId === 'slayer') this.renderSlayerPage(main);
     else if (pageId === 'pets') this.renderPetsPage(main);
     else if (pageId === 'spellbooks') this.renderSpellbooksPage(main);
+    else if (pageId === 'account') this.renderAccountPage(main);
+    else if (pageId === 'chat') this.renderChatPage(main);
+    else if (pageId === 'pvp_arena') this.renderPvPPage(main);
+    else if (pageId === 'bounty_board') this.renderBountyPage(main);
+    else if (pageId === 'leaderboard') this.renderLeaderboardPage(main);
     else main.innerHTML = '<div class="page-empty">Select a page from the sidebar.</div>';
   }
 
@@ -992,6 +1017,286 @@ class UI {
     }
     html += '</div>';
     el.innerHTML = html;
+  }
+
+  // ── ACCOUNT PAGE ────────────────────────────────────────
+  renderAccountPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    const user = isOnline ? online.user : null;
+    const isAnon = user?.isAnonymous;
+    let html = this.header('Account','npc','Manage your online account, cloud saves, and display name.',null);
+
+    if (!isOnline) {
+      html += `<div class="alignment-display">
+        <div class="al-current">Offline Mode</div>
+        <div class="al-desc">Firebase is not configured. Online features are disabled. To enable them, edit <code>js/firebase-config.js</code> with your Firebase project credentials. See the file for full setup instructions.</div>
+      </div>`;
+    } else if (user && !isAnon) {
+      html += `<div class="alignment-display">
+        <div class="al-current">Signed in as <strong>${online.displayName}</strong></div>
+        <div class="al-desc">Email: ${user.email}</div>
+        <div class="al-points">UID: ${user.uid}</div>
+        <div class="shop-btns" style="margin-top:12px">
+          <button class="btn btn-sm" onclick="online.saveToCloud()">Save to Cloud</button>
+          <button class="btn btn-sm" onclick="ui.cloudLoad()">Load from Cloud</button>
+          <button class="btn btn-sm btn-danger" onclick="online.signOut()">Sign Out</button>
+        </div>
+      </div>`;
+      html += `<div class="settings-section" style="margin-top:16px">
+        <h3>Change Display Name</h3>
+        <div style="display:flex;gap:8px"><input type="text" id="name-input" class="chat-input" placeholder="New display name" value="${online.displayName||''}"><button class="btn btn-sm" onclick="online.setDisplayName(document.getElementById('name-input').value)">Update</button></div>
+      </div>`;
+    } else if (user && isAnon) {
+      html += `<div class="alignment-display">
+        <div class="al-current">Anonymous Session</div>
+        <div class="al-desc">Create an account to save progress to the cloud, appear on leaderboards, and keep your data across devices.</div>
+      </div>`;
+      html += `<div class="settings-section" style="margin-top:16px">
+        <h3>Create Account</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;max-width:340px">
+          <input type="text" id="reg-name" class="chat-input" placeholder="Display Name">
+          <input type="email" id="reg-email" class="chat-input" placeholder="Email">
+          <input type="password" id="reg-pass" class="chat-input" placeholder="Password (6+ chars)">
+          <button class="btn" onclick="online.createAccount(document.getElementById('reg-email').value, document.getElementById('reg-pass').value, document.getElementById('reg-name').value)">Create Account</button>
+        </div>
+        <h3 style="margin-top:16px">Or Sign In</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;max-width:340px">
+          <input type="email" id="login-email" class="chat-input" placeholder="Email">
+          <input type="password" id="login-pass" class="chat-input" placeholder="Password">
+          <button class="btn" onclick="online.signIn(document.getElementById('login-email').value, document.getElementById('login-pass').value)">Sign In</button>
+        </div>
+      </div>`;
+      html += `<div class="settings-section" style="margin-top:16px">
+        <h3>Set Display Name</h3>
+        <div style="display:flex;gap:8px"><input type="text" id="name-input" class="chat-input" placeholder="Display name" value="${online.displayName||''}"><button class="btn btn-sm" onclick="online.setDisplayName(document.getElementById('name-input').value)">Set Name</button></div>
+      </div>`;
+    }
+    el.innerHTML = html;
+  }
+
+  async cloudLoad() {
+    if (typeof online === 'undefined' || !online.isOnline) return;
+    const save = await online.loadFromCloud();
+    if (save) {
+      if (confirm('Load cloud save? This will overwrite your local progress.')) {
+        game.state = save;
+        game.migrateSave();
+        game.save();
+        this.renderSidebar();
+        this.renderPage(this.currentPage);
+      }
+    } else {
+      this.toast({ type:'warn', text:'No cloud save found.' });
+    }
+  }
+
+  // ── CHAT PAGE ──────────────────────────────────────────
+  renderChatPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    let html = this.header('Global Chat','scroll','Talk to other survivors in the Ashfall world.',null);
+
+    if (!isOnline) {
+      html += '<div class="bank-empty">Online features not available. Configure Firebase to enable chat.</div>';
+      el.innerHTML = html;
+      return;
+    }
+
+    html += `<div id="chat-container">
+      <div id="chat-messages" class="chat-messages"></div>
+      <div class="chat-input-bar">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..." maxlength="200" onkeydown="if(event.key==='Enter')ui.sendChat()">
+        <button class="btn btn-sm" onclick="ui.sendChat()">Send</button>
+      </div>
+    </div>`;
+    el.innerHTML = html;
+
+    // Start listening
+    online.listenToChat((msgs) => {
+      const container = document.getElementById('chat-messages');
+      if (!container) return;
+      container.innerHTML = msgs.map(m => {
+        const isMe = online.user && m.uid === online.user.uid;
+        const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+        return `<div class="chat-msg ${isMe?'chat-mine':''}">
+          <span class="chat-name" style="${isMe?'color:var(--accent)':''}">${this.escHtml(m.name)} <small>[Cb${m.combatLevel||'?'}]</small></span>
+          <span class="chat-text">${this.escHtml(m.text)}</span>
+          <span class="chat-time">${time}</span>
+        </div>`;
+      }).join('');
+      container.scrollTop = container.scrollHeight;
+    });
+  }
+
+  sendChat() {
+    const input = document.getElementById('chat-input');
+    if (!input || !input.value.trim()) return;
+    online.sendMessage(input.value);
+    input.value = '';
+  }
+
+  escHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+
+  // ── PVP ARENA PAGE ─────────────────────────────────────
+  renderPvPPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    const s = this.engine.state;
+    let html = this.header('PvP Arena','combat','Submit your build and fight other players for gold, loot, and glory.',null);
+
+    if (!isOnline) {
+      html += '<div class="bank-empty">Online features not available. Configure Firebase to enable PvP.</div>';
+      el.innerHTML = html;
+      return;
+    }
+
+    html += `<div class="prayer-info">
+      <div class="stat-row"><span>PvP Rating</span><span class="pi-val gold-val">${online.pvpRating}</span></div>
+      <div class="stat-row"><span>Combat Level</span><span class="pi-val">${this.engine.getCombatLevel()}</span></div>
+      <div class="stat-row"><span>Style</span><span class="pi-val">${s.combat.combatStyle}</span></div>
+    </div>`;
+
+    html += `<div class="alignment-display">
+      <div class="al-current">How PvP Works</div>
+      <div class="al-desc">Submit your current build (equipment + stats + combat style). The system matches you against a similar-level opponent. Combat resolves automatically using the game's formulas. Winners earn gold, rating, and loot from the PvP loot table. Losers lose some rating.</div>
+      <button class="btn" style="margin-top:12px" onclick="ui.startPvP()" id="pvp-fight-btn">Fight</button>
+    </div>`;
+
+    // PvP result display area
+    html += '<div id="pvp-result"></div>';
+
+    // History
+    html += '<h2 class="section-title">Recent Fights</h2><div id="pvp-history"><div class="bank-empty">Loading...</div></div>';
+    el.innerHTML = html;
+    this.loadPvPHistory();
+  }
+
+  async startPvP() {
+    const btn = document.getElementById('pvp-fight-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Searching...'; }
+    const result = await online.submitPvPChallenge();
+    if (btn) { btn.disabled = false; btn.textContent = 'Fight'; }
+    const container = document.getElementById('pvp-result');
+    if (!container || !result) return;
+
+    container.innerHTML = `<div class="alignment-display" style="border-color:${result.won?'#4a8a3e':'#8a3a3a'}">
+      <div class="al-current" style="color:${result.won?'#4a8a3e':'#8a3a3a'}">${result.won ? 'VICTORY' : 'DEFEAT'}</div>
+      <div class="al-desc">
+        vs <strong>${result.opponentName}</strong> (Cb Lv ${result.opponentLevel}, Rating ${result.opponentRating})<br>
+        ${result.turns} turns | You: ${result.playerHpLeft}/${result.playerMaxHp} HP | Them: ${result.opponentHpLeft}/${result.opponentMaxHp} HP
+      </div>
+      <div class="al-points">
+        ${result.won ? `+${result.goldReward} gold` : ''} | Rating: ${result.ratingChange > 0 ? '+' : ''}${result.ratingChange}
+      </div>
+    </div>`;
+    this.loadPvPHistory();
+  }
+
+  async loadPvPHistory() {
+    const container = document.getElementById('pvp-history');
+    if (!container) return;
+    const history = await online.getPvPHistory();
+    if (history.length === 0) {
+      container.innerHTML = '<div class="bank-empty">No fights yet. Click Fight to start.</div>';
+      return;
+    }
+    container.innerHTML = '<div class="stats-grid">' + history.map(h => {
+      const isWinner = online.user && h.winner === online.user.uid;
+      return `<div class="stat-card" style="border-left:3px solid ${isWinner?'#4a8a3e':'#8a3a3a'}">
+        <div class="stat-label">${isWinner?'Won':'Lost'} vs ${isWinner?h.loserName:h.winnerName}</div>
+        <div class="stat-value" style="font-size:12px">${h.turns} turns | Rating ${h.ratingChange>0?'+':''}${h.ratingChange}</div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  // ── BOUNTY BOARD PAGE ──────────────────────────────────
+  renderBountyPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    let html = this.header('Bounty Board','coin','Place bounties on players. Defeat them in PvP to claim the reward.',null);
+
+    if (!isOnline) {
+      html += '<div class="bank-empty">Online features not available. Configure Firebase to enable bounties.</div>';
+      el.innerHTML = html;
+      return;
+    }
+
+    html += `<div class="settings-section">
+      <h3>Place a Bounty</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="bounty-target" class="chat-input" placeholder="Target player name">
+        <input type="number" id="bounty-amount" class="chat-input" placeholder="Gold amount (min 100)" min="100" style="width:160px">
+        <button class="btn btn-sm" onclick="ui.placeBounty()">Place Bounty</button>
+      </div>
+    </div>`;
+
+    html += '<h2 class="section-title">Active Bounties</h2><div id="bounty-list"><div class="bank-empty">Loading...</div></div>';
+    el.innerHTML = html;
+    this.loadBounties();
+  }
+
+  async placeBounty() {
+    const target = document.getElementById('bounty-target')?.value;
+    const amount = parseInt(document.getElementById('bounty-amount')?.value || 0);
+    if (!target || amount < 100) { this.toast({ type:'warn', text:'Enter a player name and at least 100 gold.' }); return; }
+    await online.placeBounty(target, amount);
+    this.loadBounties();
+  }
+
+  async loadBounties() {
+    const container = document.getElementById('bounty-list');
+    if (!container) return;
+    const bounties = await online.getActiveBounties();
+    if (bounties.length === 0) {
+      container.innerHTML = '<div class="bank-empty">No active bounties. Be the first to place one.</div>';
+      return;
+    }
+    container.innerHTML = '<div class="actions-grid">' + bounties.map(b => {
+      const expired = b.expiresAt && b.expiresAt.toDate && b.expiresAt.toDate() < new Date();
+      return `<div class="action-card ${expired?'locked':''}">
+        <div class="ac-header"><span class="ac-name">Target: ${this.escHtml(b.targetName)}</span><span class="ac-level">${this.fmt(b.amount)} gold</span></div>
+        <div class="ac-footer"><span>Placed by: ${this.escHtml(b.placedByName)}</span></div>
+        ${!expired?`<button class="btn btn-xs" onclick="online.claimBounty('${b.id}').then(()=>ui.loadBounties())">Claim (after PvP win)</button>`:'<div class="locked-overlay">Expired</div>'}
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  // ── LEADERBOARD PAGE ───────────────────────────────────
+  renderLeaderboardPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    let html = this.header('Leaderboard','trophy','Top PvP fighters ranked by rating.',null);
+
+    if (!isOnline) {
+      html += '<div class="bank-empty">Online features not available.</div>';
+      el.innerHTML = html;
+      return;
+    }
+
+    html += '<div id="leaderboard-list"><div class="bank-empty">Loading...</div></div>';
+    el.innerHTML = html;
+    this.loadLeaderboard();
+  }
+
+  async loadLeaderboard() {
+    const container = document.getElementById('leaderboard-list');
+    if (!container) return;
+    const board = await online.getLeaderboard();
+    if (board.length === 0) {
+      container.innerHTML = '<div class="bank-empty">No ranked players yet. Win a PvP fight to appear here.</div>';
+      return;
+    }
+    let html = '<div class="leaderboard-table"><div class="lb-header"><span>#</span><span>Player</span><span>Rating</span><span>W/L</span><span>Combat</span></div>';
+    board.forEach((p, i) => {
+      const isMe = online.user && p.uid === online.user.uid;
+      const wins = p.wins || 0;
+      const losses = p.losses || 0;
+      html += `<div class="lb-row ${isMe?'lb-me':''}">
+        <span class="lb-rank">${i+1}</span>
+        <span class="lb-name">${this.escHtml(p.name||'Unknown')}</span>
+        <span class="lb-rating">${p.rating||1000}</span>
+        <span class="lb-wl">${wins}/${losses}</span>
+        <span class="lb-cb">${p.combatLevel||'?'}</span>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
   }
 
   // ── ACTIONS ────────────────────────────────────────────

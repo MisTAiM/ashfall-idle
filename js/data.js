@@ -856,3 +856,22 @@ GAME_DATA.achievements.push(
   {id:'all_families',  name:'Bestiary',       desc:'Kill one of each monster family.',check:(g)=>{const u=g.stats.uniqueKills||{};return u.ashling&&u.hollow_soldier&&u.frost_spirit&&u.bloodfang_wolf;}},
   {id:'slay_100_tasks',name:'Professional',   desc:'Complete 100 slayer tasks.',check:(g)=>(g.stats.slayerTasksCompleted||0)>=100},
 );
+
+// ── PVP LOOT TABLE ───────────────────────────────────────
+GAME_DATA.pvpLoot = [
+  {item:'potion_healing_ii', qty:3, chance:0.40, minLevel:1},
+  {item:'potion_strength',   qty:2, chance:0.25, minLevel:10},
+  {item:'potion_defence',    qty:2, chance:0.25, minLevel:10},
+  {item:'chaos_rune',        qty:10,chance:0.30, minLevel:15},
+  {item:'death_rune',        qty:5, chance:0.20, minLevel:30},
+  {item:'steel_arrows',      qty:30,chance:0.30, minLevel:10},
+  {item:'mithril_arrows',    qty:15,chance:0.20, minLevel:25},
+  {item:'ruby',              qty:1, chance:0.10, minLevel:20},
+  {item:'emerald',           qty:1, chance:0.08, minLevel:30},
+  {item:'diamond',           qty:1, chance:0.05, minLevel:45},
+  {item:'mithril_bar',       qty:3, chance:0.12, minLevel:30},
+  {item:'adamant_bar',       qty:2, chance:0.08, minLevel:45},
+  {item:'obsidian_bar',      qty:1, chance:0.04, minLevel:60},
+  {item:'enchant_scroll',    qty:1, chance:0.06, minLevel:40},
+  {item:'dragon_bones',      qty:2, chance:0.10, minLevel:50},
+];

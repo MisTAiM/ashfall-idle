@@ -1282,3 +1282,145 @@ html, body {
   border-color: var(--accent);
   background: var(--accent-bg);
 }
+
+/* ── ONLINE SYSTEMS ─────────────────────────────────────── */
+
+/* Online/Offline indicator */
+.online-dot::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4a8a3e;
+  margin-right: 4px;
+  box-shadow: 0 0 4px #4a8a3e;
+}
+.offline-dot::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #8a3a3a;
+  margin-right: 4px;
+}
+
+/* Chat */
+#chat-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 220px);
+  max-height: 600px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-msg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--bg-deep);
+}
+.chat-msg.chat-mine { background: var(--accent-bg); }
+.chat-name {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--text-bright);
+  font-weight: 700;
+}
+.chat-name small { color: var(--text-dim); font-weight: 400; }
+.chat-text { color: var(--text); flex: 1; word-break: break-word; }
+.chat-time { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+.chat-input-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+.chat-input {
+  flex: 1;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: 'Crimson Text', serif;
+  outline: none;
+}
+.chat-input:focus { border-color: var(--accent); }
+
+/* Leaderboard */
+.leaderboard-table {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.lb-header, .lb-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 80px 80px 70px;
+  gap: 8px;
+  padding: 10px 14px;
+  align-items: center;
+}
+.lb-header {
+  background: var(--bg-elevated);
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.lb-row {
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-row:hover { background: var(--bg-deep); }
+.lb-me { background: var(--accent-bg) !important; border-left: 3px solid var(--accent); }
+.lb-rank {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+}
+.lb-name { color: var(--text-bright); }
+.lb-rating {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  text-align: center;
+}
+.lb-wl, .lb-cb {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* Settings section reuse */
+.settings-section h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--text-bright);
+  margin-bottom: 8px;
+}
+
+@media (max-width: 640px) {
+  .lb-header, .lb-row { grid-template-columns: 30px 1fr 60px 60px; }
+  .lb-cb { display: none; }
+}
