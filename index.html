@@ -4,25 +4,100 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ashfall Idle - Dark Fantasy Idle RPG</title>
-  <meta name="description" content="Ashfall Idle v3 - Dark fantasy idle RPG with 25 skills, PvP, global chat, bounties, alignment, factions, and world bosses.">
+  <meta name="description" content="Ashfall Idle - A dark fantasy idle RPG with 27 skills, PvP, global chat, guilds, 266 items, and deep progression systems.">
+  <meta property="og:title" content="Ashfall Idle - Dark Fantasy Idle RPG">
+  <meta property="og:description" content="Train 27 skills, fight 27 monsters, complete 48 quests, and shape your destiny across nine moral alignments.">
+  <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%94</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="css/style.css">
-  <!-- Firebase SDK (compat for vanilla JS) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <div class="app">
+  <!-- LANDING PAGE OVERLAY -->
+  <div id="landing" class="landing-overlay">
+    <div class="landing-bg"></div>
+    <div class="landing-content">
+      <div class="landing-logo">
+        <svg viewBox="0 0 120 60" class="landing-logo-svg">
+          <defs>
+            <linearGradient id="fireGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#ff8040;stop-opacity:1"/>
+              <stop offset="50%" style="stop-color:#c9873e;stop-opacity:1"/>
+              <stop offset="100%" style="stop-color:#7a4a1a;stop-opacity:1"/>
+            </linearGradient>
+          </defs>
+          <text x="60" y="38" text-anchor="middle" fill="url(#fireGrad)" font-family="Cinzel,serif" font-size="28" font-weight="700" letter-spacing="6">ASHFALL</text>
+          <text x="60" y="52" text-anchor="middle" fill="#c9873e" font-family="Cinzel,serif" font-size="12" letter-spacing="12" opacity="0.7">IDLE</text>
+          <line x1="10" y1="8" x2="110" y2="8" stroke="#c9873e" stroke-width="0.5" opacity="0.4"/>
+          <line x1="10" y1="56" x2="110" y2="56" stroke="#c9873e" stroke-width="0.5" opacity="0.4"/>
+        </svg>
+      </div>
+      <p class="landing-tagline">A Dark Fantasy Idle RPG</p>
+      <div class="landing-features">
+        <span>27 Skills</span><span>266+ Items</span><span>27 Monsters</span><span>6 Spellbooks</span><span>PvP Arena</span><span>Guilds</span>
+      </div>
+      <p class="landing-desc">Train, fight, enchant, and forge your legend in a world buried beneath endless ash.</p>
+      <button class="landing-btn" onclick="enterGame()">
+        <span class="lb-text">Enter the Ashfall</span>
+        <span class="lb-sub">Click to begin your journey</span>
+      </button>
+      <div class="landing-footer">
+        <span>Free to Play</span><span>No Downloads</span><span>Saves Automatically</span>
+      </div>
+    </div>
+    <div class="landing-embers" id="landing-embers"></div>
+  </div>
+
+  <!-- GAME -->
+  <div class="app" id="game-app" style="display:none">
     <nav id="sidebar"></nav>
     <main id="main-area">
       <div id="training-bar"></div>
       <div id="main-content"><div class="page-empty">Loading Ashfall Idle...</div></div>
     </main>
   </div>
-  <button id="sidebar-toggle" aria-label="Toggle menu">&#9776;</button>
+  <button id="sidebar-toggle" aria-label="Toggle menu" style="display:none">&#9776;</button>
   <div id="toast-container"></div>
+
+  <script>
+    // Landing page ember particles
+    (function(){
+      const c = document.getElementById('landing-embers');
+      if (!c) return;
+      for (let i = 0; i < 30; i++) {
+        const e = document.createElement('div');
+        e.className = 'ember';
+        e.style.left = Math.random()*100 + '%';
+        e.style.animationDuration = (3 + Math.random()*5) + 's';
+        e.style.animationDelay = Math.random()*5 + 's';
+        e.style.width = e.style.height = (2 + Math.random()*4) + 'px';
+        e.style.opacity = 0.3 + Math.random()*0.7;
+        c.appendChild(e);
+      }
+    })();
+
+    function enterGame() {
+      const landing = document.getElementById('landing');
+      landing.style.opacity = '0';
+      landing.style.pointerEvents = 'none';
+      setTimeout(() => {
+        landing.style.display = 'none';
+        document.getElementById('game-app').style.display = '';
+        document.getElementById('sidebar-toggle').style.display = '';
+      }, 600);
+    }
+
+    // Skip landing if returning player
+    if (localStorage.getItem('ashfall_save')) {
+      document.getElementById('landing').style.display = 'none';
+      document.getElementById('game-app').style.display = '';
+      document.getElementById('sidebar-toggle').style.display = '';
+    }
+  </script>
   <script src="js/data.js"></script>
   <script src="js/sprites.js"></script>
   <script src="js/engine.js"></script>

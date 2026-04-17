@@ -388,14 +388,13 @@ class UI {
       const _name = GAME_DATA.skills[_sId]?.name || _sId;
       const isGaining = xpSkills[_sId] > 0;
       const pct = xpSkills[_sId] || 0;
-      const xpToNext = _sk.level >= 99 ? 'MAX' : this.fmt(this.engine.getXpForLevel(_sk.level + 1) - _sk.xp);
-      html += `<div class="cxp-row ${isGaining?'cxp-active':''}" title="${_name}: ${this.fmt(_sk.xp)} XP | ${xpToNext} to next${isGaining?' | Getting '+pct+'% of combat XP':''}">
+      html += `<div class="cxp-row ${isGaining?'cxp-active':''}" title="${_name}: Level ${_sk.level} | ${this.fmt(_sk.xp)} XP${isGaining?' | Getting '+pct+'% XP':''}">
         <span class="cxp-icon">${icon(GAME_DATA.skills[_sId]?.icon||'sparkle',14)}</span>
-        <span class="cxp-name">${_name}</span>
+        <span class="cxp-name">${_name.toUpperCase()}</span>
         <span class="cxp-level" id="cxp-lv-${_sId}">${_sk.level}</span>
         <div class="cxp-bar"><div class="cxp-fill ${isGaining?'cxp-fill-active':''}" id="cxp-fill-${_sId}" style="width:${(_p*100).toFixed(1)}%"></div></div>
         <span class="cxp-xp" id="cxp-xp-${_sId}">${this.fmt(_sk.xp)}</span>
-        ${isGaining?`<span class="cxp-pct">${pct}%</span>`:''}
+        <span class="cxp-pct">${isGaining?pct+'%':''}</span>
       </div>`;
     }
     html += '</div>';
@@ -1440,8 +1439,9 @@ class UI {
         <div class="al-desc">Firebase is not configured. Online features are disabled. To enable them, edit <code>js/firebase-config.js</code> with your Firebase project credentials. See the file for full setup instructions.</div>
       </div>`;
     } else if (user && !isAnon) {
+      const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(user.uid);
       html += `<div class="alignment-display">
-        <div class="al-current">Signed in as <strong>${online.displayName}</strong></div>
+        <div class="al-current">Signed in as <strong>${online.displayName}</strong>${isAdmin?' <span class="admin-badge">OWNER / ADMIN</span>':''}</div>
         <div class="al-desc">Email: ${user.email}</div>
         <div class="al-points">UID: ${user.uid}</div>
         <div class="shop-btns" style="margin-top:12px">
@@ -1831,6 +1831,22 @@ class UI {
         // Kill counter
         const killEl = document.getElementById('kill-count');
         if (killEl) killEl.textContent = s.stats.monstersKilled;
+        // Ability cooldown overlays (real-time)
+        for (let i = 0; i < 4; i++) {
+          const aid = s.equippedAbilities[i];
+          if (!aid) continue;
+          const ab = GAME_DATA.abilities.find(a=>a.id===aid);
+          if (!ab) continue;
+          const cd = s.combat.abilityCooldowns[aid] || 0;
+          const slotEl = document.querySelectorAll('.ab-slot-v2')[i];
+          if (slotEl) {
+            const overlay = slotEl.querySelector('.ab-cd-overlay');
+            const timer = slotEl.querySelector('.ab-timer');
+            if (overlay) overlay.style.height = (cd > 0 ? Math.min(100, (cd / ab.cooldown) * 100) : 0) + '%';
+            if (timer) timer.textContent = cd > 0 ? Math.ceil(cd) + 's' : 'Ready';
+            if (cd > 0) slotEl.classList.add('ab-cd'); else slotEl.classList.remove('ab-cd');
+          }
+        }
       }
     }
 

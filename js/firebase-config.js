@@ -14,3 +14,6 @@ const FIREBASE_CONFIG = {
 };
 
 const FIREBASE_ENABLED = FIREBASE_CONFIG.apiKey !== "";
+
+// Admin UIDs
+const ADMIN_UIDS = ['ndLiweJRdGbaqWIbPgIj0Izigez2'];
