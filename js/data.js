@@ -920,3 +920,266 @@ GAME_DATA.monsterArt = {
   hollow_lord: '<svg viewBox="0 0 80 80"><rect x="28" y="30" width="24" height="34" rx="4" fill="#3a3a4a"/><circle cx="40" cy="22" r="12" fill="#4a4a5a"/><circle cx="36" cy="20" r="2.5" fill="#8a3a3a"/><circle cx="44" cy="20" r="2.5" fill="#8a3a3a"/><rect x="30" y="14" width="20" height="4" rx="1" fill="#7a5a1a"/><polygon points="40,10 38,4 42,4" fill="#c4a83a"/><path d="M52 36 L66 28" stroke="#7a8294" stroke-width="3"/><polygon points="66,28 70,24 68,32" fill="#7a8294"/><path d="M28 36 L18 42" stroke="#4a4a5a" stroke-width="3"/><ellipse cx="18" cy="42" rx="6" ry="8" fill="#3a3a4a"/></svg>',
   bloodfang_alpha:'<svg viewBox="0 0 80 80"><ellipse cx="38" cy="46" rx="24" ry="16" fill="#5a2a2a"/><circle cx="58" cy="34" r="12" fill="#5a2a2a"/><circle cx="56" cy="32" r="2.5" fill="#c44040"/><circle cx="62" cy="32" r="2.5" fill="#c44040"/><path d="M64 38 Q68 36 66 40" fill="none" stroke="#7a3a3a" stroke-width="1.5"/><polygon points="52,24 48,14 54,22" fill="#5a2a2a"/><polygon points="60,24 64,14 58,22" fill="#5a2a2a"/><path d="M58 40 L64 38" stroke="#8a3a3a" stroke-width="1"/><rect x="56" y="36" width="2" height="4" fill="#e8e0d4"/><rect x="62" y="36" width="2" height="4" fill="#e8e0d4"/><path d="M14 46 Q4 42 8 52" fill="#5a2a2a"/><path d="M24 60 L20 72" stroke="#3a1a1a" stroke-width="4"/><path d="M50 60 L48 72" stroke="#3a1a1a" stroke-width="4"/></svg>',
 };
+
+// ================================================================
+// v4.0 MASSIVE CONTENT EXPANSION
+// Enchanting, 200+ new items, expanded skills, new sprites
+// ================================================================
+
+// ── ENCHANTING SYSTEM ────────────────────────────────────
+// Enchanting creates enhanced versions of equipment
+// Formula: base item + enchant scroll + runes = enchanted item
+
+// Enchanted weapon items
+const _enchItems = [
+  // Enchanted Swords
+  ['ench_iron_sword','Enchanted Iron Sword','weapon','weapon','melee',2.4,{attackBonus:18,strengthBonus:15},{attack:10},80,'sword-iron','An iron sword humming with power.'],
+  ['ench_steel_sword','Enchanted Steel Sword','weapon','weapon','melee',2.2,{attackBonus:32,strengthBonus:26},{attack:20},250,'sword-steel','Steel blade crackling with energy.'],
+  ['ench_mithril_sword','Enchanted Mithril Sword','weapon','weapon','melee',2.0,{attackBonus:48,strengthBonus:38},{attack:30},700,'sword-mithril','Mithril longsword of arcane might.'],
+  ['ench_adamant_sword','Enchanted Adamant Sword','weapon','weapon','melee',2.0,{attackBonus:68,strengthBonus:56},{attack:40},2000,'sword-adamant','Adamantite blade of destruction.'],
+  ['ench_obsidian_sword','Enchanted Obsidian Blade','weapon','weapon','melee',1.8,{attackBonus:92,strengthBonus:78,magicBonus:15},{attack:50},6000,'sword-obsidian','Obsidian edge infused with void.'],
+  // Enchanted Bows
+  ['ench_maple_bow','Enchanted Maple Bow','weapon','weapon','ranged',2.0,{rangedBonus:40},{ranged:30},350,'bow-maple','Maple bow with wind enchantment.'],
+  ['ench_yew_bow','Enchanted Yew Longbow','weapon','weapon','ranged',2.4,{rangedBonus:62},{ranged:40},1000,'bow-yew','Yew bow pulsing with energy.'],
+  ['ench_elder_bow','Enchanted Elder Bow','weapon','weapon','ranged',1.8,{rangedBonus:85},{ranged:55},5000,'bow-elder','Elder bow of piercing light.'],
+  // Enchanted Staves
+  ['ench_mystic_staff','Enchanted Mystic Staff','weapon','weapon','magic',2.4,{magicBonus:30},{magic:20},350,'staff-mystic','Staff radiating arcane energy.'],
+  ['ench_void_staff','Enchanted Void Staff','weapon','weapon','magic',2.0,{magicBonus:60},{magic:40},2000,'staff-void','Void staff of infinite darkness.'],
+  ['ench_elder_staff','Enchanted Elder Staff','weapon','weapon','magic',1.8,{magicBonus:88},{magic:55},8000,'staff-elder','Elder staff of supreme power.'],
+  // Enchanted Armor
+  ['ench_steel_plate','Enchanted Steel Plate','armor','body',null,null,{defenceBonus:32,damageReduction:6},{defence:20},400,'body-steel','Steel plate with magic ward.'],
+  ['ench_mithril_plate','Enchanted Mithril Plate','armor','body',null,null,{defenceBonus:48,damageReduction:9},{defence:30},1200,'body-mithril','Mithril plate of resilience.'],
+  ['ench_adamant_plate','Enchanted Adamant Plate','armor','body',null,null,{defenceBonus:68,damageReduction:14},{defence:40},3500,'body-adamant','Adamant plate of fortification.'],
+  ['ench_obsidian_plate','Enchanted Obsidian Plate','armor','body',null,null,{defenceBonus:90,damageReduction:18},{defence:50},10000,'body-obsidian','Obsidian plate of invulnerability.'],
+  // Enchanted Shields
+  ['ench_steel_shield','Enchanted Steel Shield','armor','shield',null,null,{defenceBonus:22,damageReduction:6},{defence:20},200,'shield-steel','Steel shield with magic barrier.'],
+  ['ench_mithril_shield','Enchanted Mithril Shield','armor','shield',null,null,{defenceBonus:35,damageReduction:9},{defence:30},600,'shield-mithril','Mithril shield of warding.'],
+  ['ench_adamant_shield','Enchanted Adamant Shield','armor','shield',null,null,{defenceBonus:52,damageReduction:12},{defence:40},1600,'shield-adamant','Adamant shield of the sentinel.'],
+  // Enchanted Helms
+  ['ench_steel_helm','Enchanted Steel Helm','armor','head',null,null,{defenceBonus:15,damageReduction:3},{defence:20},150,'helm-steel','Steel helm with mind ward.'],
+  ['ench_mithril_helm','Enchanted Mithril Helm','armor','head',null,null,{defenceBonus:24,damageReduction:5},{defence:30},450,'helm-mithril','Mithril helm of clarity.'],
+  // Enchanted Boots
+  ['ench_steel_boots','Enchanted Steel Boots','armor','boots',null,null,{defenceBonus:12,speedBonus:3},{defence:20},120,'boots-steel','Steel boots of swiftness.'],
+  ['ench_mithril_boots','Enchanted Mithril Boots','armor','boots',null,null,{defenceBonus:20,speedBonus:5},{defence:30},380,'boots-mithril','Mithril boots of haste.'],
+  // Enchanted Dragonhide
+  ['ench_dragon_body','Enchanted Dragonhide Body','armor','body',null,null,{defenceBonus:42,rangedBonus:60},{defence:30,ranged:45},3000,'body-dragon','Dragonhide body of precision.'],
+  ['ench_dragon_chaps','Enchanted Dragonhide Chaps','armor','legs',null,null,{defenceBonus:30,rangedBonus:42},{defence:30,ranged:45},2000,'chaps-dragon','Dragonhide chaps of agility.'],
+  // Enchanted Robes
+  ['ench_adept_robe','Enchanted Adept Robe','armor','body',null,null,{defenceBonus:18,magicBonus:50},{magic:35},1800,'robe-adept','Adept robe of the arcane.'],
+  ['ench_archmage_robe','Enchanted Archmage Robe','armor','body',null,null,{defenceBonus:28,magicBonus:72},{magic:55},6000,'robe-archmage','Archmage robe of supremacy.'],
+];
+
+for (const [id,name,type,slot,style,speed,stats,req,price,sprite,desc] of _enchItems) {
+  const item = {id,name,type,slot,stats,levelReq:req,sellPrice:price,sprite,desc,enchanted:true};
+  if (style) item.style = style;
+  if (speed) item.attackSpeed = speed;
+  GAME_DATA.items[id] = item;
+}
+
+// Enchanting materials
+GAME_DATA.items.enchant_dust = {id:'enchant_dust',name:'Enchant Dust',type:'resource',subtype:'misc',sellPrice:15,sprite:'misc-essence',desc:'Magical dust from crushing runes.'};
+GAME_DATA.items.arcane_shard = {id:'arcane_shard',name:'Arcane Shard',type:'resource',subtype:'misc',sellPrice:80,sprite:'gem-purple',desc:'A shard of crystallized magic.'};
+GAME_DATA.items.void_crystal = {id:'void_crystal',name:'Void Crystal',type:'resource',subtype:'misc',sellPrice:300,sprite:'gem-black',desc:'A crystal pulsing with void energy.'};
+GAME_DATA.items.celestial_essence = {id:'celestial_essence',name:'Celestial Essence',type:'resource',subtype:'misc',sellPrice:500,sprite:'gem-white',desc:'Essence of starlight.'};
+
+// Charms for Summoning
+GAME_DATA.items.gold_charm = {id:'gold_charm',name:'Gold Charm',type:'resource',subtype:'misc',sellPrice:5,sprite:'misc-coin',desc:'A golden charm. Used in Summoning.'};
+GAME_DATA.items.green_charm = {id:'green_charm',name:'Green Charm',type:'resource',subtype:'misc',sellPrice:15,sprite:'gem-green',desc:'A green charm. Used in Summoning.'};
+GAME_DATA.items.crimson_charm = {id:'crimson_charm',name:'Crimson Charm',type:'resource',subtype:'misc',sellPrice:30,sprite:'gem-red',desc:'A crimson charm. Used in Summoning.'};
+GAME_DATA.items.blue_charm = {id:'blue_charm',name:'Blue Charm',type:'resource',subtype:'misc',sellPrice:60,sprite:'gem-blue',desc:'A blue charm. Used in Summoning.'};
+
+// New consumables
+GAME_DATA.items.super_strength = {id:'super_strength',name:'Super Strength Potion',type:'potion',buff:{stat:'strengthBonus',value:18,duration:180},sellPrice:120,sprite:'potion-orange',desc:'+18 Str 180s.'};
+GAME_DATA.items.super_defence = {id:'super_defence',name:'Super Defence Potion',type:'potion',buff:{stat:'defenceBonus',value:18,duration:180},sellPrice:120,sprite:'potion-blue',desc:'+18 Def 180s.'};
+GAME_DATA.items.super_attack = {id:'super_attack',name:'Super Attack Potion',type:'potion',buff:{stat:'attackBonus',value:18,duration:180},sellPrice:120,sprite:'potion-green',desc:'+18 Atk 180s.'};
+GAME_DATA.items.ranging_potion = {id:'ranging_potion',name:'Ranging Potion',type:'potion',buff:{stat:'rangedBonus',value:15,duration:120},sellPrice:100,sprite:'potion-green',desc:'+15 Range 120s.'};
+GAME_DATA.items.magic_potion = {id:'magic_potion',name:'Magic Potion',type:'potion',buff:{stat:'magicBonus',value:15,duration:120},sellPrice:100,sprite:'potion-purple',desc:'+15 Magic 120s.'};
+GAME_DATA.items.antifire = {id:'antifire',name:'Antifire Potion',type:'potion',buff:{stat:'fireResist',value:50,duration:300},sellPrice:200,sprite:'potion-red',desc:'50% fire damage resist 5min.'};
+GAME_DATA.items.antivenom = {id:'antivenom',name:'Antivenom Potion',type:'potion',buff:{stat:'venomResist',value:100,duration:300},sellPrice:250,sprite:'potion-green',desc:'Poison immunity 5min.'};
+GAME_DATA.items.prayer_potion = {id:'prayer_potion',name:'Prayer Potion',type:'potion',prayerRestore:50,sellPrice:180,sprite:'potion-yellow',desc:'Restores 50 prayer points.'};
+GAME_DATA.items.super_restore = {id:'super_restore',name:'Super Restore',type:'potion',prayerRestore:100,heals:200,sellPrice:350,sprite:'potion-yellow',desc:'Restores 100 PP + heals 200.'};
+
+// New arrow tiers
+GAME_DATA.items.obsidian_arrows = {id:'obsidian_arrows',name:'Obsidian Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:38,sellPrice:80,sprite:'arrow-adamant',desc:'Obsidian-tipped arrows.'};
+GAME_DATA.items.dragon_arrows = {id:'dragon_arrows',name:'Dragon Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:50,sellPrice:150,sprite:'arrow-adamant',desc:'Dragon-scale arrows. Deadly.'};
+GAME_DATA.items.ashfire_arrows = {id:'ashfire_arrows',name:'Ashfire Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:65,sellPrice:300,sprite:'arrow-adamant',desc:'Arrows forged in ashfire.'};
+
+// New fish + food tiers
+GAME_DATA.items.raw_dark_crab = {id:'raw_dark_crab',name:'Raw Dark Crab',type:'resource',subtype:'fish',sellPrice:300,sprite:'fish-deep',desc:'A deep-sea dark crab.'};
+GAME_DATA.items.dark_crab = {id:'dark_crab',name:'Dark Crab',type:'food',heals:550,sellPrice:600,sprite:'food-meal',desc:'Cooked dark crab. +550 HP.'};
+GAME_DATA.items.raw_manta = {id:'raw_manta',name:'Raw Manta Ray',type:'resource',subtype:'fish',sellPrice:500,sprite:'fish-boss',desc:'A massive manta ray.'};
+GAME_DATA.items.manta_ray = {id:'manta_ray',name:'Manta Ray',type:'food',heals:750,sellPrice:1000,sprite:'food-meal',desc:'Cooked manta ray. +750 HP.'};
+
+// New ores + bars
+GAME_DATA.items.runite_ore = {id:'runite_ore',name:'Runite Ore',type:'resource',subtype:'ore',sellPrice:500,sprite:'ore-mithril',desc:'Rare blue-green ore.'};
+GAME_DATA.items.runite_bar = {id:'runite_bar',name:'Runite Bar',type:'resource',subtype:'bar',sellPrice:1200,sprite:'bar-mithril',desc:'A refined runite ingot.'};
+GAME_DATA.items.ashsteel_ore = {id:'ashsteel_ore',name:'Ashsteel Ore',type:'resource',subtype:'ore',sellPrice:800,sprite:'ore-obsidian',desc:'Ore forged in volcanic ash.'};
+GAME_DATA.items.ashsteel_bar = {id:'ashsteel_bar',name:'Ashsteel Bar',type:'resource',subtype:'bar',sellPrice:2000,sprite:'bar-obsidian',desc:'Ashsteel ingot. Legendary.'};
+
+// Ashsteel weapons
+GAME_DATA.items.ashsteel_sword = {id:'ashsteel_sword',name:'Ashsteel Longsword',type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.8,stats:{attackBonus:105,strengthBonus:90},levelReq:{attack:65},sellPrice:15000,sprite:'sword-ashfire',desc:'A longsword of ashsteel.',unique:true};
+GAME_DATA.items.ashsteel_bow = {id:'ashsteel_bow',name:'Ashsteel Bow',type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.6,stats:{rangedBonus:100},levelReq:{ranged:65},sellPrice:15000,sprite:'bow-ashwood',ammoType:'arrow',desc:'A bow strung with ashsteel wire.',unique:true};
+GAME_DATA.items.ashsteel_staff = {id:'ashsteel_staff',name:'Ashsteel Staff',type:'weapon',slot:'weapon',style:'magic',attackSpeed:1.6,stats:{magicBonus:105},levelReq:{magic:65},sellPrice:15000,sprite:'staff-voidseer',desc:'A staff crowned with ashsteel.',unique:true};
+GAME_DATA.items.ashsteel_plate = {id:'ashsteel_plate',name:'Ashsteel Platebody',type:'armor',slot:'body',stats:{defenceBonus:85,damageReduction:16},levelReq:{defence:65},sellPrice:12000,sprite:'body-obsidian',desc:'Ashsteel platebody. Near-indestructible.',unique:true};
+GAME_DATA.items.ashsteel_helm = {id:'ashsteel_helm',name:'Ashsteel Helm',type:'armor',slot:'head',stats:{defenceBonus:42,damageReduction:8},levelReq:{defence:65},sellPrice:6000,sprite:'helm-obsidian',desc:'Ashsteel helm of the forge.',unique:true};
+GAME_DATA.items.ashsteel_legs = {id:'ashsteel_legs',name:'Ashsteel Platelegs',type:'armor',slot:'legs',stats:{defenceBonus:60,damageReduction:12},levelReq:{defence:65},sellPrice:8000,sprite:'legs-obsidian',desc:'Ashsteel platelegs.',unique:true};
+GAME_DATA.items.ashsteel_shield = {id:'ashsteel_shield',name:'Ashsteel Shield',type:'armor',slot:'shield',stats:{defenceBonus:65,damageReduction:15},levelReq:{defence:65},sellPrice:8000,sprite:'shield-obsidian',desc:'Ashsteel shield. Immovable.',unique:true};
+
+// New herbs + seeds
+GAME_DATA.items.dragonbloom = {id:'dragonbloom',name:'Dragonbloom',type:'resource',subtype:'herb',sellPrice:400,sprite:'herb-red',desc:'Extremely rare volcanic herb.'};
+GAME_DATA.items.dragon_seed = {id:'dragon_seed',name:'Dragonbloom Seed',type:'seed',growTime:7200,yield:'dragonbloom',sellPrice:100,sprite:'misc-seed',desc:'2 hour grow time.'};
+GAME_DATA.items.celestial_herb = {id:'celestial_herb',name:'Celestial Herb',type:'resource',subtype:'herb',sellPrice:600,sprite:'herb-silver',desc:'A herb that glows with starlight.'};
+
+// New logs
+GAME_DATA.items.spirit_log = {id:'spirit_log',name:'Spirit Log',type:'resource',subtype:'log',sellPrice:500,sprite:'log-pale',desc:'Log from a spirit tree. Glows faintly.'};
+
+// ── ENCHANTING RECIPES ───────────────────────────────────
+GAME_DATA.recipes.enchanting = [
+  // Dust creation
+  {id:'crush_fire',   name:'Crush Fire Runes',   level:1,  xp:5,  time:2.0,input:[{item:'fire_rune',qty:5}],  output:{item:'enchant_dust',qty:1}},
+  {id:'crush_chaos',  name:'Crush Chaos Runes',  level:15, xp:15, time:2.0,input:[{item:'chaos_rune',qty:3}], output:{item:'enchant_dust',qty:2}},
+  {id:'crush_death',  name:'Crush Death Runes',  level:30, xp:30, time:2.0,input:[{item:'death_rune',qty:2}], output:{item:'enchant_dust',qty:3}},
+  {id:'make_shard',   name:'Create Arcane Shard', level:25, xp:40, time:4.0,input:[{item:'enchant_dust',qty:5},{item:'enchant_scroll',qty:1}],output:{item:'arcane_shard',qty:1}},
+  {id:'make_void_crystal',name:'Create Void Crystal',level:50,xp:100,time:6.0,input:[{item:'arcane_shard',qty:3},{item:'death_rune',qty:10}],output:{item:'void_crystal',qty:1}},
+  {id:'make_celestial',name:'Create Celestial Essence',level:70,xp:200,time:8.0,input:[{item:'void_crystal',qty:2},{item:'diamond',qty:1}],output:{item:'celestial_essence',qty:1}},
+  // Weapon enchantments
+  {id:'ench_iron_sw',  name:'Enchant Iron Sword',   level:10, xp:25, time:5.0,input:[{item:'iron_sword',qty:1},{item:'enchant_dust',qty:3},{item:'fire_rune',qty:5}],output:{item:'ench_iron_sword',qty:1}},
+  {id:'ench_steel_sw', name:'Enchant Steel Sword',  level:25, xp:60, time:6.0,input:[{item:'steel_sword',qty:1},{item:'arcane_shard',qty:1},{item:'chaos_rune',qty:5}],output:{item:'ench_steel_sword',qty:1}},
+  {id:'ench_mith_sw',  name:'Enchant Mithril Sword',level:40, xp:120,time:7.0,input:[{item:'mithril_sword',qty:1},{item:'arcane_shard',qty:2},{item:'death_rune',qty:5}],output:{item:'ench_mithril_sword',qty:1}},
+  {id:'ench_adam_sw',  name:'Enchant Adamant Sword', level:55, xp:220,time:8.0,input:[{item:'adamant_sword',qty:1},{item:'void_crystal',qty:1},{item:'death_rune',qty:10}],output:{item:'ench_adamant_sword',qty:1}},
+  {id:'ench_obs_sw',   name:'Enchant Obsidian Blade',level:70,xp:400,time:10.0,input:[{item:'obsidian_sword',qty:1},{item:'celestial_essence',qty:1},{item:'death_rune',qty:15}],output:{item:'ench_obsidian_sword',qty:1}},
+  // Bow enchantments
+  {id:'ench_maple_bw', name:'Enchant Maple Bow',    level:30, xp:80, time:6.0,input:[{item:'maple_shortbow',qty:1},{item:'arcane_shard',qty:1},{item:'air_rune',qty:10}],output:{item:'ench_maple_bow',qty:1}},
+  {id:'ench_yew_bw',   name:'Enchant Yew Longbow',  level:45, xp:160,time:7.0,input:[{item:'yew_longbow',qty:1},{item:'void_crystal',qty:1},{item:'air_rune',qty:15}],output:{item:'ench_yew_bow',qty:1}},
+  {id:'ench_elder_bw', name:'Enchant Elder Bow',    level:65, xp:320,time:9.0,input:[{item:'elder_bow',qty:1},{item:'celestial_essence',qty:1},{item:'chaos_rune',qty:10}],output:{item:'ench_elder_bow',qty:1}},
+  // Staff enchantments
+  {id:'ench_myst_st',  name:'Enchant Mystic Staff', level:25, xp:60, time:5.0,input:[{item:'mystic_staff',qty:1},{item:'arcane_shard',qty:1},{item:'chaos_rune',qty:5}],output:{item:'ench_mystic_staff',qty:1}},
+  {id:'ench_void_st',  name:'Enchant Void Staff',   level:45, xp:160,time:7.0,input:[{item:'void_staff',qty:1},{item:'void_crystal',qty:1},{item:'death_rune',qty:8}],output:{item:'ench_void_staff',qty:1}},
+  {id:'ench_elder_st', name:'Enchant Elder Staff',  level:65, xp:320,time:9.0,input:[{item:'elder_staff',qty:1},{item:'celestial_essence',qty:1},{item:'death_rune',qty:15}],output:{item:'ench_elder_staff',qty:1}},
+  // Armor enchantments
+  {id:'ench_st_plate', name:'Enchant Steel Plate',  level:25, xp:50, time:6.0,input:[{item:'steel_plate',qty:1},{item:'arcane_shard',qty:1},{item:'earth_rune',qty:10}],output:{item:'ench_steel_plate',qty:1}},
+  {id:'ench_mi_plate', name:'Enchant Mithril Plate',level:40, xp:100,time:7.0,input:[{item:'mithril_plate',qty:1},{item:'void_crystal',qty:1},{item:'earth_rune',qty:15}],output:{item:'ench_mithril_plate',qty:1}},
+  {id:'ench_ad_plate', name:'Enchant Adamant Plate', level:55, xp:200,time:8.0,input:[{item:'adamant_plate',qty:1},{item:'void_crystal',qty:2}],output:{item:'ench_adamant_plate',qty:1}},
+  {id:'ench_ob_plate', name:'Enchant Obsidian Plate',level:70, xp:380,time:10.0,input:[{item:'obsidian_plate',qty:1},{item:'celestial_essence',qty:2}],output:{item:'ench_obsidian_plate',qty:1}},
+  // Shield enchantments
+  {id:'ench_st_shield',name:'Enchant Steel Shield', level:20, xp:40, time:5.0,input:[{item:'steel_shield',qty:1},{item:'enchant_dust',qty:5},{item:'earth_rune',qty:8}],output:{item:'ench_steel_shield',qty:1}},
+  {id:'ench_mi_shield',name:'Enchant Mithril Shield',level:35,xp:80,time:6.0,input:[{item:'mithril_shield',qty:1},{item:'arcane_shard',qty:2}],output:{item:'ench_mithril_shield',qty:1}},
+  {id:'ench_ad_shield',name:'Enchant Adamant Shield',level:50,xp:160,time:7.0,input:[{item:'adamant_shield',qty:1},{item:'void_crystal',qty:1}],output:{item:'ench_adamant_shield',qty:1}},
+  // Helm/boot enchantments
+  {id:'ench_st_helm',  name:'Enchant Steel Helm',   level:20, xp:30, time:4.0,input:[{item:'steel_helm',qty:1},{item:'enchant_dust',qty:4},{item:'water_rune',qty:5}],output:{item:'ench_steel_helm',qty:1}},
+  {id:'ench_mi_helm',  name:'Enchant Mithril Helm', level:35, xp:70, time:5.0,input:[{item:'mithril_helm',qty:1},{item:'arcane_shard',qty:1}],output:{item:'ench_mithril_helm',qty:1}},
+  {id:'ench_st_boots', name:'Enchant Steel Boots',  level:20, xp:30, time:4.0,input:[{item:'steel_boots',qty:1},{item:'enchant_dust',qty:4},{item:'air_rune',qty:5}],output:{item:'ench_steel_boots',qty:1}},
+  {id:'ench_mi_boots', name:'Enchant Mithril Boots',level:35, xp:70, time:5.0,input:[{item:'mithril_boots',qty:1},{item:'arcane_shard',qty:1}],output:{item:'ench_mithril_boots',qty:1}},
+  // Dragonhide enchantments
+  {id:'ench_d_body',   name:'Enchant Dragonhide Body',level:50,xp:180,time:7.0,input:[{item:'dragon_body',qty:1},{item:'void_crystal',qty:1},{item:'chaos_rune',qty:8}],output:{item:'ench_dragon_body',qty:1}},
+  {id:'ench_d_chaps',  name:'Enchant Dragonhide Chaps',level:48,xp:150,time:6.5,input:[{item:'dragon_chaps',qty:1},{item:'void_crystal',qty:1},{item:'chaos_rune',qty:6}],output:{item:'ench_dragon_chaps',qty:1}},
+  // Robe enchantments
+  {id:'ench_a_robe',   name:'Enchant Adept Robe',   level:45, xp:140,time:6.0,input:[{item:'adept_robe',qty:1},{item:'void_crystal',qty:1},{item:'death_rune',qty:5}],output:{item:'ench_adept_robe',qty:1}},
+  {id:'ench_am_robe',  name:'Enchant Archmage Robe',level:65, xp:300,time:8.0,input:[{item:'archmage_robe',qty:1},{item:'celestial_essence',qty:1},{item:'death_rune',qty:10}],output:{item:'ench_archmage_robe',qty:1}},
+];
+
+// ── EXPANDED GATHERING ───────────────────────────────────
+// New fishing spots
+GAME_DATA.gatheringActions.fishing.push(
+  {id:'fish_dark_crab',name:'Dark Crab Spot',level:85,xp:400,time:9.0,loot:[{item:'raw_dark_crab',qty:1}],masteryId:'darkcrab'},
+  {id:'fish_manta',   name:'Manta Ray Depths',level:92,xp:500,time:10.0,loot:[{item:'raw_manta',qty:1}],masteryId:'manta'},
+);
+// New mining
+GAME_DATA.gatheringActions.mining.push(
+  {id:'mine_runite',  name:'Runite Rock',   level:80,xp:300,time:10.0,loot:[{item:'runite_ore',qty:1}],masteryId:'runite',gemChance:0.06},
+  {id:'mine_ashsteel',name:'Ashsteel Vein', level:90,xp:450,time:12.0,loot:[{item:'ashsteel_ore',qty:1}],masteryId:'ashsteel',gemChance:0.08},
+);
+// New woodcutting
+GAME_DATA.gatheringActions.woodcutting.push(
+  {id:'chop_spirit', name:'Spirit Tree', level:85,xp:400,time:8.0,loot:[{item:'spirit_log',qty:1}],masteryId:'spirit'},
+);
+// New foraging
+GAME_DATA.gatheringActions.foraging.push(
+  {id:'forage_dragon',name:'Dragonbloom Fields',level:85,xp:350,time:9.0,loot:[{item:'dragonbloom',qty:1}],masteryId:'dragonbloom'},
+  {id:'forage_celestial',name:'Celestial Garden',level:95,xp:500,time:11.0,loot:[{item:'celestial_herb',qty:1}],masteryId:'celestial'},
+);
+
+// ── EXPANDED RECIPES ─────────────────────────────────────
+// New cooking
+GAME_DATA.recipes.cooking.push(
+  {id:'cook_dark_crab',name:'Cook Dark Crab', level:85,xp:450,time:5.0,input:[{item:'raw_dark_crab',qty:1}],output:{item:'dark_crab',qty:1},burnChance:0.08},
+  {id:'cook_manta',   name:'Cook Manta Ray',  level:92,xp:600,time:6.0,input:[{item:'raw_manta',qty:1}], output:{item:'manta_ray',qty:1},burnChance:0.06},
+);
+// New smithing
+GAME_DATA.recipes.smithing.push(
+  {id:'smelt_runite',   name:'Smelt Runite Bar',   level:80,xp:350,time:9.0,input:[{item:'runite_ore',qty:1},{item:'coal_ore',qty:10}],output:{item:'runite_bar',qty:1}},
+  {id:'smelt_ashsteel', name:'Smelt Ashsteel Bar', level:90,xp:550,time:12.0,input:[{item:'ashsteel_ore',qty:1},{item:'coal_ore',qty:14}],output:{item:'ashsteel_bar',qty:1}},
+  {id:'smith_ashsteel_sword',name:'Ashsteel Longsword',level:92,xp:800,time:12.0,input:[{item:'ashsteel_bar',qty:5}],output:{item:'ashsteel_sword',qty:1}},
+  {id:'smith_ashsteel_plate',name:'Ashsteel Platebody',level:94,xp:1000,time:14.0,input:[{item:'ashsteel_bar',qty:7}],output:{item:'ashsteel_plate',qty:1}},
+  {id:'smith_ashsteel_helm', name:'Ashsteel Helm',     level:91,xp:600,time:10.0,input:[{item:'ashsteel_bar',qty:3}],output:{item:'ashsteel_helm',qty:1}},
+  {id:'smith_ashsteel_legs', name:'Ashsteel Platelegs',level:93,xp:900,time:12.0,input:[{item:'ashsteel_bar',qty:5}],output:{item:'ashsteel_legs',qty:1}},
+  {id:'smith_ashsteel_shield',name:'Ashsteel Shield',  level:92,xp:700,time:11.0,input:[{item:'ashsteel_bar',qty:4}],output:{item:'ashsteel_shield',qty:1}},
+);
+// New fletching
+GAME_DATA.recipes.fletching.push(
+  {id:'fletch_obsidian_arrows',name:'Obsidian Arrows (15)',level:70,xp:200,time:4.0,input:[{item:'yew_log',qty:1},{item:'obsidian_bar',qty:1}],output:{item:'obsidian_arrows',qty:15}},
+  {id:'fletch_dragon_arrows', name:'Dragon Arrows (15)', level:80,xp:300,time:4.5,input:[{item:'elder_log',qty:1},{item:'dragon_bones',qty:1}],output:{item:'dragon_arrows',qty:15}},
+  {id:'fletch_ashfire_arrows', name:'Ashfire Arrows (15)',level:90,xp:450,time:5.0,input:[{item:'ash_log',qty:2},{item:'ashsteel_bar',qty:1}],output:{item:'ashfire_arrows',qty:15}},
+  {id:'fletch_ashsteel_bow',  name:'Ashsteel Bow',       level:88,xp:500,time:8.0,input:[{item:'spirit_log',qty:3},{item:'ashsteel_bar',qty:2}],output:{item:'ashsteel_bow',qty:1}},
+);
+// New alchemy
+GAME_DATA.recipes.alchemy.push(
+  {id:'brew_super_str',name:'Super Strength',level:45,xp:100,time:5.0,input:[{item:'moonpetal',qty:2},{item:'bloodroot',qty:2}],output:{item:'super_strength',qty:1}},
+  {id:'brew_super_def',name:'Super Defence', level:48,xp:100,time:5.0,input:[{item:'moonpetal',qty:2},{item:'silverleaf',qty:3}],output:{item:'super_defence',qty:1}},
+  {id:'brew_super_atk',name:'Super Attack',  level:50,xp:100,time:5.0,input:[{item:'moonpetal',qty:2},{item:'voidbloom',qty:1}],output:{item:'super_attack',qty:1}},
+  {id:'brew_ranging',  name:'Ranging Potion', level:40,xp:80, time:4.5,input:[{item:'bloodroot',qty:2},{item:'voidbloom',qty:1}],output:{item:'ranging_potion',qty:1}},
+  {id:'brew_magic',    name:'Magic Potion',   level:42,xp:85, time:4.5,input:[{item:'moonpetal',qty:1},{item:'voidbloom',qty:2}],output:{item:'magic_potion',qty:1}},
+  {id:'brew_antifire', name:'Antifire',       level:55,xp:130,time:5.5,input:[{item:'dragonbloom',qty:1},{item:'bloodroot',qty:2}],output:{item:'antifire',qty:1}},
+  {id:'brew_antivenom',name:'Antivenom',      level:58,xp:140,time:5.5,input:[{item:'voidbloom',qty:2},{item:'ashblossom',qty:1}],output:{item:'antivenom',qty:1}},
+  {id:'brew_prayer',   name:'Prayer Potion',  level:35,xp:60, time:4.0,input:[{item:'silverleaf',qty:3},{item:'bloodroot',qty:2}],output:{item:'prayer_potion',qty:1}},
+  {id:'brew_restore',  name:'Super Restore',  level:63,xp:180,time:6.0,input:[{item:'dragonbloom',qty:1},{item:'celestial_herb',qty:1}],output:{item:'super_restore',qty:1}},
+);
+
+// New thieving targets
+GAME_DATA.thievingTargets.push(
+  {id:'pickpocket_knight',name:'Knight',level:75,xp:220,time:5.0,stunChance:0.45,stunTime:7,gold:{min:80,max:300},loot:[{item:'diamond',qty:1,chance:0.03},{item:'enchant_scroll',qty:1,chance:0.08}]},
+  {id:'pickpocket_king',  name:'King',  level:90,xp:350,time:5.5,stunChance:0.50,stunTime:8,gold:{min:150,max:500},loot:[{item:'onyx',qty:1,chance:0.02},{item:'celestial_essence',qty:1,chance:0.03}]},
+);
+
+// Add charm drops to monsters
+for (const [mId, mon] of Object.entries(GAME_DATA.monsters)) {
+  if (mon.combatLevel >= 5 && mon.combatLevel < 20)  mon.drops.push({item:'gold_charm',qty:1,chance:0.15});
+  if (mon.combatLevel >= 20 && mon.combatLevel < 40) mon.drops.push({item:'green_charm',qty:1,chance:0.12});
+  if (mon.combatLevel >= 40 && mon.combatLevel < 65) mon.drops.push({item:'crimson_charm',qty:1,chance:0.10});
+  if (mon.combatLevel >= 65)                          mon.drops.push({item:'blue_charm',qty:1,chance:0.08});
+}
+
+// ── EXPANDED SHOP ────────────────────────────────────────
+GAME_DATA.shop.push(
+  {item:'enchant_scroll',price:500,category:'special'},
+  {item:'enchant_dust',price:30,category:'materials'},
+  {item:'prayer_potion',price:400,category:'potions'},
+  {item:'super_strength',price:250,category:'potions'},
+  {item:'super_defence',price:250,category:'potions'},
+  {item:'super_attack',price:250,category:'potions'},
+  {item:'ranging_potion',price:200,category:'potions'},
+  {item:'magic_potion',price:200,category:'potions'},
+  {item:'antifire',price:400,category:'potions'},
+  {item:'dragon_seed',price:250,category:'seeds'},
+  {item:'obsidian_arrows',price:200,category:'equipment'},
+  {item:'dragon_arrows',price:400,category:'equipment'},
+  {item:'broad_arrows',price:50,category:'equipment'},
+);
+
+// ── MORE ACHIEVEMENTS ────────────────────────────────────
+GAME_DATA.achievements.push(
+  {id:'enchant_1',     name:'Enchanter',       desc:'Enchant your first item.',    check:(g)=>(g.stats.totalActions.enchanting||0)>=1},
+  {id:'enchant_master',name:'Master Enchanter',desc:'Reach Enchanting level 50.',  check:(g)=>g.skills.enchanting&&g.skills.enchanting.level>=50},
+  {id:'level_99_any',  name:'Maxed',           desc:'Reach level 99 in any skill.',check:(g)=>Object.values(g.skills).some(s=>s.level>=99)},
+  {id:'total_1000',    name:'Legendary',       desc:'Total level 1000+.',          check:(g)=>Object.values(g.skills).reduce((a,s)=>a+s.level,0)>=1000},
+  {id:'gold_10m',      name:'Tycoon',          desc:'Hold 10,000,000 gold.',       check:(g)=>g.gold>=10000000},
+  {id:'kill_5000',     name:'Decimator',       desc:'Kill 5,000 monsters.',        check:(g)=>g.stats.monstersKilled>=5000},
+  {id:'kill_10000',    name:'Genocide',         desc:'Kill 10,000 monsters.',      check:(g)=>g.stats.monstersKilled>=10000},
+  {id:'cook_no_burn',  name:'Iron Chef',       desc:'Cook 100 food without burning.',check:(g)=>(g.stats.totalActions.cooking||0)>=100},
+  {id:'full_ashsteel', name:'Ashsteel Warrior', desc:'Equip full Ashsteel armor.', check:(g)=>g.equipment.head==='ashsteel_helm'&&g.equipment.body==='ashsteel_plate'&&g.equipment.legs==='ashsteel_legs'},
+  {id:'all_bosses',    name:'Boss Hunter',     desc:'Kill all 3 world bosses.',    check:(g)=>{const u=g.stats.uniqueKills||{};return u.blight_warden&&u.storm_reaver&&u.ashen_overlord;}},
+  {id:'all_dungeons',  name:'Dungeon Master',  desc:'Complete all dungeons.',      check:(g)=>(g.stats.dungeonsCompleted||0)>=11},
+  {id:'fifty_quests',  name:'Questaholic',     desc:'Complete 48 quests.',         check:(g)=>(g.quests?.completed?.length||0)>=48},
+);
+
+console.log('[Ashfall] v4.0 expansion loaded:', Object.keys(GAME_DATA.items).length, 'items');
