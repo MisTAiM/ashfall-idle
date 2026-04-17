@@ -1732,3 +1732,229 @@ html, body {
 @media (max-width: 768px) {
   .level-tracker { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ── v3.4 COMBAT XP + CHARACTER + GUILDS ──────────────── */
+
+/* Combat XP Panel */
+.combat-xp-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px;
+  margin-bottom: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+.cxp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.cxp-name {
+  font-family: 'Cinzel', serif;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 10px;
+  width: 28px;
+  flex-shrink: 0;
+}
+.cxp-level {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: var(--accent);
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+  transition: color 0.3s;
+}
+.cxp-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-deep);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 40px;
+}
+.cxp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  border-radius: 3px;
+  transition: width 0.2s ease-out;
+}
+.cxp-xp {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  width: 50px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.cxp-cb {
+  border-top: 1px solid var(--border-light);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+.cxp-flash {
+  color: #fff !important;
+  text-shadow: 0 0 8px var(--accent);
+  animation: levelFlash 0.8s ease-out;
+}
+
+/* Character Profile Card */
+.char-profile-card {
+  display: flex;
+  gap: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+.char-avatar {
+  width: 128px;
+  height: 128px;
+  border: 3px solid var(--accent);
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg-deep);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.char-avatar img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.char-info { flex: 1; }
+.char-name {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.char-title {
+  font-size: 13px;
+  color: var(--purple);
+  font-style: italic;
+  margin-bottom: 8px;
+}
+.char-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.char-stats span { background: var(--bg-deep); padding: 2px 8px; border-radius: 3px; }
+.char-bio {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Character Customizer */
+.char-customizer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.cc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cc-label {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  width: 110px;
+  flex-shrink: 0;
+}
+.cc-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  max-height: 64px;
+  overflow-y: auto;
+}
+.cc-colors {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.cc-swatch {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cc-swatch:hover { border-color: var(--text); transform: scale(1.1); }
+.cc-swatch-active {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 8px rgba(201,135,62,0.5);
+  transform: scale(1.15);
+}
+
+/* Equipment Guide */
+.equip-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.eg-tier {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-deep);
+  border-radius: 4px;
+  font-size: 13px;
+}
+.eg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.eg-name { color: var(--text-bright); font-family: 'Cinzel', serif; }
+.eg-level { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.eg-note {
+  width: 100%;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Avatar in sidebar */
+.player-avatar-mini {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--accent-dim);
+  image-rendering: pixelated;
+}
+
+@media (max-width: 768px) {
+  .char-profile-card { flex-direction: column; align-items: center; text-align: center; }
+  .combat-xp-panel { grid-template-columns: repeat(2, 1fr); }
+  .cc-label { width: 80px; }
+}

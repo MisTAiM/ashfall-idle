@@ -92,6 +92,9 @@ class GameEngine {
     if (!s.stats.petsFound) s.stats.petsFound = 0;
     if (!s.stats.magicKills) s.stats.magicKills = 0;
     if (!s.stats.dungeonCompletions) s.stats.dungeonCompletions = {};
+    // Character profile
+    if (!s.profile) s.profile = { avatarSeed:'', hair:'short04', skinColor:'c68642', hairColor:'2c1b18', accessory:'', mouth:'happy01', eyes:'variant04', clothing:'variant04', clothingColor:'4a90d4', bio:'' };
+    if (!s.guild) s.guild = null;
     s.version = 2;
   }
 

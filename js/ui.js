@@ -95,6 +95,8 @@ const NAV = [
   ]},
   { header:'Online', items:[
     {id:'account',label:'Account',icon:'npc'},
+    {id:'character',label:'Character',icon:'shield'},
+    {id:'guilds',label:'Guilds',icon:'faction'},
     {id:'chat',label:'Global Chat',icon:'scroll'},
     {id:'pvp_arena',label:'PvP Arena',icon:'combat'},
     {id:'bounty_board',label:'Bounty Board',icon:'coin'},
@@ -139,11 +141,15 @@ class UI {
     const sb = document.getElementById('sidebar');
     const s = this.engine.state;
     const align = GAME_DATA.alignments[s.alignment];
+    const _prof = s.profile || {};
+    const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
+    const _avUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${_prof.hair||'short04'}&skinColor=${_prof.skinColor||'c68642'}&size=32`;
     let html = `<div class="sidebar-header">
       <div class="logo-text">ASHFALL</div>
       <div class="logo-sub">IDLE</div>
     </div>
     <div class="player-info">
+      <div class="pi-row"><img src="${_avUrl}" class="player-avatar-mini" alt=""><span style="font-family:Cinzel,serif;color:var(--accent)">${typeof online !== 'undefined' && online.displayName ? online.displayName : 'Survivor'}</span></div>
       <div class="pi-row"><span>Combat Lvl</span><span class="pi-val">${this.engine.getCombatLevel()}</span></div>
       <div class="pi-row"><span>Total Lvl</span><span class="pi-val">${this.engine.getTotalLevel()}</span></div>
       <div class="pi-row"><span>${icon('coin',12)} Gold</span><span class="pi-val gold-val">${this.fmt(s.gold)}</span></div>
@@ -248,6 +254,8 @@ class UI {
     else if (pageId === 'necromancy') this.renderNecromancyPage(main);
     else if (pageId === 'summoning') { main.innerHTML = this.header('Summoning','sparkle','Create combat familiars from charms dropped by monsters. Coming soon - train other skills to prepare.','summoning'); }
     else if (pageId === 'account') this.renderAccountPage(main);
+    else if (pageId === 'character') this.renderCharacterPage(main);
+    else if (pageId === 'guilds') this.renderGuildsPage(main);
     else if (pageId === 'chat') this.renderChatPage(main);
     else if (pageId === 'pvp_arena') this.renderPvPPage(main);
     else if (pageId === 'bounty_board') this.renderBountyPage(main);
@@ -356,11 +364,16 @@ class UI {
   renderCombatPage(el) {
     const s = this.engine.state, c = s.combat;
     let html = this.header('Combat','combat','Fight monsters for XP, gold, and loot.', null);
-    html += `<div class="combat-stats-bar">
-      <span>Atk: <b id="cs-atk">${s.skills.attack.level}</b></span><span>Str: <b id="cs-str">${s.skills.strength.level}</b></span><span>Def: <b id="cs-def">${s.skills.defence.level}</b></span>
-      <span>HP: <b id="cs-hp">${s.skills.hitpoints.level}</b></span><span>Rng: <b id="cs-rng">${s.skills.ranged.level}</b></span><span>Mag: <b id="cs-mag">${s.skills.magic.level}</b></span>
-      <span>Cb: <b>${this.engine.getCombatLevel()}</b></span>
-    </div>`;
+    // Combat skills with LIVE XP bars
+    const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer'];
+    html += '<div class="combat-xp-panel" id="combat-xp-panel">';
+    for (const _sId of _cSkills) {
+      const _sk = s.skills[_sId]; if (!_sk) continue;
+      const _p = this.engine.getXpProgress(_sId);
+      const _name = GAME_DATA.skills[_sId]?.name || _sId;
+      html += `<div class="cxp-row"><span class="cxp-name">${_name.substring(0,3)}</span><span class="cxp-level" id="cxp-lv-${_sId}">${_sk.level}</span><div class="cxp-bar"><div class="cxp-fill" id="cxp-fill-${_sId}" style="width:${(_p*100).toFixed(1)}%"></div></div><span class="cxp-xp" id="cxp-xp-${_sId}">${this.fmt(_sk.xp)}</span></div>`;
+    }
+    html += `<div class="cxp-row cxp-cb"><span class="cxp-name">Cb</span><span class="cxp-level">${this.engine.getCombatLevel()}</span></div></div>`;
     html += `<div class="combat-style-select">
       <div class="style-group"><span class="style-label">Style:</span>
       <button class="btn btn-sm ${c.combatStyle==='melee'?'btn-active':''}" onclick="ui.setStyle('melee')">Melee</button>
@@ -1128,6 +1141,189 @@ class UI {
     el.innerHTML = html;
   }
 
+  // ── CHARACTER CREATOR ───────────────────────────────────
+  renderCharacterPage(el) {
+    const s = this.engine.state;
+    if (!s.profile) s.profile = { avatarSeed:'', hair:'short04', skinColor:'c68642', hairColor:'2c1b18', accessory:'', mouth:'happy01', eyes:'variant04', clothing:'variant04', clothingColor:'4a90d4', bio:'' };
+    const p = s.profile;
+    const seed = p.avatarSeed || (typeof online !== 'undefined' ? online.displayName : 'Survivor') || 'Survivor';
+    const avatarUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair}&skinColor=${p.skinColor}&hairColor=${p.hairColor}&mouth=${p.mouth}&eyes=${p.eyes}&clothing=${p.clothing}&clothingColor=${p.clothingColor}${p.accessory?'&accessories='+p.accessory:''}`;
+    const align = GAME_DATA.alignments[s.alignment];
+
+    let html = this.header('Character','shield','Customize your avatar and set up your profile.',null);
+
+    // Profile card
+    html += `<div class="char-profile-card">
+      <div class="char-avatar"><img src="${avatarUrl}" alt="Avatar" width="128" height="128" id="char-avatar-img"></div>
+      <div class="char-info">
+        <div class="char-name">${typeof online !== 'undefined' ? online.displayName || 'Survivor' : 'Survivor'}</div>
+        <div class="char-title">${align.name} (${align.axis})</div>
+        <div class="char-stats">
+          <span>Combat: ${this.engine.getCombatLevel()}</span>
+          <span>Total: ${this.engine.getTotalLevel()}</span>
+          <span>Gold: ${this.fmt(s.gold)}</span>
+          <span>Kills: ${this.fmt(s.stats.monstersKilled)}</span>
+        </div>
+        ${p.bio ? `<div class="char-bio">${this.escHtml(p.bio)}</div>` : ''}
+      </div>
+    </div>`;
+
+    // Avatar customizer
+    html += '<h2 class="section-title">Customize Avatar</h2><div class="char-customizer">';
+    const options = {
+      'Avatar Seed': {key:'avatarSeed', type:'text', placeholder:'Type a name or word'},
+      'Hair Style': {key:'hair', type:'select', opts:['short01','short02','short03','short04','short05','long01','long02','long03','long04','long05','long06','long07','long08','long09','long10','long11','long12','long13','long14','long15']},
+      'Hair Color': {key:'hairColor', type:'color', opts:['2c1b18','d4a83a','c44040','1a1a1f','7a4a2a','e8e0d4','5a2a8a','3a8a5e']},
+      'Skin': {key:'skinColor', type:'color', opts:['f8d9c0','e8b88a','c68642','8d5524','5a3a1a','f0d0b0']},
+      'Eyes': {key:'eyes', type:'select', opts:['variant01','variant02','variant03','variant04','variant05','variant06','variant07','variant08','variant09','variant10','variant11','variant12']},
+      'Mouth': {key:'mouth', type:'select', opts:['happy01','happy02','happy03','happy04','happy05','happy06','happy07','happy08','happy09','happy10','happy11','happy12','sad01','sad02','sad03','sad04','sad05','sad06','sad07','sad08','surprised01','surprised02']},
+      'Clothing': {key:'clothing', type:'select', opts:['variant01','variant02','variant03','variant04','variant05','variant06','variant07','variant08','variant09','variant10','variant11','variant12','variant13','variant14','variant15','variant16','variant17','variant18','variant19','variant20','variant21','variant22','variant23','variant24','variant25']},
+      'Clothing Color': {key:'clothingColor', type:'color', opts:['4a90d4','c44040','5a8a3e','d4a83a','8a5ec4','1a1a1f','e8e0d4','c47a3a']},
+      'Accessory': {key:'accessory', type:'select', opts:['','variant01','variant02','variant03','variant04']},
+    };
+    for (const [label, cfg] of Object.entries(options)) {
+      html += `<div class="cc-row"><label class="cc-label">${label}</label>`;
+      if (cfg.type === 'text') {
+        html += `<input type="text" class="chat-input" value="${this.escHtml(p[cfg.key]||'')}" placeholder="${cfg.placeholder}" onchange="ui.setCharOpt('${cfg.key}',this.value)">`;
+      } else if (cfg.type === 'select') {
+        html += '<div class="cc-opts">';
+        for (const opt of cfg.opts) {
+          const active = p[cfg.key] === opt;
+          const display = opt ? opt.replace('variant','V').replace('short','S').replace('long','L').replace('happy','H').replace('sad','Sd').replace('surprised','!') : 'None';
+          html += `<button class="btn btn-xs ${active?'btn-active':''}" onclick="ui.setCharOpt('${cfg.key}','${opt}')">${display}</button>`;
+        }
+        html += '</div>';
+      } else if (cfg.type === 'color') {
+        html += '<div class="cc-colors">';
+        for (const c of cfg.opts) {
+          const active = p[cfg.key] === c;
+          html += `<button class="cc-swatch ${active?'cc-swatch-active':''}" style="background:#${c}" onclick="ui.setCharOpt('${cfg.key}','${c}')"></button>`;
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Bio
+    html += `<h2 class="section-title">Bio</h2>
+      <div style="display:flex;gap:8px"><textarea id="bio-input" class="chat-input" rows="3" placeholder="Write about your character..." style="flex:1;resize:vertical">${this.escHtml(p.bio||'')}</textarea>
+      <button class="btn btn-sm" onclick="game.state.profile.bio=document.getElementById('bio-input').value;ui.toast({type:'success',text:'Bio saved.'})">Save</button></div>`;
+
+    // Equipment requirements quick reference
+    html += '<h2 class="section-title">Equipment Level Guide</h2><div class="equip-guide">';
+    const tiers = [
+      {name:'Bronze', level:1, color:'#a06a3c'},
+      {name:'Iron', level:10, color:'#7a8294'},
+      {name:'Steel', level:20, color:'#9da4b4'},
+      {name:'Mithril', level:30, color:'#7ab8c8'},
+      {name:'Adamant', level:40, color:'#4a8a5e'},
+      {name:'Obsidian', level:50, color:'#5a3060'},
+      {name:'Dragon', level:55, color:'#5a8a3e'},
+      {name:'Ashfire', level:60, color:'#d63a1a'},
+    ];
+    for (const t of tiers) {
+      html += `<div class="eg-tier"><span class="eg-dot" style="background:${t.color}"></span><span class="eg-name">${t.name}</span><span class="eg-level">Lv ${t.level}+</span></div>`;
+    }
+    html += `<div class="eg-note">Melee weapons require Attack level. Ranged weapons require Ranged. Magic weapons require Magic. Armor requires Defence. Hybrid gear has multiple requirements.</div></div>`;
+
+    el.innerHTML = html;
+  }
+
+  setCharOpt(key, value) {
+    if (!game.state.profile) game.state.profile = {};
+    game.state.profile[key] = value;
+    this.renderPage('character');
+  }
+
+  // ── GUILDS PAGE ────────────────────────────────────────
+  renderGuildsPage(el) {
+    const s = this.engine.state;
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    let html = this.header('Guilds','faction','Create or join a guild. Ally with others, compete for dominance.',null);
+
+    if (!isOnline) {
+      html += '<div class="bank-empty">Online features required. Configure Firebase to enable guilds.</div>';
+      el.innerHTML = html; return;
+    }
+
+    if (s.guild) {
+      html += `<div class="alignment-display">
+        <div class="al-current">Your Guild: <strong>${this.escHtml(s.guild.name)}</strong></div>
+        <div class="al-desc">Role: ${s.guild.role || 'Member'}</div>
+        <button class="btn btn-xs btn-danger" style="margin-top:8px" onclick="game.state.guild=null;ui.renderPage('guilds')">Leave Guild</button>
+      </div>`;
+    } else {
+      html += `<div class="settings-section">
+        <h3>Create a Guild</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="guild-name" class="chat-input" placeholder="Guild name" maxlength="30">
+          <input type="text" id="guild-tag" class="chat-input" placeholder="Tag (3-5 chars)" maxlength="5" style="width:100px">
+          <button class="btn btn-sm" onclick="ui.createGuild()">Create (1000g)</button>
+        </div>
+      </div>`;
+      html += `<div class="settings-section">
+        <h3>Join a Guild</h3>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="guild-join" class="chat-input" placeholder="Guild name to join">
+          <button class="btn btn-sm" onclick="ui.joinGuild()">Join</button>
+        </div>
+      </div>`;
+    }
+
+    html += '<h2 class="section-title">Guild Benefits</h2><div class="actions-grid">';
+    const benefits = [
+      {name:'Shared XP Bonus', desc:'+2% XP for all members when 3+ online.'},
+      {name:'Guild Bank', desc:'Shared gold pool for group purchases.'},
+      {name:'Alliances', desc:'Ally with other guilds for faction wars.'},
+      {name:'Wilderness', desc:'Guild territory control in PvP zones.'},
+      {name:'Guild Chat', desc:'Private communication channel.'},
+      {name:'Guild Quests', desc:'Cooperative quests with group rewards.'},
+    ];
+    for (const b of benefits) {
+      html += `<div class="action-card"><div class="ac-header"><span class="ac-name">${b.name}</span></div><p class="area-desc">${b.desc}</p></div>`;
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  createGuild() {
+    const name = document.getElementById('guild-name')?.value?.trim();
+    const tag = document.getElementById('guild-tag')?.value?.trim()?.toUpperCase();
+    if (!name || name.length < 3) { this.toast({type:'warn',text:'Guild name must be 3+ characters.'}); return; }
+    if (!tag || tag.length < 2 || tag.length > 5) { this.toast({type:'warn',text:'Tag must be 2-5 characters.'}); return; }
+    if (game.state.gold < 1000) { this.toast({type:'warn',text:'Need 1000 gold to create a guild.'}); return; }
+    game.state.gold -= 1000;
+    game.state.guild = { name, tag, role:'Leader', created:Date.now() };
+    // Store in Firestore if online
+    if (typeof online !== 'undefined' && online.isOnline && online.firestore && online.user) {
+      online.firestore.collection('guilds').doc(name.toLowerCase().replace(/\s+/g,'_')).set({
+        name, tag, leader:online.user.uid, leaderName:online.displayName,
+        members:[{uid:online.user.uid,name:online.displayName,role:'Leader'}],
+        created:firebase.firestore.FieldValue.serverTimestamp(),
+      }).catch(e => console.error('Guild create error:', e));
+    }
+    this.toast({type:'achievement',text:`Guild "${name}" [${tag}] created!`});
+    this.renderPage('guilds');
+  }
+
+  async joinGuild() {
+    const name = document.getElementById('guild-join')?.value?.trim();
+    if (!name) return;
+    if (typeof online !== 'undefined' && online.isOnline && online.firestore) {
+      try {
+        const snap = await online.firestore.collection('guilds').where('name','==',name).limit(1).get();
+        if (snap.empty) { this.toast({type:'warn',text:'Guild not found.'}); return; }
+        const doc = snap.docs[0];
+        const data = doc.data();
+        await doc.ref.update({ members: firebase.firestore.FieldValue.arrayUnion({uid:online.user.uid,name:online.displayName,role:'Member'}) });
+        game.state.guild = { name:data.name, tag:data.tag, role:'Member' };
+        this.toast({type:'success',text:`Joined ${data.name} [${data.tag}]!`});
+        this.renderPage('guilds');
+      } catch(e) { this.toast({type:'danger',text:'Error joining guild.'}); }
+    }
+  }
+
   // ── ACCOUNT PAGE ────────────────────────────────────────
   renderAccountPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
@@ -1517,19 +1713,18 @@ class UI {
         // Food qty
         const fqEl = document.getElementById('food-qty');
         if (fqEl) fqEl.textContent = s.food.qty;
-        // Combat stat levels
-        const csAtk = document.getElementById('cs-atk');
-        if (csAtk) csAtk.textContent = s.skills.attack.level;
-        const csStr = document.getElementById('cs-str');
-        if (csStr) csStr.textContent = s.skills.strength.level;
-        const csDef = document.getElementById('cs-def');
-        if (csDef) csDef.textContent = s.skills.defence.level;
-        const csHp = document.getElementById('cs-hp');
-        if (csHp) csHp.textContent = s.skills.hitpoints.level;
-        const csRng = document.getElementById('cs-rng');
-        if (csRng) csRng.textContent = s.skills.ranged.level;
-        const csMag = document.getElementById('cs-mag');
-        if (csMag) csMag.textContent = s.skills.magic.level;
+        // Combat XP bars (live updating)
+        for (const sId of ['attack','strength','defence','hitpoints','ranged','magic','prayer']) {
+          const sk = s.skills[sId]; if (!sk) continue;
+          const lvEl = document.getElementById('cxp-lv-' + sId);
+          const fillEl = document.getElementById('cxp-fill-' + sId);
+          const xpEl = document.getElementById('cxp-xp-' + sId);
+          if (lvEl) {
+            if (lvEl.textContent !== String(sk.level)) { lvEl.textContent = sk.level; lvEl.classList.add('cxp-flash'); setTimeout(()=>lvEl.classList.remove('cxp-flash'), 800); }
+          }
+          if (fillEl) fillEl.style.width = (this.engine.getXpProgress(sId) * 100).toFixed(1) + '%';
+          if (xpEl) xpEl.textContent = this.fmt(sk.xp);
+        }
       }
     }
 
