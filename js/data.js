@@ -35,6 +35,8 @@ const GAME_DATA = {
     trading:{id:'trading',name:'Trading',type:'support',icon:'scale',desc:'Reduces shop prices, boosts sell values.'},
     leadership:{id:'leadership',name:'Leadership',type:'support',icon:'crown',desc:'Unlocks War Cry buffs.'},
     diplomacy:{id:'diplomacy',name:'Diplomacy',type:'support',icon:'scroll',desc:'Boosts reputation gain.'},
+    prayer:{id:'prayer',name:'Prayer',type:'combat',icon:'sparkle',desc:'Bury bones for prayer points. Activate prayers for combat buffs.'},
+    slayer:{id:'slayer',name:'Slayer',type:'combat',icon:'target',desc:'Complete assigned kill tasks for Slayer XP and Slayer Coins.'},
   },
 
   alignments: {
@@ -597,3 +599,260 @@ const GAME_DATA = {
 };
 
 if (typeof module !== 'undefined') module.exports = GAME_DATA;
+
+// ============================================================
+// v3.0 EXPANSION — Prayer, Pets, Slayer, Spellbooks, Monster Families
+// ============================================================
+
+// ── PRAYER SYSTEM ────────────────────────────────────────
+GAME_DATA.skills.prayer = {id:'prayer',name:'Prayer',type:'combat',icon:'sparkle',desc:'Bury bones for prayer points. Activate prayers for passive combat buffs.'};
+GAME_DATA.skills.slayer = {id:'slayer',name:'Slayer',type:'combat',icon:'target',desc:'Complete assigned kill tasks for Slayer XP and Slayer Coins.'};
+
+GAME_DATA.boneValues = {
+  bones: { points:4, xp:4.5 },
+  big_bones: { points:15, xp:15 },
+  dragon_bones: { points:72, xp:72 },
+  // new bone types
+  frost_bones: { points:30, xp:35 },
+  ash_bones: { points:50, xp:55 },
+  void_bones: { points:100, xp:120 },
+};
+
+// Add new bone items
+GAME_DATA.items.frost_bones = {id:'frost_bones',name:'Frost Bones',type:'resource',subtype:'misc',sellPrice:40,sprite:'misc-bone',desc:'Bones of a frost creature. High prayer value.'};
+GAME_DATA.items.ash_bones = {id:'ash_bones',name:'Ash Bones',type:'resource',subtype:'misc',sellPrice:80,sprite:'misc-bone',desc:'Charred bones from Ashborn creatures.'};
+GAME_DATA.items.void_bones = {id:'void_bones',name:'Void Bones',type:'resource',subtype:'misc',sellPrice:200,sprite:'misc-bone',desc:'Bones warped by void energy.'};
+
+GAME_DATA.prayers = [
+  {id:'thick_skin',      name:'Thick Skin',      level:1,  pointCost:1,  desc:'+5% Defence.',         bonus:{defenceBonus:5}},
+  {id:'burst_of_str',    name:'Burst of Strength',level:4,  pointCost:1,  desc:'+5% Strength.',        bonus:{strengthBonus:5}},
+  {id:'clarity_of_thought',name:'Clarity of Thought',level:7,pointCost:1,desc:'+5% Attack.',           bonus:{attackBonus:5}},
+  {id:'sharp_eye',       name:'Sharp Eye',        level:8,  pointCost:1,  desc:'+5% Ranged.',          bonus:{rangedBonus:5}},
+  {id:'mystic_will',     name:'Mystic Will',      level:9,  pointCost:1,  desc:'+5% Magic.',           bonus:{magicBonus:5}},
+  {id:'rock_skin',       name:'Rock Skin',        level:10, pointCost:3,  desc:'+10% Defence.',        bonus:{defenceBonus:10}},
+  {id:'superhuman_str',  name:'Superhuman Strength',level:13,pointCost:3, desc:'+10% Strength.',       bonus:{strengthBonus:10}},
+  {id:'improved_reflexes',name:'Improved Reflexes',level:16, pointCost:3, desc:'+10% Attack.',         bonus:{attackBonus:10}},
+  {id:'hawk_eye',        name:'Hawk Eye',         level:26, pointCost:3,  desc:'+10% Ranged.',         bonus:{rangedBonus:10}},
+  {id:'mystic_lore',     name:'Mystic Lore',      level:27, pointCost:3,  desc:'+10% Magic.',          bonus:{magicBonus:10}},
+  {id:'steel_skin',      name:'Steel Skin',       level:28, pointCost:5,  desc:'+15% Defence.',        bonus:{defenceBonus:15}},
+  {id:'ultimate_str',    name:'Ultimate Strength', level:31, pointCost:5,  desc:'+15% Strength.',      bonus:{strengthBonus:15}},
+  {id:'incredible_reflexes',name:'Incredible Reflexes',level:34,pointCost:5,desc:'+15% Attack.',       bonus:{attackBonus:15}},
+  {id:'eagle_eye',       name:'Eagle Eye',        level:44, pointCost:5,  desc:'+15% Ranged.',         bonus:{rangedBonus:15}},
+  {id:'mystic_might',    name:'Mystic Might',     level:45, pointCost:5,  desc:'+15% Magic.',          bonus:{magicBonus:15}},
+  {id:'piety',           name:'Piety',            level:70, pointCost:8,  desc:'+20% Atk, +23% Str, +25% Def.', bonus:{attackBonus:20,strengthBonus:23,defenceBonus:25}},
+  {id:'rigour',          name:'Rigour',           level:74, pointCost:8,  desc:'+20% Ranged, +25% Def.', bonus:{rangedBonus:20,defenceBonus:25}},
+  {id:'augury',          name:'Augury',           level:77, pointCost:8,  desc:'+25% Magic, +25% Def.', bonus:{magicBonus:25,defenceBonus:25}},
+  {id:'protect_melee',   name:'Protect from Melee',level:43,pointCost:6,  desc:'Reduce melee damage by 40%.',  bonus:{protectMelee:40}},
+  {id:'protect_ranged',  name:'Protect from Ranged',level:40,pointCost:6, desc:'Reduce ranged damage by 40%.', bonus:{protectRanged:40}},
+  {id:'protect_magic',   name:'Protect from Magic',level:37,pointCost:6,  desc:'Reduce magic damage by 40%.',  bonus:{protectMagic:40}},
+];
+
+// ── PET SYSTEM ───────────────────────────────────────────
+GAME_DATA.pets = [
+  // Skilling pets
+  {id:'beaver',   name:'Rocky the Beaver', source:'woodcutting', dropRate:0.0001, bonus:{type:'gatherSpeed', skill:'woodcutting', value:3}, desc:'A tiny beaver. +3% Woodcutting speed.'},
+  {id:'golem',    name:'Golem Jr.',        source:'mining',      dropRate:0.0001, bonus:{type:'gatherSpeed', skill:'mining',      value:3}, desc:'A mini golem. +3% Mining speed.'},
+  {id:'heron',    name:'Ashen Heron',      source:'fishing',     dropRate:0.0001, bonus:{type:'gatherSpeed', skill:'fishing',     value:3}, desc:'A scarred heron. +3% Fishing speed.'},
+  {id:'tangleroot',name:'Tangleroot',      source:'farming',     dropRate:0.0005, bonus:{type:'farmYield', value:15},                       desc:'A walking root. +15% Farming yield.'},
+  {id:'squirrel', name:'Char Squirrel',    source:'foraging',    dropRate:0.0001, bonus:{type:'gatherSpeed', skill:'foraging',    value:3}, desc:'A burnt squirrel. +3% Foraging speed.'},
+  {id:'raccoon',  name:'Bandit Raccoon',   source:'thieving',    dropRate:0.00015,bonus:{type:'thievingGold', value:10},                    desc:'A sneaky raccoon. +10% Thieving gold.'},
+  {id:'phoenix',  name:'Cinderwing',       source:'cooking',     dropRate:0.00008,bonus:{type:'burnReduction', value:5},                    desc:'A tiny phoenix. -5% Burn chance.'},
+  {id:'smithy_hammer',name:'Smithy',       source:'smithing',    dropRate:0.0001, bonus:{type:'craftSpeed', skill:'smithing',     value:3}, desc:'A living hammer. +3% Smithing speed.'},
+  // Combat pets
+  {id:'baby_dragon',name:'Baby Dragon',    source:'dragon',      dropRate:0.002,  bonus:{type:'combatDmg', value:3},                        desc:'A baby dragon. +3% combat damage.'},
+  {id:'shadow_imp',name:'Shadow Imp',      source:'demon',       dropRate:0.003,  bonus:{type:'magicDmg', value:5},                         desc:'A shadow imp. +5% magic damage.'},
+  {id:'void_wisp',name:'Void Wisp',        source:'void_walker', dropRate:0.005,  bonus:{type:'evasion', value:5},                          desc:'A void wisp. +5% evasion.'},
+  {id:'ash_sprite',name:'Ash Sprite',      source:'ashfall_titan',dropRate:0.01,  bonus:{type:'allXp', value:2},                            desc:'An ash sprite. +2% all XP.'},
+  // World boss pets
+  {id:'blight_pup',name:'Blighted Pup',    source:'blight_warden',dropRate:0.02, bonus:{type:'poisonChance', value:10},                     desc:'A plagued pup. +10% poison chance.'},
+  {id:'storm_cub', name:'Storm Cub',       source:'storm_reaver', dropRate:0.015,bonus:{type:'freezeChance', value:10},                     desc:'A storm cub. +10% freeze chance.'},
+  {id:'ashen_shade',name:'Ashen Shade',    source:'ashen_overlord',dropRate:0.01,bonus:{type:'burnChance', value:10},                       desc:'An ashen shade. +10% burn chance.'},
+  // New monster family pets
+  {id:'ashling_pet',name:'Tamed Ashling',  source:'ashling',      dropRate:0.003, bonus:{type:'fireResist', value:5},                       desc:'A tamed ashling. +5% fire resistance.'},
+  {id:'frost_sprite',name:'Frost Sprite',  source:'frost_wraith', dropRate:0.003, bonus:{type:'freezeResist', value:5},                     desc:'A frost sprite. +5% freeze resistance.'},
+  {id:'blood_pup', name:'Bloodfang Pup',   source:'bloodfang_alpha',dropRate:0.005,bonus:{type:'bleedDmg', value:8},                       desc:'A bloodfang pup. +8% bleed damage.'},
+];
+
+// ── SLAYER SYSTEM ────────────────────────────────────────
+GAME_DATA.slayerTasks = {
+  easy:   {tier:'easy',   name:'Easy',   slayerReq:1,  combatReq:1,  killRange:[15,30],  coinReward:5,  monsters:['chicken','rat','goblin']},
+  normal: {tier:'normal', name:'Normal', slayerReq:10, combatReq:15, killRange:[20,40],  coinReward:12, monsters:['skeleton','bandit','wolf']},
+  hard:   {tier:'hard',   name:'Hard',   slayerReq:25, combatReq:30, killRange:[30,60],  coinReward:25, monsters:['troll','dark_mage','shadow_archer','ogre','ashling','ember_wraith']},
+  elite:  {tier:'elite',  name:'Elite',  slayerReq:45, combatReq:50, killRange:[40,80],  coinReward:50, monsters:['wyvern','demon','frost_wraith','bloodfang_alpha','ash_golem']},
+  master: {tier:'master', name:'Master', slayerReq:70, combatReq:75, killRange:[50,120], coinReward:100,monsters:['dragon','void_walker','hollow_lord','frost_drake']},
+};
+
+GAME_DATA.slayerShop = [
+  {id:'slayer_helm',    name:'Slayer Helm',      cost:500,  type:'equipment', itemId:'slayer_helm',     desc:'A helm that boosts damage vs slayer task targets.'},
+  {id:'slayer_ring',    name:'Slayer Ring',       cost:300,  type:'equipment', itemId:'slayer_ring',     desc:'Teleports to slayer task monster areas.'},
+  {id:'auto_slayer',    name:'Auto-Slayer',       cost:1000, type:'upgrade',   desc:'Automatically assigns a new task when one is completed.'},
+  {id:'task_skip',      name:'Skip Task',         cost:30,   type:'consumable',desc:'Skip your current slayer task.'},
+  {id:'task_extend',    name:'Extend Task',       cost:50,   type:'consumable',desc:'Double your current task kill count for +50% coins.'},
+  {id:'broad_arrows',   name:'Broad Arrows (100)',cost:100,  type:'item',      itemId:'broad_arrows',   desc:'Arrows effective vs slayer creatures.'},
+];
+
+// Slayer items
+GAME_DATA.items.slayer_helm = {id:'slayer_helm',name:'Slayer Helm',type:'armor',slot:'head',stats:{attackBonus:3,strengthBonus:3,defenceBonus:10,rangedBonus:3,magicBonus:3,damageReduction:2},levelReq:{defence:10,slayer:20},sellPrice:0,sprite:'helm-iron',desc:'+15% damage and accuracy vs slayer targets.',unique:true,slayerBonus:15};
+GAME_DATA.items.slayer_ring = {id:'slayer_ring',name:'Slayer Ring',type:'armor',slot:'ring',stats:{attackBonus:4,strengthBonus:2},levelReq:{slayer:15},sellPrice:0,sprite:'ring-ruby',desc:'+5% Slayer XP.',unique:true,slayerXpBonus:5};
+GAME_DATA.items.broad_arrows = {id:'broad_arrows',name:'Broad Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:12,sellPrice:5,sprite:'arrow-steel',desc:'Effective vs slayer creatures. +20% damage on task.'};
+
+// ── SPELLBOOKS ───────────────────────────────────────────
+GAME_DATA.spellbooks = {
+  standard: { id:'standard', name:'Standard', desc:'The basic spellbook.', spellIds: GAME_DATA.spells.map(s=>s.id) },
+  pyromancy: {
+    id:'pyromancy', name:'Pyromancy', desc:'Fire magic. High damage, Burn effects.', unlockReq:{magic:20},
+    color:'#d63a1a',
+  },
+  cryomancy: {
+    id:'cryomancy', name:'Cryomancy', desc:'Ice magic. Control and Freeze effects.', unlockReq:{magic:25},
+    color:'#4a9ed4',
+  },
+  blood_magic: {
+    id:'blood_magic', name:'Blood Magic', desc:'Dark healing. Lifesteal and Bleed.', unlockReq:{magic:35},
+    color:'#a02a2a',
+  },
+  void_magic: {
+    id:'void_magic', name:'Void Magic', desc:'Forbidden void spells. Devastating but costly.', unlockReq:{magic:55},
+    color:'#7a3ac4',
+  },
+};
+
+// Add new spells for each spellbook
+GAME_DATA.pyromancySpells = [
+  {id:'ember_bolt',  name:'Ember Bolt',  level:20, maxHit:40,  runes:[{item:'fire_rune',qty:3}],                         desc:'A bolt of embers.',statusChance:{burn:0.35},book:'pyromancy'},
+  {id:'flame_wave',  name:'Flame Wave',  level:30, maxHit:65,  runes:[{item:'fire_rune',qty:5}],                         desc:'A wave of fire.',statusChance:{burn:0.50},book:'pyromancy'},
+  {id:'inferno',     name:'Inferno',     level:45, maxHit:95,  runes:[{item:'fire_rune',qty:5},{item:'chaos_rune',qty:2}],desc:'Engulf in flame. +3 burn stacks.',statusChance:{burn:0.80},burnStacks:3,book:'pyromancy'},
+  {id:'pyroclasm',   name:'Pyroclasm',   level:60, maxHit:130, runes:[{item:'fire_rune',qty:8},{item:'death_rune',qty:2}],desc:'Massive fire explosion.',statusChance:{burn:1.0},burnStacks:5,book:'pyromancy'},
+  {id:'solar_flare', name:'Solar Flare', level:75, maxHit:180, runes:[{item:'fire_rune',qty:10},{item:'death_rune',qty:3},{item:'chaos_rune',qty:3}],desc:'Channel the sun itself.',statusChance:{burn:1.0},burnStacks:7,book:'pyromancy'},
+];
+
+GAME_DATA.cryomancySpells = [
+  {id:'frost_bolt',   name:'Frost Bolt',   level:25, maxHit:35,  runes:[{item:'water_rune',qty:3}],                         desc:'A bolt of ice.',statusChance:{freeze:0.30},book:'cryomancy'},
+  {id:'glacial_spike', name:'Glacial Spike',level:35, maxHit:55, runes:[{item:'water_rune',qty:5}],                         desc:'A spike of pure ice.',statusChance:{freeze:0.50},book:'cryomancy'},
+  {id:'blizzard',     name:'Blizzard',     level:50, maxHit:85,  runes:[{item:'water_rune',qty:5},{item:'air_rune',qty:3}], desc:'An ice storm.',statusChance:{freeze:0.70},freezeStacks:3,book:'cryomancy'},
+  {id:'absolute_zero',name:'Absolute Zero',level:65, maxHit:120, runes:[{item:'water_rune',qty:8},{item:'death_rune',qty:2}],desc:'Freeze reality.',statusChance:{freeze:1.0},freezeStacks:5,book:'cryomancy'},
+  {id:'permafrost',   name:'Permafrost',   level:80, maxHit:160, runes:[{item:'water_rune',qty:10},{item:'death_rune',qty:3}],desc:'Eternal ice imprisonment.',statusChance:{freeze:1.0},freezeStacks:8,book:'cryomancy'},
+];
+
+GAME_DATA.bloodMagicSpells = [
+  {id:'blood_bolt',   name:'Blood Bolt',   level:35, maxHit:45,  runes:[{item:'death_rune',qty:1},{item:'chaos_rune',qty:1}],desc:'Drains life. Heals 25% of damage.',lifesteal:0.25,book:'blood_magic'},
+  {id:'sanguine_burst',name:'Sanguine Burst',level:45,maxHit:70, runes:[{item:'death_rune',qty:2},{item:'chaos_rune',qty:2}],desc:'Blood explosion. Heals 30%, applies Bleed.',lifesteal:0.30,statusChance:{bleed:0.50},book:'blood_magic'},
+  {id:'hemorrhage',   name:'Hemorrhage',   level:55, maxHit:90,  runes:[{item:'death_rune',qty:3},{item:'chaos_rune',qty:2}],desc:'Massive bleed. 5 stacks.',statusChance:{bleed:1.0},bleedStacks:5,lifesteal:0.20,book:'blood_magic'},
+  {id:'blood_pact',   name:'Blood Pact',   level:70, maxHit:130, runes:[{item:'death_rune',qty:5},{item:'chaos_rune',qty:3}],desc:'Sacrifice 10% HP for massive damage + full heal on kill.',lifesteal:0.40,selfDmg:0.10,book:'blood_magic'},
+  {id:'crimson_tide',  name:'Crimson Tide', level:85, maxHit:200, runes:[{item:'death_rune',qty:8},{item:'chaos_rune',qty:5}],desc:'A tide of blood. Heals 50%, Bleed 7 stacks.',lifesteal:0.50,statusChance:{bleed:1.0},bleedStacks:7,book:'blood_magic'},
+];
+
+GAME_DATA.voidMagicSpells = [
+  {id:'void_bolt',    name:'Void Bolt',    level:55, maxHit:70,  runes:[{item:'death_rune',qty:2},{item:'chaos_rune',qty:2}],desc:'A bolt from the void.',statusChance:{poison:0.30},book:'void_magic'},
+  {id:'null_wave',    name:'Null Wave',    level:65, maxHit:100, runes:[{item:'death_rune',qty:3},{item:'chaos_rune',qty:3}],desc:'Reality warps. Ignores 30% defence.',defIgnore:0.30,book:'void_magic'},
+  {id:'entropy_blast',name:'Entropy Blast',level:75, maxHit:140, runes:[{item:'death_rune',qty:5},{item:'chaos_rune',qty:4}],desc:'Entropy consumes. All status 2 stacks.',statusChance:{burn:0.5,poison:0.5,freeze:0.5,bleed:0.5},book:'void_magic'},
+  {id:'dimensional_rift',name:'Dimensional Rift',level:85,maxHit:180,runes:[{item:'death_rune',qty:7},{item:'chaos_rune',qty:5}],desc:'Open a rift. Deals HP% damage.',hpPercent:0.10,book:'void_magic'},
+  {id:'oblivion',     name:'Oblivion',     level:95, maxHit:250, runes:[{item:'death_rune',qty:10},{item:'chaos_rune',qty:8}],desc:'Erase from existence. Highest void damage.',statusChance:{burn:1.0,poison:1.0},burnStacks:3,book:'void_magic'},
+];
+
+// ── NEW MONSTER FAMILIES ─────────────────────────────────
+// Ashborn family
+GAME_DATA.monsters.ashling = {id:'ashling',name:'Ashling',hp:180,maxHit:20,attackSpeed:2.4,combatLevel:12,style:'magic',evasion:{melee:15,ranged:10,magic:20},xp:20,gold:{min:5,max:15},alignment:'CN',family:'ashborn',drops:[{item:'ash_bones',qty:1,chance:0.60},{item:'fire_rune',qty:3,chance:0.30},{item:'bones',qty:1,chance:1.0}],weakness:'frost'};
+GAME_DATA.monsters.ember_wraith = {id:'ember_wraith',name:'Ember Wraith',hp:400,maxHit:38,attackSpeed:2.2,combatLevel:30,style:'magic',evasion:{melee:25,ranged:20,magic:40},xp:50,gold:{min:15,max:50},alignment:'CE',family:'ashborn',drops:[{item:'ash_bones',qty:1,chance:0.80},{item:'fire_rune',qty:5,chance:0.25},{item:'chaos_rune',qty:2,chance:0.15}],weakness:'frost'};
+GAME_DATA.monsters.ash_golem = {id:'ash_golem',name:'Ash Golem',hp:800,maxHit:60,attackSpeed:2.8,combatLevel:45,style:'melee',evasion:{melee:50,ranged:45,magic:30},xp:90,gold:{min:30,max:100},alignment:'NN',family:'ashborn',drops:[{item:'ash_bones',qty:2,chance:1.0},{item:'obsidian_ore',qty:2,chance:0.12},{item:'big_bones',qty:1,chance:0.50}],weakness:'frost'};
+
+// Hollowed family
+GAME_DATA.monsters.hollow_soldier = {id:'hollow_soldier',name:'Hollow Soldier',hp:250,maxHit:25,attackSpeed:2.4,combatLevel:18,style:'melee',evasion:{melee:22,ranged:18,magic:12},xp:28,gold:{min:8,max:25},alignment:'NE',family:'hollowed',drops:[{item:'bones',qty:1,chance:1.0},{item:'iron_sword',qty:1,chance:0.08},{item:'leather',qty:1,chance:0.25}]};
+GAME_DATA.monsters.hollow_knight = {id:'hollow_knight',name:'Hollow Knight',hp:550,maxHit:45,attackSpeed:2.6,combatLevel:38,style:'melee',evasion:{melee:40,ranged:35,magic:20},xp:65,gold:{min:20,max:70},alignment:'NE',family:'hollowed',drops:[{item:'big_bones',qty:1,chance:1.0},{item:'steel_plate',qty:1,chance:0.05},{item:'mithril_sword',qty:1,chance:0.03}]};
+GAME_DATA.monsters.hollow_lord = {id:'hollow_lord',name:'Hollow Lord',hp:1200,maxHit:80,attackSpeed:2.4,combatLevel:65,style:'melee',evasion:{melee:65,ranged:60,magic:40},xp:180,gold:{min:60,max:200},alignment:'NE',family:'hollowed',drops:[{item:'big_bones',qty:2,chance:1.0},{item:'adamant_plate',qty:1,chance:0.05},{item:'obsidian_sword',qty:1,chance:0.02}]};
+
+// Frostwraith family
+GAME_DATA.monsters.frost_spirit = {id:'frost_spirit',name:'Frost Spirit',hp:300,maxHit:28,attackSpeed:2.2,combatLevel:22,style:'magic',evasion:{melee:18,ranged:15,magic:35},xp:35,gold:{min:10,max:35},alignment:'CN',family:'frostwraith',drops:[{item:'frost_bones',qty:1,chance:0.70},{item:'water_rune',qty:5,chance:0.30},{item:'bones',qty:1,chance:1.0}],weakness:'fire'};
+GAME_DATA.monsters.frost_wraith = {id:'frost_wraith',name:'Frost Wraith',hp:650,maxHit:50,attackSpeed:2.0,combatLevel:42,style:'magic',evasion:{melee:30,ranged:25,magic:55},xp:80,gold:{min:25,max:80},alignment:'CE',family:'frostwraith',drops:[{item:'frost_bones',qty:1,chance:1.0},{item:'water_rune',qty:8,chance:0.20},{item:'chaos_rune',qty:3,chance:0.15}],weakness:'fire'};
+GAME_DATA.monsters.frost_drake = {id:'frost_drake',name:'Frost Drake',hp:1800,maxHit:100,attackSpeed:2.4,combatLevel:72,style:'ranged',evasion:{melee:55,ranged:70,magic:45},xp:220,gold:{min:80,max:300},alignment:'CN',family:'frostwraith',drops:[{item:'frost_bones',qty:2,chance:1.0},{item:'dragon_hide',qty:1,chance:0.30},{item:'dragon_bones',qty:1,chance:0.50}],weakness:'fire'};
+
+// Bloodfang family
+GAME_DATA.monsters.bloodfang_wolf = {id:'bloodfang_wolf',name:'Bloodfang Wolf',hp:350,maxHit:30,attackSpeed:2.0,combatLevel:25,style:'melee',evasion:{melee:28,ranged:22,magic:15},xp:38,gold:{min:10,max:40},alignment:'CE',family:'bloodfang',drops:[{item:'bones',qty:1,chance:1.0},{item:'wolf_pelt',qty:1,chance:0.50},{item:'leather',qty:2,chance:0.30}]};
+GAME_DATA.monsters.razorback = {id:'razorback',name:'Razorback',hp:600,maxHit:52,attackSpeed:2.4,combatLevel:40,style:'melee',evasion:{melee:38,ranged:32,magic:20},xp:72,gold:{min:20,max:65},alignment:'CE',family:'bloodfang',drops:[{item:'big_bones',qty:1,chance:1.0},{item:'hard_leather',qty:1,chance:0.30},{item:'bear_pelt',qty:1,chance:0.20}]};
+GAME_DATA.monsters.bloodfang_alpha = {id:'bloodfang_alpha',name:'Bloodfang Alpha',hp:1400,maxHit:95,attackSpeed:2.2,combatLevel:68,style:'melee',evasion:{melee:60,ranged:55,magic:35},xp:190,gold:{min:60,max:250},alignment:'CE',family:'bloodfang',drops:[{item:'big_bones',qty:2,chance:1.0},{item:'dragon_hide',qty:1,chance:0.15},{item:'wyvern_scale',qty:2,chance:0.20}]};
+
+// ── NEW COMBAT AREAS ─────────────────────────────────────
+GAME_DATA.combatAreas.push(
+  {id:'ashen_wastes',  name:'The Ashen Wastes',  monsters:['ashling','ember_wraith','ash_golem'],         levelReq:12, desc:'Scorched earth where Ashborn creatures dwell.',family:'ashborn'},
+  {id:'hollow_ruins',  name:'Hollow Ruins',      monsters:['hollow_soldier','hollow_knight','hollow_lord'],levelReq:18, desc:'Crumbling ruins haunted by hollow warriors.',family:'hollowed'},
+  {id:'frozen_reach',  name:'The Frozen Reach',  monsters:['frost_spirit','frost_wraith','frost_drake'],  levelReq:22, desc:'A permafrost wasteland of ice creatures.',family:'frostwraith'},
+  {id:'bloodfang_den', name:'Bloodfang Den',     monsters:['bloodfang_wolf','razorback','bloodfang_alpha'],levelReq:25, desc:'The lair of the savage Bloodfang pack.',family:'bloodfang'},
+);
+
+// ── NEW DUNGEONS ─────────────────────────────────────────
+GAME_DATA.dungeons.push(
+  {id:'ashen_depths',  name:'Ashen Depths',   waves:['ashling','ashling','ember_wraith','ember_wraith','ash_golem','ash_golem'],levelReq:30,rewards:[{item:'obsidian_ore',qty:5,chance:0.40},{item:'ash_bones',qty:3,chance:0.60}],desc:'Deep into the ash vents.'},
+  {id:'frozen_tomb',   name:'The Frozen Tomb', waves:['frost_spirit','frost_spirit','frost_wraith','frost_wraith','frost_drake'],levelReq:50,rewards:[{item:'frost_bones',qty:5,chance:0.50},{item:'diamond',qty:2,chance:0.20},{item:'elder_staff',qty:1,chance:0.03}],desc:'An ancient tomb sealed in ice.'},
+  {id:'bloodfang_arena',name:'Bloodfang Arena',waves:['bloodfang_wolf','bloodfang_wolf','razorback','razorback','bloodfang_alpha','bloodfang_alpha'],levelReq:55,rewards:[{item:'dragon_hide',qty:2,chance:0.30},{item:'obsidian_bar',qty:3,chance:0.20},{item:'bloodfang_cleaver',qty:1,chance:0.04}],desc:'Fight for honor in the bloodpits.'},
+  {id:'hollow_citadel', name:'Hollow Citadel', waves:['hollow_soldier','hollow_soldier','hollow_knight','hollow_knight','hollow_lord','hollow_lord','hollow_lord'],levelReq:65,rewards:[{item:'adamant_plate',qty:1,chance:0.15},{item:'obsidian_plate',qty:1,chance:0.08},{item:'ancient_ring',qty:1,chance:0.03}],desc:'The throne room of the Hollow Lord.'},
+);
+
+// ── MORE NPCs ────────────────────────────────────────────
+GAME_DATA.npcs.push(
+  {id:'greybeard',  name:'Greybeard',       faction:null,           title:'Hermit Sage',     desc:'A wise hermit who teaches prayer.',  location:'Ashfall Monastery'},
+  {id:'vex',        name:'Vex the Tracker',  faction:'bloodfang_clan',title:'Slayer Master',  desc:'Assigns slayer tasks. Respects skill.',location:'The Hunting Grounds'},
+  {id:'lyra',       name:'Lyra Frostweaver', faction:'veiled_circle', title:'Cryomancer',     desc:'A mage who studies ice magic.',        location:'Frozen Spire'},
+  {id:'tormund',    name:'Tormund Ashborn',  faction:null,           title:'Ashborn Scholar', desc:'Studies the creatures of the ash.',    location:'Ashen Wastes Camp'},
+  {id:'elena',      name:'Elena Brightshield',faction:'silver_order', title:'Knight Captain', desc:'Defends the realm from the hollow.',  location:'Hollow Watch'},
+  {id:'morrigan',   name:'Morrigan',         faction:'veiled_circle', title:'Blood Mage',     desc:'An outcast practicing blood magic.',  location:'The Crimson Library'},
+  {id:'dorn',       name:'Dorn Ironfist',    faction:'ashen_guild',   title:'Blacksmith Elder',desc:'Master smith with ancient knowledge.',location:'The Great Forge'},
+);
+
+// ── MORE QUESTS ──────────────────────────────────────────
+GAME_DATA.quests.push(
+  // Greybeard quest chain — Prayer introduction
+  {id:'grey_1',npc:'greybeard',name:'The Way of Prayer',desc:'Bury 20 bones at the monastery.',objectives:[{type:'bury_bones',qty:20}],rewards:{gold:100,xp:{prayer:200}},prereq:null},
+  {id:'grey_2',npc:'greybeard',name:'Stronger Faith',desc:'Bury 10 big bones.',objectives:[{type:'bury_big_bones',qty:10}],rewards:{gold:300,xp:{prayer:500}},prereq:'grey_1'},
+  {id:'grey_3',npc:'greybeard',name:'Dragon Devotion',desc:'Bury 5 dragon bones.',objectives:[{type:'bury_dragon_bones',qty:5}],rewards:{gold:1000,xp:{prayer:2000}},prereq:'grey_2'},
+  {id:'grey_4',npc:'greybeard',name:'Piety of Ash',desc:'Reach Prayer level 43.',objectives:[{type:'skill_level',skill:'prayer',level:43}],rewards:{gold:2000,xp:{prayer:5000}},prereq:'grey_3'},
+
+  // Vex quest chain — Slayer introduction
+  {id:'vex_1',npc:'vex',name:'First Assignment',desc:'Complete 3 slayer tasks.',objectives:[{type:'slayer_tasks',qty:3}],rewards:{gold:200,xp:{slayer:300}},prereq:null},
+  {id:'vex_2',npc:'vex',name:'Proving Your Worth',desc:'Complete 10 slayer tasks.',objectives:[{type:'slayer_tasks',qty:10}],rewards:{gold:800,xp:{slayer:1000}},prereq:'vex_1'},
+  {id:'vex_3',npc:'vex',name:'Slayer of Beasts',desc:'Kill 100 monsters on slayer tasks.',objectives:[{type:'slayer_kills',qty:100}],rewards:{gold:1500,xp:{slayer:2500}},prereq:'vex_2'},
+  {id:'vex_4',npc:'vex',name:'Master Slayer',desc:'Reach Slayer level 50.',objectives:[{type:'skill_level',skill:'slayer',level:50}],rewards:{gold:5000,xp:{slayer:5000},items:[{item:'slayer_helm',qty:1}]},prereq:'vex_3'},
+
+  // Lyra quest chain — Cryomancy
+  {id:'lyra_1',npc:'lyra',name:'Ice Affinity',desc:'Kill 15 Frost Spirits.',objectives:[{type:'kill',monster:'frost_spirit',qty:15}],rewards:{gold:400,xp:{magic:600},rep:{veiled_circle:300}},prereq:null,faction:'veiled_circle'},
+  {id:'lyra_2',npc:'lyra',name:'Frozen Knowledge',desc:'Collect 50 water runes.',objectives:[{type:'gather',item:'water_rune',qty:50}],rewards:{gold:800,xp:{magic:1200},rep:{veiled_circle:500}},prereq:'lyra_1'},
+  {id:'lyra_3',npc:'lyra',name:'Wraith Hunter',desc:'Kill 5 Frost Wraiths.',objectives:[{type:'kill',monster:'frost_wraith',qty:5}],rewards:{gold:1500,xp:{magic:2500},rep:{veiled_circle:800}},prereq:'lyra_2'},
+  {id:'lyra_4',npc:'lyra',name:'Drake Slayer',desc:'Kill a Frost Drake.',objectives:[{type:'kill',monster:'frost_drake',qty:1}],rewards:{gold:3000,xp:{magic:5000},rep:{veiled_circle:1500}},prereq:'lyra_3'},
+
+  // Tormund quest chain — Ashborn creatures
+  {id:'tor_1',npc:'tormund',name:'Ash Samples',desc:'Kill 20 Ashlings.',objectives:[{type:'kill',monster:'ashling',qty:20}],rewards:{gold:300,xp:{attack:400,magic:400}},prereq:null},
+  {id:'tor_2',npc:'tormund',name:'Ember Study',desc:'Kill 10 Ember Wraiths.',objectives:[{type:'kill',monster:'ember_wraith',qty:10}],rewards:{gold:600,xp:{magic:800}},prereq:'tor_1'},
+  {id:'tor_3',npc:'tormund',name:'Golem Core',desc:'Kill 3 Ash Golems.',objectives:[{type:'kill',monster:'ash_golem',qty:3}],rewards:{gold:1200,xp:{strength:1500,defence:1000}},prereq:'tor_2'},
+  {id:'tor_4',npc:'tormund',name:'Ashborn Codex',desc:'Complete the Ashen Depths dungeon.',objectives:[{type:'dungeon',dungeon:'ashen_depths',qty:1}],rewards:{gold:2500,xp:{attack:3000,magic:3000}},prereq:'tor_3'},
+
+  // Elena quest chain — Hollow creatures
+  {id:'elena_1',npc:'elena',name:'Hollow Patrol',desc:'Kill 20 Hollow Soldiers.',objectives:[{type:'kill',monster:'hollow_soldier',qty:20}],rewards:{gold:400,xp:{attack:500,defence:500},rep:{silver_order:300}},prereq:null,faction:'silver_order'},
+  {id:'elena_2',npc:'elena',name:'Knight Fall',desc:'Kill 10 Hollow Knights.',objectives:[{type:'kill',monster:'hollow_knight',qty:10}],rewards:{gold:1000,xp:{attack:1200,defence:800},rep:{silver_order:500}},prereq:'elena_1'},
+  {id:'elena_3',npc:'elena',name:'Lord of Hollows',desc:'Kill 3 Hollow Lords.',objectives:[{type:'kill',monster:'hollow_lord',qty:3}],rewards:{gold:2500,xp:{attack:3000,defence:2000},rep:{silver_order:1000}},prereq:'elena_2'},
+  {id:'elena_4',npc:'elena',name:'Citadel Siege',desc:'Complete the Hollow Citadel dungeon.',objectives:[{type:'dungeon',dungeon:'hollow_citadel',qty:1}],rewards:{gold:5000,xp:{attack:5000,strength:3000,defence:3000},rep:{silver_order:2000}},prereq:'elena_3'},
+
+  // Morrigan quest chain — Blood Magic
+  {id:'morr_1',npc:'morrigan',name:'Blood Harvest',desc:'Collect 30 death runes.',objectives:[{type:'gather',item:'death_rune',qty:30}],rewards:{gold:500,xp:{magic:800}},prereq:null},
+  {id:'morr_2',npc:'morrigan',name:'Crimson Practice',desc:'Kill 20 creatures using magic.',objectives:[{type:'magic_kills',qty:20}],rewards:{gold:800,xp:{magic:1500}},prereq:'morr_1'},
+  {id:'morr_3',npc:'morrigan',name:'Blood Pact Ritual',desc:'Collect 50 chaos runes and 30 death runes.',objectives:[{type:'gather',item:'chaos_rune',qty:50},{type:'gather',item:'death_rune',qty:30}],rewards:{gold:2000,xp:{magic:3000}},prereq:'morr_2'},
+  {id:'morr_4',npc:'morrigan',name:'The Crimson Tide',desc:'Kill a Demon using blood magic.',objectives:[{type:'kill',monster:'demon',qty:1}],rewards:{gold:4000,xp:{magic:5000}},prereq:'morr_3'},
+
+  // Dorn quest chain — Smithing mastery
+  {id:'dorn_1',npc:'dorn',name:'Bulk Iron',desc:'Smith 30 iron bars.',objectives:[{type:'craft',item:'iron_bar',qty:30}],rewards:{gold:300,xp:{smithing:400},rep:{ashen_guild:200}},prereq:null,faction:'ashen_guild'},
+  {id:'dorn_2',npc:'dorn',name:'Steel Mastery',desc:'Smith 20 steel swords.',objectives:[{type:'craft',item:'steel_sword',qty:20}],rewards:{gold:800,xp:{smithing:1200},rep:{ashen_guild:400}},prereq:'dorn_1'},
+  {id:'dorn_3',npc:'dorn',name:'Mithril Challenge',desc:'Smith 10 mithril platebodies.',objectives:[{type:'craft',item:'mithril_plate',qty:10}],rewards:{gold:2000,xp:{smithing:3000},rep:{ashen_guild:700}},prereq:'dorn_2'},
+  {id:'dorn_4',npc:'dorn',name:'The Ashsteel Secret',desc:'Reach Smithing level 70 and smith 5 obsidian bars.',objectives:[{type:'skill_level',skill:'smithing',level:70},{type:'craft',item:'obsidian_bar',qty:5}],rewards:{gold:5000,xp:{smithing:5000},rep:{ashen_guild:1500}},prereq:'dorn_3'},
+);
+
+// ── MORE ACHIEVEMENTS ────────────────────────────────────
+GAME_DATA.achievements.push(
+  {id:'prayer_10',     name:'Faithful',       desc:'Reach Prayer level 10.',    check:(g)=>g.skills.prayer&&g.skills.prayer.level>=10},
+  {id:'prayer_43',     name:'Protected',      desc:'Reach Prayer level 43.',    check:(g)=>g.skills.prayer&&g.skills.prayer.level>=43},
+  {id:'slayer_10',     name:'Task Hunter',    desc:'Reach Slayer level 10.',    check:(g)=>g.skills.slayer&&g.skills.slayer.level>=10},
+  {id:'slayer_50',     name:'Beast Slayer',   desc:'Reach Slayer level 50.',    check:(g)=>g.skills.slayer&&g.skills.slayer.level>=50},
+  {id:'first_pet',     name:'Pet Collector',  desc:'Obtain your first pet.',    check:(g)=>(g.pets||[]).length>=1},
+  {id:'five_pets',     name:'Menagerie',      desc:'Collect 5 pets.',           check:(g)=>(g.pets||[]).length>=5},
+  {id:'ten_quests',    name:'Questmaster',    desc:'Complete 10 quests.',       check:(g)=>(g.quests?.completed?.length||0)>=10},
+  {id:'twenty_quests', name:'Lorekeeper',     desc:'Complete 20 quests.',       check:(g)=>(g.quests?.completed?.length||0)>=20},
+  {id:'all_families',  name:'Bestiary',       desc:'Kill one of each monster family.',check:(g)=>{const u=g.stats.uniqueKills||{};return u.ashling&&u.hollow_soldier&&u.frost_spirit&&u.bloodfang_wolf;}},
+  {id:'slay_100_tasks',name:'Professional',   desc:'Complete 100 slayer tasks.',check:(g)=>(g.stats.slayerTasksCompleted||0)>=100},
+);

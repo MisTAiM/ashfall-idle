@@ -1238,3 +1238,47 @@ html, body {
   .combat-vs { transform: rotate(90deg); }
   .bank-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
+
+/* ── v3 SYSTEMS ─────────────────────────────────────────── */
+
+/* Prayer info / Slayer info boxes */
+.prayer-info {
+  background: var(--bg-card);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.prayer-info .stat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.prayer-info .pi-val {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Prayer combat bar */
+.prayer-combat-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius);
+}
+
+/* Pet cards */
+.action-card.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}

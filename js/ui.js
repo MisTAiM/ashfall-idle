@@ -66,10 +66,14 @@ const NAV = [
     {id:'dungeons',label:'Dungeons',icon:'dungeon'},
     {id:'world_bosses',label:'World Bosses',icon:'worldboss'},
     {id:'abilities',label:'Abilities',icon:'banner'},
+    {id:'prayer',label:'Prayer',icon:'sparkle'},
+    {id:'slayer',label:'Slayer',icon:'target'},
+    {id:'spellbooks',label:'Spellbooks',icon:'wand'},
   ]},
   { header:'Support', items:[
     {id:'farming',label:'Farming',icon:'seedling'},
     {id:'thieving',label:'Thieving',icon:'mask'},
+    {id:'pets',label:'Pets',icon:'paw'},
   ]},
   { header:'Social', items:[
     {id:'npcs',label:'NPCs',icon:'npc'},
@@ -108,6 +112,8 @@ class UI {
     this.engine.on('foodChanged', () => {});
     this.engine.on('questsChanged', () => { if (['quests','npcs'].includes(this.currentPage)) this.renderPage(this.currentPage); });
     this.engine.on('abilitiesChanged', () => { if (this.currentPage === 'abilities') this.renderPage('abilities'); });
+    this.engine.on('slayerChanged', () => { if (this.currentPage === 'slayer') this.renderPage('slayer'); });
+    this.engine.on('petFound', () => { if (this.currentPage === 'pets') this.renderPage('pets'); });
     this.engine.on('init', () => { this.renderSidebar(); this.renderTrainingBar(); this.renderPage(this.currentPage); });
   }
 
@@ -199,6 +205,10 @@ class UI {
     else if (pageId === 'factions') this.renderFactionsPage(main);
     else if (pageId === 'alignment') this.renderAlignmentPage(main);
     else if (pageId === 'enchanting') main.innerHTML = this.header('Enchanting','sparkle','Coming soon. Train other skills to prepare.','enchanting');
+    else if (pageId === 'prayer') this.renderPrayerPage(main);
+    else if (pageId === 'slayer') this.renderSlayerPage(main);
+    else if (pageId === 'pets') this.renderPetsPage(main);
+    else if (pageId === 'spellbooks') this.renderSpellbooksPage(main);
     else main.innerHTML = '<div class="page-empty">Select a page from the sidebar.</div>';
   }
 
@@ -314,13 +324,24 @@ class UI {
       <button class="btn btn-sm ${c.combatStyle==='magic'?'btn-active':''}" onclick="ui.setStyle('magic')">Magic</button>
     </div>`;
     if (c.combatStyle === 'magic') {
-      html += '<div class="spell-select"><span class="spell-label">Spell:</span>';
-      for (const sp of GAME_DATA.spells) {
+      const bookName = GAME_DATA.spellbooks[s.activeSpellbook||'standard']?.name || 'Standard';
+      html += `<div class="spell-select"><span class="spell-label">${bookName}:</span>`;
+      const spells = this.engine.getSpellsForActiveBook();
+      for (const sp of spells) {
         const locked = s.skills.magic.level < sp.level;
         const active = c.selectedSpell === sp.id;
         html += `<button class="btn btn-sm spell-btn ${active?'btn-active':''} ${locked?'locked':''}" ${locked?'disabled':''} onclick="ui.selectSpell('${sp.id}')" title="${sp.desc}">${sp.name}</button>`;
       }
       html += '</div>';
+    }
+    // Prayer display in combat
+    if (s.activePrayers && s.activePrayers.length > 0) {
+      html += '<div class="prayer-combat-bar">';
+      for (const pid of s.activePrayers) {
+        const p = GAME_DATA.prayers.find(x=>x.id===pid);
+        if (p) html += `<span class="status-tag" style="background:#c9873e22;color:#c9873e">${p.name} (${p.pointCost}pp/atk)</span>`;
+      }
+      html += `<span class="food-label" style="margin-left:8px">PP: ${s.prayerPoints}</span></div>`;
     }
     html += `<div class="food-bar">
       <span class="food-label">Food:</span>
@@ -798,6 +819,178 @@ class UI {
       <p>A dark fantasy idle RPG with deep skill systems, alignment mechanics, factions, and combat. Inspired by RuneScape, Melvor Idle, and the ForgeIdle design philosophy.</p>
       <p>Version 2.0.0 &mdash; ForgeIdle Expansion</p>
     </div>`;
+    el.innerHTML = html;
+  }
+
+  // ── PRAYER PAGE ─────────────────────────────────────────
+  renderPrayerPage(el) {
+    const s = this.engine.state;
+    let html = this.header('Prayer','sparkle','Bury bones for prayer points. Activate up to 2 prayers for combat buffs.','prayer');
+    html += `<div class="prayer-info">
+      <div class="stat-row"><span>Prayer Points</span><span class="pi-val gold-val">${this.fmt(s.prayerPoints)}</span></div>
+      <div class="stat-row"><span>Active Prayers</span><span class="pi-val">${s.activePrayers.length}/2</span></div>
+      <div class="stat-row"><span>Bones Buried</span><span class="pi-val">${this.fmt(s.stats.bonesBuried||0)}</span></div>
+    </div>`;
+
+    // Bury bones section
+    html += '<h2 class="section-title">Bury Bones</h2><div class="actions-grid">';
+    const boneItems = Object.entries(GAME_DATA.boneValues);
+    for (const [boneId, boneData] of boneItems) {
+      const item = GAME_DATA.items[boneId];
+      if (!item) continue;
+      const qty = s.bank[boneId] || 0;
+      html += `<div class="action-card ${qty<=0?'locked':''}">
+        <div class="ac-header"><span class="ac-name">${item.name}</span><span class="ac-level">x${qty}</span></div>
+        <div class="recipe-output">+${boneData.points} points, +${boneData.xp} XP each</div>
+        <div class="shop-btns">
+          <button class="btn btn-xs" ${qty<=0?'disabled':''} onclick="game.buryBones('${boneId}',1)">Bury 1</button>
+          <button class="btn btn-xs" ${qty<10?'disabled':''} onclick="game.buryBones('${boneId}',10)">Bury 10</button>
+          <button class="btn btn-xs" ${qty<=0?'disabled':''} onclick="game.buryBones('${boneId}',${qty})">Bury All</button>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+
+    // Prayer list
+    html += '<h2 class="section-title">Prayers</h2><div class="actions-grid">';
+    for (const prayer of GAME_DATA.prayers) {
+      const locked = s.skills.prayer.level < prayer.level;
+      const active = s.activePrayers.includes(prayer.id);
+      html += `<div class="action-card ${locked?'locked':''} ${active?'active':''}" ${locked?'':`onclick="game.activatePrayer('${prayer.id}')"`}>
+        <div class="ac-header"><span class="ac-name">${prayer.name}</span><span class="ac-level">Lv ${prayer.level}</span></div>
+        <p class="area-desc">${prayer.desc}</p>
+        <div class="ac-footer"><span>Cost: ${prayer.pointCost} pts/atk</span>${active?'<span class="ach-check">Active</span>':''}</div>
+        ${locked?`<div class="locked-overlay">Requires Level ${prayer.level}</div>`:''}
+      </div>`;
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  // ── SLAYER PAGE ────────────────────────────────────────
+  renderSlayerPage(el) {
+    const s = this.engine.state;
+    let html = this.header('Slayer','target','Complete assigned kill tasks for Slayer XP and Slayer Coins.','slayer');
+    html += `<div class="prayer-info">
+      <div class="stat-row"><span>Slayer Coins</span><span class="pi-val gold-val">${this.fmt(s.slayerCoins)}</span></div>
+      <div class="stat-row"><span>Tasks Completed</span><span class="pi-val">${s.stats.slayerTasksCompleted||0}</span></div>
+      <div class="stat-row"><span>Auto-Slayer</span><span class="pi-val">${s.slayerAutoEnabled?'Enabled':'Disabled'}</span></div>
+    </div>`;
+
+    // Current task
+    if (s.slayerTask) {
+      const m = GAME_DATA.monsters[s.slayerTask.monster];
+      const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
+      html += `<div class="active-action-bar" style="margin:16px 0">
+        <div class="aa-label">Task: Kill ${s.slayerTask.amount}x ${m?.name||s.slayerTask.monster} (${s.slayerTask.tier})</div>
+        <div class="aa-progress"><div class="aa-fill" style="width:${pct.toFixed(0)}%"></div></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px">${s.slayerTask.killed}/${s.slayerTask.amount}</span>
+        <button class="btn btn-xs btn-danger" onclick="game.skipSlayerTask()">Skip (30 SC)</button>
+      </div>`;
+    } else {
+      html += '<div class="bank-empty" style="margin:12px 0">No active slayer task. Choose a tier below.</div>';
+    }
+
+    // Task tiers
+    html += '<h2 class="section-title">Get Task</h2><div class="actions-grid">';
+    for (const [tier, data] of Object.entries(GAME_DATA.slayerTasks)) {
+      const locked = s.skills.slayer.level < data.slayerReq || this.engine.getCombatLevel() < data.combatReq;
+      html += `<div class="action-card ${locked?'locked':''}">
+        <div class="ac-header"><span class="ac-name">${data.name}</span><span class="ac-level">Slayer ${data.slayerReq}+</span></div>
+        <div class="recipe-output">Kills: ${data.killRange[0]}-${data.killRange[1]} | Coins: ${data.coinReward}/kill</div>
+        <div class="ac-footer"><span>Combat Lv ${data.combatReq}+</span></div>
+        <button class="btn btn-sm" ${locked||s.slayerTask?'disabled':''} onclick="game.getSlayerTask('${tier}')">Assign</button>
+        ${locked?`<div class="locked-overlay">Slayer ${data.slayerReq} / Combat ${data.combatReq}</div>`:''}
+      </div>`;
+    }
+    html += '</div>';
+
+    // Slayer shop
+    html += '<h2 class="section-title">Slayer Shop</h2><div class="actions-grid">';
+    for (let i = 0; i < GAME_DATA.slayerShop.length; i++) {
+      const item = GAME_DATA.slayerShop[i];
+      const canAfford = s.slayerCoins >= item.cost;
+      const owned = item.id === 'auto_slayer' && s.slayerAutoEnabled;
+      html += `<div class="action-card ${canAfford?'':'locked'}">
+        <div class="ac-header"><span class="ac-name">${item.name}</span><span class="ac-level">${item.cost} SC</span></div>
+        <p class="area-desc">${item.desc}</p>
+        <button class="btn btn-sm" ${canAfford&&!owned?'':'disabled'} onclick="game.buySlayerItem(${i})">${owned?'Owned':'Buy'}</button>
+      </div>`;
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  // ── PETS PAGE ──────────────────────────────────────────
+  renderPetsPage(el) {
+    const s = this.engine.state;
+    const allPets = GAME_DATA.pets || [];
+    const owned = s.pets || [];
+    let html = this.header('Pets','paw',`${owned.length}/${allPets.length} pets collected. Equip one for a passive bonus.`,null);
+
+    if (s.activePet) {
+      const pet = allPets.find(p => p.id === s.activePet);
+      if (pet) {
+        html += `<div class="alignment-display">
+          <div class="al-current">Active Pet: <strong>${pet.name}</strong></div>
+          <div class="al-desc">${pet.desc}</div>
+          <button class="btn btn-xs btn-danger" onclick="game.equipPet('${pet.id}')">Unequip</button>
+        </div>`;
+      }
+    }
+
+    html += '<h2 class="section-title">Collection</h2><div class="actions-grid">';
+    for (const pet of allPets) {
+      const have = owned.includes(pet.id);
+      const isActive = s.activePet === pet.id;
+      const sourceLabel = GAME_DATA.monsters[pet.source]?.name || GAME_DATA.skills[pet.source]?.name || pet.source;
+      html += `<div class="action-card ${have?'':'locked'} ${isActive?'active':''}">
+        <div class="ac-header"><span class="ac-name">${have?pet.name:'???'}</span>${isActive?'<span class="ach-check">Active</span>':''}</div>
+        <p class="area-desc">${have?pet.desc:'Unknown pet. Keep training to discover.'}</p>
+        <div class="ac-footer"><span>Source: ${sourceLabel}</span><span>1/${Math.floor(1/pet.dropRate)}</span></div>
+        ${have&&!isActive?`<button class="btn btn-xs" onclick="game.equipPet('${pet.id}')">Equip</button>`:''}
+      </div>`;
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  // ── SPELLBOOKS PAGE ────────────────────────────────────
+  renderSpellbooksPage(el) {
+    const s = this.engine.state;
+    let html = this.header('Spellbooks','wand','Switch between spellbooks to access different spell schools.',null);
+    const activeBook = s.activeSpellbook || 'standard';
+
+    html += '<h2 class="section-title">Available Spellbooks</h2><div class="actions-grid">';
+    for (const [id, book] of Object.entries(GAME_DATA.spellbooks)) {
+      const locked = book.unlockReq && Object.entries(book.unlockReq).some(([sk,lv]) => s.skills[sk]?.level < lv);
+      const active = activeBook === id;
+      const reqStr = book.unlockReq ? Object.entries(book.unlockReq).map(([sk,lv])=>`${GAME_DATA.skills[sk]?.name} ${lv}`).join(', ') : 'None';
+      html += `<div class="action-card ${locked?'locked':''} ${active?'active':''}" style="${book.color?'border-left:3px solid '+book.color:''}">
+        <div class="ac-header"><span class="ac-name">${book.name}</span>${active?'<span class="ach-check">Active</span>':''}</div>
+        <p class="area-desc">${book.desc}</p>
+        <div class="ac-footer"><span>Requires: ${reqStr}</span></div>
+        ${!locked&&!active?`<button class="btn btn-sm" onclick="game.switchSpellbook('${id}')">Activate</button>`:''}
+        ${locked?`<div class="locked-overlay">Requires ${reqStr}</div>`:''}
+      </div>`;
+    }
+    html += '</div>';
+
+    // Show spells for active book
+    const spells = this.engine.getSpellsForActiveBook();
+    const bookData = GAME_DATA.spellbooks[activeBook];
+    html += `<h2 class="section-title">${bookData?.name||'Standard'} Spells</h2><div class="actions-grid">`;
+    for (const sp of spells) {
+      const locked = s.skills.magic.level < sp.level;
+      const selected = s.combat.selectedSpell === sp.id;
+      html += `<div class="action-card ${locked?'locked':''} ${selected?'active':''}" ${locked?'':`onclick="ui.selectSpell('${sp.id}')"`}>
+        <div class="ac-header"><span class="ac-name">${sp.name}</span><span class="ac-level">Lv ${sp.level}</span></div>
+        <p class="area-desc">${sp.desc}</p>
+        <div class="ac-footer"><span>Max Hit: ${sp.maxHit}</span><span>Runes: ${sp.runes.map(r=>(GAME_DATA.items[r.item]?.name||r.item)+' x'+r.qty).join(', ')}</span></div>
+        ${locked?`<div class="locked-overlay">Magic ${sp.level}</div>`:''}
+      </div>`;
+    }
+    html += '</div>';
     el.innerHTML = html;
   }
 

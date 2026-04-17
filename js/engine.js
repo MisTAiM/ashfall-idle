@@ -75,6 +75,21 @@ class GameEngine {
     if (!s.combat.activeBuffs) s.combat.activeBuffs = [];
     if (s.stats.worldBossKills === undefined) s.stats.worldBossKills = 0;
     if (s.stats.questsCompleted === undefined) s.stats.questsCompleted = 0;
+    // v3 fields
+    if (s.prayerPoints === undefined) s.prayerPoints = 0;
+    if (!s.activePrayers) s.activePrayers = [];
+    if (!s.pets) s.pets = [];
+    if (s.activePet === undefined) s.activePet = null;
+    if (s.slayerCoins === undefined) s.slayerCoins = 0;
+    if (!s.slayerTask) s.slayerTask = null;
+    if (s.slayerAutoEnabled === undefined) s.slayerAutoEnabled = false;
+    if (s.activeSpellbook === undefined) s.activeSpellbook = 'standard';
+    if (!s.stats.bonesBuried) s.stats.bonesBuried = 0;
+    if (!s.stats.slayerTasksCompleted) s.stats.slayerTasksCompleted = 0;
+    if (!s.stats.slayerKillsOnTask) s.stats.slayerKillsOnTask = 0;
+    if (!s.stats.petsFound) s.stats.petsFound = 0;
+    if (!s.stats.magicKills) s.stats.magicKills = 0;
+    if (!s.stats.dungeonCompletions) s.stats.dungeonCompletions = {};
     s.version = 2;
   }
 
@@ -203,6 +218,8 @@ class GameEngine {
     this.addXp(skillId, action.xp);
     this.addMasteryXp(skillId, action.masteryId||action.id, action.xp);
     this.incrementStat(skillId);
+    // v3: roll pet from skilling
+    this.rollPetDrop(skillId);
   }
 
   // ── XP ─────────────────────────────────────────────────
@@ -317,6 +334,8 @@ class GameEngine {
     if (c.monsterAttackTimer >= monster.attackSpeed) { c.monsterAttackTimer -= monster.attackSpeed; this.monsterAttack(monster); }
     if (c.monsterHp <= 0) this.onMonsterDeath(monster, isWB);
     if (c.playerHp <= 0) this.onPlayerDeath();
+    // Drain prayer points per attack cycle
+    this.drainPrayerPoints();
   }
 
   _tickStatusEffects(effects, dt, target) {
@@ -454,6 +473,15 @@ class GameEngine {
 
     if (monster.alignment) this.shiftAlignment(monster.alignment);
     this.trackQuestProgress('kill', { monster:mId, qty:1 });
+    // v3: Slayer, Pets, Magic kills
+    this.trackSlayerKill(mId);
+    this.rollPetDrop(mId);
+    if (style === 'magic') this.state.stats.magicKills = (this.state.stats.magicKills || 0) + 1;
+    this.trackQuestProgress('magic_kills', { qty: style === 'magic' ? 1 : 0 });
+    // Skill level quest checks
+    for (const sId of Object.keys(GAME_DATA.skills)) {
+      this.trackQuestProgress('skill_level', { skill:sId, level:this.state.skills[sId]?.level||1 });
+    }
 
     if (isWB) {
       const boss = GAME_DATA.worldBosses.find(b => b.id === mId);
@@ -477,6 +505,7 @@ class GameEngine {
           }
         }
         this.emit('notification', { type:'success', text:`Completed ${d.name}!` });
+        this.trackQuestProgress('dungeon', { dungeon:d.id });
         this.stopCombat(); return;
       } else {
         const nextId = d.waves[this.state.combat.dungeonWave];
@@ -539,8 +568,6 @@ class GameEngine {
       if (this.state.bank[id] <= 0) { this.state.equipment.ammo = null; this.emit('notification', { type:'warn', text:'Out of ammo!' }); }
     }
   }
-
-  getActiveSpell() { return GAME_DATA.spells.find(s => s.id === this.state.combat.selectedSpell) || GAME_DATA.spells[0]; }
 
   consumeRunes(spell) { if (!this.hasItems(spell.runes)) return false; this.removeItems(spell.runes); return true; }
 
@@ -810,6 +837,15 @@ class GameEngine {
         if (type === 'gather' && obj.item === data.item) { prog[i] = Math.min(obj.qty, (prog[i]||0) + data.qty); updated = true; }
         if (type === 'craft' && obj.item === data.item) { prog[i] = Math.min(obj.qty, (prog[i]||0) + data.qty); updated = true; }
         if (type === 'thieve' && obj.target === data.target) { prog[i] = Math.min(obj.qty, (prog[i]||0) + data.qty); updated = true; }
+        // v3 quest types
+        if (type === 'bury_bones' && obj.type === 'bury_bones') { prog[i] = Math.min(obj.qty, (prog[i]||0) + (data.qty||0)); updated = true; }
+        if (type === 'bury_big_bones' && obj.type === 'bury_big_bones') { prog[i] = Math.min(obj.qty, (prog[i]||0) + (data.qty||0)); updated = true; }
+        if (type === 'bury_dragon_bones' && obj.type === 'bury_dragon_bones') { prog[i] = Math.min(obj.qty, (prog[i]||0) + (data.qty||0)); updated = true; }
+        if (type === 'slayer_tasks' && obj.type === 'slayer_tasks') { prog[i] = Math.min(obj.qty, (this.state.stats.slayerTasksCompleted||0)); updated = true; }
+        if (type === 'slayer_kills' && obj.type === 'slayer_kills') { prog[i] = Math.min(obj.qty, (this.state.stats.slayerKillsOnTask||0)); updated = true; }
+        if (type === 'magic_kills' && obj.type === 'magic_kills') { prog[i] = Math.min(obj.qty, (this.state.stats.magicKills||0)); updated = true; }
+        if (type === 'skill_level' && obj.type === 'skill_level' && data.skill === obj.skill) { prog[i] = data.level >= obj.level ? obj.qty : 0; updated = true; }
+        if (type === 'dungeon' && obj.type === 'dungeon' && data.dungeon === obj.dungeon) { prog[i] = Math.min(obj.qty, (prog[i]||0) + 1); updated = true; }
       });
       // Gold quest type — checked on tick
       q.objectives.forEach((obj, i) => {
@@ -930,6 +966,219 @@ class GameEngine {
   on(event, fn) { if (!this.listeners[event]) this.listeners[event] = []; this.listeners[event].push(fn); }
   emit(event, data) { if (this.listeners[event]) for (const fn of this.listeners[event]) fn(data); }
   getTotalLevel() { return Object.values(this.state.skills).reduce((sum, s) => sum + s.level, 0); }
+
+  // ── PRAYER SYSTEM ──────────────────────────────────────
+  buryBones(boneId, qty) {
+    const boneData = GAME_DATA.boneValues[boneId];
+    if (!boneData) { this.emit('notification', { type:'warn', text:'Cannot bury that.' }); return; }
+    if (!this.state.bank[boneId] || this.state.bank[boneId] < qty) {
+      qty = this.state.bank[boneId] || 0;
+    }
+    if (qty <= 0) return;
+    this.removeItem(boneId, qty);
+    const points = Math.floor(boneData.points * qty);
+    const xp = Math.floor(boneData.xp * qty);
+    this.state.prayerPoints += points;
+    this.addXp('prayer', xp);
+    this.state.stats.bonesBuried = (this.state.stats.bonesBuried || 0) + qty;
+    // Quest tracking for bury objectives
+    if (boneId === 'bones') this.trackQuestProgress('bury_bones', { qty });
+    if (boneId === 'big_bones') this.trackQuestProgress('bury_big_bones', { qty });
+    if (boneId === 'dragon_bones') this.trackQuestProgress('bury_dragon_bones', { qty });
+    this.emit('notification', { type:'info', text:`Buried ${qty}x ${GAME_DATA.items[boneId].name}: +${points} prayer points, +${xp} XP.` });
+  }
+
+  activatePrayer(prayerId) {
+    const prayer = GAME_DATA.prayers.find(p => p.id === prayerId);
+    if (!prayer) return;
+    if (this.state.skills.prayer.level < prayer.level) {
+      this.emit('notification', { type:'warn', text:`Requires Prayer level ${prayer.level}.` }); return;
+    }
+    if (this.state.prayerPoints <= 0) {
+      this.emit('notification', { type:'warn', text:'No prayer points. Bury bones to gain points.' }); return;
+    }
+    // Max 2 active prayers
+    if (this.state.activePrayers.includes(prayerId)) {
+      this.state.activePrayers = this.state.activePrayers.filter(id => id !== prayerId);
+      this.emit('notification', { type:'info', text:`Deactivated ${prayer.name}.` });
+      return;
+    }
+    if (this.state.activePrayers.length >= 2) {
+      this.state.activePrayers.shift(); // remove oldest
+    }
+    this.state.activePrayers.push(prayerId);
+    this.emit('notification', { type:'info', text:`Activated ${prayer.name}.` });
+  }
+
+  deactivatePrayer(prayerId) {
+    this.state.activePrayers = this.state.activePrayers.filter(id => id !== prayerId);
+  }
+
+  drainPrayerPoints() {
+    if (this.state.activePrayers.length === 0) return;
+    let totalCost = 0;
+    for (const id of this.state.activePrayers) {
+      const p = GAME_DATA.prayers.find(x => x.id === id);
+      if (p) totalCost += p.pointCost;
+    }
+    this.state.prayerPoints -= totalCost;
+    if (this.state.prayerPoints <= 0) {
+      this.state.prayerPoints = 0;
+      this.state.activePrayers = [];
+      this.emit('notification', { type:'warn', text:'Ran out of prayer points!' });
+    }
+  }
+
+  getPrayerBonus(stat) {
+    let total = 0;
+    for (const id of this.state.activePrayers) {
+      const p = GAME_DATA.prayers.find(x => x.id === id);
+      if (p?.bonus?.[stat]) total += p.bonus[stat];
+    }
+    return total;
+  }
+
+  // ── PET SYSTEM ─────────────────────────────────────────
+  rollPetDrop(sourceId) {
+    if (!GAME_DATA.pets) return;
+    for (const pet of GAME_DATA.pets) {
+      if (pet.source === sourceId && !this.state.pets.includes(pet.id)) {
+        if (Math.random() < pet.dropRate) {
+          this.state.pets.push(pet.id);
+          this.state.stats.petsFound = (this.state.stats.petsFound || 0) + 1;
+          this.emit('notification', { type:'achievement', text:`PET DROP: ${pet.name}! ${pet.desc}` });
+          this.emit('petFound', pet);
+        }
+      }
+    }
+  }
+
+  equipPet(petId) {
+    if (!this.state.pets.includes(petId)) return;
+    this.state.activePet = this.state.activePet === petId ? null : petId;
+    const pet = GAME_DATA.pets.find(p => p.id === petId);
+    this.emit('notification', { type:'info', text: this.state.activePet ? `Equipped ${pet.name}.` : `Unequipped pet.` });
+  }
+
+  getPetBonus(type) {
+    if (!this.state.activePet) return 0;
+    const pet = GAME_DATA.pets.find(p => p.id === this.state.activePet);
+    if (pet?.bonus?.type === type) return pet.bonus.value || 0;
+    return 0;
+  }
+
+  // ── SLAYER SYSTEM ──────────────────────────────────────
+  getSlayerTask(tier) {
+    const tierData = GAME_DATA.slayerTasks[tier];
+    if (!tierData) return;
+    if (this.state.skills.slayer.level < tierData.slayerReq) {
+      this.emit('notification', { type:'warn', text:`Requires Slayer level ${tierData.slayerReq}.` }); return;
+    }
+    if (this.getCombatLevel() < tierData.combatReq) {
+      this.emit('notification', { type:'warn', text:`Requires Combat level ${tierData.combatReq}.` }); return;
+    }
+    const monster = tierData.monsters[Math.floor(Math.random() * tierData.monsters.length)];
+    const amount = this.randInt(tierData.killRange[0], tierData.killRange[1]);
+    this.state.slayerTask = {
+      tier, monster, amount, killed: 0, coins: tierData.coinReward,
+    };
+    const m = GAME_DATA.monsters[monster];
+    this.emit('notification', { type:'info', text:`Slayer Task: Kill ${amount}x ${m?.name || monster}.` });
+    this.emit('slayerChanged');
+  }
+
+  skipSlayerTask() {
+    if (!this.state.slayerTask) return;
+    if (this.state.slayerCoins < 30) { this.emit('notification', { type:'warn', text:'Need 30 Slayer Coins.' }); return; }
+    this.state.slayerCoins -= 30;
+    this.state.slayerTask = null;
+    this.emit('notification', { type:'info', text:'Task skipped.' });
+    this.emit('slayerChanged');
+  }
+
+  trackSlayerKill(monsterId) {
+    if (!this.state.slayerTask || this.state.slayerTask.monster !== monsterId) return;
+    this.state.slayerTask.killed++;
+    this.state.stats.slayerKillsOnTask = (this.state.stats.slayerKillsOnTask || 0) + 1;
+    // Slayer XP = 10% of monster HP
+    const m = GAME_DATA.monsters[monsterId];
+    if (m) {
+      let slayerXp = Math.floor(m.hp * 0.10);
+      // Slayer ring bonus
+      if (this.state.equipment.ring === 'slayer_ring') slayerXp = Math.floor(slayerXp * 1.05);
+      this.addXp('slayer', slayerXp);
+    }
+    if (this.state.slayerTask.killed >= this.state.slayerTask.amount) {
+      this.completeSlayerTask();
+    }
+  }
+
+  completeSlayerTask() {
+    const task = this.state.slayerTask;
+    if (!task) return;
+    const coins = task.coins * task.amount;
+    this.state.slayerCoins += coins;
+    this.state.stats.slayerTasksCompleted = (this.state.stats.slayerTasksCompleted || 0) + 1;
+    this.trackQuestProgress('slayer_tasks', { qty:1 });
+    this.emit('notification', { type:'success', text:`Slayer task complete! +${coins} Slayer Coins.` });
+    this.state.slayerTask = null;
+    // Auto-slayer
+    if (this.state.slayerAutoEnabled) {
+      this.getSlayerTask(task.tier);
+    }
+    this.emit('slayerChanged');
+  }
+
+  buySlayerItem(shopIdx) {
+    const item = GAME_DATA.slayerShop[shopIdx];
+    if (!item) return;
+    if (this.state.slayerCoins < item.cost) { this.emit('notification', { type:'warn', text:'Not enough Slayer Coins.' }); return; }
+    this.state.slayerCoins -= item.cost;
+    if (item.type === 'equipment' || item.type === 'item') {
+      this.addItem(item.itemId, item.type === 'item' ? 100 : 1);
+      this.emit('notification', { type:'success', text:`Purchased ${item.name}.` });
+    } else if (item.type === 'upgrade' && item.id === 'auto_slayer') {
+      this.state.slayerAutoEnabled = true;
+      this.emit('notification', { type:'success', text:'Auto-Slayer unlocked!' });
+    } else if (item.id === 'task_skip') {
+      this.skipSlayerTask();
+    }
+    this.emit('slayerChanged');
+  }
+
+  // ── SPELLBOOK SWITCHING ────────────────────────────────
+  switchSpellbook(bookId) {
+    const book = GAME_DATA.spellbooks[bookId];
+    if (!book) return;
+    if (book.unlockReq) {
+      for (const [sk, lv] of Object.entries(book.unlockReq)) {
+        if (this.state.skills[sk]?.level < lv) {
+          this.emit('notification', { type:'warn', text:`Requires ${GAME_DATA.skills[sk]?.name} level ${lv}.` }); return;
+        }
+      }
+    }
+    this.state.activeSpellbook = bookId;
+    this.state.combat.selectedSpell = null; // reset spell selection
+    this.emit('notification', { type:'info', text:`Switched to ${book.name} spellbook.` });
+  }
+
+  getSpellsForActiveBook() {
+    const book = this.state.activeSpellbook || 'standard';
+    if (book === 'standard') return GAME_DATA.spells;
+    const map = {
+      pyromancy: GAME_DATA.pyromancySpells,
+      cryomancy: GAME_DATA.cryomancySpells,
+      blood_magic: GAME_DATA.bloodMagicSpells,
+      void_magic: GAME_DATA.voidMagicSpells,
+    };
+    return map[book] || GAME_DATA.spells;
+  }
+
+  getActiveSpell() {
+    const spells = this.getSpellsForActiveBook();
+    return spells.find(s => s.id === this.state.combat.selectedSpell) || spells[0];
+  }
+
 }
 
 const game = new GameEngine();
