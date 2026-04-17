@@ -370,14 +370,12 @@ class GameEngine {
     this._tickStatusEffects(c.statusEffects.player, dt, 'player');
     const playerSpeed = this.getPlayerAttackSpeed();
     c.playerAttackTimer += dt;
-    if (c.playerAttackTimer >= playerSpeed) { c.playerAttackTimer -= playerSpeed; this.playerAttack(monster); }
+    if (c.playerAttackTimer >= playerSpeed) { c.playerAttackTimer -= playerSpeed; this.playerAttack(monster); this.drainPrayerPoints(); }
     c.monsterAttackTimer += dt;
-    const monsterSpeed = monster.attackSpeed * 0.7; // 30% faster monsters too
+    const monsterSpeed = monster.attackSpeed * 0.7;
     if (c.monsterAttackTimer >= monsterSpeed) { c.monsterAttackTimer -= monsterSpeed; this.monsterAttack(monster); }
     if (c.monsterHp <= 0) this.onMonsterDeath(monster, isWB);
     if (c.playerHp <= 0) this.onPlayerDeath();
-    // Drain prayer points per attack cycle
-    this.drainPrayerPoints();
   }
 
   _tickStatusEffects(effects, dt, target) {

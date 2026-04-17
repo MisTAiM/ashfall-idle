@@ -2200,8 +2200,8 @@ html, body {
   100% { opacity: 1; transform: translateY(0); }
 }
 .landing-logo-svg {
-  width: 320px;
-  max-width: 90vw;
+  width: 420px;
+  max-width: 95vw;
   height: auto;
   margin-bottom: 8px;
   filter: drop-shadow(0 0 20px rgba(201,135,62,0.3));
