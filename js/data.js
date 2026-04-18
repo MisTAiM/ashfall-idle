@@ -1404,3 +1404,146 @@ GAME_DATA.recipes.crafting.push(
 );
 
 console.log('[Ashfall] v5.2 loaded:', Object.keys(GAME_DATA.monsters).length, 'monsters,', GAME_DATA.combatAreas.length, 'areas');
+
+// ================================================================
+// v5.3 FISHING ZONES (50 fish), WILDERNESS PVP, DEATH MECHANICS
+// ================================================================
+
+// ── 50 FISH + ZONE SYSTEM ────────────────────────────────
+// Each zone has a pool of fish you can catch. You don't always
+// get the same fish - RNG picks from the zone's pool based on
+// weight. Higher level fish are rarer.
+
+// Raw fish items (new ones)
+const _newFish = [
+  ['raw_sardine','Raw Sardine','resource','fish',4,'A small oily fish.'],
+  ['raw_herring','Raw Herring','resource','fish',6,'A silver herring.'],
+  ['raw_anchovy','Raw Anchovy','resource','fish',3,'Tiny but useful.'],
+  ['raw_mackerel','Raw Mackerel','resource','fish',8,'A striped mackerel.'],
+  ['raw_tuna','Raw Tuna','resource','fish',20,'A hefty tuna.'],
+  ['raw_bass','Raw Bass','resource','fish',25,'A largemouth bass.'],
+  ['raw_pike','Raw Pike','resource','fish',15,'A freshwater pike.'],
+  ['raw_catfish','Raw Catfish','resource','fish',12,'A whiskered catfish.'],
+  ['raw_carp','Raw Carp','resource','fish',10,'A common carp.'],
+  ['raw_cod','Raw Cod','resource','fish',18,'Atlantic cod.'],
+  ['raw_snapper','Raw Snapper','resource','fish',35,'A red snapper.'],
+  ['raw_barracuda','Raw Barracuda','resource','fish',45,'A fierce barracuda.'],
+  ['raw_monkfish','Raw Monkfish','resource','fish',60,'An ugly but tasty fish.'],
+  ['raw_shark','Raw Shark','resource','fish',100,'A dangerous catch.'],
+  ['raw_sea_turtle','Raw Sea Turtle','resource','fish',150,'A massive sea turtle.'],
+  ['raw_ray','Raw Manta Ray','resource','fish',200,'Enormous and graceful.'],
+  ['raw_karambwan','Raw Karambwan','resource','fish',80,'A poisonous delicacy.'],
+  ['raw_eel','Raw Eel','resource','fish',30,'A slippery eel.'],
+  ['raw_cave_eel','Raw Cave Eel','resource','fish',40,'An underground eel.'],
+  ['raw_lava_eel','Raw Lava Eel','resource','fish',120,'Lives in magma pools.'],
+  ['raw_infernal_eel','Raw Infernal Eel','resource','fish',180,'Burns to the touch.'],
+  ['raw_sacred_eel','Raw Sacred Eel','resource','fish',250,'A blessed serpent.'],
+  ['raw_anglerfish','Raw Anglerfish','resource','fish',140,'Deep sea predator.'],
+  ['raw_ice_fish','Raw Ice Fish','resource','fish',90,'Found in frozen waters.'],
+  ['raw_void_fish','Raw Void Fish','resource','fish',300,'From between dimensions.'],
+  ['raw_ghost_fish','Raw Ghost Fish','resource','fish',160,'Translucent and eerie.'],
+  ['raw_golden_tench','Raw Golden Tench','resource','fish',400,'Extremely rare.'],
+  ['raw_ash_crab','Raw Ash Crab','resource','fish',220,'Volcanic crustacean.'],
+  ['raw_kraken_tentacle','Kraken Tentacle','resource','fish',500,'A trophy catch.'],
+  ['raw_leviathan_scale','Leviathan Scale','resource','fish',350,'Shimmers with power.'],
+];
+for (const [id,name,type,sub,price,desc] of _newFish) {
+  if (!GAME_DATA.items[id]) GAME_DATA.items[id] = {id,name,type,subtype:sub,sellPrice:price,sprite:'fish-basic',desc};
+}
+
+// Cooked versions
+const _cookedFish = [
+  ['sardine','Sardine','food',20,6],['herring','Herring','food',30,8],['anchovy','Anchovy','food',15,5],
+  ['mackerel','Mackerel','food',40,12],['tuna','Tuna','food',100,30],['bass','Bass','food',120,35],
+  ['pike','Pike','food',60,18],['catfish','Catfish','food',50,15],['carp','Carp','food',35,12],
+  ['cod','Cod','food',80,25],['snapper','Snapper','food',160,50],['barracuda','Barracuda','food',200,60],
+  ['monkfish','Monkfish','food',300,80],['shark','Shark','food',450,130],['sea_turtle','Sea Turtle','food',600,200],
+  ['karambwan','Karambwan','food',350,100],['eel','Eel','food',80,35],['cave_eel','Cave Eel','food',120,50],
+  ['lava_eel','Lava Eel','food',400,150],['infernal_eel','Infernal Eel','food',550,220],['sacred_eel','Sacred Eel','food',700,300],
+  ['ice_fish','Ice Fish','food',380,110],['void_fish','Void Fish','food',800,400],['ghost_fish','Ghost Fish','food',500,200],
+  ['golden_tench','Golden Tench','food',900,500],['ash_crab','Ash Crab','food',650,280],
+];
+for (const [id,name,type,heals,price] of _cookedFish) {
+  if (!GAME_DATA.items[id]) GAME_DATA.items[id] = {id,name,type,heals,sellPrice:price,sprite:'food-meal',desc:`Cooked ${name.toLowerCase()}. +${heals} HP.`};
+}
+
+// Fishing Zones - replace single-fish spots with zone pools
+GAME_DATA.fishingZones = [
+  {id:'shore_pond',name:'Shore Pond',level:1,desc:'Calm shallow waters.',fish:[
+    {item:'raw_shrimp',weight:40,xp:10},{item:'raw_sardine',weight:30,xp:12},{item:'raw_anchovy',weight:20,xp:8},{item:'raw_herring',weight:10,xp:18}
+  ],time:3.0},
+  {id:'river_bend',name:'River Bend',level:10,desc:'A gentle river teeming with life.',fish:[
+    {item:'raw_trout',weight:30,xp:30},{item:'raw_pike',weight:25,xp:35},{item:'raw_carp',weight:25,xp:20},{item:'raw_catfish',weight:15,xp:28},{item:'raw_herring',weight:5,xp:18}
+  ],time:3.5},
+  {id:'lake_crossing',name:'Lake Crossing',level:20,desc:'A wide lake with diverse catches.',fish:[
+    {item:'raw_salmon',weight:25,xp:50},{item:'raw_bass',weight:25,xp:55},{item:'raw_pike',weight:20,xp:35},{item:'raw_catfish',weight:15,xp:28},{item:'raw_trout',weight:10,xp:30},{item:'raw_eel',weight:5,xp:45}
+  ],time:4.0},
+  {id:'coastal_reef',name:'Coastal Reef',level:30,desc:'Rocky coastline with saltwater species.',fish:[
+    {item:'raw_lobster',weight:25,xp:70},{item:'raw_cod',weight:25,xp:60},{item:'raw_mackerel',weight:20,xp:45},{item:'raw_snapper',weight:15,xp:85},{item:'raw_cave_eel',weight:10,xp:65},{item:'raw_tuna',weight:5,xp:90}
+  ],time:4.5},
+  {id:'deep_ocean',name:'Deep Ocean',level:45,desc:'Far from shore. Big game fish lurk.',fish:[
+    {item:'raw_swordfish',weight:25,xp:120},{item:'raw_tuna',weight:20,xp:90},{item:'raw_barracuda',weight:20,xp:110},{item:'raw_snapper',weight:15,xp:85},{item:'raw_monkfish',weight:12,xp:140},{item:'raw_shark',weight:5,xp:180},{item:'raw_karambwan',weight:3,xp:160}
+  ],time:5.5},
+  {id:'sunken_cavern',name:'Sunken Cavern',level:55,desc:'Underground waterways. Strange creatures.',fish:[
+    {item:'raw_cave_eel',weight:25,xp:65},{item:'raw_monkfish',weight:25,xp:140},{item:'raw_karambwan',weight:20,xp:160},{item:'raw_ghost_fish',weight:15,xp:200},{item:'raw_ice_fish',weight:10,xp:180},{item:'raw_anglerfish',weight:5,xp:220}
+  ],time:6.0},
+  {id:'frozen_trawl',name:'Frozen Trawl',level:65,desc:'Ice-crusted waters of the north.',fish:[
+    {item:'raw_ice_fish',weight:30,xp:180},{item:'raw_shark',weight:25,xp:250},{item:'raw_anglerfish',weight:20,xp:220},{item:'raw_sea_turtle',weight:12,xp:300},{item:'raw_ghost_fish',weight:8,xp:200},{item:'raw_sacred_eel',weight:5,xp:350}
+  ],time:7.0},
+  {id:'volcanic_pools',name:'Volcanic Pools',level:75,desc:'Bubbling magma-heated pools.',fish:[
+    {item:'raw_lava_eel',weight:30,xp:280},{item:'raw_infernal_eel',weight:25,xp:350},{item:'raw_ash_crab',weight:20,xp:320},{item:'raw_shark',weight:12,xp:250},{item:'raw_dark_crab',weight:8,xp:380},{item:'raw_sacred_eel',weight:5,xp:400}
+  ],time:8.0},
+  {id:'abyssal_depths',name:'Abyssal Depths',level:85,desc:'The deepest ocean trenches.',fish:[
+    {item:'raw_sea_turtle',weight:25,xp:300},{item:'raw_dark_crab',weight:25,xp:380},{item:'raw_manta',weight:15,xp:450},{item:'raw_void_fish',weight:12,xp:500},{item:'raw_sacred_eel',weight:10,xp:400},{item:'raw_leviathan_scale',weight:5,xp:600},{item:'raw_golden_tench',weight:3,xp:700},{item:'raw_kraken_tentacle',weight:2,xp:800}
+  ],time:10.0},
+];
+
+// Cooking recipes for new fish
+const _cookRecipes = [
+  ['sardine',1,8,2],['herring',5,12,2.5],['anchovy',1,6,2],['mackerel',10,18,2.5],
+  ['tuna',25,50,3],['bass',28,55,3],['pike',15,30,3],['catfish',12,25,2.5],['carp',8,18,2.5],
+  ['cod',20,40,3],['snapper',35,65,3.5],['barracuda',42,80,3.5],['monkfish',50,100,4],
+  ['shark',60,150,4.5],['sea_turtle',70,200,5],['karambwan',55,130,4],['eel',22,40,3],
+  ['cave_eel',30,55,3.5],['lava_eel',65,170,5],['infernal_eel',75,220,5],['sacred_eel',82,280,5.5],
+  ['ice_fish',58,140,4.5],['void_fish',88,350,6],['ghost_fish',68,180,5],
+  ['golden_tench',92,400,6],['ash_crab',78,250,5.5],
+];
+for (const [id,level,xp,time] of _cookRecipes) {
+  if (!GAME_DATA.recipes.cooking.find(r=>r.output?.item===id)) {
+    GAME_DATA.recipes.cooking.push({id:'cook_'+id,name:'Cook '+id.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),level,xp,time,input:[{item:'raw_'+id,qty:1}],output:{item:id,qty:1},burnChance:Math.max(0.02,0.15-level*0.001)});
+  }
+}
+
+// ── WILDERNESS PVP SYSTEM ────────────────────────────────
+GAME_DATA.wildernessLevels = [
+  {id:'wild_1',name:'Wilderness (Lv 1-10)',minCb:1,maxCb:10,monsters:['rat','goblin','skeleton'],pvpChance:0.05},
+  {id:'wild_2',name:'Wilderness (Lv 10-25)',minCb:10,maxCb:25,monsters:['bandit','wolf','skeleton'],pvpChance:0.08},
+  {id:'wild_3',name:'Wilderness (Lv 25-45)',minCb:25,maxCb:45,monsters:['troll','dark_mage','shadow_archer'],pvpChance:0.10},
+  {id:'wild_4',name:'Wilderness (Lv 45-65)',minCb:45,maxCb:65,monsters:['demon','lesser_demon','wyvern'],pvpChance:0.12},
+  {id:'wild_5',name:'Deep Wilderness (Lv 65+)',minCb:65,maxCb:99,monsters:['dragon','void_walker','ash_guardian'],pvpChance:0.15},
+];
+
+// ── PROTECTION JEWELRY ───────────────────────────────────
+// These items save you from full death at the cost of 2% total XP
+GAME_DATA.items.ring_of_life = {id:'ring_of_life',name:'Ring of Life',type:'armor',slot:'ring',stats:{defenceBonus:2},levelReq:{},sellPrice:5000,sprite:'ring-gold',desc:'Saves you from death ONCE. Costs 2% total XP. Consumed on use.',deathSave:true,unique:true};
+GAME_DATA.items.phoenix_necklace = {id:'phoenix_necklace',name:'Phoenix Necklace',type:'armor',slot:'amulet',stats:{defenceBonus:4,magicBonus:4},levelReq:{},sellPrice:8000,sprite:'amulet-red',desc:'Revives you at 30% HP on lethal damage. Consumed. Costs 2% XP.',deathSave:true,unique:true};
+
+// Crafting recipes for protection jewelry
+GAME_DATA.recipes.crafting.push(
+  {id:'craft_ring_of_life',name:'Ring of Life',level:55,xp:200,time:8.0,input:[{item:'diamond_ring',qty:1},{item:'celestial_essence',qty:1}],output:{item:'ring_of_life',qty:1}},
+  {id:'craft_phoenix_necklace',name:'Phoenix Necklace',level:65,xp:300,time:10.0,input:[{item:'ruby_amulet',qty:1},{item:'celestial_essence',qty:2},{item:'dragonbloom',qty:1}],output:{item:'phoenix_necklace',qty:1}},
+);
+
+// ── SPELLS: TELEHOME + TELEBLOCK ─────────────────────────
+GAME_DATA.spells.push(
+  {id:'telehome',name:'TeleHome',level:25,maxHit:0,runes:[{item:'fire_rune',qty:3},{item:'air_rune',qty:5}],desc:'Teleport out of wilderness combat. Can be blocked.',isTeleport:true},
+);
+
+// TeleBlock for PvP - 35% chance to work, 5 min cooldown, blocks for 10 combat ticks
+GAME_DATA.pvpSpells = [
+  {id:'teleblock',name:'TeleBlock',level:35,runes:[{item:'chaos_rune',qty:3},{item:'death_rune',qty:1}],desc:'35% chance to block enemy teleport for 10 combat rounds. 5 min cooldown.',blockChance:0.35,blockDuration:10,cooldown:300},
+];
+
+console.log('[Ashfall] v5.3 loaded: Fishing zones, wilderness PvP, protection jewelry');
+console.log('  Fish items:', Object.keys(GAME_DATA.items).filter(k=>k.startsWith('raw_')).length);
+console.log('  Cooking recipes:', GAME_DATA.recipes.cooking.length);

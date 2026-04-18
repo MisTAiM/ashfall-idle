@@ -213,7 +213,14 @@ class GameEngine {
 
   _findAction(skillId, actionId) {
     const skill = GAME_DATA.skills[skillId]; if (!skill) return null;
-    if (skill.type === 'gathering') return GAME_DATA.gatheringActions[skillId]?.find(a => a.id === actionId);
+    if (skill.type === 'gathering') {
+      // Check fishing zones first
+      if (skillId === 'fishing' && actionId.startsWith('zone_')) {
+        const zone = GAME_DATA.fishingZones?.find(z => z.id === actionId.replace('zone_',''));
+        if (zone) return { id:actionId, name:zone.name, level:zone.level, time:zone.time, xp:0, loot:[], _fishZone:zone, masteryId:zone.id };
+      }
+      return GAME_DATA.gatheringActions[skillId]?.find(a => a.id === actionId);
+    }
     if (skill.type === 'artisan')   return GAME_DATA.recipes[skillId]?.find(a => a.id === actionId);
     if (skillId === 'thieving')     return GAME_DATA.thievingTargets.find(a => a.id === actionId);
     return null;
@@ -236,6 +243,23 @@ class GameEngine {
   completeAction(skillId, action) {
     const skill = GAME_DATA.skills[skillId];
     if (skill.type === 'gathering') {
+      // Zone-based fishing
+      if (action._fishZone) {
+        const zone = action._fishZone;
+        const totalWeight = zone.fish.reduce((s,f)=>s+f.weight, 0);
+        let roll = Math.random() * totalWeight;
+        let caught = zone.fish[0];
+        for (const f of zone.fish) {
+          roll -= f.weight;
+          if (roll <= 0) { caught = f; break; }
+        }
+        this.addItem(caught.item, 1);
+        this.addXp(skillId, caught.xp);
+        this.trackQuestProgress('gather', { item:caught.item, qty:1 });
+        this.incrementStat(skillId);
+        this.addMasteryXp(skillId, zone.id, caught.xp * 0.5);
+        return; // skip normal XP add below
+      }
       for (const drop of action.loot) {
         this.addItem(drop.item, drop.qty);
         this.trackQuestProgress('gather', { item:drop.item, qty:drop.qty });
@@ -547,9 +571,24 @@ class GameEngine {
 
     // Alignment shifts from kills
     const mAlign = monster.alignment || 'NN';
-    if (mAlign.includes('E')) this.shiftAlignment('good', 1);      // Killing evil = good
-    else if (mAlign.includes('G')) this.shiftAlignment('evil', 2);  // Killing good = very evil
-    else if (mAlign === 'NN') this.shiftAlignment('chaotic', 1);    // Killing neutral = chaotic
+    if (mAlign.includes('E')) this.shiftAlignment('good', 1);
+    else if (mAlign.includes('G')) this.shiftAlignment('evil', 2);
+    else if (mAlign === 'NN') this.shiftAlignment('chaotic', 1);
+
+    // Wilderness PvP kill rewards
+    if (this.state.combat._isWilderness && mId === 'pvp_opponent') {
+      this.state.stats.pvpKills = (this.state.stats.pvpKills || 0) + 1;
+      this.state.stats.pvpStreak = (this.state.stats.pvpStreak || 0) + 1;
+      const streak = this.state.stats.pvpStreak;
+      // Alignment penalty for PvP kills
+      this.shiftAlignment('evil', 5);
+      this.shiftAlignment('chaotic', 3);
+      // Streak bonus
+      if (streak >= 3) this.emit('notification',{type:'achievement',text:`PvP Streak: ${streak} kills!`});
+      if (typeof online !== 'undefined' && online.isOnline) {
+        online.sendSystemMessage(`[PVP] ${online.displayName} killed a player in the Wilderness! (Streak: ${streak})`);
+      }
+    }
 
     if (monster.gold) {
       let g = this.randInt(monster.gold.min, monster.gold.max);
@@ -645,9 +684,114 @@ class GameEngine {
   }
 
   onPlayerDeath() {
-    this.state.stats.deaths++;
-    this.emit('notification', { type:'danger', text:'You have been defeated!' });
+    // Check for death-saving jewelry first
+    for (const slot of ['ring','amulet']) {
+      const itemId = this.state.equipment[slot];
+      if (!itemId) continue;
+      const item = GAME_DATA.items[itemId];
+      if (item?.deathSave) {
+        let totalXp = 0;
+        for (const sk of Object.values(this.state.skills)) totalXp += sk.xp;
+        const penalty = Math.floor(totalXp * 0.02);
+        for (const [sId, sk] of Object.entries(this.state.skills)) {
+          const share = totalXp > 0 ? sk.xp / totalXp : 0;
+          sk.xp = Math.max(0, sk.xp - Math.floor(penalty * share));
+          sk.level = Math.max(1, this.getLevelForXp(sk.xp));
+        }
+        this.state.equipment[slot] = null; // consumed
+        this.state.combat.playerHp = itemId === 'phoenix_necklace' ? Math.floor(this.getMaxHp() * 0.3) : Math.floor(this.getMaxHp() * 0.1);
+        this.emit('notification', { type:'danger', text:`${item.name} saved you! Lost 2% total XP (${penalty} XP). Item destroyed.` });
+        return; // don't die
+      }
+    }
+
+    this.state.stats.deaths = (this.state.stats.deaths || 0) + 1;
+
+    // Wilderness PvP death
+    if (this.state.combat._isWilderness) {
+      this.state.stats.pvpDeaths = (this.state.stats.pvpDeaths || 0) + 1;
+      this.state.stats.pvpStreak = 0;
+      const lostGold = Math.floor(this.state.gold * 0.05);
+      this.state.gold = Math.max(0, this.state.gold - lostGold);
+      this.emit('notification', { type:'danger', text:`Killed in the Wilderness! Lost ${lostGold} gold.` });
+      if (typeof online !== 'undefined' && online.isOnline) {
+        online.sendSystemMessage(`[PVP] ${online.displayName} was slain in the Wilderness!`);
+      }
+    } else {
+      this.emit('notification', { type:'danger', text:'You have been defeated!' });
+    }
     this.stopCombat();
+  }
+
+  getLevelForXp(xp) {
+    for (let l = 98; l >= 1; l--) {
+      if (xp >= this.getXpForLevel(l)) return l;
+    }
+    return 1;
+  }
+
+  // Wilderness PvP - flee attempt (weighted by agility/defence)
+  attemptFlee() {
+    const c = this.state.combat;
+    if (!c.active) return;
+    if (c._isDuel) { this.emit('notification',{type:'warn',text:'Cannot flee from a duel!'}); return; }
+    // Base 40% + defence/2 + agility bonus, capped at 80%
+    const fleeChance = Math.min(0.80, 0.40 + this.state.skills.defence.level * 0.003 + (this.state.skills.hitpoints.level * 0.002));
+    if (Math.random() < fleeChance) {
+      this.emit('notification',{type:'success',text:'You escaped!'});
+      this.stopCombat();
+    } else {
+      this.emit('notification',{type:'warn',text:`Failed to flee! (${(fleeChance*100).toFixed(0)}% chance)`});
+    }
+  }
+
+  // TeleHome spell
+  castTeleHome() {
+    const c = this.state.combat;
+    if (!c.active) return;
+    if (c._isDuel) { this.emit('notification',{type:'warn',text:'Cannot teleport from a duel!'}); return; }
+    if (c._teleBlocked > 0) { this.emit('notification',{type:'danger',text:`TeleBlocked! ${c._teleBlocked} rounds remaining.`}); return; }
+    // Check runes
+    if ((this.state.bank.fire_rune||0) < 3 || (this.state.bank.air_rune||0) < 5) {
+      this.emit('notification',{type:'warn',text:'Need 3 Fire + 5 Air runes to TeleHome.'}); return;
+    }
+    this.state.bank.fire_rune -= 3;
+    this.state.bank.air_rune -= 5;
+    this.emit('notification',{type:'success',text:'TeleHome! You vanish in a flash of light.'});
+    this.stopCombat();
+  }
+
+  // Start wilderness combat with PvP chance
+  startWildernessCombat(zoneId, monsterId) {
+    const zone = GAME_DATA.wildernessLevels.find(z=>z.id===zoneId);
+    if (!zone) return;
+    const cb = this.getCombatLevel();
+    if (cb < zone.minCb) { this.emit('notification',{type:'warn',text:`Need combat level ${zone.minCb}+`}); return; }
+
+    // PvP chance roll
+    if (typeof online !== 'undefined' && online.isOnline && Math.random() < zone.pvpChance) {
+      // Trigger wilderness PvP instead of monster fight
+      this.state.combat._isWilderness = true;
+      this.state.combat._pvpTriggered = true;
+      this.emit('notification',{type:'danger',text:'A hostile player attacks you in the Wilderness!'});
+      // Simulate PvP opponent as a strong monster scaled to your level
+      const fakeMonster = {
+        id:'pvp_opponent', name:'Wilderness PKer', hp: Math.floor(this.getMaxHp() * 0.9),
+        maxHit: Math.floor(this.state.skills.strength.level * 0.8),
+        attackSpeed: 2.0, combatLevel: cb + Math.floor(Math.random()*10) - 5,
+        style: ['melee','ranged','magic'][Math.floor(Math.random()*3)],
+        evasion:{melee:cb,ranged:cb,magic:cb},
+        xp: cb * 50, gold:{min:50,max:cb*10}, alignment:'CE',
+        drops:[{item:'bones',qty:1,chance:1.0}]
+      };
+      GAME_DATA.monsters.pvp_opponent = fakeMonster;
+      this.startCombat(null, 'pvp_opponent');
+      this.state.combat._isWilderness = true;
+      return;
+    }
+
+    this.startCombat(null, monsterId);
+    this.state.combat._isWilderness = true;
   }
 
   // ── HELPERS ────────────────────────────────────────────

@@ -64,6 +64,7 @@ const NAV = [
   ]},
   { header:'Combat', items:[
     {id:'combat',label:'Combat',icon:'combat'},
+    {id:'wilderness',label:'Wilderness',icon:'combat'},
     {id:'dungeons',label:'Dungeons',icon:'dungeon'},
     {id:'world_bosses',label:'World Bosses',icon:'worldboss'},
     {id:'abilities',label:'Abilities',icon:'banner'},
@@ -236,6 +237,7 @@ class UI {
     if (skill && (skill.type === 'gathering' || skill.type === 'artisan')) this.renderSkillPage(main, pageId, skill);
     else if (pageId === 'thieving') this.renderThievingPage(main);
     else if (pageId === 'combat') this.renderCombatPage(main);
+    else if (pageId === 'wilderness') this.renderWildernessPage(main);
     else if (pageId === 'dungeons') this.renderDungeonsPage(main);
     else if (pageId === 'world_bosses') this.renderWorldBossesPage(main);
     else if (pageId === 'abilities') this.renderAbilitiesPage(main);
@@ -337,6 +339,31 @@ class UI {
       </div>`;
     }
     html += '</div>';
+
+    // Fishing Zones (zone-based random catch pools)
+    if (sId === 'fishing' && GAME_DATA.fishingZones) {
+      html += '<h2 class="section-title">Fishing Zones</h2><p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Each zone has a pool of fish. You catch different fish each time based on weighted rarity. XP varies per catch.</p><div class="actions-grid">';
+      for (const zone of GAME_DATA.fishingZones) {
+        const locked = s.skills.fishing.level < zone.level;
+        const isActive = s.activeSkill === 'fishing' && s.activeAction === 'zone_' + zone.id;
+        html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('fishing','zone_${zone.id}')"`}>
+          <div class="ac-header"><span class="ac-name">${zone.name}</span><span class="ac-level">Lv ${zone.level}</span></div>
+          <p class="area-desc">${zone.desc}</p>
+          <div class="fz-pool">`;
+        const totalW = zone.fish.reduce((s,x)=>s+x.weight,0);
+        for (const f of zone.fish) {
+          const pct = (f.weight / totalW * 100).toFixed(0);
+          const item = GAME_DATA.items[f.item];
+          html += `<span class="fz-fish" title="${pct}% chance, ${f.xp} XP">${item?.name||f.item} <small>${pct}% ${f.xp}xp</small></span>`;
+        }
+        html += `</div>
+          <div class="ac-footer"><span class="ac-time">${zone.time}s</span></div>
+          ${locked?`<div class="locked-overlay">Level ${zone.level}</div>`:''}
+        </div>`;
+      }
+      html += '</div>';
+    }
+
     el.innerHTML = html;
   }
 
@@ -609,6 +636,81 @@ class UI {
       const def = GAME_DATA.statusEffects[k];
       return `<span class="status-tag" style="background:${def.color}22;color:${def.color}" title="${def.desc}">${def.name} x${fx.stacks} (${Math.ceil(fx.duration)}s)</span>`;
     }).join('') + '</div>';
+  }
+
+  // ── WILDERNESS PAGE ─────────────────────────────────────
+  renderWildernessPage(el) {
+    const s = this.engine.state;
+    const c = s.combat;
+    const al = GAME_DATA.alignments[s.alignment];
+    const pvpKills = s.stats.pvpKills || 0;
+    const pvpDeaths = s.stats.pvpDeaths || 0;
+    const pvpStreak = s.stats.pvpStreak || 0;
+
+    let html = `<div class="wild-page">`;
+    html += `<div class="wild-header">
+      <div class="wild-title">${icon('combat',24)} THE WILDERNESS</div>
+      <div class="wild-sub">Dangerous PvP-enabled zones. Other players may attack you at any time.</div>
+    </div>`;
+
+    // PvP stats
+    html += `<div class="wild-stats">
+      <div class="ws-stat"><span class="ws-label">PvP Kills</span><span class="ws-val">${pvpKills}</span></div>
+      <div class="ws-stat"><span class="ws-label">PvP Deaths</span><span class="ws-val">${pvpDeaths}</span></div>
+      <div class="ws-stat"><span class="ws-label">Streak</span><span class="ws-val ws-streak">${pvpStreak}</span></div>
+      <div class="ws-stat"><span class="ws-label">K/D Ratio</span><span class="ws-val">${pvpDeaths>0?(pvpKills/pvpDeaths).toFixed(2):'--'}</span></div>
+      <div class="ws-stat"><span class="ws-label">Alignment</span><span class="ws-val">${al.name}</span></div>
+    </div>`;
+
+    // Warnings
+    html += `<div class="wild-warnings">
+      <div class="ww-item ww-danger">PvP kills shift your alignment toward Evil & Chaotic. Evil alignment raises shop prices and reduces quest rewards.</div>
+      <div class="ww-item ww-info">Equip a <strong>Ring of Life</strong> or <strong>Phoenix Necklace</strong> to survive death at the cost of 2% total XP.</div>
+      <div class="ww-item ww-info">Cast <strong>TeleHome</strong> (3 Fire + 5 Air runes) to escape. Enemies may <strong>TeleBlock</strong> you (35% chance, blocks 10 rounds).</div>
+      <div class="ww-item ww-info">In <strong>Duels</strong>, flee is disabled. In <strong>Wilderness</strong>, flee chance is based on your Defence + HP levels.</div>
+    </div>`;
+
+    // Active wilderness combat
+    if (c.active && c._isWilderness) {
+      const mon = GAME_DATA.monsters[c.monster];
+      if (mon) {
+        html += `<div class="wild-combat-active">
+          <div class="wca-title">WILDERNESS COMBAT</div>
+          <div class="wca-vs">${mon.name} (Lv ${mon.combatLevel})</div>
+          <div class="wca-btns">
+            <button class="btn btn-danger" onclick="game.attemptFlee()">Flee (${Math.min(80,40+Math.floor(s.skills.defence.level*0.3))}%)</button>
+            <button class="btn" onclick="game.castTeleHome()">TeleHome</button>
+            <button class="btn btn-sm" onclick="game.stopCombat()">Surrender</button>
+          </div>
+        </div>`;
+      }
+    }
+
+    // Wilderness zones
+    html += '<h2 class="section-title">Wilderness Zones</h2><div class="area-grid">';
+    for (const zone of (GAME_DATA.wildernessLevels || [])) {
+      const cb = this.engine.getCombatLevel();
+      const locked = cb < zone.minCb;
+      html += `<div class="area-card-v2 wild-zone ${locked?'area-locked':''}">
+        <div class="area-header">
+          <span class="area-name">${zone.name}</span>
+          <span class="area-req wild-pvp-badge">PvP ${(zone.pvpChance*100).toFixed(0)}%</span>
+        </div>
+        <div class="area-desc">Combat Level ${zone.minCb}-${zone.maxCb}. Higher PvP encounter rate in deeper zones.</div>
+        <div class="area-monsters-v2">`;
+      for (const mId of zone.monsters) {
+        const m = GAME_DATA.monsters[mId];
+        if (!m) continue;
+        html += `<button class="monster-btn-v2" ${locked?'disabled':''} onclick="game.startWildernessCombat('${zone.id}','${mId}')">
+          ${GAME_DATA.monsterArt?.[mId] ? `<span class="mb-art">${GAME_DATA.monsterArt[mId]}</span>` : ''}
+          <span class="mb-name">${m.name}</span>
+          <span class="mb-info">Lv${m.combatLevel} | ${m.hp}hp</span>
+        </button>`;
+      }
+      html += '</div></div>';
+    }
+    html += '</div></div>';
+    el.innerHTML = html;
   }
 
   renderDungeonsPage(el) {
