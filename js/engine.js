@@ -127,6 +127,8 @@ class GameEngine {
     // Character profile
     if (!s.profile) s.profile = { avatarSeed:'', hair:'short04', skinColor:'c68642', hairColor:'2c1b18', accessory:'', mouth:'happy01', eyes:'variant04', clothing:'variant04', clothingColor:'4a90d4', bio:'' };
     if (!s.guild) s.guild = null;
+    if (!s.storyline) s.storyline = {};       // { main_story: { chapter:0, step:0, completed:false } }
+    if (!s.alignmentPoints) s.alignmentPoints = { moral:0, order:0 };
     s.version = 2;
   }
 
@@ -537,6 +539,12 @@ class GameEngine {
     }
     xpParts.push(`+${Math.floor(xp*0.33)} HP`);
     this.emit('xpGain', { text: xpParts.join(', '), total: xp });
+
+    // Alignment shifts from kills
+    const mAlign = monster.alignment || 'NN';
+    if (mAlign.includes('E')) this.shiftAlignment('good', 1);      // Killing evil = good
+    else if (mAlign.includes('G')) this.shiftAlignment('evil', 2);  // Killing good = very evil
+    else if (mAlign === 'NN') this.shiftAlignment('chaotic', 1);    // Killing neutral = chaotic
 
     if (monster.gold) {
       let g = this.randInt(monster.gold.min, monster.gold.max);
@@ -1167,6 +1175,102 @@ class GameEngine {
       clearTimeout(this._afkTimeout);
       this._afkTimeout = null;
       this.emit('notification', { type:'success', text:'Guardian dismissed. Training continues.' });
+    }
+  }
+
+  // ── STORYLINE QUESTS ─────────────────────────────────────
+  getStoryProgress(storyId) {
+    if (!this.state.storyline[storyId]) this.state.storyline[storyId] = { chapter:0, step:0, completed:false };
+    return this.state.storyline[storyId];
+  }
+
+  getCurrentStoryStep(storyId) {
+    const story = (GAME_DATA.storylines||[]).find(s=>s.id===storyId);
+    if (!story) return null;
+    const prog = this.getStoryProgress(storyId);
+    if (prog.completed) return null;
+    const chapter = story.chapters[prog.chapter];
+    if (!chapter) return null;
+    const step = chapter.steps[prog.step];
+    if (!step) return null;
+    return { story, chapter, step, chapterIdx:prog.chapter, stepIdx:prog.step };
+  }
+
+  checkStoryObjective(storyId) {
+    const cur = this.getCurrentStoryStep(storyId);
+    if (!cur) return false;
+    const obj = cur.step.objective;
+    const s = this.state;
+    if (obj.type === 'kill') return (s.stats.uniqueKills?.[obj.monster]||0) >= obj.qty;
+    if (obj.type === 'collect') return (s.bank[obj.item]||0) >= obj.qty;
+    if (obj.type === 'gold') return s.gold >= obj.amount;
+    if (obj.type === 'skill') return s.skills[obj.skill]?.level >= obj.level;
+    if (obj.type === 'choice') return false; // Requires manual selection
+    return false;
+  }
+
+  completeStoryStep(storyId, choiceIdx) {
+    const cur = this.getCurrentStoryStep(storyId);
+    if (!cur) return;
+    const step = cur.step;
+    const rew = step.reward;
+
+    // Grant rewards
+    if (rew.gold) { this.state.gold += rew.gold; this.state.stats.goldEarned += rew.gold; }
+    if (rew.xp) { for (const [skill,amt] of Object.entries(rew.xp)) this.addXp(skill, amt); }
+    if (rew.items) { for (const it of rew.items) this.addItem(it.item, it.qty); }
+    if (rew.rep) {
+      for (const [fac,amt] of Object.entries(rew.rep)) {
+        if (!this.state.factionRep) this.state.factionRep = {};
+        this.state.factionRep[fac] = (this.state.factionRep[fac]||0) + amt;
+      }
+    }
+
+    // Alignment shift
+    if (step.alignShift) this.shiftAlignment(step.alignShift.direction, step.alignShift.amount);
+
+    // Advance progress
+    const prog = this.getStoryProgress(storyId);
+    const story = cur.story;
+    prog.step++;
+    if (prog.step >= story.chapters[prog.chapter].steps.length) {
+      prog.step = 0;
+      prog.chapter++;
+      if (prog.chapter >= story.chapters.length) {
+        prog.completed = true;
+        this.emit('notification', { type:'achievement', text:`Storyline Complete: ${story.name}!` });
+      } else {
+        this.emit('notification', { type:'levelup', text:`Chapter Complete: ${story.chapters[prog.chapter-1].name}` });
+      }
+    }
+    this.emit('notification', { type:'success', text:`Quest step complete! ${rew.gold?'+'+rew.gold+'g ':''} ${rew.xp?Object.entries(rew.xp).map(([k,v])=>'+'+v+' '+k+' XP').join(', '):''}` });
+  }
+
+  // ── ALIGNMENT SYSTEM ────────────────────────────────────
+  shiftAlignment(direction, amount) {
+    // direction: 'good','evil','lawful','chaotic'
+    // Accumulates moral/order points, shifts alignment when threshold reached
+    if (!this.state.alignmentPoints) this.state.alignmentPoints = { moral:0, order:0 };
+    const ap = this.state.alignmentPoints;
+    if (direction === 'good') ap.moral += amount;
+    else if (direction === 'evil') ap.moral -= amount;
+    else if (direction === 'lawful') ap.order += amount;
+    else if (direction === 'chaotic') ap.order -= amount;
+
+    // Determine alignment from accumulated points
+    const m = ap.moral > 25 ? 'G' : ap.moral < -25 ? 'E' : 'N';
+    const o = ap.order > 25 ? 'L' : ap.order < -25 ? 'C' : 'N';
+    const map = {
+      'LG':'lawful_good','NG':'neutral_good','CG':'chaotic_good',
+      'LN':'lawful_neutral','NN':'true_neutral','CN':'chaotic_neutral',
+      'LE':'lawful_evil','NE':'neutral_evil','CE':'chaotic_evil',
+    };
+    const newAlign = map[o+m] || 'true_neutral';
+    if (newAlign !== this.state.alignment) {
+      const old = GAME_DATA.alignments[this.state.alignment]?.name || this.state.alignment;
+      this.state.alignment = newAlign;
+      const al = GAME_DATA.alignments[newAlign];
+      this.emit('notification', { type:'achievement', text:`Alignment shifted to ${al.name} (${al.axis})! ${al.desc}` });
     }
   }
 

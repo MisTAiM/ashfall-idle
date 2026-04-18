@@ -81,6 +81,7 @@ const NAV = [
   { header:'Social', items:[
     {id:'npcs',label:'NPCs',icon:'npc'},
     {id:'quests',label:'Quests',icon:'scroll'},
+    {id:'storyline',label:'Storyline',icon:'book'},
     {id:'factions',label:'Factions',icon:'faction'},
     {id:'alignment',label:'Alignment',icon:'alignment'},
   ]},
@@ -246,6 +247,7 @@ class UI {
     else if (pageId === 'settings_page') this.renderSettingsPage(main);
     else if (pageId === 'npcs') this.renderNPCsPage(main);
     else if (pageId === 'quests') this.renderQuestsPage(main);
+    else if (pageId === 'storyline') this.renderStorylinePage(main);
     else if (pageId === 'factions') this.renderFactionsPage(main);
     else if (pageId === 'alignment') this.renderAlignmentPage(main);
     else if (pageId === 'enchanting') main.innerHTML = this.header('Enchanting','sparkle','Coming soon. Train other skills to prepare.','enchanting');
@@ -853,6 +855,107 @@ class UI {
     el.innerHTML = html;
   }
 
+  // ── STORYLINE PAGE ──────────────────────────────────────
+  renderStorylinePage(el) {
+    const s = this.engine.state;
+    const al = GAME_DATA.alignments[s.alignment];
+    const ap = s.alignmentPoints || { moral:0, order:0 };
+    let html = this.header('Storyline','book','Follow branching quest chains that shape your destiny and alignment.',null);
+
+    // Alignment display
+    html += `<div class="story-alignment">
+      <div class="sa-title">Current Alignment: <strong>${al.name}</strong> (${al.axis})</div>
+      <div class="sa-desc">${al.desc}</div>
+      <div class="sa-meters">
+        <div class="sa-meter"><span class="sa-label">Moral</span><div class="sa-bar"><div class="sa-fill-good" style="width:${Math.min(100,Math.max(0,(ap.moral+50)))}%"></div></div><span class="sa-val">${ap.moral > 0 ? '+'+ap.moral+' Good' : ap.moral < 0 ? ap.moral+' Evil' : 'Neutral'}</span></div>
+        <div class="sa-meter"><span class="sa-label">Order</span><div class="sa-bar"><div class="sa-fill-order" style="width:${Math.min(100,Math.max(0,(ap.order+50)))}%"></div></div><span class="sa-val">${ap.order > 0 ? '+'+ap.order+' Lawful' : ap.order < 0 ? ap.order+' Chaotic' : 'Neutral'}</span></div>
+      </div>
+      <div class="sa-hint">Your alignment shifts based on your actions. Killing evil creatures shifts you toward Good. Killing innocents shifts toward Evil. Quest choices also affect alignment.</div>
+    </div>`;
+
+    // Storyline chains
+    for (const story of (GAME_DATA.storylines || [])) {
+      const prog = this.engine.getStoryProgress(story.id);
+      const cur = this.engine.getCurrentStoryStep(story.id);
+      const canComplete = cur ? this.engine.checkStoryObjective(story.id) : false;
+
+      html += `<div class="story-chain ${prog.completed?'story-done':''}">
+        <div class="sc-header">
+          <span class="sc-name">${story.name}</span>
+          ${prog.completed ? '<span class="sc-badge sc-complete">COMPLETED</span>' : cur ? `<span class="sc-badge sc-active">Chapter ${prog.chapter+1}</span>` : ''}
+        </div>
+        <div class="sc-desc">${story.desc}</div>`;
+
+      // Show chapters
+      for (let ci = 0; ci < story.chapters.length; ci++) {
+        const ch = story.chapters[ci];
+        const isCurrentChapter = !prog.completed && prog.chapter === ci;
+        const isPast = ci < prog.chapter;
+        const isFuture = ci > prog.chapter && !prog.completed;
+
+        html += `<div class="sc-chapter ${isPast?'ch-done':''} ${isCurrentChapter?'ch-active':''} ${isFuture?'ch-locked':''}">
+          <div class="ch-title">${isPast?'&#x2714; ':''}${ch.name}${isFuture?' (Locked)':''}</div>`;
+
+        if (isCurrentChapter || isPast) {
+          for (let si = 0; si < ch.steps.length; si++) {
+            const step = ch.steps[si];
+            const isCurrentStep = isCurrentChapter && prog.step === si;
+            const isPastStep = isPast || (isCurrentChapter && si < prog.step);
+            const isFutureStep = isCurrentChapter && si > prog.step;
+
+            if (isFutureStep) continue; // Don't show future steps
+
+            html += `<div class="ch-step ${isPastStep?'step-done':''} ${isCurrentStep?'step-active':''}">
+              <div class="step-text">${isPastStep?'<s>':''}${step.text}${isPastStep?'</s>':''}</div>`;
+
+            if (isCurrentStep) {
+              const obj = step.objective;
+              let objText = '';
+              let progress = '';
+              if (obj.type === 'kill') {
+                const kills = s.stats.uniqueKills?.[obj.monster] || 0;
+                objText = `Kill ${obj.qty} ${GAME_DATA.monsters[obj.monster]?.name || obj.monster}`;
+                progress = `${Math.min(kills, obj.qty)} / ${obj.qty}`;
+              } else if (obj.type === 'collect') {
+                const have = s.bank[obj.item] || 0;
+                objText = `Collect ${obj.qty} ${GAME_DATA.items[obj.item]?.name || obj.item}`;
+                progress = `${Math.min(have, obj.qty)} / ${obj.qty}`;
+              } else if (obj.type === 'gold') {
+                objText = `Have ${obj.amount} gold`;
+                progress = `${Math.min(s.gold, obj.amount)} / ${obj.amount}`;
+              } else if (obj.type === 'skill') {
+                const lvl = s.skills[obj.skill]?.level || 1;
+                objText = `Reach ${GAME_DATA.skills[obj.skill]?.name || obj.skill} level ${obj.level}`;
+                progress = `${lvl} / ${obj.level}`;
+              }
+              html += `<div class="step-objective">
+                <span class="so-text">${objText}</span>
+                <span class="so-progress">${progress}</span>
+              </div>`;
+              // Rewards preview
+              const rew = step.reward;
+              html += '<div class="step-rewards">';
+              if (rew.gold) html += `<span class="sr-chip sr-gold">+${rew.gold}g</span>`;
+              if (rew.xp) for (const [k,v] of Object.entries(rew.xp)) html += `<span class="sr-chip">+${v} ${k}</span>`;
+              if (rew.items) for (const it of rew.items) html += `<span class="sr-chip sr-item">${it.qty}x ${GAME_DATA.items[it.item]?.name||it.item}</span>`;
+              if (step.alignShift) html += `<span class="sr-chip sr-align">${step.alignShift.direction} +${step.alignShift.amount}</span>`;
+              html += '</div>';
+
+              if (canComplete) {
+                html += `<button class="btn" onclick="game.completeStoryStep('${story.id}');ui.renderPage('storyline')">Complete Step</button>`;
+              }
+            }
+            html += '</div>';
+          }
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  }
+
+  // ── QUESTS PAGE ───────────────────────────────────────
   renderQuestsPage(el) {
     const s = this.engine.state;
     let html = this.header('Quests','scroll',`${s.quests.active.length} active &mdash; ${s.quests.completed.length} completed`,null);
@@ -1503,34 +1606,46 @@ class UI {
   // ── CHAT PAGE ──────────────────────────────────────────
   renderChatPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Global Chat','scroll','Talk to other survivors in the Ashfall world.',null);
+    let html = this.header('Global Chat','scroll','Talk to other survivors. Admins have special commands.',null);
 
     if (!isOnline) {
-      html += '<div class="bank-empty">Online features not available. Configure Firebase to enable chat.</div>';
-      el.innerHTML = html;
-      return;
+      html += '<div class="bank-empty">Sign in to use chat.</div>';
+      el.innerHTML = html; return;
     }
 
-    html += `<div id="chat-container">
-      <div id="chat-messages" class="chat-messages"></div>
-      <div class="chat-input-bar">
-        <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..." maxlength="200" onkeydown="if(event.key==='Enter')ui.sendChat()">
+    const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(online.user?.uid);
+
+    html += `<div class="chat-container-v2">
+      <div class="chat-header">
+        <span class="ch-title">Global Chat</span>
+        <span class="ch-online">${online.displayName} [Cb${game.getCombatLevel()}]</span>
+      </div>
+      <div id="chat-messages" class="chat-messages-v2"></div>
+      <div class="chat-input-bar-v2">
+        <input type="text" id="chat-input" class="chat-input-v2" placeholder="${isAdmin?'Type /help for admin commands...':'Type a message...'}" maxlength="300" onkeydown="if(event.key==='Enter')ui.sendChat()">
         <button class="btn btn-sm" onclick="ui.sendChat()">Send</button>
       </div>
+      ${isAdmin ? '<div class="chat-admin-hint">Admin: /give /xp /announce /clear /mute /stats /broadcast</div>' : ''}
     </div>`;
     el.innerHTML = html;
 
-    // Start listening
     online.listenToChat((msgs) => {
       const container = document.getElementById('chat-messages');
       if (!container) return;
       container.innerHTML = msgs.map(m => {
         const isMe = online.user && m.uid === online.user.uid;
+        const isAdminMsg = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(m.uid);
         const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-        return `<div class="chat-msg ${isMe?'chat-mine':''}">
-          <span class="chat-name" style="${isMe?'color:var(--accent)':''}">${this.escHtml(m.name)} <small>[Cb${m.combatLevel||'?'}]</small></span>
-          <span class="chat-text">${this.escHtml(m.text)}</span>
+        const isSys = m.system;
+        if (isSys) {
+          return `<div class="chat-msg chat-system"><span class="chat-sys-text">${this.escHtml(m.text)}</span><span class="chat-time">${time}</span></div>`;
+        }
+        return `<div class="chat-msg ${isMe?'chat-mine':''} ${isAdminMsg?'chat-admin-msg':''}">
           <span class="chat-time">${time}</span>
+          ${isAdminMsg?'<span class="chat-badge">ADMIN</span>':''}
+          <span class="chat-name" style="${isMe?'color:var(--accent)':isAdminMsg?'color:#d4a83a':''}">${this.escHtml(m.name)}</span>
+          <span class="chat-level">[${m.totalLevel||'?'}]</span>
+          <span class="chat-text">${this.escHtml(m.text)}</span>
         </div>`;
       }).join('');
       container.scrollTop = container.scrollHeight;
@@ -1540,8 +1655,84 @@ class UI {
   sendChat() {
     const input = document.getElementById('chat-input');
     if (!input || !input.value.trim()) return;
-    online.sendMessage(input.value);
+    const text = input.value.trim();
     input.value = '';
+
+    // Admin commands
+    const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(online.user?.uid);
+    if (isAdmin && text.startsWith('/')) {
+      this.handleAdminCommand(text);
+      return;
+    }
+
+    online.sendMessage(text);
+  }
+
+  handleAdminCommand(text) {
+    const parts = text.split(' ');
+    const cmd = parts[0].toLowerCase();
+
+    switch(cmd) {
+      case '/help':
+        this.toast({type:'info', text:'Commands: /give [item] [qty], /xp [skill] [amount], /gold [amount], /announce [msg], /stats, /heal, /maxall, /broadcast [msg]'});
+        break;
+
+      case '/give': {
+        const itemId = parts[1];
+        const qty = parseInt(parts[2]) || 1;
+        if (!itemId || !GAME_DATA.items[itemId]) { this.toast({type:'warn',text:'Item not found. Use item IDs like iron_sword, dragon_bones, etc.'}); return; }
+        game.addItem(itemId, qty);
+        this.toast({type:'success', text:`Admin: Given ${qty}x ${GAME_DATA.items[itemId].name}`});
+        break;
+      }
+
+      case '/xp': {
+        const skill = parts[1];
+        const amount = parseInt(parts[2]) || 1000;
+        if (!skill || !game.state.skills[skill]) { this.toast({type:'warn',text:'Invalid skill. Use: attack, strength, mining, etc.'}); return; }
+        game.addXp(skill, amount);
+        this.toast({type:'success', text:`Admin: +${amount} ${skill} XP`});
+        break;
+      }
+
+      case '/gold': {
+        const amount = parseInt(parts[1]) || 10000;
+        game.state.gold += amount;
+        this.toast({type:'success', text:`Admin: +${amount} gold`});
+        break;
+      }
+
+      case '/heal':
+        game.state.combat.playerHp = game.getMaxHp();
+        game.state.prayerPoints = 99;
+        this.toast({type:'success', text:'Admin: Full HP + Prayer restored'});
+        break;
+
+      case '/maxall':
+        for (const sId of Object.keys(game.state.skills)) {
+          game.state.skills[sId].level = 99;
+          game.state.skills[sId].xp = 13034431;
+        }
+        this.toast({type:'success', text:'Admin: All skills set to 99'});
+        this.renderSidebar();
+        break;
+
+      case '/announce':
+      case '/broadcast': {
+        const msg = parts.slice(1).join(' ');
+        if (!msg) { this.toast({type:'warn',text:'Usage: /announce Your message here'}); return; }
+        online.sendSystemMessage('[ADMIN] ' + msg);
+        this.toast({type:'success', text:'Broadcast sent'});
+        break;
+      }
+
+      case '/stats':
+        this.toast({type:'info', text:`Gold:${game.state.gold} Kills:${game.state.stats.monstersKilled} TotalLv:${game.getTotalLevel()} CombatLv:${game.getCombatLevel()}`});
+        break;
+
+      default:
+        this.toast({type:'warn', text:'Unknown command. Type /help'});
+    }
   }
 
   escHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }

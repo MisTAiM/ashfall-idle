@@ -119,7 +119,7 @@ class OnlineManager {
   async sendMessage(text) {
     if (!this.isOnline || !this.user) return;
     text = text.trim();
-    if (text.length === 0 || text.length > 200) return;
+    if (text.length === 0 || text.length > 300) return;
     try {
       await this.db.ref('chat').push({
         uid: this.user.uid,
@@ -130,6 +130,19 @@ class OnlineManager {
         totalLevel: game ? game.getTotalLevel() : 25,
       });
     } catch(e) { console.error('Chat error:', e); }
+  }
+
+  async sendSystemMessage(text) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      await this.db.ref('chat').push({
+        uid: 'system',
+        name: 'System',
+        text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        system: true,
+      });
+    } catch(e) { console.error('System msg error:', e); }
   }
 
   // ── CLOUD SAVES ────────────────────────────────────────

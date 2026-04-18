@@ -1183,3 +1183,68 @@ GAME_DATA.achievements.push(
 );
 
 console.log('[Ashfall] v4.0 expansion loaded:', Object.keys(GAME_DATA.items).length, 'items');
+
+// ── STORYLINE QUESTS ─────────────────────────────────────
+// Multi-step quest chains with narrative and alignment impact
+GAME_DATA.storylines = [
+  {
+    id:'main_story', name:'The Ashfall Prophecy', desc:'Uncover the truth behind the endless ash.',
+    chapters: [
+      {
+        id:'ms_1', name:'Chapter 1: Awakening',
+        steps: [
+          {id:'ms_1_1',text:'Old Pete tells you of a strange light in the Darkwood. He begs you to investigate.',objective:{type:'kill',monster:'rat',qty:5},reward:{xp:{attack:200},gold:50},alignShift:{direction:'good',amount:5}},
+          {id:'ms_1_2',text:'Rats were guarding a strange rune-carved bone. Pete says to bring it to Commander Elara at Silverhold.',objective:{type:'collect',item:'bones',qty:3},reward:{xp:{defence:200},gold:100},alignShift:{direction:'lawful',amount:3}},
+          {id:'ms_1_3',text:'Elara recognizes the markings as the Ashen Script—the language of the first fall. She asks you to prove your worth by slaying goblins threatening the road.',objective:{type:'kill',monster:'goblin',qty:10},reward:{xp:{strength:500,attack:300},gold:300,items:[{item:'steel_sword',qty:1}],rep:{silver_order:500}},alignShift:{direction:'good',amount:5}},
+        ]
+      },
+      {
+        id:'ms_2', name:'Chapter 2: The Merchant\'s Shadow',
+        steps: [
+          {id:'ms_2_1',text:'Merchant Garrick has information about the Ashen Script, but demands payment. Steal 500 gold worth of goods... or earn it honestly.',objective:{type:'gold',amount:500},reward:{xp:{thieving:400},gold:200},alignShift:null},
+          {id:'ms_2_2',text:'Garrick reveals that Krolgar the Butcher has been collecting Ashen artifacts. Infiltrate his hideout and defeat his guards.',objective:{type:'kill',monster:'bandit',qty:15},reward:{xp:{attack:600,strength:400},gold:500,rep:{bloodfang_clan:-200,silver_order:300}},alignShift:{direction:'lawful',amount:5}},
+          {id:'ms_2_3',text:'Among Krolgar\'s plunder, you find an Ashen Tablet. But Krolgar catches you. He offers a deal: work for him, or fight.',objective:{type:'choice',options:['join_krolgar','fight_krolgar']},reward:{xp:{diplomacy:500}},alignShift:null},
+        ]
+      },
+      {
+        id:'ms_3', name:'Chapter 3: The Veiled Truth',
+        steps: [
+          {id:'ms_3_1',text:'Archivist Ilyana can decode the Ashen Tablet, but needs you to gather rare materials from the depths.',objective:{type:'collect',item:'death_rune',qty:20},reward:{xp:{magic:800},gold:600,rep:{veiled_circle:500}},alignShift:{direction:'chaotic',amount:3}},
+          {id:'ms_3_2',text:'The tablet speaks of the Ashfall Titan—a being that caused the world to burn. It sleeps beneath the Ashen Peaks. But first, you must grow stronger.',objective:{type:'skill',skill:'attack',level:30},reward:{xp:{attack:1000,defence:1000},gold:1000},alignShift:null},
+          {id:'ms_3_3',text:'Ilyana warns that waking the Titan requires sacrifice. Dark Mages have been feeding it souls. Stop them.',objective:{type:'kill',monster:'dark_mage',qty:20},reward:{xp:{magic:1200,prayer:500},gold:2000,items:[{item:'enchant_scroll',qty:3}],rep:{veiled_circle:1000}},alignShift:{direction:'good',amount:10}},
+        ]
+      },
+      {
+        id:'ms_4', name:'Chapter 4: The Ashfall',
+        steps: [
+          {id:'ms_4_1',text:'The Titan stirs. Dragons and demons flood the surface. Forge Ashsteel weapons to stand a chance.',objective:{type:'skill',skill:'smithing',level:50},reward:{xp:{smithing:2000},gold:3000},alignShift:null},
+          {id:'ms_4_2',text:'Slay the beasts pouring from the rift. Each kill weakens the Titan\'s grip on this realm.',objective:{type:'kill',monster:'dragon',qty:5},reward:{xp:{attack:3000,strength:3000,defence:2000},gold:5000,items:[{item:'void_crystal',qty:2}]},alignShift:{direction:'good',amount:15}},
+          {id:'ms_4_3',text:'The Ashfall Titan awakens. Face it.',objective:{type:'kill',monster:'ashfall_titan',qty:1},reward:{xp:{attack:10000,strength:10000,defence:10000,hitpoints:5000},gold:25000,items:[{item:'celestial_essence',qty:5},{item:'ashsteel_bar',qty:10}]},alignShift:{direction:'good',amount:25}},
+        ]
+      },
+    ]
+  },
+  {
+    id:'dark_path', name:'The Dark Path', desc:'Embrace the darkness. Serve the Ashfall.',
+    chapters: [
+      {
+        id:'dp_1', name:'Whispers in the Dark',
+        steps: [
+          {id:'dp_1_1',text:'A voice in the shadows offers power. All it asks is a simple task—kill 10 wolves and bring their pelts as tribute.',objective:{type:'kill',monster:'wolf',qty:10},reward:{xp:{strength:500},gold:200},alignShift:{direction:'evil',amount:5}},
+          {id:'dp_1_2',text:'The voice is pleased. It reveals a hidden cache of dark runes. Take them and learn the forbidden art of Necromancy.',objective:{type:'collect',item:'death_rune',qty:15},reward:{xp:{necromancy:800,magic:400},gold:400},alignShift:{direction:'evil',amount:8}},
+          {id:'dp_1_3',text:'Your first test of loyalty: destroy a Silver Order patrol. They are the enemies of progress.',objective:{type:'kill',monster:'skeleton',qty:20},reward:{xp:{necromancy:1000,strength:600},gold:800,rep:{silver_order:-1000,bloodfang_clan:500}},alignShift:{direction:'evil',amount:15}},
+        ]
+      },
+      {
+        id:'dp_2', name:'The Blood Price',
+        steps: [
+          {id:'dp_2_1',text:'Krolgar recognizes your dark aura. He offers the Bloodfang\'s allegiance—if you prove yourself in combat.',objective:{type:'kill',monster:'ogre',qty:10},reward:{xp:{attack:1500,strength:1500},gold:2000,rep:{bloodfang_clan:1000}},alignShift:{direction:'chaotic',amount:10}},
+          {id:'dp_2_2',text:'The Bloodfang Clan demands you master the dark arts. Reach Necromancy 20 and demonstrate your power.',objective:{type:'skill',skill:'necromancy',level:20},reward:{xp:{necromancy:2000},gold:3000,items:[{item:'void_crystal',qty:3}]},alignShift:{direction:'evil',amount:10}},
+          {id:'dp_2_3',text:'Your dark patron reveals itself: the Ashfall Titan. It doesn\'t want to be stopped—it wants to be served. Feed it by slaying its enemies.',objective:{type:'kill',monster:'demon',qty:10},reward:{xp:{necromancy:5000,magic:3000},gold:10000,items:[{item:'celestial_essence',qty:3}]},alignShift:{direction:'evil',amount:25}},
+        ]
+      },
+    ]
+  },
+];
+
+console.log('[Ashfall] Storylines loaded:', GAME_DATA.storylines.length, 'quest chains');
