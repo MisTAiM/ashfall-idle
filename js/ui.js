@@ -342,27 +342,58 @@ class UI {
 
   renderThievingPage(el) {
     const s = this.engine.state;
-    let html = this.header('Thieving','mask',GAME_DATA.skills.thieving.desc,'thieving');
+    let html = this.header('Thieving','mask','Pickpocket NPCs and steal from market stalls for gold, items, and XP.','thieving');
     if (s.activeSkill === 'thieving' && s.activeAction) {
       const a = GAME_DATA.thievingTargets.find(x=>x.id===s.activeAction);
       if (a) {
         const p = Math.min(1, Math.max(0, s.actionProgress / a.time));
         html += `<div class="active-action-bar">
-          <div class="aa-label">Pickpocketing: ${a.name}</div>
+          <div class="aa-label">${a.isStall?'Stealing from':'Pickpocketing'}: ${a.name}</div>
           <div class="aa-progress"><div class="aa-fill" style="width:${(p*100).toFixed(0)}%"></div></div>
           <button class="btn btn-danger btn-sm" onclick="ui.stopAction()">Stop</button>
         </div>`;
       }
     }
-    html += '<div class="actions-grid">';
-    for (const t of GAME_DATA.thievingTargets) {
+    // Split into pickpockets and stalls
+    const pickpockets = GAME_DATA.thievingTargets.filter(t => !t.isStall);
+    const stalls = GAME_DATA.thievingTargets.filter(t => t.isStall);
+
+    html += '<h2 class="section-title">Pickpocket Targets</h2><div class="actions-grid">';
+    for (const t of pickpockets) {
       const locked = s.skills.thieving.level < t.level;
       const isActive = s.activeSkill === 'thieving' && s.activeAction === t.id;
       html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('thieving','${t.id}')"`}>
         <div class="ac-header"><span class="ac-name">${t.name}</span><span class="ac-level">Lv ${t.level}</span></div>
-        <div class="recipe-output">Gold: ${t.gold.min}-${t.gold.max}</div>
-        <div class="ac-footer"><span class="ac-xp">+${t.xp} XP</span><span class="ac-time">${t.time}s</span><span class="ac-mastery">Stun: ${(t.stunChance*100).toFixed(0)}%</span></div>
-        ${locked?`<div class="locked-overlay">Requires Level ${t.level}</div>`:''}
+        <div class="thiev-stats">
+          <span>Gold: ${t.gold.min}-${t.gold.max}</span>
+          <span>Stun: ${(t.stunChance*100).toFixed(0)}% (${t.stunTime}s)</span>
+        </div>
+        <div class="thiev-loot">`;
+      for (const l of (t.loot||[])) {
+        const item = GAME_DATA.items[l.item];
+        html += `<span class="thiev-drop" title="${(l.chance*100).toFixed(1)}% chance">${item?.name||l.item} x${l.qty} <small>(${(l.chance*100).toFixed(0)}%)</small></span>`;
+      }
+      html += `</div>
+        <div class="ac-footer"><span class="ac-xp">+${t.xp} XP</span><span class="ac-time">${t.time}s</span></div>
+        ${locked?`<div class="locked-overlay">Level ${t.level}</div>`:''}
+      </div>`;
+    }
+    html += '</div>';
+
+    html += '<h2 class="section-title">Market Stalls</h2><div class="actions-grid">';
+    for (const t of stalls) {
+      const locked = s.skills.thieving.level < t.level;
+      const isActive = s.activeSkill === 'thieving' && s.activeAction === t.id;
+      html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('thieving','${t.id}')"`}>
+        <div class="ac-header"><span class="ac-name">${t.name}</span><span class="ac-level">Lv ${t.level}</span></div>
+        <div class="thiev-loot">`;
+      for (const l of (t.loot||[])) {
+        const item = GAME_DATA.items[l.item];
+        html += `<span class="thiev-drop">${item?.name||l.item} x${l.qty} <small>(${(l.chance*100).toFixed(0)}%)</small></span>`;
+      }
+      html += `</div>
+        <div class="ac-footer"><span class="ac-xp">+${t.xp} XP</span><span class="ac-time">${t.time}s</span><span>Stun: ${(t.stunChance*100).toFixed(0)}%</span></div>
+        ${locked?`<div class="locked-overlay">Level ${t.level}</div>`:''}
       </div>`;
     }
     html += '</div>';
@@ -981,7 +1012,7 @@ class UI {
       const completed = GAME_DATA.quests.filter(q => q.npc === npc.id && s.quests.completed.includes(q.id));
       html += `<div class="npc-card">
         <div class="npc-header">
-          <div class="npc-avatar">${icon('npc',32)}</div>
+          <div class="npc-avatar">${GAME_DATA.npcArt?.[npc.id] || icon('npc',32)}</div>
           <div class="npc-info">
             <div class="npc-name">${npc.name}</div>
             <div class="npc-title">${npc.title}</div>

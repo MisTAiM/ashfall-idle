@@ -1345,3 +1345,62 @@ GAME_DATA.npcArt = {
 GAME_DATA.presetSlots = ['weapon','head','body','legs','boots','shield','gloves','ring','amulet','cape','ammo'];
 
 console.log('[Ashfall] v5.1 expansion loaded:', Object.keys(GAME_DATA.items).length, 'items,', Object.keys(GAME_DATA.monsterArt).length, 'monster arts');
+
+// ── NEW MONSTERS ─────────────────────────────────────────
+Object.assign(GAME_DATA.monsters, {
+  lesser_demon: {id:'lesser_demon',name:'Lesser Demon',hp:600,maxHit:50,attackSpeed:2.6,combatLevel:45,style:'magic',evasion:{melee:30,ranged:35,magic:50},xp:1200,gold:{min:30,max:120},alignment:'CE',drops:[{item:'big_bones',qty:1,chance:1.0},{item:'death_rune',qty:3,chance:0.15},{item:'chaos_rune',qty:8,chance:0.20},{item:'gold_ring',qty:1,chance:0.03},{item:'ruby',qty:1,chance:0.04}]},
+  ice_troll:    {id:'ice_troll',name:'Ice Troll',hp:450,maxHit:35,attackSpeed:2.8,combatLevel:35,style:'melee',evasion:{melee:35,ranged:30,magic:20},xp:720,gold:{min:20,max:80},alignment:'CE',drops:[{item:'big_bones',qty:1,chance:1.0},{item:'sapphire',qty:1,chance:0.06},{item:'mithril_ore',qty:2,chance:0.12},{item:'water_rune',qty:10,chance:0.20}]},
+  shadow_beast: {id:'shadow_beast',name:'Shadow Beast',hp:800,maxHit:60,attackSpeed:2.2,combatLevel:55,style:'melee',evasion:{melee:50,ranged:45,magic:40},xp:1800,gold:{min:40,max:160},alignment:'NE',drops:[{item:'big_bones',qty:2,chance:1.0},{item:'death_rune',qty:5,chance:0.18},{item:'onyx',qty:1,chance:0.02},{item:'obsidian_ore',qty:2,chance:0.10}]},
+  corrupted_golem:{id:'corrupted_golem',name:'Corrupted Golem',hp:2500,maxHit:80,attackSpeed:3.4,combatLevel:70,style:'melee',evasion:{melee:60,ranged:55,magic:30},xp:2800,gold:{min:80,max:300},alignment:'NN',drops:[{item:'dragon_bones',qty:1,chance:0.50},{item:'runite_ore',qty:3,chance:0.12},{item:'adamant_plate',qty:1,chance:0.03},{item:'diamond',qty:1,chance:0.05},{item:'void_crystal',qty:1,chance:0.02}]},
+  phoenix:      {id:'phoenix',name:'Phoenix',hp:1800,maxHit:95,attackSpeed:2.0,combatLevel:80,style:'magic',evasion:{melee:55,ranged:50,magic:75},xp:4000,gold:{min:120,max:400},alignment:'NG',drops:[{item:'dragon_bones',qty:2,chance:1.0},{item:'fire_rune',qty:20,chance:0.30},{item:'dragonbloom',qty:1,chance:0.15},{item:'celestial_essence',qty:1,chance:0.03},{item:'fire_cape',qty:1,chance:0.005}]},
+  ash_guardian: {id:'ash_guardian',name:'Ash Guardian',hp:3000,maxHit:120,attackSpeed:2.6,combatLevel:90,style:'melee',evasion:{melee:75,ranged:70,magic:55},xp:6000,gold:{min:200,max:600},alignment:'NN',drops:[{item:'dragon_bones',qty:3,chance:1.0},{item:'ashsteel_ore',qty:2,chance:0.15},{item:'celestial_essence',qty:1,chance:0.05},{item:'berserker_ring',qty:1,chance:0.003},{item:'fury_amulet',qty:1,chance:0.002}]},
+  abyssal_horror:{id:'abyssal_horror',name:'Abyssal Horror',hp:4000,maxHit:140,attackSpeed:2.4,combatLevel:95,style:'magic',evasion:{melee:60,ranged:55,magic:85},xp:8000,gold:{min:300,max:800},alignment:'CE',drops:[{item:'void_bones',qty:2,chance:1.0},{item:'death_rune',qty:15,chance:0.25},{item:'celestial_essence',qty:2,chance:0.08},{item:'occult_necklace',qty:1,chance:0.003},{item:'barrows_gloves',qty:1,chance:0.002}]},
+});
+
+// ── NEW COMBAT AREAS ─────────────────────────────────────
+GAME_DATA.combatAreas.push(
+  {id:'frozen_caverns',name:'Frozen Caverns',levelReq:30,desc:'Ice-coated tunnels crawling with frost beasts.',monsters:['ice_troll','wolf']},
+  {id:'demon_pit',name:'Demon Pit',levelReq:40,desc:'A rift into the lower planes. Demons pour out endlessly.',monsters:['lesser_demon','dark_mage']},
+  {id:'shadow_realm',name:'Shadow Realm',levelReq:50,desc:'A dimension of pure darkness. Few return.',monsters:['shadow_beast','shadow_archer','void_walker']},
+  {id:'golem_forge',name:'Golem Forge',levelReq:65,desc:'Ancient constructs guard this ruined forge.',monsters:['corrupted_golem','ogre']},
+  {id:'phoenix_nest',name:'Phoenix Nest',levelReq:75,desc:'The burning aerie of the immortal phoenix.',monsters:['phoenix','dragon']},
+  {id:'ash_citadel',name:'Ash Citadel',levelReq:85,desc:'The final fortress. Guardians of immense power.',monsters:['ash_guardian','ashfall_titan']},
+  {id:'abyssal_rift',name:'Abyssal Rift',levelReq:90,desc:'The void between worlds. Unspeakable horrors dwell here.',monsters:['abyssal_horror','void_walker','demon']},
+);
+
+// Monster art for new monsters
+Object.assign(GAME_DATA.monsterArt, {
+  lesser_demon: GAME_DATA.monsterArt.lesser_demon || GAME_DATA.monsterArt.demon,
+  ice_troll: GAME_DATA.monsterArt.ice_troll || GAME_DATA.monsterArt.troll,
+  shadow_beast: GAME_DATA.monsterArt.shadow_beast || GAME_DATA.monsterArt.void_walker,
+  corrupted_golem: GAME_DATA.monsterArt.corrupted_golem || GAME_DATA.monsterArt.troll,
+  phoenix: GAME_DATA.monsterArt.phoenix || GAME_DATA.monsterArt.dragon,
+  ash_guardian: GAME_DATA.monsterArt.ash_guardian || GAME_DATA.monsterArt.ashfall_titan,
+  abyssal_horror: GAME_DATA.monsterArt.abyssal_horror || GAME_DATA.monsterArt.void_walker,
+});
+
+// Add charm drops to new monsters
+for (const [mId, mon] of Object.entries(GAME_DATA.monsters)) {
+  if (!mon.drops.some(d => d.item.includes('charm'))) {
+    if (mon.combatLevel >= 5 && mon.combatLevel < 20)  mon.drops.push({item:'gold_charm',qty:1,chance:0.15});
+    else if (mon.combatLevel >= 20 && mon.combatLevel < 40) mon.drops.push({item:'green_charm',qty:1,chance:0.12});
+    else if (mon.combatLevel >= 40 && mon.combatLevel < 65) mon.drops.push({item:'crimson_charm',qty:1,chance:0.10});
+    else if (mon.combatLevel >= 65) mon.drops.push({item:'blue_charm',qty:1,chance:0.08});
+  }
+}
+
+// New crafting recipes for jewelry
+GAME_DATA.recipes.crafting.push(
+  {id:'craft_gold_ring',name:'Gold Ring',level:5,xp:15,time:3.0,input:[{item:'gold_bar',qty:1}],output:{item:'gold_ring',qty:1}},
+  {id:'craft_ruby_ring',name:'Ruby Ring',level:20,xp:40,time:4.0,input:[{item:'gold_bar',qty:1},{item:'ruby',qty:1}],output:{item:'ruby_ring',qty:1}},
+  {id:'craft_diamond_ring',name:'Diamond Ring',level:40,xp:80,time:5.0,input:[{item:'gold_bar',qty:2},{item:'diamond',qty:1}],output:{item:'diamond_ring',qty:1}},
+  {id:'craft_onyx_ring',name:'Onyx Ring',level:60,xp:150,time:6.0,input:[{item:'gold_bar',qty:2},{item:'onyx',qty:1}],output:{item:'onyx_ring',qty:1}},
+  {id:'craft_gold_amulet',name:'Gold Amulet',level:8,xp:20,time:3.5,input:[{item:'gold_bar',qty:2}],output:{item:'gold_amulet',qty:1}},
+  {id:'craft_ruby_amulet',name:'Ruby Amulet',level:25,xp:50,time:4.5,input:[{item:'gold_bar',qty:2},{item:'ruby',qty:1}],output:{item:'ruby_amulet',qty:1}},
+  {id:'craft_glory_amulet',name:'Amulet of Glory',level:45,xp:100,time:6.0,input:[{item:'gold_bar',qty:3},{item:'diamond',qty:1},{item:'enchant_dust',qty:5}],output:{item:'glory_amulet',qty:1}},
+  {id:'craft_obsidian_cape',name:'Obsidian Cape',level:50,xp:120,time:7.0,input:[{item:'obsidian_bar',qty:3},{item:'hard_leather',qty:5}],output:{item:'obsidian_cape',qty:1}},
+  {id:'craft_combat_bracelet',name:'Combat Bracelet',level:35,xp:70,time:5.0,input:[{item:'gold_bar',qty:2},{item:'sapphire',qty:1},{item:'ruby',qty:1}],output:{item:'combat_bracelet',qty:1}},
+  {id:'craft_leather_gloves',name:'Leather Gloves',level:1,xp:5,time:2.0,input:[{item:'leather',qty:2}],output:{item:'leather_gloves',qty:1}},
+);
+
+console.log('[Ashfall] v5.2 loaded:', Object.keys(GAME_DATA.monsters).length, 'monsters,', GAME_DATA.combatAreas.length, 'areas');
