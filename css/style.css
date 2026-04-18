@@ -2695,3 +2695,108 @@ html, body {
 .sr-gold { color: var(--accent); border-color: var(--accent-dim); }
 .sr-item { color: #4a8a3e; border-color: #4a8a3e; }
 .sr-align { color: #b585e0; border-color: #5a2a5a; }
+
+/* ── ASHEN BAZAAR ─────────────────────────────────────── */
+.bazaar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.ba-gold { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); }
+.bazaar-post, .bazaar-search {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.bp-form { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.bz-table {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.bz-header {
+  display: grid;
+  grid-template-columns: 1fr 50px 80px 80px 100px 70px;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--bg-deep);
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+}
+.bz-row {
+  display: grid;
+  grid-template-columns: 1fr 50px 80px 80px 100px 70px;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+  align-items: center;
+  transition: background 0.15s;
+}
+.bz-row:hover { background: rgba(201,135,62,0.04); }
+.bz-mine { background: rgba(201,135,62,0.06); border-left: 3px solid var(--accent); }
+.bz-item { font-family: 'Cinzel', serif; color: var(--text-bright); }
+.bz-qty, .bz-price, .bz-total { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.bz-price { color: var(--accent); }
+.bz-total { color: var(--text); font-weight: 700; }
+.bz-seller { font-size: 11px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; }
+
+/* ── GEAR SETS ────────────────────────────────────────── */
+.gs-save {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.gs-current {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.gs-slot {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 3px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+}
+.gs-empty { color: var(--text-dim); border-style: dashed; }
+.gs-list { display: flex; flex-direction: column; gap: 8px; }
+.gs-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  transition: border-color 0.15s;
+}
+.gs-card:hover { border-color: var(--accent-dim); }
+.gs-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.gs-card-name { font-family: 'Cinzel', serif; font-size: 15px; color: var(--accent); }
+.gs-card-btns { display: flex; gap: 4px; }
+.gs-items { display: flex; flex-wrap: wrap; gap: 4px; }
+.gs-item {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 640px) {
+  .bz-header, .bz-row { grid-template-columns: 1fr 40px 60px 60px 60px; }
+  .bz-seller { display: none; }
+}

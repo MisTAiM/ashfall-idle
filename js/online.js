@@ -145,6 +145,96 @@ class OnlineManager {
     } catch(e) { console.error('System msg error:', e); }
   }
 
+  // ── ASHFALL BAZAAR (Grand Exchange) ──────────────────────
+  async postListing(itemId, qty, priceEach) {
+    if (!this.isOnline || !this.user || !game) return null;
+    if (!GAME_DATA.items[itemId]) return null;
+    if (qty <= 0 || priceEach <= 0) return null;
+    if ((game.state.bank[itemId] || 0) < qty) { this.emit('notification',{type:'warn',text:'Not enough items.'}); return null; }
+    // Remove items from bank
+    game.state.bank[itemId] -= qty;
+    if (game.state.bank[itemId] <= 0) delete game.state.bank[itemId];
+    try {
+      const ref = await this.firestore.collection('bazaar').add({
+        seller: this.user.uid,
+        sellerName: this.displayName,
+        item: itemId,
+        itemName: GAME_DATA.items[itemId].name,
+        qty,
+        priceEach,
+        totalPrice: qty * priceEach,
+        posted: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'active',
+      });
+      this.emit('notification',{type:'success',text:`Listed ${qty}x ${GAME_DATA.items[itemId].name} for ${priceEach}g each.`});
+      return ref.id;
+    } catch(e) { console.error('Bazaar post error:',e); game.addItem(itemId, qty); return null; }
+  }
+
+  async getBazaarListings(searchItem) {
+    if (!this.isOnline) return [];
+    try {
+      let q = this.firestore.collection('bazaar').where('status','==','active').orderBy('posted','desc').limit(50);
+      if (searchItem) q = this.firestore.collection('bazaar').where('status','==','active').where('item','==',searchItem).orderBy('priceEach','asc').limit(50);
+      const snap = await q.get();
+      const list = [];
+      snap.forEach(doc => list.push({ id:doc.id, ...doc.data() }));
+      return list;
+    } catch(e) { console.error('Bazaar fetch error:',e); return []; }
+  }
+
+  async buyListing(listingId) {
+    if (!this.isOnline || !this.user || !game) return false;
+    try {
+      const ref = this.firestore.collection('bazaar').doc(listingId);
+      const doc = await ref.get();
+      if (!doc.exists || doc.data().status !== 'active') { this.emit('notification',{type:'warn',text:'Listing no longer available.'}); return false; }
+      const listing = doc.data();
+      if (listing.seller === this.user.uid) { this.emit('notification',{type:'warn',text:'Cannot buy your own listing.'}); return false; }
+      if (game.state.gold < listing.totalPrice) { this.emit('notification',{type:'warn',text:`Need ${listing.totalPrice}g. You have ${game.state.gold}g.`}); return false; }
+      // Execute trade
+      game.state.gold -= listing.totalPrice;
+      game.addItem(listing.item, listing.qty);
+      await ref.update({ status:'sold', buyer:this.user.uid, buyerName:this.displayName, soldAt:firebase.firestore.FieldValue.serverTimestamp() });
+      // Credit seller (store pending gold)
+      await this.firestore.collection('bazaar_gold').doc(listing.seller).set({
+        pending: firebase.firestore.FieldValue.increment(listing.totalPrice),
+      }, { merge: true });
+      this.emit('notification',{type:'success',text:`Bought ${listing.qty}x ${listing.itemName} for ${listing.totalPrice}g!`});
+      return true;
+    } catch(e) { console.error('Bazaar buy error:',e); return false; }
+  }
+
+  async cancelListing(listingId) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      const ref = this.firestore.collection('bazaar').doc(listingId);
+      const doc = await ref.get();
+      if (!doc.exists || doc.data().seller !== this.user.uid) return;
+      const data = doc.data();
+      await ref.update({ status:'cancelled' });
+      game.addItem(data.item, data.qty);
+      this.emit('notification',{type:'info',text:`Cancelled listing. ${data.qty}x ${data.itemName} returned.`});
+    } catch(e) { console.error('Cancel error:',e); }
+  }
+
+  async collectBazaarGold() {
+    if (!this.isOnline || !this.user) return;
+    try {
+      const ref = this.firestore.collection('bazaar_gold').doc(this.user.uid);
+      const doc = await ref.get();
+      if (doc.exists && doc.data().pending > 0) {
+        const gold = doc.data().pending;
+        game.state.gold += gold;
+        game.state.stats.goldEarned += gold;
+        await ref.set({ pending: 0 });
+        this.emit('notification',{type:'success',text:`Collected ${gold}g from sales!`});
+      } else {
+        this.emit('notification',{type:'info',text:'No pending gold.'});
+      }
+    } catch(e) { console.error('Collect gold error:',e); }
+  }
+
   // ── CLOUD SAVES ────────────────────────────────────────
   async saveToCloud() {
     if (!this.isOnline || !this.user || !game) return;

@@ -1248,3 +1248,100 @@ GAME_DATA.storylines = [
 ];
 
 console.log('[Ashfall] Storylines loaded:', GAME_DATA.storylines.length, 'quest chains');
+
+// ================================================================
+// v5.1 MASSIVE UPDATE: Bazaar, Item Sets, Thieving, Art, Items
+// ================================================================
+
+// ── JEWELRY + ACCESSORIES ────────────────────────────────
+const _jewelry = [
+  ['gold_ring','Gold Ring','armor','ring',null,null,{attackBonus:4,strengthBonus:2},{},200,'ring-gold','A simple gold band.'],
+  ['ruby_ring','Ruby Ring','armor','ring',null,null,{attackBonus:8,strengthBonus:6},{attack:15},600,'ring-red','A ring set with a ruby.'],
+  ['diamond_ring','Diamond Ring','armor','ring',null,null,{attackBonus:14,strengthBonus:10,defenceBonus:6},{attack:30},2000,'ring-white','Brilliant diamond ring.'],
+  ['onyx_ring','Onyx Ring','armor','ring',null,null,{attackBonus:18,strengthBonus:14,defenceBonus:10},{attack:45},5000,'ring-black','Dark onyx ring of power.'],
+  ['berserker_ring','Berserker Ring','armor','ring',null,null,{strengthBonus:24,attackBonus:12},{attack:55,strength:55},15000,'ring-red','Maximizes raw strength.',true],
+  ['archers_ring','Archer\'s Ring','armor','ring',null,null,{rangedBonus:22,attackBonus:8},{ranged:55},15000,'ring-green','Precision-crafted for rangers.',true],
+  ['seers_ring','Seer\'s Ring','armor','ring',null,null,{magicBonus:22,defenceBonus:8},{magic:55},15000,'ring-blue','Channels arcane focus.',true],
+  ['gold_amulet','Gold Amulet','armor','amulet',null,null,{defenceBonus:6},{},300,'amulet-gold','A golden amulet.'],
+  ['ruby_amulet','Ruby Amulet','armor','amulet',null,null,{strengthBonus:10,attackBonus:8},{attack:20},800,'amulet-red','Ruby amulet of power.'],
+  ['fury_amulet','Amulet of Fury','armor','amulet',null,null,{attackBonus:16,strengthBonus:14,defenceBonus:16,rangedBonus:8,magicBonus:8},{attack:40,defence:40},8000,'amulet-fury','The ultimate amulet.',true],
+  ['glory_amulet','Amulet of Glory','armor','amulet',null,null,{attackBonus:12,strengthBonus:10,defenceBonus:8},{attack:30},3000,'amulet-gold','A blessed amulet.'],
+  ['occult_necklace','Occult Necklace','armor','amulet',null,null,{magicBonus:20,defenceBonus:4},{magic:50},10000,'amulet-purple','Boosts magic power.',true],
+  ['obsidian_cape','Obsidian Cape','armor','cape',null,null,{defenceBonus:12,damageReduction:3},{defence:30},2000,'cape-black','Dark obsidian cape.'],
+  ['fire_cape','Fire Cape','armor','cape',null,null,{attackBonus:8,strengthBonus:8,defenceBonus:14,damageReduction:5},{defence:45},20000,'cape-red','Cape of living flame.',true],
+  ['ava_accumulator','Ava\'s Accumulator','armor','cape',null,null,{rangedBonus:16,defenceBonus:4},{ranged:40},5000,'cape-green','Retrieves ammo automatically.',true],
+  ['mage_cape','Archmage Cape','armor','cape',null,null,{magicBonus:16,defenceBonus:6},{magic:50},8000,'cape-blue','Cape of arcane mastery.',true],
+  ['leather_gloves','Leather Gloves','armor','gloves',null,null,{defenceBonus:2},{},50,'gloves-brown','Basic protection.'],
+  ['combat_bracelet','Combat Bracelet','armor','gloves',null,null,{attackBonus:10,strengthBonus:8,defenceBonus:8},{attack:30},2500,'gloves-steel','All-round combat bracers.'],
+  ['barrows_gloves','Barrows Gloves','armor','gloves',null,null,{attackBonus:16,strengthBonus:14,defenceBonus:16,rangedBonus:14,magicBonus:10},{attack:50,defence:50},25000,'gloves-red','The best gloves.',true],
+];
+for (const [id,name,type,slot,style,speed,stats,req,price,sprite,desc,unique] of _jewelry) {
+  const item = {id,name,type,slot,stats,levelReq:req||{},sellPrice:price,sprite,desc};
+  if (unique) item.unique = true;
+  GAME_DATA.items[id] = item;
+}
+
+// ── THIEVING OVERHAUL ────────────────────────────────────
+GAME_DATA.thievingTargets = [
+  {id:'pickpocket_man',name:'Man',level:1,xp:8,time:3.0,stunChance:0.20,stunTime:3,gold:{min:1,max:10},
+   loot:[{item:'bones',qty:1,chance:0.10}]},
+  {id:'pickpocket_farmer',name:'Farmer',level:10,xp:15,time:3.5,stunChance:0.25,stunTime:4,gold:{min:5,max:25},
+   loot:[{item:'potato_seed',qty:1,chance:0.15},{item:'onion_seed',qty:1,chance:0.10},{item:'feather',qty:3,chance:0.20}]},
+  {id:'pickpocket_warrior',name:'Warrior',level:25,xp:35,time:4.0,stunChance:0.30,stunTime:5,gold:{min:15,max:60},
+   loot:[{item:'iron_sword',qty:1,chance:0.05},{item:'steel_arrows',qty:5,chance:0.15},{item:'potion_healing_i',qty:1,chance:0.10}]},
+  {id:'pickpocket_rogue',name:'Rogue',level:32,xp:50,time:4.0,stunChance:0.30,stunTime:5,gold:{min:20,max:80},
+   loot:[{item:'chaos_rune',qty:3,chance:0.12},{item:'death_rune',qty:1,chance:0.05},{item:'leather',qty:2,chance:0.20},{item:'topaz',qty:1,chance:0.04}]},
+  {id:'pickpocket_guard',name:'Guard',level:40,xp:70,time:4.5,stunChance:0.35,stunTime:5,gold:{min:25,max:100},
+   loot:[{item:'steel_sword',qty:1,chance:0.03},{item:'sapphire',qty:1,chance:0.05},{item:'chaos_rune',qty:5,chance:0.10},{item:'steel_plate',qty:1,chance:0.02}]},
+  {id:'pickpocket_merchant',name:'Wealthy Merchant',level:50,xp:100,time:4.5,stunChance:0.35,stunTime:6,gold:{min:40,max:200},
+   loot:[{item:'ruby',qty:1,chance:0.06},{item:'emerald',qty:1,chance:0.04},{item:'gold_ring',qty:1,chance:0.03},{item:'gold_amulet',qty:1,chance:0.03},{item:'enchant_scroll',qty:1,chance:0.05}]},
+  {id:'pickpocket_paladin',name:'Paladin',level:60,xp:150,time:5.0,stunChance:0.40,stunTime:6,gold:{min:50,max:250},
+   loot:[{item:'diamond',qty:1,chance:0.04},{item:'prayer_potion',qty:1,chance:0.08},{item:'ruby_amulet',qty:1,chance:0.02},{item:'adamant_sword',qty:1,chance:0.01}]},
+  {id:'pickpocket_knight',name:'Knight',level:75,xp:220,time:5.0,stunChance:0.45,stunTime:7,gold:{min:80,max:300},
+   loot:[{item:'diamond',qty:1,chance:0.06},{item:'enchant_scroll',qty:1,chance:0.08},{item:'glory_amulet',qty:1,chance:0.01},{item:'obsidian_cape',qty:1,chance:0.005}]},
+  {id:'pickpocket_king',name:'King',level:90,xp:350,time:5.5,stunChance:0.50,stunTime:8,gold:{min:150,max:500},
+   loot:[{item:'onyx',qty:1,chance:0.03},{item:'celestial_essence',qty:1,chance:0.02},{item:'diamond_ring',qty:1,chance:0.01},{item:'void_crystal',qty:1,chance:0.03}]},
+  // Stalls
+  {id:'steal_cake',name:'Cake Stall',level:5,xp:10,time:2.5,stunChance:0.15,stunTime:3,gold:{min:0,max:0},
+   loot:[{item:'cooked_meat',qty:1,chance:0.70},{item:'bread',qty:1,chance:0.50}],isStall:true},
+  {id:'steal_silk',name:'Silk Stall',level:20,xp:25,time:3.0,stunChance:0.25,stunTime:4,gold:{min:10,max:30},
+   loot:[{item:'leather',qty:2,chance:0.60},{item:'hard_leather',qty:1,chance:0.30}],isStall:true},
+  {id:'steal_gem',name:'Gem Stall',level:45,xp:80,time:4.0,stunChance:0.40,stunTime:6,gold:{min:0,max:0},
+   loot:[{item:'topaz',qty:1,chance:0.30},{item:'sapphire',qty:1,chance:0.20},{item:'ruby',qty:1,chance:0.15},{item:'emerald',qty:1,chance:0.10},{item:'diamond',qty:1,chance:0.03}],isStall:true},
+  {id:'steal_magic',name:'Magic Stall',level:65,xp:150,time:4.5,stunChance:0.45,stunTime:7,gold:{min:0,max:0},
+   loot:[{item:'fire_rune',qty:10,chance:0.40},{item:'chaos_rune',qty:5,chance:0.30},{item:'death_rune',qty:3,chance:0.20},{item:'enchant_dust',qty:2,chance:0.15},{item:'arcane_shard',qty:1,chance:0.05}],isStall:true},
+];
+
+// Simple food items for thieving
+GAME_DATA.items.bread = {id:'bread',name:'Bread',type:'food',heals:50,sellPrice:5,sprite:'food-basic',desc:'A loaf of bread. +50 HP.'};
+GAME_DATA.items.cooked_meat = {id:'cooked_meat',name:'Cooked Meat',type:'food',heals:30,sellPrice:3,sprite:'food-basic',desc:'Simple cooked meat. +30 HP.'};
+
+// ── REMAINING MONSTER ART ────────────────────────────────
+Object.assign(GAME_DATA.monsterArt, {
+  shadow_archer:'<svg viewBox="0 0 80 80"><rect x="32" y="34" width="16" height="28" rx="3" fill="#2a2a3a"/><circle cx="40" cy="24" r="11" fill="#2a2a3a"/><circle cx="36" cy="22" r="2" fill="#8a3a5a"/><circle cx="44" cy="22" r="2" fill="#8a3a5a"/><rect x="30" y="18" width="20" height="5" rx="2" fill="#1a1a2a"/><path d="M28 40 Q16 30 20 44" fill="#2a2a3a" opacity="0.6"/><path d="M52 40 L70 28" stroke="#5a4a3a" stroke-width="2"/><path d="M70 28 L74 24 L68 28 L72 32 L70 28" fill="#5a4a3a"/><path d="M32 62 L30 72" stroke="#1a1a2a" stroke-width="3"/><path d="M48 62 L50 72" stroke="#1a1a2a" stroke-width="3"/></svg>',
+  ogre:'<svg viewBox="0 0 80 80"><rect x="22" y="28" width="36" height="40" rx="8" fill="#7a6a4a"/><circle cx="40" cy="18" r="16" fill="#7a6a4a"/><circle cx="34" cy="16" r="3" fill="#4a3a1a"/><circle cx="46" cy="16" r="3" fill="#4a3a1a"/><path d="M34 26 Q40 30 46 26" fill="none" stroke="#4a3a1a" stroke-width="2"/><rect x="35" y="24" width="3" height="4" fill="#e8e0d4"/><rect x="42" y="24" width="3" height="4" fill="#e8e0d4"/><path d="M58 36 L72 28" stroke="#5a4a2a" stroke-width="5" stroke-linecap="round"/><path d="M22 68 L16 78" stroke="#5a4a2a" stroke-width="6"/><path d="M58 68 L64 78" stroke="#5a4a2a" stroke-width="6"/></svg>',
+  wyvern:'<svg viewBox="0 0 80 80"><ellipse cx="38" cy="50" rx="20" ry="14" fill="#5a6a4a"/><circle cx="56" cy="36" r="10" fill="#5a6a4a"/><circle cx="54" cy="34" r="2" fill="#c4a83a"/><circle cx="60" cy="34" r="2" fill="#c4a83a"/><path d="M62 40 L68 38" stroke="#5a6a4a" stroke-width="1.5"/><polygon points="50,28 46,18 54,26" fill="#5a6a4a"/><path d="M22 40 Q6 26 14 42 Q2 36 18 48" fill="#4a5a3a" opacity="0.7"/><path d="M54 40 Q70 26 66 42 Q78 36 62 48" fill="#4a5a3a" opacity="0.7"/><path d="M18 50 Q8 48 10 58" fill="#5a6a4a"/><path d="M28 62 L24 72" stroke="#3a4a2a" stroke-width="3"/><path d="M48 62 L44 72" stroke="#3a4a2a" stroke-width="3"/></svg>',
+  dark_mage:'<svg viewBox="0 0 80 80"><path d="M30 36 L30 68 L50 68 L50 36" fill="#2a1a3a"/><circle cx="40" cy="28" r="10" fill="#c4a87a"/><circle cx="37" cy="26" r="1.5" fill="#5a2a8a"/><circle cx="43" cy="26" r="1.5" fill="#5a2a8a"/><polygon points="40,10 30,28 50,28" fill="#2a1a3a"/><polygon points="40,6 38,10 42,10" fill="#5a2a8a"/><path d="M24 40 L12 34" stroke="#5a2a8a" stroke-width="2"/><circle cx="12" cy="34" r="4" fill="#5a2a8a" opacity="0.5"/><path d="M56 40 L64 36" stroke="#2a1a3a" stroke-width="2"/><path d="M64 36 L64 20" stroke="#5a3a2a" stroke-width="2.5"/><circle cx="64" cy="18" r="3" fill="#b585e0" opacity="0.6"/></svg>',
+  lesser_demon:'<svg viewBox="0 0 80 80"><rect x="30" y="34" width="20" height="28" rx="4" fill="#6a2a2a"/><circle cx="40" cy="26" r="10" fill="#6a2a2a"/><circle cx="37" cy="24" r="2" fill="#c44040"/><circle cx="43" cy="24" r="2" fill="#c44040"/><polygon points="32,18 28,8 36,16" fill="#4a1a1a"/><polygon points="48,18 52,8 44,16" fill="#4a1a1a"/><path d="M28 40 Q18 34 22 46" fill="#4a1a1a" opacity="0.6"/><path d="M52 40 Q62 34 58 46" fill="#4a1a1a" opacity="0.6"/><path d="M38 60 Q36 68 40 72 Q44 68 42 60" fill="#6a2a2a"/></svg>',
+  ice_troll:'<svg viewBox="0 0 80 80"><rect x="26" y="30" width="28" height="36" rx="6" fill="#8aB4c8"/><circle cx="40" cy="20" r="14" fill="#8aB4c8"/><circle cx="34" cy="18" r="3" fill="#4a7a9a"/><circle cx="46" cy="18" r="3" fill="#4a7a9a"/><path d="M34 28 Q40 32 46 28" fill="none" stroke="#5a8a9a" stroke-width="2"/><rect x="34" y="26" width="3" height="4" fill="#e8e0d4"/><rect x="43" y="26" width="3" height="4" fill="#e8e0d4"/><path d="M54 38 L68 30" stroke="#6a94a8" stroke-width="4" stroke-linecap="round"/><circle cx="30" cy="42" r="3" fill="#c8e8f8" opacity="0.3"/><circle cx="50" cy="48" r="2" fill="#c8e8f8" opacity="0.3"/></svg>',
+  shadow_beast:'<svg viewBox="0 0 80 80"><ellipse cx="40" cy="46" rx="24" ry="18" fill="#1a1a2a" opacity="0.9"/><circle cx="34" cy="38" r="4" fill="#8a3a5a"/><circle cx="46" cy="38" r="4" fill="#8a3a5a"/><circle cx="34" cy="38" r="1.5" fill="#fff"/><circle cx="46" cy="38" r="1.5" fill="#fff"/><path d="M16 46 Q6 40 12 52" fill="#1a1a2a" opacity="0.6"/><path d="M64 46 Q74 40 68 52" fill="#1a1a2a" opacity="0.6"/><circle cx="24" cy="52" r="2" fill="#5a2a3a" opacity="0.4"/><circle cx="56" cy="50" r="1.5" fill="#5a2a3a" opacity="0.3"/><ellipse cx="40" cy="64" rx="16" ry="4" fill="#1a1a2a" opacity="0.4"/></svg>',
+  corrupted_golem:'<svg viewBox="0 0 80 80"><rect x="24" y="24" width="32" height="40" rx="6" fill="#4a4a5a"/><rect x="30" y="12" width="20" height="16" rx="4" fill="#4a4a5a"/><circle cx="36" cy="18" r="3" fill="#c44040"/><circle cx="44" cy="18" r="3" fill="#c44040"/><path d="M18 32 L8 28" stroke="#4a4a5a" stroke-width="6" stroke-linecap="round"/><path d="M62 32 L72 28" stroke="#4a4a5a" stroke-width="6" stroke-linecap="round"/><path d="M24 64 L20 76" stroke="#3a3a4a" stroke-width="6"/><path d="M56 64 L60 76" stroke="#3a3a4a" stroke-width="6"/><rect x="32" y="36" width="16" height="3" fill="#c44040" opacity="0.5"/><rect x="32" y="44" width="16" height="3" fill="#c44040" opacity="0.3"/></svg>',
+  phoenix:'<svg viewBox="0 0 80 80"><ellipse cx="40" cy="48" rx="16" ry="14" fill="#d67338"/><circle cx="40" cy="32" r="10" fill="#d4a83a"/><circle cx="37" cy="30" r="2" fill="#c44040"/><circle cx="43" cy="30" r="2" fill="#c44040"/><polygon points="40,24 38,18 42,18" fill="#d63a1a"/><path d="M24 40 Q8 28 16 44 Q4 38 20 50" fill="#d63a1a" opacity="0.7"/><path d="M56 40 Q72 28 64 44 Q76 38 60 50" fill="#d63a1a" opacity="0.7"/><path d="M34 22 Q30 12 36 18" fill="#ff8040" opacity="0.6"/><path d="M46 22 Q50 12 44 18" fill="#ff8040" opacity="0.6"/><path d="M36 60 Q34 68 40 74 Q46 68 44 60" fill="#d63a1a" opacity="0.8"/><ellipse cx="40" cy="74" rx="8" ry="3" fill="#d63a1a" opacity="0.3"/></svg>',
+  ash_guardian:'<svg viewBox="0 0 80 80"><rect x="26" y="22" width="28" height="44" rx="6" fill="#3a2a1a"/><rect x="30" y="10" width="20" height="18" rx="4" fill="#3a2a1a"/><circle cx="36" cy="16" r="3" fill="#d63a1a"/><circle cx="44" cy="16" r="3" fill="#d63a1a"/><circle cx="36" cy="16" r="1" fill="#ff8040"/><circle cx="44" cy="16" r="1" fill="#ff8040"/><path d="M20 30 L6 22" stroke="#3a2a1a" stroke-width="5" stroke-linecap="round"/><path d="M60 30 L74 22" stroke="#3a2a1a" stroke-width="5" stroke-linecap="round"/><ellipse cx="40" cy="40" rx="6" ry="4" fill="#d63a1a" opacity="0.3"/><path d="M26 66 L20 78" stroke="#2a1a0a" stroke-width="6"/><path d="M54 66 L60 78" stroke="#2a1a0a" stroke-width="6"/></svg>',
+  abyssal_horror:'<svg viewBox="0 0 80 80"><ellipse cx="40" cy="42" rx="26" ry="22" fill="#2a1a3a" opacity="0.8"/><circle cx="32" cy="34" r="5" fill="#b585e0"/><circle cx="48" cy="34" r="5" fill="#b585e0"/><circle cx="40" cy="42" r="3" fill="#8a3a8a"/><circle cx="32" cy="34" r="2" fill="#fff"/><circle cx="48" cy="34" r="2" fill="#fff"/><path d="M20 50 Q10 56 16 62 Q8 58 18 54" fill="#3a1a4a" opacity="0.6"/><path d="M60 50 Q70 56 64 62 Q72 58 62 54" fill="#3a1a4a" opacity="0.6"/><path d="M30 58 Q26 68 32 72" fill="#2a1a3a" opacity="0.5"/><path d="M50 58 Q54 68 48 72" fill="#2a1a3a" opacity="0.5"/><path d="M38 58 Q40 70 42 58" fill="#2a1a3a" opacity="0.5"/><circle cx="22" cy="40" r="2" fill="#b585e0" opacity="0.3"/><circle cx="58" cy="44" r="1.5" fill="#b585e0" opacity="0.3"/></svg>',
+  ashfall_warden:'<svg viewBox="0 0 80 80"><rect x="24" y="20" width="32" height="46" rx="6" fill="#5a3a1a"/><circle cx="40" cy="12" r="14" fill="#5a3a1a"/><rect x="28" y="6" width="24" height="6" rx="2" fill="#c9873e"/><polygon points="40,2 38,6 42,6" fill="#d4a83a"/><circle cx="34" cy="12" r="3" fill="#d63a1a"/><circle cx="46" cy="12" r="3" fill="#d63a1a"/><path d="M34 20 Q40 24 46 20" fill="none" stroke="#3a2a0a" stroke-width="2"/><path d="M56 28 L70 20" stroke="#7a8294" stroke-width="3"/><polygon points="70,20 74,16 72,24" fill="#7a8294"/><path d="M24 28 L14 34" stroke="#5a3a1a" stroke-width="3"/><ellipse cx="14" cy="34" rx="6" ry="8" fill="#4a3a1a"/><path d="M24 66 L18 78" stroke="#3a2a0a" stroke-width="5"/><path d="M56 66 L62 78" stroke="#3a2a0a" stroke-width="5"/></svg>',
+});
+
+// ── NPC PORTRAITS ────────────────────────────────────────
+GAME_DATA.npcArt = {
+  old_pete:'<svg viewBox="0 0 60 60"><circle cx="30" cy="24" r="14" fill="#c4a87a"/><circle cx="26" cy="22" r="2" fill="#4a3a2a"/><circle cx="34" cy="22" r="2" fill="#4a3a2a"/><path d="M26 30 Q30 34 34 30" fill="none" stroke="#7a5a3a" stroke-width="1.5"/><path d="M18 18 Q22 8 30 10 Q38 8 42 18" fill="#aaa" stroke="none"/><rect x="24" y="34" width="12" height="20" rx="3" fill="#5a4a3a"/><path d="M22 38 L14 44" stroke="#5a4a3a" stroke-width="2.5"/><path d="M14 44 L14 56" stroke="#7a5a3a" stroke-width="2"/></svg>',
+  elara:'<svg viewBox="0 0 60 60"><circle cx="30" cy="22" r="12" fill="#d4b89a"/><circle cx="27" cy="20" r="1.5" fill="#3a5a8a"/><circle cx="33" cy="20" r="1.5" fill="#3a5a8a"/><path d="M18 14 Q22 6 30 8 Q38 6 42 14" fill="#c4a83a" stroke="none"/><rect x="18" y="12" width="24" height="4" rx="1" fill="#7a8294"/><polygon points="30,8 28,4 32,4" fill="#c4a83a"/><rect x="24" y="32" width="12" height="22" rx="2" fill="#7a8294"/><rect x="22" y="32" width="16" height="6" rx="1" fill="#9da4b4"/><path d="M20 36 L12 42" stroke="#7a8294" stroke-width="2"/><path d="M40 36 L48 30" stroke="#7a8294" stroke-width="2.5"/><polygon points="48,30 52,26 50,34" fill="#9da4b4"/></svg>',
+  garrick:'<svg viewBox="0 0 60 60"><circle cx="30" cy="24" r="12" fill="#c4a87a"/><circle cx="27" cy="22" r="1.5" fill="#3a2a1a"/><circle cx="33" cy="22" r="1.5" fill="#3a2a1a"/><path d="M26 28 Q30 30 34 28" fill="none" stroke="#7a5a3a" stroke-width="1"/><path d="M24 16 Q26 10 30 12 Q34 10 36 16" fill="#5a3a2a"/><rect x="24" y="32" width="12" height="20" rx="2" fill="#5a8a3e"/><path d="M18 36 L10 40" stroke="#5a3a2a" stroke-width="2"/><rect x="8" y="38" width="6" height="10" rx="1" fill="#c4a83a"/></svg>',
+  krolgar:'<svg viewBox="0 0 60 60"><circle cx="30" cy="22" r="14" fill="#8a6a4a"/><circle cx="26" cy="20" r="2.5" fill="#c44040"/><circle cx="34" cy="20" r="2.5" fill="#c44040"/><path d="M26 28 Q30 32 34 28" fill="none" stroke="#5a3a1a" stroke-width="2"/><rect x="27" y="26" width="2" height="3" fill="#e8e0d4"/><rect x="31" y="26" width="2" height="3" fill="#e8e0d4"/><path d="M18 14 Q20 8 26 12" fill="#5a3a1a"/><path d="M42 14 Q40 8 34 12" fill="#5a3a1a"/><rect x="22" y="34" width="16" height="22" rx="3" fill="#5a2a2a"/><path d="M18 38 L6 30" stroke="#5a3a1a" stroke-width="3"/><polygon points="6,30 2,26 4,34" fill="#7a8294"/></svg>',
+  ilyana:'<svg viewBox="0 0 60 60"><circle cx="30" cy="22" r="12" fill="#d4c4b0"/><circle cx="27" cy="20" r="1.5" fill="#5a2a8a"/><circle cx="33" cy="20" r="1.5" fill="#5a2a8a"/><path d="M16 16 Q20 4 30 6 Q40 4 44 16" fill="#2a1a3a" stroke="none"/><path d="M16 16 Q14 24 18 30" fill="#2a1a3a"/><path d="M44 16 Q46 24 42 30" fill="#2a1a3a"/><rect x="24" y="32" width="12" height="22" rx="2" fill="#3a1a5a"/><path d="M20 36 L12 32" stroke="#3a1a5a" stroke-width="2"/><path d="M12 32 L12 18" stroke="#5a3a2a" stroke-width="2"/><circle cx="12" cy="16" r="3" fill="#b585e0" opacity="0.6"/></svg>',
+};
+
+// ── ITEM SETS ────────────────────────────────────────────
+GAME_DATA.presetSlots = ['weapon','head','body','legs','boots','shield','gloves','ring','amulet','cape','ammo'];
+
+console.log('[Ashfall] v5.1 expansion loaded:', Object.keys(GAME_DATA.items).length, 'items,', Object.keys(GAME_DATA.monsterArt).length, 'monster arts');

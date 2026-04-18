@@ -127,8 +127,13 @@ class GameEngine {
     // Character profile
     if (!s.profile) s.profile = { avatarSeed:'', hair:'short04', skinColor:'c68642', hairColor:'2c1b18', accessory:'', mouth:'happy01', eyes:'variant04', clothing:'variant04', clothingColor:'4a90d4', bio:'' };
     if (!s.guild) s.guild = null;
-    if (!s.storyline) s.storyline = {};       // { main_story: { chapter:0, step:0, completed:false } }
+    if (!s.storyline) s.storyline = {};
     if (!s.alignmentPoints) s.alignmentPoints = { moral:0, order:0 };
+    if (!s.gearSets) s.gearSets = {};
+    if (!s.equipment.ring) s.equipment.ring = null;
+    if (!s.equipment.amulet) s.equipment.amulet = null;
+    if (!s.equipment.cape) s.equipment.cape = null;
+    if (!s.equipment.gloves) s.equipment.gloves = null;
     s.version = 2;
   }
 
@@ -1176,6 +1181,36 @@ class GameEngine {
       this._afkTimeout = null;
       this.emit('notification', { type:'success', text:'Guardian dismissed. Training continues.' });
     }
+  }
+
+  // ── GEAR SETS ───────────────────────────────────────────
+  saveGearSet(name) {
+    if (!name || name.length > 20) return;
+    this.state.gearSets[name] = { ...this.state.equipment };
+    this.emit('notification', { type:'success', text:`Gear set "${name}" saved.` });
+  }
+
+  loadGearSet(name) {
+    const set = this.state.gearSets[name];
+    if (!set) return;
+    // Unequip current gear back to bank
+    for (const [slot, item] of Object.entries(this.state.equipment)) {
+      if (item) { this.addItem(item, 1); this.state.equipment[slot] = null; }
+    }
+    // Equip saved gear (if in bank)
+    for (const [slot, item] of Object.entries(set)) {
+      if (item && this.state.bank[item] > 0) {
+        this.state.bank[item]--;
+        if (this.state.bank[item] <= 0) delete this.state.bank[item];
+        this.state.equipment[slot] = item;
+      }
+    }
+    this.emit('notification', { type:'success', text:`Loaded gear set "${name}".` });
+  }
+
+  deleteGearSet(name) {
+    delete this.state.gearSets[name];
+    this.emit('notification', { type:'info', text:`Deleted gear set "${name}".` });
   }
 
   // ── STORYLINE QUESTS ─────────────────────────────────────

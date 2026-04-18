@@ -88,7 +88,9 @@ const NAV = [
   { header:'General', items:[
     {id:'bank',label:'Bank',icon:'bank'},
     {id:'shop',label:'Shop',icon:'shop'},
+    {id:'bazaar',label:'Ashen Bazaar',icon:'coin'},
     {id:'equipment',label:'Equipment',icon:'shield'},
+    {id:'gear_sets',label:'Gear Sets',icon:'shield'},
     {id:'achievements',label:'Achievements',icon:'trophy'},
     {id:'wiki',label:'Wiki',icon:'book'},
     {id:'statistics',label:'Statistics',icon:'stats'},
@@ -241,6 +243,8 @@ class UI {
     else if (pageId === 'bank') this.renderBankPage(main);
     else if (pageId === 'shop') this.renderShopPage(main);
     else if (pageId === 'equipment') this.renderEquipmentPage(main);
+    else if (pageId === 'bazaar') this.renderBazaarPage(main);
+    else if (pageId === 'gear_sets') this.renderGearSetsPage(main);
     else if (pageId === 'achievements') this.renderAchievementsPage(main);
     else if (pageId === 'wiki') this.renderWikiPage(main);
     else if (pageId === 'statistics') this.renderStatsPage(main);
@@ -814,6 +818,154 @@ class UI {
     html += '<h2 class="section-title">Food</h2><div class="food-display">';
     html += s.food.equipped ? `${GAME_DATA.items[s.food.equipped]?.name} x${s.food.qty} (Heals ${GAME_DATA.items[s.food.equipped]?.heals||0})` : 'No food equipped. Equip from your Bank.';
     html += '</div>';
+    el.innerHTML = html;
+  }
+
+  // ── ASHEN BAZAAR ───────────────────────────────────────
+  renderBazaarPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    let html = this.header('Ashen Bazaar','coin','The marketplace of the Ashfall. Trade items with other players.',null);
+
+    if (!isOnline) {
+      html += '<div class="bank-empty">Sign in to access the Bazaar.</div>';
+      el.innerHTML = html; return;
+    }
+
+    // Collect gold button
+    html += `<div class="bazaar-actions">
+      <button class="btn btn-sm" onclick="online.collectBazaarGold()">Collect Pending Gold</button>
+      <span class="ba-gold">Your Gold: <b id="bazaar-gold">${this.fmt(game.state.gold)}</b></span>
+    </div>`;
+
+    // Post listing
+    html += `<div class="bazaar-post">
+      <h3 class="section-title">Sell an Item</h3>
+      <div class="bp-form">
+        <select id="bz-item" class="chat-input-v2" style="flex:1">
+          <option value="">-- Select Item --</option>`;
+    for (const [id, qty] of Object.entries(game.state.bank)) {
+      if (qty > 0 && GAME_DATA.items[id]) {
+        html += `<option value="${id}">${GAME_DATA.items[id].name} (x${qty})</option>`;
+      }
+    }
+    html += `</select>
+        <input type="number" id="bz-qty" class="qty-input" min="1" value="1" placeholder="Qty" style="width:60px">
+        <input type="number" id="bz-price" class="qty-input" min="1" value="100" placeholder="Price ea" style="width:80px">
+        <button class="btn btn-sm" onclick="ui.postBazaarListing()">List</button>
+      </div>
+    </div>`;
+
+    // Search
+    html += `<div class="bazaar-search">
+      <h3 class="section-title">Browse Listings</h3>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <input type="text" id="bz-search" class="chat-input-v2" placeholder="Search item name..." style="flex:1">
+        <button class="btn btn-sm" onclick="ui.searchBazaar()">Search</button>
+        <button class="btn btn-sm" onclick="ui.loadBazaarAll()">Show All</button>
+      </div>
+    </div>`;
+
+    html += '<div id="bazaar-listings"><div class="bank-empty">Click "Show All" to load listings.</div></div>';
+    el.innerHTML = html;
+  }
+
+  async postBazaarListing() {
+    const itemId = document.getElementById('bz-item')?.value;
+    const qty = parseInt(document.getElementById('bz-qty')?.value) || 1;
+    const price = parseInt(document.getElementById('bz-price')?.value) || 100;
+    if (!itemId) { this.toast({type:'warn',text:'Select an item.'}); return; }
+    await online.postListing(itemId, qty, price);
+    this.renderPage('bazaar');
+  }
+
+  async loadBazaarAll() {
+    const container = document.getElementById('bazaar-listings');
+    if (!container) return;
+    container.innerHTML = '<div class="bank-empty">Loading...</div>';
+    const listings = await online.getBazaarListings();
+    this.renderBazaarListings(container, listings);
+  }
+
+  async searchBazaar() {
+    const search = document.getElementById('bz-search')?.value?.trim().toLowerCase();
+    if (!search) { this.loadBazaarAll(); return; }
+    const container = document.getElementById('bazaar-listings');
+    if (!container) return;
+    container.innerHTML = '<div class="bank-empty">Searching...</div>';
+    // Search by item name matching
+    const all = await online.getBazaarListings();
+    const filtered = all.filter(l => l.itemName?.toLowerCase().includes(search));
+    this.renderBazaarListings(container, filtered);
+  }
+
+  renderBazaarListings(container, listings) {
+    if (listings.length === 0) {
+      container.innerHTML = '<div class="bank-empty">No listings found.</div>';
+      return;
+    }
+    let html = `<div class="bz-table">
+      <div class="bz-header"><span>Item</span><span>Qty</span><span>Price/ea</span><span>Total</span><span>Seller</span><span></span></div>`;
+    for (const l of listings) {
+      const isMe = online.user && l.seller === online.user.uid;
+      html += `<div class="bz-row ${isMe?'bz-mine':''}">
+        <span class="bz-item">${l.itemName || l.item}</span>
+        <span class="bz-qty">${l.qty}</span>
+        <span class="bz-price">${this.fmt(l.priceEach)}g</span>
+        <span class="bz-total">${this.fmt(l.totalPrice)}g</span>
+        <span class="bz-seller">${this.escHtml(l.sellerName||'Unknown')}</span>
+        <span>${isMe ? `<button class="btn btn-xs btn-danger" onclick="online.cancelListing('${l.id}').then(()=>ui.renderPage('bazaar'))">Cancel</button>` : `<button class="btn btn-xs" onclick="online.buyListing('${l.id}').then(()=>ui.renderPage('bazaar'))">Buy</button>`}</span>
+      </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ── GEAR SETS ──────────────────────────────────────────
+  renderGearSetsPage(el) {
+    const s = this.engine.state;
+    let html = this.header('Gear Sets','shield','Save and swap between equipment presets instantly.',null);
+
+    // Save new set
+    html += `<div class="gs-save">
+      <input type="text" id="gs-name" class="chat-input-v2" placeholder="Set name (e.g. Melee Boss)" maxlength="20" style="width:200px">
+      <button class="btn btn-sm" onclick="game.saveGearSet(document.getElementById('gs-name').value);ui.renderPage('gear_sets')">Save Current Gear</button>
+    </div>`;
+
+    // Current gear preview
+    html += '<h3 class="section-title">Current Equipment</h3><div class="gs-current">';
+    for (const slot of GAME_DATA.equipmentSlots) {
+      const id = s.equipment[slot];
+      const item = id ? GAME_DATA.items[id] : null;
+      html += `<span class="gs-slot ${item?'':'gs-empty'}">${slot}: ${item?item.name:'--'}</span>`;
+    }
+    html += '</div>';
+
+    // Saved sets
+    html += '<h3 class="section-title">Saved Sets</h3>';
+    const sets = Object.keys(s.gearSets);
+    if (sets.length === 0) {
+      html += '<div class="bank-empty">No saved gear sets. Equip your gear and save a set above.</div>';
+    } else {
+      html += '<div class="gs-list">';
+      for (const name of sets) {
+        const set = s.gearSets[name];
+        const items = Object.entries(set).filter(([_,v])=>v).map(([slot,id])=>{
+          const item = GAME_DATA.items[id];
+          return item ? `<span class="gs-item">${item.name}</span>` : '';
+        }).join('');
+        html += `<div class="gs-card">
+          <div class="gs-card-header">
+            <span class="gs-card-name">${this.escHtml(name)}</span>
+            <div class="gs-card-btns">
+              <button class="btn btn-xs" onclick="game.loadGearSet('${this.escHtml(name)}');ui.renderPage('gear_sets')">Equip</button>
+              <button class="btn btn-xs btn-danger" onclick="game.deleteGearSet('${this.escHtml(name)}');ui.renderPage('gear_sets')">Delete</button>
+            </div>
+          </div>
+          <div class="gs-items">${items || '<span class="gs-empty">Empty set</span>'}</div>
+        </div>`;
+      }
+      html += '</div>';
+    }
     el.innerHTML = html;
   }
 
