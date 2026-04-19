@@ -542,6 +542,8 @@ class GameEngine {
       }
 
       this.emit('combatHit', { who:'player', dmg, crit:isCrit });
+      // Track highest hit
+      if (!this.state.stats.highestHit || dmg > this.state.stats.highestHit) this.state.stats.highestHit = dmg;
     } else {
       this.emit('combatHit', { who:'player', dmg:0, miss:true });
     }
@@ -620,6 +622,7 @@ class GameEngine {
       this.state.stats.pvpKills = (this.state.stats.pvpKills || 0) + 1;
       this.state.stats.pvpStreak = (this.state.stats.pvpStreak || 0) + 1;
       const streak = this.state.stats.pvpStreak;
+      if (!this.state.stats.pvpBestStreak || streak > this.state.stats.pvpBestStreak) this.state.stats.pvpBestStreak = streak;
       // Alignment penalty for PvP kills
       this.shiftAlignment('evil', 5);
       this.shiftAlignment('chaotic', 3);

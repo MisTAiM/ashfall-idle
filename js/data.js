@@ -1788,3 +1788,24 @@ GAME_DATA.monsters.ogre.drops.push({item:'gold_ore',qty:2,chance:0.08});
 GAME_DATA.monsters.dragon.drops.push({item:'gold_ore',qty:3,chance:0.12});
 
 console.log('[Ashfall] Gold ore/bar fix applied. Items:', Object.keys(GAME_DATA.items).length);
+
+// ── MORE ACHIEVEMENTS ────────────────────────────────────
+GAME_DATA.achievements.push(
+  {id:'runecraft_1',  name:'Rune Apprentice',   desc:'Craft your first rune.',     check:(g)=>(g.stats.totalActions.incantation||0)>=1},
+  {id:'runecraft_50', name:'Rune Adept',         desc:'Incantation level 50.',      check:(g)=>g.skills.incantation?.level>=50},
+  {id:'runecraft_99', name:'Rune Master',        desc:'Incantation level 99.',      check:(g)=>g.skills.incantation?.level>=99},
+  {id:'pvp_first',    name:'First Blood',        desc:'Win your first PvP fight.',  check:(g)=>(g.stats.pvpKills||0)>=1},
+  {id:'pvp_10',       name:'Serial Killer',      desc:'Win 10 PvP fights.',         check:(g)=>(g.stats.pvpKills||0)>=10},
+  {id:'pvp_streak_5', name:'Unstoppable',        desc:'PvP streak of 5.',           check:(g)=>(g.stats.pvpBestStreak||0)>=5},
+  {id:'wild_survivor',name:'Wilderness Survivor', desc:'Survive 50 wilderness fights.',check:(g)=>(g.stats.pvpKills||0)+(g.stats.monstersKilled||0)>=50},
+  {id:'fish_50_types',name:'Master Angler',      desc:'Catch 50+ different fish.',  check:(g)=>{const f=Object.keys(g.bank).filter(k=>k.startsWith('raw_'));return f.length>=15;}},
+  {id:'jeweler',      name:'Jeweler',            desc:'Craft 5 pieces of jewelry.', check:(g)=>(g.stats.itemsCrafted||0)>=5},
+  {id:'crit_machine', name:'Critical Mass',      desc:'Land a 100+ damage crit.',   check:(g)=>(g.stats.highestHit||0)>=100},
+  {id:'millionaire',  name:'Millionaire',        desc:'Hold 1,000,000 gold.',       check:(g)=>g.gold>=1000000},
+  {id:'dark_side',    name:'Dark Side',          desc:'Shift to Evil alignment.',   check:(g)=>g.alignment?.includes('evil')},
+  {id:'full_mythic',  name:'Mythic Collector',   desc:'Own 3+ mythic items.',       check:(g)=>{let c=0;for(const[k,v]of Object.entries(g.bank)){if(v>0&&GAME_DATA?.items[k]?.rarity==='mythic')c++;}for(const v of Object.values(g.equipment)){if(v&&GAME_DATA?.items[v]?.rarity==='mythic')c++;}return c>=3;}},
+  {id:'bazaar_seller', name:'Merchant Prince',   desc:'Sell an item on the Bazaar.',check:(g)=>(g.stats.bazaarSales||0)>=1},
+  {id:'story_ch1',    name:'Chapter 1 Complete', desc:'Complete Ashfall Prophecy Ch1.',check:(g)=>g.storyline?.main_story?.chapter>=1},
+);
+
+console.log('[Ashfall] Final achievements:', GAME_DATA.achievements.length);

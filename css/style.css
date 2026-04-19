@@ -2989,3 +2989,38 @@ html, body {
   font-size: 10px;
   letter-spacing: 1px;
 }
+
+/* ── STATISTICS SKILL TABLE ───────────────────────────── */
+.stats-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+.ss-row {
+  display: grid;
+  grid-template-columns: 100px 30px 1fr 70px 60px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.ss-row:hover { background: rgba(201,135,62,0.04); }
+.ss-name { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text); }
+.ss-level { font-family: 'Cinzel', serif; font-weight: 700; color: var(--accent); text-align: center; }
+.ss-bar { height: 6px; background: var(--bg-deep); border-radius: 3px; overflow: hidden; }
+.ss-fill { height: 100%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); border-radius: 3px; }
+.ss-xp { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); text-align: right; }
+.ss-actions { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); text-align: right; }
+
+/* Shop buttons */
+.shop-btns { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
+
+@media (max-width: 640px) {
+  .ss-row { grid-template-columns: 70px 24px 1fr 50px; }
+  .ss-actions { display: none; }
+}

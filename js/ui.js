@@ -257,7 +257,7 @@ class UI {
     else if (pageId === 'storyline') this.renderStorylinePage(main);
     else if (pageId === 'factions') this.renderFactionsPage(main);
     else if (pageId === 'alignment') this.renderAlignmentPage(main);
-    else if (pageId === 'enchanting') main.innerHTML = this.header('Enchanting','sparkle','Coming soon. Train other skills to prepare.','enchanting');
+    else if (pageId === 'enchanting') { const sk = GAME_DATA.skills.enchanting; this.renderSkillPage(main, 'enchanting', sk); }
     else if (pageId === 'prayer') this.renderPrayerPage(main);
     else if (pageId === 'slayer') this.renderSlayerPage(main);
     else if (pageId === 'pets') this.renderPetsPage(main);
@@ -910,20 +910,28 @@ class UI {
   renderShopPage(el) {
     const s = this.engine.state;
     let html = this.header('Shop','shop','Buy supplies and equipment.',null);
-    html += `<div class="bank-gold">${icon('coin',20)} ${this.fmt(s.gold)} Gold</div>`;
+    html += `<div class="bank-gold">${icon('coin',20)} <span id="shop-gold">${this.fmt(s.gold)}</span> Gold</div>`;
     const cats = [...new Set(GAME_DATA.shop.map(i=>i.category))];
     for (const cat of cats) {
       html += `<h2 class="section-title">${cat[0].toUpperCase()+cat.slice(1)}</h2><div class="actions-grid">`;
       for (let i = 0; i < GAME_DATA.shop.length; i++) {
         const si = GAME_DATA.shop[i]; if (si.category !== cat) continue;
         const item = GAME_DATA.items[si.item]; if (!item) continue;
-        const can = s.gold >= si.price;
+        const al = GAME_DATA.alignments[s.alignment];
+        const discount = al?.bonus?.shopDiscount || 0;
+        const price = Math.floor(si.price * (1 - discount/100));
+        const can = s.gold >= price;
+        const rarCol = this.getRarityColor(si.item);
         html += `<div class="action-card shop-card ${can?'':'locked'}">
-          <div class="ac-header"><span class="ac-name">${item.name}</span><span class="ac-level">${si.price}g</span></div>
+          <div class="ac-header"><span class="ac-name" style="${rarCol?'color:'+rarCol:''}">${item.name}</span><span class="ac-level">${price}g${discount>0?' <small>(-'+discount+'%)</small>':''}</span></div>
+          ${this.getRarityTag(si.item)}
           <p class="area-desc">${item.desc}</p>
           <div class="shop-btns">
-            <button class="btn btn-sm" ${can?'':'disabled'} onclick="game.buyItem(${i},1)">Buy 1</button>
-            <button class="btn btn-sm" ${s.gold>=si.price*10?'':'disabled'} onclick="game.buyItem(${i},10)">Buy 10</button>
+            <button class="btn btn-xs" ${can?'':'disabled'} onclick="game.buyItem(${i},1)">1</button>
+            <button class="btn btn-xs" ${s.gold>=price*5?'':'disabled'} onclick="game.buyItem(${i},5)">5</button>
+            <button class="btn btn-xs" ${s.gold>=price*10?'':'disabled'} onclick="game.buyItem(${i},10)">10</button>
+            <input type="number" class="qty-input" min="1" value="1" id="shop-qty-${i}" style="width:50px">
+            <button class="btn btn-xs" onclick="game.buyItem(${i},parseInt(document.getElementById('shop-qty-${i}').value)||1)">Buy</button>
           </div>
         </div>`;
       }
@@ -1379,30 +1387,76 @@ class UI {
 
   renderStatsPage(el) {
     const s = this.engine.state;
-    let html = this.header('Statistics','stats','Your lifetime statistics.',null);
-    html += '<div class="stats-grid">';
-    const stats = [
-      ['Play Time', this.fmtTime(Math.floor(s.stats.totalPlayTime))],
-      ['Total XP', this.fmt(s.stats.totalXpGained)],
-      ['Monsters Killed', this.fmt(s.stats.monstersKilled)],
-      ['Dungeons', s.stats.dungeonsCompleted],
-      ['World Bosses', s.stats.worldBossKills],
-      ['Items Crafted', this.fmt(s.stats.itemsCrafted)],
-      ['Food Eaten', s.stats.foodEaten],
-      ['Gold Earned', this.fmt(s.stats.goldEarned)],
-      ['Gold Spent', this.fmt(s.stats.goldSpent)],
-      ['Deaths', s.stats.deaths],
-      ['Quests', s.stats.questsCompleted],
-      ['Achievements', `${s.achievements.length}/${GAME_DATA.achievements.length}`],
+    let html = this.header('Statistics','stats','Your lifetime statistics and records.',null);
+
+    // Overview section
+    html += '<h2 class="section-title">Overview</h2><div class="stats-grid">';
+    const al = GAME_DATA.alignments[s.alignment];
+    const totalXp = Object.values(s.skills).reduce((a,sk)=>a+sk.xp,0);
+    const overview = [
       ['Total Level', this.engine.getTotalLevel()],
       ['Combat Level', this.engine.getCombatLevel()],
+      ['Total XP', this.fmt(totalXp)],
+      ['Gold', this.fmt(s.gold)],
+      ['Alignment', `${al.name} (${al.axis})`],
+      ['Play Time', this.fmtTime(Math.floor(s.stats.totalPlayTime))],
     ];
-    for (const [l, v] of stats) html += `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div></div>`;
+    for (const [l, v] of overview) html += `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div></div>`;
     html += '</div>';
-    html += '<h2 class="section-title">Per-Skill Actions</h2><div class="stats-grid">';
+
+    // Combat stats
+    html += '<h2 class="section-title">Combat</h2><div class="stats-grid">';
+    const combat = [
+      ['Monsters Killed', this.fmt(s.stats.monstersKilled)],
+      ['Deaths', s.stats.deaths || 0],
+      ['Dungeons Cleared', s.stats.dungeonsCompleted || 0],
+      ['World Boss Kills', s.stats.worldBossKills || 0],
+      ['Food Eaten', s.stats.foodEaten || 0],
+      ['Highest Hit', s.stats.highestHit || 0],
+    ];
+    for (const [l, v] of combat) html += `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div></div>`;
+    html += '</div>';
+
+    // PvP stats
+    html += '<h2 class="section-title">PvP</h2><div class="stats-grid">';
+    const pvp = [
+      ['PvP Kills', s.stats.pvpKills || 0],
+      ['PvP Deaths', s.stats.pvpDeaths || 0],
+      ['K/D Ratio', (s.stats.pvpDeaths||0) > 0 ? ((s.stats.pvpKills||0)/(s.stats.pvpDeaths)).toFixed(2) : '--'],
+      ['Current Streak', s.stats.pvpStreak || 0],
+      ['Best Streak', s.stats.pvpBestStreak || 0],
+      ['Arena Wins', s.stats.pvpWins || 0],
+    ];
+    for (const [l, v] of pvp) html += `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div></div>`;
+    html += '</div>';
+
+    // Economy stats
+    html += '<h2 class="section-title">Economy</h2><div class="stats-grid">';
+    const econ = [
+      ['Gold Earned', this.fmt(s.stats.goldEarned)],
+      ['Gold Spent', this.fmt(s.stats.goldSpent || 0)],
+      ['Items Crafted', this.fmt(s.stats.itemsCrafted || 0)],
+      ['Quests Done', `${s.quests?.completed?.length || 0} / ${GAME_DATA.quests.length}`],
+      ['Achievements', `${s.achievements?.length || 0} / ${GAME_DATA.achievements.length}`],
+      ['Bank Items', Object.keys(s.bank).filter(k=>s.bank[k]>0).length],
+    ];
+    for (const [l, v] of econ) html += `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div></div>`;
+    html += '</div>';
+
+    // Per-skill XP table
+    html += '<h2 class="section-title">Skill Breakdown</h2><div class="stats-skills">';
     for (const [sId, data] of Object.entries(GAME_DATA.skills)) {
-      const c = s.stats.totalActions[sId] || 0;
-      html += `<div class="stat-card"><div class="stat-label">${data.name}</div><div class="stat-value">${this.fmt(c)}</div></div>`;
+      const sk = s.skills[sId];
+      if (!sk) continue;
+      const p = this.engine.getXpProgress(sId);
+      const actions = s.stats.totalActions[sId] || 0;
+      html += `<div class="ss-row">
+        <span class="ss-name">${data.name}</span>
+        <span class="ss-level">${sk.level}</span>
+        <div class="ss-bar"><div class="ss-fill" style="width:${(p*100).toFixed(0)}%"></div></div>
+        <span class="ss-xp">${this.fmt(sk.xp)} XP</span>
+        <span class="ss-actions">${this.fmt(actions)} acts</span>
+      </div>`;
     }
     html += '</div>';
     el.innerHTML = html;
@@ -1411,15 +1465,19 @@ class UI {
   renderSettingsPage(el) {
     let html = this.header('Settings','settings','Manage your game.',null);
     html += `<div class="settings-section">
-      <button class="btn" onclick="game.save(); ui.toast({type:'success',text:'Game saved!'})">Save Game</button>
-      <button class="btn btn-danger" onclick="if(confirm('Delete ALL progress?')){game.deleteSave(); location.reload();}">Delete Save</button>
-      <button class="btn" onclick="ui.exportSave()">Export Save</button>
-      <button class="btn" onclick="ui.importSavePrompt()">Import Save</button>
+      <h3>Save Management</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn" onclick="game.save(); ui.toast({type:'success',text:'Game saved!'})">Save Game</button>
+        <button class="btn" onclick="ui.exportSave()">Export Save</button>
+        <button class="btn" onclick="ui.importSavePrompt()">Import Save</button>
+        ${typeof online !== 'undefined' && online.isOnline ? '<button class="btn" onclick="online.saveToCloud()">Save to Cloud</button><button class="btn" onclick="online.loadFromCloud().then(d=>{if(d){game.state=d;game.save();location.reload();}})">Load from Cloud</button>' : ''}
+      </div>
+      <button class="btn btn-danger" onclick="if(confirm('Delete ALL progress? This cannot be undone.')){game.deleteSave(); location.reload();}">Delete Save</button>
     </div>
     <div class="settings-section">
       <h3>About Ashfall Idle</h3>
-      <p>A dark fantasy idle RPG with deep skill systems, alignment mechanics, factions, and combat. Inspired by RuneScape, Melvor Idle, and the ForgeIdle design philosophy.</p>
-      <p>Version 2.0.0 &mdash; ForgeIdle Expansion</p>
+      <p>A dark fantasy idle RPG. ${Object.keys(GAME_DATA.items).length} items, ${Object.keys(GAME_DATA.skills).length} skills, ${Object.keys(GAME_DATA.monsters).length} monsters.</p>
+      <p>Version 5.5 &mdash; Combat Overhaul + Rarity System</p>
     </div>`;
     el.innerHTML = html;
   }
