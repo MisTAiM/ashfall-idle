@@ -879,9 +879,9 @@ class UI {
         statStr += (statStr?' | ':'') + `Req: ${reqs}`;
       }
 
-      html += `<div class="bank-item" title="${item.desc}${statStr?'\n'+statStr:''}">
+      html += `<div class="bank-item" data-rarity="${item.rarity||'common'}" title="${item.desc}${statStr?'\n'+statStr:''}">
         <div class="bi-icon">${window.renderItemSprite ? window.renderItemSprite(id, 32) : ''}</div>
-        <div class="bi-name">${item.name}</div>
+        <div class="bi-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name} ${this.getRarityTag(id)}</div>
         ${statStr ? `<div class="bi-stats">${statStr}</div>` : ''}
         <div class="bi-qty">x${this.fmt(q)}</div>
         <div class="bi-actions">
@@ -940,7 +940,7 @@ class UI {
       const id = s.equipment[slot];
       const item = id ? GAME_DATA.items[id] : null;
       html += `<div class="equip-slot"><div class="es-label">${slot[0].toUpperCase()+slot.slice(1)}</div><div class="es-item ${item?'':'es-empty'}">
-        ${item?`<div class="es-icon">${window.renderItemSprite ? window.renderItemSprite(id, 40) : ''}</div><span class="es-name">${item.name}</span><button class="btn btn-xs btn-danger" onclick="game.unequipItem('${slot}')">X</button>`:'<span class="es-none">Empty</span>'}
+        ${item?`<div class="es-icon">${window.renderItemSprite ? window.renderItemSprite(id, 40) : ''}</div><span class="es-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name}</span><button class="btn btn-xs btn-danger" onclick="game.unequipItem('${slot}')">X</button>`:'<span class="es-none">Empty</span>'}
       </div></div>`;
     }
     html += '</div>';
@@ -2024,6 +2024,19 @@ class UI {
 
   escHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
+  getRarityColor(itemId) {
+    const item = GAME_DATA.items[itemId];
+    if (!item?.rarity || !GAME_DATA.rarities) return '';
+    return GAME_DATA.rarities[item.rarity]?.color || '';
+  }
+
+  getRarityTag(itemId) {
+    const item = GAME_DATA.items[itemId];
+    if (!item?.rarity || item.rarity === 'common' || !GAME_DATA.rarities) return '';
+    const r = GAME_DATA.rarities[item.rarity];
+    return `<span class="rarity-tag" style="color:${r.color}">${r.name}</span>`;
+  }
+
   // ── PVP ARENA PAGE ─────────────────────────────────────
   renderPvPPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
@@ -2289,7 +2302,7 @@ class UI {
     const area = d.who === 'player' ? document.getElementById('monster-splats') : document.getElementById('player-splats');
     if (!area) return;
     const splat = document.createElement('div');
-    splat.className = `hit-splat ${d.miss ? 'splat-miss' : d.dmg > 20 ? 'splat-big' : 'splat-hit'}`;
+    splat.className = `hit-splat ${d.miss ? 'splat-miss' : d.crit ? 'splat-crit' : d.dmg > 20 ? 'splat-big' : 'splat-hit'}`;
     splat.textContent = d.miss ? 'Miss' : d.dmg;
     splat.style.left = (20 + Math.random() * 60) + '%';
     area.appendChild(splat);

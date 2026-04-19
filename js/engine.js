@@ -464,10 +464,8 @@ class GameEngine {
   playerAttack(monster) {
     const style = this.state.combat.combatStyle;
     let accuracy, maxHit;
-    // Prayer percentage bonuses
     const pAtkB = this.getPrayerBonus('attackBonus');
     const pStrB = this.getPrayerBonus('strengthBonus');
-    const pDefB = this.getPrayerBonus('defenceBonus');
     const pRngB = this.getPrayerBonus('rangedBonus');
     const pMagB = this.getPrayerBonus('magicBonus');
 
@@ -475,37 +473,61 @@ class GameEngine {
       const aL = Math.floor(this.state.skills.attack.level * (1 + pAtkB/100));
       const sL = Math.floor(this.state.skills.strength.level * (1 + pStrB/100));
       const aB = this.getStatTotal('attackBonus'), sB = this.getStatTotal('strengthBonus');
+      // Accuracy: effective level * (bonus + 64) - determines hit chance
       accuracy = (aL + 8) * (aB + 64);
-      maxHit = Math.floor(0.5 + sL * (sB + 64) / 640);
+      // Max hit: base (1 + str/10) + weapon bonus scaling
+      // At lv99 str, +90 bonus = 10.9 * (1 + 90/80) = 10.9 * 2.125 = ~23, then * 4 = 92
+      maxHit = Math.floor((1 + sL / 10) * (1 + sB / 80) * 4);
     } else if (style === 'ranged') {
       const rL = Math.floor(this.state.skills.ranged.level * (1 + pRngB/100));
       const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
       accuracy = (rL + 8) * (rB + 64);
-      maxHit = Math.floor(0.5 + rL * (rB + 64) / 640);
+      maxHit = Math.floor((1 + rL / 10) * (1 + rB / 80) * 4);
       this.consumeAmmo();
     } else {
       const mL = Math.floor(this.state.skills.magic.level * (1 + pMagB/100));
       const mB = this.getStatTotal('magicBonus');
       const spell = this.getActiveSpell();
       accuracy = (mL + 8) * (mB + 64);
-      maxHit = spell ? spell.maxHit + Math.floor(mB * 0.5) : Math.floor(mL * 0.3);
+      // Magic: spell base + scaling from magic bonus + level
+      maxHit = spell ? Math.floor(spell.maxHit * (1 + mB / 100) + mL * 0.3) : Math.floor(mL * 0.5 + mB * 0.3);
       if (spell && !this.consumeRunes(spell)) { this.emit('notification', { type:'warn', text:'Out of runes!' }); this.stopCombat(); return; }
     }
     maxHit = Math.max(maxHit, 1);
+
+    // Alignment bonuses
     const align = GAME_DATA.alignments[this.state.alignment];
     if (align?.bonus?.globalDmg) maxHit = Math.floor(maxHit * (1 + align.bonus.globalDmg/100));
     if (align?.bonus?.strengthDmg && style === 'melee') maxHit = Math.floor(maxHit * (1 + align.bonus.strengthDmg/100));
+    // Active buffs (War Cry, Power Strike, etc)
     for (const buff of this.state.combat.activeBuffs) {
       if (buff.stat === 'damageMult') maxHit = Math.floor(maxHit * buff.value);
     }
+
+    // Hit chance calculation
     const evasion = monster.evasion?.[style] || 0;
-    const defence = (1 + 8) * (evasion + 64);
+    const defence = (monster.combatLevel + 8) * (evasion + 64);
     const hitChance = Math.min(0.95, Math.max(0.05, accuracy / (accuracy + defence)));
+
     if (Math.random() < hitChance) {
-      let dmg = this.randInt(1, maxHit);
+      let dmg = this.randInt(Math.floor(maxHit * 0.1), maxHit); // min 10% of max, not 1
+
+      // Critical hit: 5% base + 1% per 10 levels above monster
+      const levelAdv = Math.max(0, this.getCombatLevel() - monster.combatLevel);
+      const critChance = Math.min(0.25, 0.05 + levelAdv * 0.01);
+      let isCrit = false;
+      if (Math.random() < critChance) {
+        dmg = Math.floor(dmg * 1.5);
+        isCrit = true;
+      }
+
+      // Freeze bonus (shatter)
       const fz = this.state.combat.statusEffects.monster.freeze;
-      if (fz) { dmg *= 3; delete this.state.combat.statusEffects.monster.freeze; }
+      if (fz) { dmg = Math.floor(dmg * 2.5); delete this.state.combat.statusEffects.monster.freeze; }
+
       this.state.combat.monsterHp -= dmg;
+
+      // Magic spell effects (status + lifesteal)
       if (style === 'magic') {
         const sp = this.getActiveSpell();
         if (sp?.statusChance) {
@@ -513,8 +535,13 @@ class GameEngine {
             if (Math.random() < ch) this.applyStatus('monster', fx, 1, 8);
           }
         }
+        if (sp?.lifesteal) {
+          const healed = Math.floor(dmg * sp.lifesteal);
+          this.state.combat.playerHp = Math.min(this.getMaxHp(), this.state.combat.playerHp + healed);
+        }
       }
-      this.emit('combatHit', { who:'player', dmg });
+
+      this.emit('combatHit', { who:'player', dmg, crit:isCrit });
     } else {
       this.emit('combatHit', { who:'player', dmg:0, miss:true });
     }
@@ -631,8 +658,16 @@ class GameEngine {
           qty = Math.floor(qty * (1 + lootBonus/100));
         }
         this.addItem(drop.item, qty);
-        if (drop.chance < 0.05) this.emit('notification', { type:'rare', text:`Rare drop: ${GAME_DATA.items[drop.item]?.name || drop.item}!` });
-        else if (drop.chance < 0.10) this.emit('notification', { type:'rare', text:`Uncommon: ${GAME_DATA.items[drop.item]?.name || drop.item}!` });
+        const _dItem = GAME_DATA.items[drop.item];
+        const _dRarity = _dItem?.rarity || 'common';
+        const _dRarityName = GAME_DATA.rarities?.[_dRarity]?.name || '';
+        if (_dRarity === 'mythic' || _dRarity === 'legendary') {
+          this.emit('notification', { type:'achievement', text:`${_dRarityName} DROP: ${_dItem?.name}!` });
+        } else if (_dRarity === 'epic' || drop.chance < 0.03) {
+          this.emit('notification', { type:'rare', text:`${_dRarityName} drop: ${_dItem?.name}!` });
+        } else if (_dRarity === 'rare' || drop.chance < 0.08) {
+          this.emit('notification', { type:'rare', text:`${_dRarityName}: ${_dItem?.name}!` });
+        }
       }
     }
     // Universal Rare Drop Table (1/200 chance per kill, better monsters = better table)

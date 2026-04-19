@@ -1670,3 +1670,101 @@ console.log('[Ashfall] v5.4 loaded: Incantation Crafting');
 console.log('  Altars:', GAME_DATA.altars.length);
 console.log('  Rune recipes:', GAME_DATA.recipes.incantation.length);
 console.log('  Spells:', GAME_DATA.spells.length);
+
+// ================================================================
+// v5.5 ITEM RARITY SYSTEM + EXPANDED DROPS
+// ================================================================
+
+// ── RARITY TIERS ─────────────────────────────────────────
+GAME_DATA.rarities = {
+  common:    {id:'common',    name:'Common',    color:'#a0a0a0', weight:100},
+  uncommon:  {id:'uncommon',  name:'Uncommon',  color:'#4a8a3e', weight:50},
+  rare:      {id:'rare',      name:'Rare',      color:'#4a90d4', weight:20},
+  epic:      {id:'epic',      name:'Epic',      color:'#b585e0', weight:8},
+  legendary: {id:'legendary', name:'Legendary', color:'#d4a83a', weight:3},
+  mythic:    {id:'mythic',    name:'Mythic',    color:'#c44040', weight:1},
+};
+
+// Assign rarity to ALL items
+(function assignRarities() {
+  for (const [id, item] of Object.entries(GAME_DATA.items)) {
+    if (item.rarity) continue; // already assigned
+    // Mythic: best-in-slot uniques
+    if (['barrows_gloves','fire_cape','berserker_ring','archers_ring','seers_ring','fury_amulet','occult_necklace','ava_accumulator','mage_cape'].includes(id)) {
+      item.rarity = 'mythic';
+    }
+    // Legendary: ashsteel gear, enchanted obsidian, protection jewelry
+    else if (id.startsWith('ashsteel_') || id.includes('ench_obsidian') || id.includes('ench_elder') || ['ring_of_life','phoenix_necklace','dragon_scimitar'].includes(id)) {
+      item.rarity = 'legendary';
+    }
+    // Epic: enchanted adamant/mithril, dragon gear, high-end
+    else if (id.includes('ench_adamant') || id.includes('ench_mithril') || id.includes('ench_dragon') || id.includes('ench_archmage') || id.includes('ench_adept') || id.startsWith('dragon_') && item.type === 'weapon' || ['onyx_ring','diamond_ring','glory_amulet','combat_bracelet','obsidian_cape','void_crystal','celestial_essence','onyx'].includes(id)) {
+      item.rarity = 'epic';
+    }
+    // Rare: enchanted steel, mid-tier gear, gems
+    else if (id.includes('ench_steel') || id.includes('ench_maple') || id.includes('ench_mystic') || id.startsWith('adamant_') || id.startsWith('obsidian_') || ['ruby_ring','ruby_amulet','diamond','emerald','arcane_shard','enchant_scroll','wrath_rune','soul_rune','blood_rune'].includes(id)) {
+      item.rarity = 'rare';
+    }
+    // Uncommon: mithril gear, mid resources, decent consumables
+    else if (id.startsWith('mithril_') || id.startsWith('steel_') && item.type !== 'resource' || ['ruby','sapphire','death_rune','chaos_rune','cosmic_rune','nature_rune','law_rune','astral_rune','super_strength','super_defence','super_attack','prayer_potion','super_restore','gold_ring','gold_amulet','shark','manta_ray','dark_crab','sacred_eel','void_fish','golden_tench'].includes(id)) {
+      item.rarity = 'uncommon';
+    }
+    // Common: everything else
+    else {
+      item.rarity = 'common';
+    }
+  }
+})();
+
+// ── EXPANDED MONSTER DROP TABLES ─────────────────────────
+// Add rare/unique drops to monsters that are missing them
+const _dropExpansions = {
+  goblin: [{item:'topaz',qty:1,chance:0.03},{item:'leather_gloves',qty:1,chance:0.02}],
+  skeleton: [{item:'mind_rune',qty:5,chance:0.15},{item:'body_rune',qty:3,chance:0.10}],
+  bandit: [{item:'gold_ring',qty:1,chance:0.02},{item:'ruby',qty:1,chance:0.02}],
+  wolf: [{item:'gold_charm',qty:1,chance:0.12}],
+  troll: [{item:'nature_rune',qty:5,chance:0.08},{item:'combat_bracelet',qty:1,chance:0.005}],
+  dark_mage: [{item:'cosmic_rune',qty:3,chance:0.12},{item:'astral_rune',qty:2,chance:0.08},{item:'law_rune',qty:1,chance:0.05}],
+  shadow_archer: [{item:'obsidian_arrows',qty:10,chance:0.08}],
+  ogre: [{item:'nature_rune',qty:8,chance:0.10},{item:'onyx_ring',qty:1,chance:0.003}],
+  wyvern: [{item:'law_rune',qty:3,chance:0.10},{item:'diamond_ring',qty:1,chance:0.004}],
+  demon: [{item:'blood_rune',qty:3,chance:0.08},{item:'soul_rune',qty:1,chance:0.03}],
+  dragon: [{item:'blood_rune',qty:5,chance:0.10},{item:'soul_rune',qty:2,chance:0.05},{item:'dragon_arrows',qty:15,chance:0.08}],
+  void_walker: [{item:'soul_rune',qty:5,chance:0.12},{item:'wrath_rune',qty:1,chance:0.03},{item:'seers_ring',qty:1,chance:0.002}],
+  lesser_demon: [{item:'blood_rune',qty:2,chance:0.10},{item:'cosmic_rune',qty:3,chance:0.15}],
+  shadow_beast: [{item:'soul_rune',qty:2,chance:0.06},{item:'archers_ring',qty:1,chance:0.002}],
+  corrupted_golem: [{item:'wrath_rune',qty:1,chance:0.04},{item:'glory_amulet',qty:1,chance:0.005}],
+  phoenix: [{item:'wrath_rune',qty:2,chance:0.06},{item:'celestial_essence',qty:1,chance:0.05}],
+  ash_guardian: [{item:'wrath_rune',qty:3,chance:0.08},{item:'ashsteel_bar',qty:1,chance:0.05}],
+  abyssal_horror: [{item:'wrath_rune',qty:5,chance:0.10},{item:'soul_rune',qty:5,chance:0.15}],
+  ashfall_titan: [{item:'wrath_rune',qty:8,chance:0.20},{item:'celestial_essence',qty:3,chance:0.15},{item:'ashsteel_bar',qty:3,chance:0.10}],
+  ashling: [{item:'fire_rune',qty:10,chance:0.20},{item:'blood_rune',qty:2,chance:0.05}],
+  frost_wraith: [{item:'water_rune',qty:15,chance:0.25},{item:'astral_rune',qty:3,chance:0.08},{item:'ice_fish',qty:1,chance:0.10}],
+  hollow_lord: [{item:'death_rune',qty:8,chance:0.15},{item:'soul_rune',qty:3,chance:0.06},{item:'enchant_scroll',qty:1,chance:0.05}],
+  bloodfang_alpha: [{item:'blood_rune',qty:5,chance:0.12},{item:'ruby_amulet',qty:1,chance:0.03}],
+  ice_troll: [{item:'water_rune',qty:8,chance:0.20},{item:'cosmic_rune',qty:2,chance:0.06}],
+};
+for (const [mId, newDrops] of Object.entries(_dropExpansions)) {
+  if (GAME_DATA.monsters[mId]) {
+    for (const drop of newDrops) {
+      if (!GAME_DATA.monsters[mId].drops.some(d => d.item === drop.item)) {
+        GAME_DATA.monsters[mId].drops.push(drop);
+      }
+    }
+  }
+}
+
+// Also expand world boss rewards
+for (const wb of GAME_DATA.worldBosses) {
+  if (!wb.rewards) wb.rewards = [];
+  if (wb.id === 'blight_warden') { wb.rewards.push({item:'soul_rune',qty:10,chance:0.30}); wb.rewards.push({item:'ring_of_life',qty:1,chance:0.01}); }
+  if (wb.id === 'storm_reaver') { wb.rewards.push({item:'wrath_rune',qty:5,chance:0.25}); wb.rewards.push({item:'phoenix_necklace',qty:1,chance:0.008}); }
+  if (wb.id === 'ashen_overlord') { wb.rewards.push({item:'wrath_rune',qty:10,chance:0.30}); wb.rewards.push({item:'barrows_gloves',qty:1,chance:0.005}); wb.rewards.push({item:'fury_amulet',qty:1,chance:0.003}); }
+}
+
+console.log('[Ashfall] v5.5 loaded: Rarity system, expanded drops');
+console.log('  Mythic items:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='mythic').length);
+console.log('  Legendary:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='legendary').length);
+console.log('  Epic:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='epic').length);
+console.log('  Rare:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='rare').length);
+console.log('  Uncommon:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='uncommon').length);

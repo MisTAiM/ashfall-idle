@@ -2958,3 +2958,34 @@ html, body {
   font-style: italic;
   line-height: 1.4;
 }
+
+/* ── ITEM RARITY ──────────────────────────────────────── */
+.rarity-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 4px;
+}
+/* Rarity border glow on bank items */
+.bank-item[data-rarity="mythic"] { border-color: #c44040 !important; box-shadow: 0 0 8px rgba(196,64,64,0.2); }
+.bank-item[data-rarity="legendary"] { border-color: #d4a83a !important; box-shadow: 0 0 6px rgba(212,168,58,0.15); }
+.bank-item[data-rarity="epic"] { border-color: #b585e0 !important; }
+.bank-item[data-rarity="rare"] { border-color: #4a90d4 !important; }
+.bank-item[data-rarity="uncommon"] { border-color: #4a8a3e !important; }
+
+/* Critical hit splat */
+.splat-crit {
+  color: #fff;
+  background: linear-gradient(135deg, #d4a83a, #ff8040);
+  font-size: 22px;
+  font-weight: 900;
+  text-shadow: 0 0 12px rgba(255,128,0,0.8);
+  padding: 3px 10px;
+}
+.splat-crit::after {
+  content: ' CRIT!';
+  font-size: 10px;
+  letter-spacing: 1px;
+}
