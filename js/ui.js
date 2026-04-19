@@ -61,6 +61,7 @@ const NAV = [
     {id:'crafting',label:'Crafting',icon:'ring'},
     {id:'alchemy',label:'Alchemy',icon:'potion'},
     {id:'enchanting',label:'Enchanting',icon:'sparkle'},
+    {id:'incantation',label:'Incantation',icon:'wand'},
   ]},
   { header:'Combat', items:[
     {id:'combat',label:'Combat',icon:'combat'},
@@ -164,7 +165,7 @@ class UI {
     </div>
     <div class="level-tracker" id="level-tracker">`;
     // Compact skill level grid
-    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','cooking','smithing','fletching','crafting','alchemy','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
+    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
     for (const sId of skillOrder) {
       const sk = s.skills[sId];
       if (!sk) continue;
@@ -329,6 +330,7 @@ class UI {
       }
       html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('${sId}','${action.id}')"`}>
         <div class="ac-header"><span class="ac-name">${action.name}</span><span class="ac-level">Lv ${action.level}</span></div>
+        ${action.altarName ? `<div class="altar-info"><span class="altar-name">${action.altarName}</span>${action.altarDesc ? `<span class="altar-desc">${action.altarDesc}</span>`:''}</div>` : ''}
         ${inputHtml}${outputHtml}
         <div class="ac-footer">
           <span class="ac-xp">+${action.xp} XP</span>
@@ -2177,7 +2179,7 @@ class UI {
       {id:'skills.prayer',label:'Pray'},{id:'skills.slayer',label:'Slay'},{id:'skills.necromancy',label:'Necro'},
       {id:'skills.mining',label:'Mine'},{id:'skills.woodcutting',label:'WC'},{id:'skills.fishing',label:'Fish'},
       {id:'skills.cooking',label:'Cook'},{id:'skills.smithing',label:'Smith'},{id:'skills.fletching',label:'Fletch'},
-      {id:'skills.crafting',label:'Craft'},{id:'skills.alchemy',label:'Alch'},{id:'skills.enchanting',label:'Ench'},
+      {id:'skills.crafting',label:'Craft'},{id:'skills.alchemy',label:'Alch'},{id:'skills.enchanting',label:'Ench'},{id:'skills.incantation',label:'Incan'},
       {id:'skills.farming',label:'Farm'},{id:'skills.thieving',label:'Thiev'},
     ];
 

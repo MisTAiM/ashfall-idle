@@ -282,6 +282,19 @@ class GameEngine {
         }
       }
       this.addItem(action.output.item, action.output.qty);
+      // Incantation Crafting rune multiplier
+      if (skillId === 'incantation' && action.altar && GAME_DATA.runeMultipliers) {
+        const altar = GAME_DATA.altars?.find(a => a.id === action.altar);
+        if (altar) {
+          const lvAbove = this.state.skills.incantation.level - altar.level;
+          let mult = 1;
+          for (const t of GAME_DATA.runeMultipliers) { if (lvAbove >= t.levelsAbove) mult = t.mult; }
+          if (mult > 1) {
+            const bonus = action.output.qty * (mult - 1);
+            this.addItem(action.output.item, bonus);
+          }
+        }
+      }
       this.state.stats.itemsCrafted++;
       this.trackQuestProgress('craft', { item:action.output.item, qty:action.output.qty });
     } else if (skillId === 'thieving') {

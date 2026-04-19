@@ -39,6 +39,7 @@ const GAME_DATA = {
     slayer:{id:'slayer',name:'Slayer',type:'combat',icon:'target',desc:'Complete assigned kill tasks for Slayer XP and Slayer Coins.'},
     necromancy:{id:'necromancy',name:'Necromancy',type:'combat',icon:'skull',desc:'Dark combat magic. Raise undead, drain life, curse enemies.'},
     summoning:{id:'summoning',name:'Summoning',type:'support',icon:'sparkle',desc:'Create combat familiars from collected charms.'},
+    incantation:{id:'incantation',name:'Incantation Crafting',type:'artisan',icon:'wand',desc:'Craft runes from essence at magical altars. The foundation of all magic.'},
   },
 
   alignments: {
@@ -1547,3 +1548,125 @@ GAME_DATA.pvpSpells = [
 console.log('[Ashfall] v5.3 loaded: Fishing zones, wilderness PvP, protection jewelry');
 console.log('  Fish items:', Object.keys(GAME_DATA.items).filter(k=>k.startsWith('raw_')).length);
 console.log('  Cooking recipes:', GAME_DATA.recipes.cooking.length);
+
+// ================================================================
+// v5.4 INCANTATION CRAFTING (Runecrafting)
+// ================================================================
+
+// ── PURE ESSENCE (higher tier essence for advanced runes) ──
+GAME_DATA.items.pure_essence = {id:'pure_essence',name:'Pure Essence',type:'resource',subtype:'misc',sellPrice:8,sprite:'misc-essence',desc:'Purified magical essence. Required for advanced runes.'};
+
+// Add pure essence mining at higher level
+GAME_DATA.gatheringActions.mining.push(
+  {id:'mine_pure_essence',name:'Pure Essence',level:30,xp:40,time:2.5,loot:[{item:'pure_essence',qty:1}],masteryId:'pure_ess',gemChance:0},
+);
+
+// ── ALL RUNE TYPES ───────────────────────────────────────
+// Elemental (basic - rune essence)
+// Already exist: fire_rune, water_rune, earth_rune, air_rune
+
+// Catalytic + Advanced (pure essence required)
+const _newRunes = [
+  ['mind_rune','Mind Rune','resource','rune',4,'rune-cyan','Weakens the mind of foes.'],
+  ['body_rune','Body Rune','resource','rune',4,'rune-blue','Channels bodily energy.'],
+  ['cosmic_rune','Cosmic Rune','resource','rune',15,'rune-purple','Channels cosmic energy for enchanting.'],
+  ['nature_rune','Nature Rune','resource','rune',30,'rune-green','Used in alchemy and binding spells.'],
+  ['law_rune','Law Rune','resource','rune',45,'rune-white','Used in teleportation magic.'],
+  ['astral_rune','Astral Rune','resource','rune',50,'rune-cyan','Used in lunar magic.'],
+  ['blood_rune','Blood Rune','resource','rune',80,'rune-red','Fuels blood magic spells.'],
+  ['soul_rune','Soul Rune','resource','rune',120,'rune-purple','Contains trapped soul energy.'],
+  ['wrath_rune','Wrath Rune','resource','rune',200,'rune-red','The most destructive rune. Pure fury.'],
+];
+for (const [id,name,type,sub,price,sprite,desc] of _newRunes) {
+  if (!GAME_DATA.items[id]) GAME_DATA.items[id] = {id,name,type,subtype:sub,sellPrice:price,sprite,desc};
+}
+
+// ── ALTARS ────────────────────────────────────────────────
+// Each altar is used to craft a specific rune type
+// Altars define: which rune, what essence, level req, xp, multiplier at higher levels
+GAME_DATA.altars = [
+  {id:'air_altar',    name:'Air Altar',    rune:'air_rune',    essence:'rune_essence', level:1,  xp:5,  baseQty:1, desc:'A weathered stone circle open to the sky. Wind howls through carved channels.'},
+  {id:'mind_altar',   name:'Mind Altar',   rune:'mind_rune',   essence:'rune_essence', level:2,  xp:6,  baseQty:1, desc:'A pulsing crystalline altar. Thoughts echo louder near it.'},
+  {id:'water_altar',  name:'Water Altar',  rune:'water_rune',  essence:'rune_essence', level:5,  xp:7,  baseQty:1, desc:'An altar submerged in a grotto pool. Water glows blue around it.'},
+  {id:'earth_altar',  name:'Earth Altar',  rune:'earth_rune',  essence:'rune_essence', level:9,  xp:8,  baseQty:1, desc:'Buried deep underground. Roots wrap its surface.'},
+  {id:'fire_altar',   name:'Fire Altar',   rune:'fire_rune',   essence:'rune_essence', level:14, xp:9,  baseQty:1, desc:'A scorching altar wreathed in perpetual flame.'},
+  {id:'body_altar',   name:'Body Altar',   rune:'body_rune',   essence:'rune_essence', level:20, xp:10, baseQty:1, desc:'An organic altar that pulses like a heartbeat.'},
+  {id:'cosmic_altar', name:'Cosmic Altar', rune:'cosmic_rune', essence:'pure_essence', level:27, xp:14, baseQty:1, desc:'Floats among starlight in a pocket dimension.'},
+  {id:'chaos_altar',  name:'Chaos Altar',  rune:'chaos_rune',  essence:'pure_essence', level:35, xp:18, baseQty:1, desc:'An unstable altar crackling with raw chaotic energy.'},
+  {id:'astral_altar', name:'Astral Altar', rune:'astral_rune', essence:'pure_essence', level:40, xp:20, baseQty:1, desc:'A silver altar bathed in moonlight. Only visible at night.'},
+  {id:'nature_altar', name:'Nature Altar', rune:'nature_rune', essence:'pure_essence', level:44, xp:22, baseQty:1, desc:'Overgrown with living vines. Nature itself guards this altar.'},
+  {id:'law_altar',    name:'Law Altar',    rune:'law_rune',    essence:'pure_essence', level:54, xp:28, baseQty:1, desc:'A perfectly symmetrical marble altar radiating order.'},
+  {id:'death_altar',  name:'Death Altar',  rune:'death_rune',  essence:'pure_essence', level:65, xp:35, baseQty:1, desc:'A bone-white altar in a realm of perpetual twilight.'},
+  {id:'blood_altar',  name:'Blood Altar',  rune:'blood_rune',  essence:'pure_essence', level:77, xp:45, baseQty:1, desc:'Crimson veins run through this altar. It demands sacrifice.'},
+  {id:'soul_altar',   name:'Soul Altar',   rune:'soul_rune',   essence:'pure_essence', level:90, xp:60, baseQty:1, desc:'Whispers of the dead surround this ethereal altar.'},
+  {id:'wrath_altar',  name:'Wrath Altar',  rune:'wrath_rune',  essence:'pure_essence', level:95, xp:80, baseQty:1, desc:'The final altar. Reality fractures around its surface. Only the most powerful incantors dare approach.'},
+];
+
+// ── INCANTATION CRAFTING RECIPES ─────────────────────────
+// Generated from altars: 1 essence = 1 rune (+ bonus qty at higher levels)
+GAME_DATA.recipes.incantation = [];
+for (const altar of GAME_DATA.altars) {
+  // Single craft
+  GAME_DATA.recipes.incantation.push({
+    id: 'craft_' + altar.rune,
+    name: 'Craft ' + GAME_DATA.items[altar.rune].name,
+    level: altar.level,
+    xp: altar.xp,
+    time: 2.0,
+    input: [{item: altar.essence, qty: 1}],
+    output: {item: altar.rune, qty: altar.baseQty},
+    altar: altar.id,
+    altarName: altar.name,
+    altarDesc: altar.desc,
+  });
+  // Bulk craft (10x)
+  GAME_DATA.recipes.incantation.push({
+    id: 'craft_' + altar.rune + '_x10',
+    name: 'Craft ' + GAME_DATA.items[altar.rune].name + ' (x10)',
+    level: altar.level + 5,
+    xp: altar.xp * 10,
+    time: 15.0,
+    input: [{item: altar.essence, qty: 10}],
+    output: {item: altar.rune, qty: 10},
+    altar: altar.id,
+    altarName: altar.name,
+  });
+}
+
+// ── MULTIPLIER TIERS (bonus runes at higher levels) ──────
+// At certain levels above the altar requirement, you craft extra runes per essence
+// This is applied in the engine during completeAction
+GAME_DATA.runeMultipliers = [
+  {levelsAbove: 0,  mult: 1},    // base
+  {levelsAbove: 10, mult: 2},    // double runes
+  {levelsAbove: 25, mult: 3},    // triple
+  {levelsAbove: 45, mult: 4},    // quad
+  {levelsAbove: 70, mult: 5},    // quintuple
+  {levelsAbove: 90, mult: 6},    // max multiplier
+];
+
+// ── UPDATE SPELLS TO USE NEW RUNES ───────────────────────
+// Add spells that use the new rune types
+GAME_DATA.spells.push(
+  {id:'mind_blast',   name:'Mind Blast',   level:20, maxHit:35, runes:[{item:'mind_rune',qty:2},{item:'air_rune',qty:2}], desc:'Stun the target briefly.', statusChance:{freeze:0.15}},
+  {id:'cosmic_bolt',  name:'Cosmic Bolt',  level:40, maxHit:65, runes:[{item:'cosmic_rune',qty:1},{item:'chaos_rune',qty:1}], desc:'A bolt of cosmic energy.'},
+  {id:'nature_bind',  name:'Nature Bind',  level:50, maxHit:50, runes:[{item:'nature_rune',qty:2},{item:'earth_rune',qty:3}], desc:'Roots hold the target. Poison stacks.', statusChance:{poison:0.50}},
+  {id:'blood_barrage', name:'Blood Barrage',level:70, maxHit:95, runes:[{item:'blood_rune',qty:2},{item:'death_rune',qty:2},{item:'soul_rune',qty:1}], desc:'Devastating blood magic. Heals 15% of damage dealt.', lifesteal:0.15},
+  {id:'soul_split',   name:'Soul Split',   level:80, maxHit:85, runes:[{item:'soul_rune',qty:2},{item:'blood_rune',qty:1}], desc:'Split enemy soul. Heal 25% dealt.', lifesteal:0.25},
+  {id:'wrath_of_ash', name:'Wrath of Ash', level:92, maxHit:150,runes:[{item:'wrath_rune',qty:3},{item:'death_rune',qty:3},{item:'blood_rune',qty:2}], desc:'The ultimate destructive spell. Burns and bleeds.', statusChance:{burn:0.80,bleed:0.80}},
+);
+
+// Add new runes to shop
+GAME_DATA.shop.push(
+  {item:'mind_rune',price:10,category:'runes'},
+  {item:'body_rune',price:10,category:'runes'},
+  {item:'cosmic_rune',price:40,category:'runes'},
+  {item:'nature_rune',price:80,category:'runes'},
+  {item:'law_rune',price:120,category:'runes'},
+  {item:'pure_essence',price:12,category:'materials'},
+);
+
+console.log('[Ashfall] v5.4 loaded: Incantation Crafting');
+console.log('  Altars:', GAME_DATA.altars.length);
+console.log('  Rune recipes:', GAME_DATA.recipes.incantation.length);
+console.log('  Spells:', GAME_DATA.spells.length);

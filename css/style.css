@@ -2934,3 +2934,27 @@ html, body {
 .wca-title { font-family: 'Cinzel', serif; font-size: 16px; color: #c44040; letter-spacing: 2px; margin-bottom: 4px; }
 .wca-vs { font-size: 14px; color: var(--text); margin-bottom: 10px; }
 .wca-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+/* ── ALTAR INFO ───────────────────────────────────────── */
+.altar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px;
+  margin: 4px 0;
+  background: rgba(181,133,224,0.06);
+  border-left: 2px solid rgba(181,133,224,0.3);
+  border-radius: 0 4px 4px 0;
+}
+.altar-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: #b585e0;
+  letter-spacing: 0.5px;
+}
+.altar-desc {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.4;
+}
