@@ -3071,3 +3071,26 @@ html, body {
 }
 .charm-name { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
 .charm-qty { font-family: 'Cinzel', serif; font-size: 18px; color: var(--accent); font-weight: 700; }
+
+/* ── FAMILIAR IN COMBAT ───────────────────────────────── */
+.familiar-combat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 12px;
+  background: rgba(74,138,62,0.08);
+  border: 1px solid rgba(74,138,62,0.2);
+  border-radius: var(--radius);
+  margin-top: 8px;
+}
+.fc-name { font-family: 'Cinzel', serif; font-size: 12px; color: #4a8a3e; }
+.fc-timer { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+
+/* Wilderness combat buttons */
+.wild-combat-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  justify-content: center;
+}

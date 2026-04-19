@@ -606,6 +606,27 @@ class UI {
         html += `<div class="slayer-combat-bar"><span>${icon('target',14)} Slayer: ${s.slayerTask.killed}/${s.slayerTask.amount}</span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" style="width:${pct}%"></div></div></div>`;
       }
       html += `<button class="btn btn-danger btn-flee" onclick="game.stopCombat()">${icon('combat',16)} Flee Combat</button>`;
+      // Wilderness-specific buttons
+      if (c._isWilderness) {
+        const fleeChance = Math.min(80, 40 + Math.floor(s.skills.defence.level * 0.3) + Math.floor(s.skills.hitpoints.level * 0.2));
+        html += `<div class="wild-combat-btns">
+          <button class="btn" onclick="game.attemptFlee()">Flee (${fleeChance}%)</button>
+          <button class="btn" onclick="game.castTeleHome()">TeleHome (3 Fire + 5 Air)</button>
+        </div>`;
+      }
+      // Active familiar in combat
+      if (s.familiar?.active) {
+        const mins = Math.floor(s.familiar.timeLeft / 60);
+        html += `<div class="familiar-combat"><span class="fc-name">${s.familiar.name}</span><span class="fc-timer" id="fam-timer">${mins}m</span>`;
+        if (s.familiar.buff) {
+          for (const [stat,val] of Object.entries(s.familiar.buff)) {
+            if (stat === 'healOverTime') html += `<span class="fa-buff">+${val} heal/atk</span>`;
+            else if (stat === 'damageMult') html += `<span class="fa-buff">+${((val-1)*100).toFixed(0)}% dmg</span>`;
+            else html += `<span class="fa-buff">+${val} ${stat.replace('Bonus','')}</span>`;
+          }
+        }
+        html += '</div>';
+      }
     } else {
       // ── AREA SELECT ──
       html += '<h2 class="section-title">Combat Areas</h2><div class="area-grid">';
@@ -1477,7 +1498,7 @@ class UI {
     <div class="settings-section">
       <h3>About Ashfall Idle</h3>
       <p>A dark fantasy idle RPG. ${Object.keys(GAME_DATA.items).length} items, ${Object.keys(GAME_DATA.skills).length} skills, ${Object.keys(GAME_DATA.monsters).length} monsters.</p>
-      <p>Version 5.5 &mdash; Combat Overhaul + Rarity System</p>
+      <p>Version 5.7 &mdash; Summoning + Wilderness PvP</p>
     </div>`;
     el.innerHTML = html;
   }
@@ -2586,6 +2607,12 @@ class UI {
           }
         }
       }
+    }
+
+    // ── FAMILIAR TIMER (live) ──
+    const famTimer = document.getElementById('fam-timer');
+    if (famTimer && s.familiar?.active) {
+      famTimer.textContent = Math.floor(s.familiar.timeLeft / 60) + 'm';
     }
 
     // ── LEVEL TRACKER in sidebar (live) ──
