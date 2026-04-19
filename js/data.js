@@ -1768,3 +1768,23 @@ console.log('  Legendary:', Object.values(GAME_DATA.items).filter(i=>i.rarity===
 console.log('  Epic:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='epic').length);
 console.log('  Rare:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='rare').length);
 console.log('  Uncommon:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='uncommon').length);
+
+// ── BUG FIX: Missing gold_ore + gold_bar ─────────────────
+GAME_DATA.items.gold_ore = {id:'gold_ore',name:'Gold Ore',type:'resource',subtype:'ore',sellPrice:60,sprite:'ore-gold',desc:'A shimmering gold ore.',rarity:'uncommon'};
+GAME_DATA.items.gold_bar = {id:'gold_bar',name:'Gold Bar',type:'resource',subtype:'bar',sellPrice:150,sprite:'bar-gold',desc:'A refined gold ingot.',rarity:'uncommon'};
+
+// Mining spot for gold
+GAME_DATA.gatheringActions.mining.push(
+  {id:'mine_gold',name:'Gold Vein',level:40,xp:120,time:6.0,loot:[{item:'gold_ore',qty:1}],masteryId:'gold',gemChance:0.05},
+);
+
+// Smelting recipe
+GAME_DATA.recipes.smithing.push(
+  {id:'smelt_gold',name:'Smelt Gold Bar',level:40,xp:80,time:5.0,input:[{item:'gold_ore',qty:1}],output:{item:'gold_bar',qty:1}},
+);
+
+// Add gold ore to some monster drops
+GAME_DATA.monsters.ogre.drops.push({item:'gold_ore',qty:2,chance:0.08});
+GAME_DATA.monsters.dragon.drops.push({item:'gold_ore',qty:3,chance:0.12});
+
+console.log('[Ashfall] Gold ore/bar fix applied. Items:', Object.keys(GAME_DATA.items).length);
