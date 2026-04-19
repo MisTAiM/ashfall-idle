@@ -134,6 +134,7 @@ class GameEngine {
     if (!s.equipment.amulet) s.equipment.amulet = null;
     if (!s.equipment.cape) s.equipment.cape = null;
     if (!s.equipment.gloves) s.equipment.gloves = null;
+    if (!s.familiar) s.familiar = { active:null, timeLeft:0 };
     s.version = 2;
   }
 
@@ -160,6 +161,7 @@ class GameEngine {
     this.tickFarming(now);
     this.tickBuffs(safeDt);
     this.tickAbilityCooldowns(safeDt);
+    this.tickFamiliar(safeDt);
     this.checkAchievements();
     // Random events (check every ~30 seconds of play)
     if (!this._lastEventCheck) this._lastEventCheck = now;
@@ -222,6 +224,7 @@ class GameEngine {
       return GAME_DATA.gatheringActions[skillId]?.find(a => a.id === actionId);
     }
     if (skill.type === 'artisan')   return GAME_DATA.recipes[skillId]?.find(a => a.id === actionId);
+    if (skillId === 'summoning')    return GAME_DATA.recipes.summoning?.find(a => a.id === actionId);
     if (skillId === 'thieving')     return GAME_DATA.thievingTargets.find(a => a.id === actionId);
     return null;
   }
@@ -270,7 +273,7 @@ class GameEngine {
         this.trackQuestProgress('gather', { item:gem, qty:1 });
         this.emit('notification', { type:'rare', text:`Found a ${GAME_DATA.items[gem].name}!` });
       }
-    } else if (skill.type === 'artisan') {
+    } else if (skill.type === 'artisan' || skillId === 'summoning') {
       if (action.input && !this.hasItems(action.input)) { this.stopSkill(); this.emit('notification', { type:'warn', text:'Out of materials.' }); return; }
       if (action.input) this.removeItems(action.input);
       if (action.burnChance) {
@@ -364,9 +367,11 @@ class GameEngine {
   // ── COMBAT ─────────────────────────────────────────────
   startCombat(areaId, monsterId) {
     this.stopSkill();
-    const area = GAME_DATA.combatAreas.find(a => a.id === areaId);
-    if (!area || !area.monsters.includes(monsterId)) return;
-    if (this.getCombatLevel() < area.levelReq) { this.emit('notification', { type:'warn', text:`Requires combat level ${area.levelReq}.` }); return; }
+    if (areaId) {
+      const area = GAME_DATA.combatAreas.find(a => a.id === areaId);
+      if (!area || !area.monsters.includes(monsterId)) return;
+      if (this.getCombatLevel() < area.levelReq) { this.emit('notification', { type:'warn', text:`Requires combat level ${area.levelReq}.` }); return; }
+    }
     const monster = GAME_DATA.monsters[monsterId]; if (!monster) return;
     this._setupCombat(monster, monsterId);
     this.state.combat.area = areaId;
@@ -408,6 +413,7 @@ class GameEngine {
   stopCombat() {
     const c = this.state.combat;
     c.active = false; c.area = null; c.monster = null; c.dungeon = null; c.worldBoss = null;
+    c._isWilderness = false; c._pvpTriggered = false; c._isDuel = false; c._teleBlocked = 0;
     c.statusEffects = { player:{}, monster:{} };
     c.playerHp = this.getMaxHp();
     this.emit('combatStop');
@@ -547,6 +553,12 @@ class GameEngine {
     } else {
       this.emit('combatHit', { who:'player', dmg:0, miss:true });
     }
+    // Familiar heal-over-time
+    const famHeal = this.getFamiliarBonus('healOverTime');
+    if (famHeal > 0) {
+      this.state.combat.playerHp = Math.min(this.getMaxHp(), this.state.combat.playerHp + famHeal);
+    }
+    // Familiar damageMult applied in maxHit calc via activeBuffs already
   }
 
   monsterAttack(monster) {
@@ -873,6 +885,8 @@ class GameEngine {
       if (item?.stats?.[stat]) total += item.stats[stat];
     }
     for (const buff of this.state.combat.activeBuffs) if (buff.stat === stat) total += buff.value;
+    // Familiar bonus
+    total += this.getFamiliarBonus(stat);
     return total;
   }
 
@@ -1376,6 +1390,41 @@ class GameEngine {
       this._afkTimeout = null;
       this.emit('notification', { type:'success', text:'Guardian dismissed. Training continues.' });
     }
+  }
+
+  // ── SUMMONING / FAMILIARS ────────────────────────────────
+  activateFamiliar(pouchId) {
+    const pouch = GAME_DATA.items[pouchId];
+    if (!pouch || pouch.type !== 'pouch') return;
+    if ((this.state.bank[pouchId] || 0) <= 0) { this.emit('notification',{type:'warn',text:'No pouches in bank.'}); return; }
+    const fam = GAME_DATA.familiars?.find(f => f.id === pouch.familiar);
+    if (!fam) return;
+    if (this.state.skills.summoning.level < fam.level) { this.emit('notification',{type:'warn',text:`Requires Summoning level ${fam.level}.`}); return; }
+    // Consume pouch
+    this.state.bank[pouchId]--;
+    if (this.state.bank[pouchId] <= 0) delete this.state.bank[pouchId];
+    // Activate familiar
+    this.state.familiar = { active:fam.id, timeLeft:fam.duration, buff:fam.buff, name:fam.name };
+    this.emit('notification',{type:'success',text:`Summoned ${fam.name}! Active for ${Math.floor(fam.duration/60)} minutes.`});
+  }
+
+  dismissFamiliar() {
+    this.state.familiar = { active:null, timeLeft:0 };
+    this.emit('notification',{type:'info',text:'Familiar dismissed.'});
+  }
+
+  tickFamiliar(dt) {
+    if (!this.state.familiar?.active) return;
+    this.state.familiar.timeLeft -= dt;
+    if (this.state.familiar.timeLeft <= 0) {
+      this.emit('notification',{type:'info',text:`${this.state.familiar.name} has departed.`});
+      this.state.familiar = { active:null, timeLeft:0 };
+    }
+  }
+
+  getFamiliarBonus(stat) {
+    if (!this.state.familiar?.active || !this.state.familiar.buff) return 0;
+    return this.state.familiar.buff[stat] || 0;
   }
 
   // ── GEAR SETS ───────────────────────────────────────────

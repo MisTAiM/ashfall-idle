@@ -263,7 +263,7 @@ class UI {
     else if (pageId === 'pets') this.renderPetsPage(main);
     else if (pageId === 'spellbooks') this.renderSpellbooksPage(main);
     else if (pageId === 'necromancy') this.renderNecromancyPage(main);
-    else if (pageId === 'summoning') { main.innerHTML = this.header('Summoning','sparkle','Create combat familiars from charms dropped by monsters. Coming soon - train other skills to prepare.','summoning'); }
+    else if (pageId === 'summoning') this.renderSummoningPage(main);
     else if (pageId === 'account') this.renderAccountPage(main);
     else if (pageId === 'character') this.renderCharacterPage(main);
     else if (pageId === 'guilds') this.renderGuildsPage(main);
@@ -1479,6 +1479,98 @@ class UI {
       <p>A dark fantasy idle RPG. ${Object.keys(GAME_DATA.items).length} items, ${Object.keys(GAME_DATA.skills).length} skills, ${Object.keys(GAME_DATA.monsters).length} monsters.</p>
       <p>Version 5.5 &mdash; Combat Overhaul + Rarity System</p>
     </div>`;
+    el.innerHTML = html;
+  }
+
+  // ── SUMMONING PAGE ──────────────────────────────────────
+  renderSummoningPage(el) {
+    const s = this.engine.state;
+    let html = this.header('Summoning','sparkle','Create combat familiars from charms. Familiars provide passive buffs in combat.','summoning');
+
+    // Active familiar display
+    const fam = s.familiar;
+    if (fam?.active) {
+      const famData = GAME_DATA.familiars?.find(f=>f.id===fam.active);
+      const mins = Math.floor(fam.timeLeft / 60);
+      const secs = Math.floor(fam.timeLeft % 60);
+      html += `<div class="familiar-active">
+        <div class="fa-header">Active Familiar: <strong>${fam.name}</strong></div>
+        <div class="fa-timer">${mins}m ${secs}s remaining</div>
+        <div class="fa-buffs">`;
+      if (fam.buff) {
+        for (const [stat,val] of Object.entries(fam.buff)) {
+          const label = stat === 'healOverTime' ? 'Heal/atk' : stat === 'damageMult' ? 'Dmg Mult' : stat.replace('Bonus','').replace(/([A-Z])/g,' $1');
+          html += `<span class="fa-buff">+${stat==='damageMult'?((val-1)*100).toFixed(0)+'%':val} ${label}</span>`;
+        }
+      }
+      html += `</div><button class="btn btn-xs btn-danger" onclick="game.dismissFamiliar();ui.renderPage('summoning')">Dismiss</button>
+      </div>`;
+    } else {
+      html += '<div class="familiar-none">No familiar active. Create and use a pouch below.</div>';
+    }
+
+    // Charm inventory
+    html += '<h2 class="section-title">Your Charms</h2><div class="charm-inv">';
+    for (const cId of ['gold_charm','green_charm','crimson_charm','blue_charm']) {
+      const qty = s.bank[cId] || 0;
+      const item = GAME_DATA.items[cId];
+      html += `<div class="charm-slot"><span class="charm-name">${item?.name||cId}</span><span class="charm-qty">${qty}</span></div>`;
+    }
+    html += `<div class="charm-slot"><span class="charm-name">Spirit Shards</span><span class="charm-qty">${s.bank.spirit_shards||0}</span></div>`;
+    html += '</div>';
+
+    // Pouches in bank (activate buttons)
+    const pouches = Object.entries(s.bank).filter(([id,q]) => q > 0 && GAME_DATA.items[id]?.type === 'pouch');
+    if (pouches.length > 0) {
+      html += '<h2 class="section-title">Your Pouches</h2><div class="actions-grid">';
+      for (const [pId, qty] of pouches) {
+        const pouch = GAME_DATA.items[pId];
+        const famData = GAME_DATA.familiars?.find(f=>f.id===pouch.familiar);
+        const locked = s.skills.summoning.level < (famData?.level||1);
+        html += `<div class="action-card ${locked?'locked':''}">
+          <div class="ac-header"><span class="ac-name" style="color:${this.getRarityColor(pId)||''}">${pouch.name}</span><span class="ac-level">x${qty}</span></div>
+          <p class="area-desc">${pouch.desc}</p>
+          <div class="fa-buffs">`;
+        if (pouch.buff) {
+          for (const [stat,val] of Object.entries(pouch.buff)) {
+            const label = stat === 'healOverTime' ? 'Heal/atk' : stat === 'damageMult' ? 'Dmg' : stat.replace('Bonus','');
+            html += `<span class="fa-buff">+${stat==='damageMult'?((val-1)*100).toFixed(0)+'%':val} ${label}</span>`;
+          }
+        }
+        html += `</div>
+          <div class="ac-footer"><span>Lv ${famData?.level||'?'}</span><span>${Math.floor((pouch.duration||600)/60)} min</span></div>
+          <button class="btn btn-xs" ${locked?'disabled':''} onclick="game.activateFamiliar('${pId}');ui.renderPage('summoning')">Summon</button>
+        </div>`;
+      }
+      html += '</div>';
+    }
+
+    // Crafting recipes
+    html += '<h2 class="section-title">Create Pouches</h2>';
+    if (s.activeSkill === 'summoning' && s.activeAction) {
+      const a = GAME_DATA.recipes.summoning?.find(r=>r.id===s.activeAction);
+      if (a) {
+        const p = Math.min(1, s.actionProgress / a.time);
+        html += `<div class="active-action-bar"><div class="aa-label">Creating: ${a.name}</div><div class="aa-progress"><div class="aa-fill" style="width:${(p*100).toFixed(0)}%"></div></div><button class="btn btn-danger btn-sm" onclick="ui.stopAction()">Stop</button></div>`;
+      }
+    }
+    html += '<div class="actions-grid">';
+    for (const r of (GAME_DATA.recipes.summoning || [])) {
+      const locked = s.skills.summoning.level < r.level;
+      const isActive = s.activeSkill === 'summoning' && s.activeAction === r.id;
+      const hasAll = r.input.every(inp => (s.bank[inp.item]||0) >= inp.qty);
+      html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked||!hasAll?'':`onclick="ui.startAction('summoning','${r.id}')"`}>
+        <div class="ac-header"><span class="ac-name">${r.name}</span><span class="ac-level">Lv ${r.level}</span></div>
+        <div class="recipe-inputs">${r.input.map(inp => {
+          const it = GAME_DATA.items[inp.item];
+          const have = s.bank[inp.item]||0;
+          return `<span class="recipe-mat ${have>=inp.qty?'':'mat-missing'}">${it?.name||inp.item} x${inp.qty} <small>(${have})</small></span>`;
+        }).join('')}</div>
+        <div class="ac-footer"><span class="ac-xp">+${r.xp} XP</span><span class="ac-time">${r.time}s</span></div>
+        ${locked?`<div class="locked-overlay">Level ${r.level}</div>`:''}
+      </div>`;
+    }
+    html += '</div>';
     el.innerHTML = html;
   }
 

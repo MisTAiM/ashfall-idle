@@ -3024,3 +3024,50 @@ html, body {
   .ss-row { grid-template-columns: 70px 24px 1fr 50px; }
   .ss-actions { display: none; }
 }
+
+/* ── SUMMONING ────────────────────────────────────────── */
+.familiar-active {
+  background: linear-gradient(135deg, rgba(74,138,62,0.1), rgba(74,138,62,0.05));
+  border: 2px solid #4a8a3e;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.fa-header { font-family: 'Cinzel', serif; font-size: 16px; color: #4a8a3e; margin-bottom: 4px; }
+.fa-timer { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+.fa-buffs { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-bottom: 8px; }
+.fa-buff {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 2px 8px;
+  background: rgba(74,138,62,0.15);
+  border: 1px solid rgba(74,138,62,0.3);
+  border-radius: 3px;
+  color: #4a8a3e;
+}
+.familiar-none {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: 14px;
+}
+.charm-inv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.charm-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 80px;
+}
+.charm-name { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
+.charm-qty { font-family: 'Cinzel', serif; font-size: 18px; color: var(--accent); font-weight: 700; }

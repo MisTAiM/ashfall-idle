@@ -1809,3 +1809,85 @@ GAME_DATA.achievements.push(
 );
 
 console.log('[Ashfall] Final achievements:', GAME_DATA.achievements.length);
+
+// ================================================================
+// v5.7 SUMMONING SYSTEM
+// ================================================================
+
+// ── SUMMONING TOKENS (pouches) ───────────────────────────
+// Familiars are created from charms + secondary ingredients
+// Each familiar provides a passive combat buff while active
+
+const _familiars = [
+  // Tier 1 - Gold Charm familiars
+  {id:'spirit_wolf',   name:'Spirit Wolf',    level:1,  charm:'gold_charm',charmQty:1,  secondary:'bones',         secQty:5,  shards:5,  xp:5,   buff:{stat:'attackBonus',value:3},      duration:600, desc:'A ghostly wolf. +3 Attack bonus.'},
+  {id:'dreadfowl',     name:'Dreadfowl',      level:4,  charm:'gold_charm',charmQty:1,  secondary:'feather',       secQty:10, shards:8,  xp:10,  buff:{stat:'rangedBonus',value:3},      duration:600, desc:'A spectral bird. +3 Ranged bonus.'},
+  {id:'spirit_spider', name:'Spirit Spider',  level:10, charm:'gold_charm',charmQty:2,  secondary:'leather',       secQty:5,  shards:12, xp:20,  buff:{stat:'defenceBonus',value:5},     duration:600, desc:'A venomous spider. +5 Defence.'},
+  {id:'granite_crab',  name:'Granite Crab',   level:16, charm:'gold_charm',charmQty:2,  secondary:'iron_ore',      secQty:5,  shards:15, xp:30,  buff:{stat:'defenceBonus',value:8},     duration:900, desc:'A rocky crab. +8 Defence.'},
+
+  // Tier 2 - Green Charm familiars
+  {id:'spirit_scorpion',name:'Spirit Scorpion',level:19, charm:'green_charm',charmQty:1, secondary:'bones',         secQty:10, shards:20, xp:40,  buff:{stat:'strengthBonus',value:5},    duration:900, desc:'A venomous scorpion. +5 Strength.'},
+  {id:'spirit_tz_kih', name:'Spirit Mosquito', level:25, charm:'green_charm',charmQty:2, secondary:'big_bones',     secQty:3,  shards:25, xp:60,  buff:{stat:'attackBonus',value:8},      duration:900, desc:'Drains enemy HP. +8 Attack.'},
+  {id:'pyrelord',      name:'Pyrelord',        level:32, charm:'green_charm',charmQty:2, secondary:'fire_rune',     secQty:20, shards:30, xp:80,  buff:{stat:'magicBonus',value:8},       duration:900, desc:'A fire elemental. +8 Magic.'},
+  {id:'void_spinner',  name:'Void Spinner',    level:34, charm:'green_charm',charmQty:3, secondary:'chaos_rune',    secQty:10, shards:35, xp:90,  buff:{stat:'damageReduction',value:3},  duration:1200,desc:'Absorbs damage. +3% DR.'},
+
+  // Tier 3 - Crimson Charm familiars
+  {id:'spirit_jelly',  name:'Spirit Jelly',    level:43, charm:'crimson_charm',charmQty:1,secondary:'sapphire',     secQty:2,  shards:40, xp:120, buff:{stat:'defenceBonus',value:12},    duration:1200,desc:'A gelatinous guard. +12 Defence.'},
+  {id:'bloater',       name:'Bloater',         level:49, charm:'crimson_charm',charmQty:2,secondary:'raw_shark',    secQty:3,  shards:50, xp:150, buff:{stat:'strengthBonus',value:10},   duration:1200,desc:'A bloated beast. +10 Strength.'},
+  {id:'war_tortoise',  name:'War Tortoise',    level:55, charm:'crimson_charm',charmQty:2,secondary:'gold_bar',     secQty:2,  shards:55, xp:180, buff:{stat:'defenceBonus',value:15,damageReduction:4},duration:1500,desc:'A heavily armored tortoise. +15 Def, +4% DR.'},
+  {id:'iron_titan',    name:'Iron Titan',      level:68, charm:'crimson_charm',charmQty:3,secondary:'runite_bar',   secQty:2,  shards:70, xp:250, buff:{stat:'strengthBonus',value:15,attackBonus:10}, duration:1500,desc:'A metal giant. +15 Str, +10 Atk.'},
+
+  // Tier 4 - Blue Charm familiars (best)
+  {id:'bunyip',        name:'Bunyip',          level:60, charm:'blue_charm',charmQty:1,  secondary:'raw_shark',     secQty:5,  shards:60, xp:200, buff:{stat:'healOverTime',value:20},    duration:1200,desc:'Heals 20 HP per attack. Passive regen.'},
+  {id:'unicorn',       name:'Unicorn Stallion',level:72, charm:'blue_charm',charmQty:2,  secondary:'diamond',       secQty:2,  shards:75, xp:300, buff:{stat:'healOverTime',value:40,defenceBonus:10},duration:1500,desc:'Heals 40 HP/atk. +10 Defence.'},
+  {id:'steel_titan',   name:'Steel Titan',     level:80, charm:'blue_charm',charmQty:3,  secondary:'ashsteel_bar',  secQty:2,  shards:90, xp:400, buff:{stat:'strengthBonus',value:20,attackBonus:15,rangedBonus:15},duration:1800,desc:'Ultimate combat familiar. +20 Str, +15 Atk/Rng.'},
+  {id:'pack_yak',      name:'Pack Yak',        level:85, charm:'blue_charm',charmQty:3,  secondary:'obsidian_bar',  secQty:3,  shards:95, xp:450, buff:{stat:'defenceBonus',value:20,damageReduction:6,healOverTime:30},duration:1800,desc:'Tank familiar. +20 Def, +6% DR, heals 30/atk.'},
+  {id:'phoenix_familiar',name:'Phoenix',       level:95, charm:'blue_charm',charmQty:5,  secondary:'celestial_essence',secQty:2,shards:120,xp:600,buff:{stat:'damageMult',value:1.10,healOverTime:50},duration:2400,desc:'THE ultimate familiar. +10% all damage. Heals 50/atk.'},
+];
+
+// Spirit shards item
+GAME_DATA.items.spirit_shards = {id:'spirit_shards',name:'Spirit Shards',type:'resource',subtype:'misc',sellPrice:1,sprite:'misc-shard',desc:'Tiny magical shards. Currency for summoning.',rarity:'common'};
+
+// Pouch items (each familiar creates a pouch)
+for (const f of _familiars) {
+  GAME_DATA.items[f.id+'_pouch'] = {
+    id:f.id+'_pouch', name:f.name+' Pouch', type:'pouch', subtype:'summoning',
+    sellPrice: f.shards * 2, sprite:'misc-pouch', desc:f.desc,
+    familiar:f.id, buff:f.buff, duration:f.duration,
+    rarity: f.level >= 80 ? 'legendary' : f.level >= 55 ? 'epic' : f.level >= 30 ? 'rare' : 'uncommon',
+  };
+}
+
+GAME_DATA.familiars = _familiars;
+
+// Summoning recipes (create pouches from charms + secondaries + shards)
+GAME_DATA.recipes.summoning = [];
+for (const f of _familiars) {
+  GAME_DATA.recipes.summoning.push({
+    id: 'summon_' + f.id,
+    name: f.name + ' Pouch',
+    level: f.level,
+    xp: f.xp,
+    time: 4.0,
+    input: [
+      {item: f.charm, qty: f.charmQty},
+      {item: f.secondary, qty: f.secQty},
+      {item: 'spirit_shards', qty: f.shards},
+    ],
+    output: {item: f.id + '_pouch', qty: 1},
+  });
+}
+
+// Spirit shards in shop and as monster drops
+GAME_DATA.shop.push({item:'spirit_shards',price:2,category:'materials'});
+
+// Add spirit shard drops to mid-high level monsters
+for (const [mId, mon] of Object.entries(GAME_DATA.monsters)) {
+  if (mon.combatLevel >= 25 && !mon.drops.some(d=>d.item==='spirit_shards')) {
+    const qty = Math.floor(mon.combatLevel / 10);
+    mon.drops.push({item:'spirit_shards', qty, chance: 0.30});
+  }
+}
+
+console.log('[Ashfall] v5.7 Summoning loaded:', _familiars.length, 'familiars,', GAME_DATA.recipes.summoning.length, 'recipes');
+console.log('  Items:', Object.keys(GAME_DATA.items).length);
