@@ -257,7 +257,6 @@ class UI {
     else if (pageId === 'storyline') this.renderStorylinePage(main);
     else if (pageId === 'factions') this.renderFactionsPage(main);
     else if (pageId === 'alignment') this.renderAlignmentPage(main);
-    else if (pageId === 'enchanting') { const sk = GAME_DATA.skills.enchanting; this.renderSkillPage(main, 'enchanting', sk); }
     else if (pageId === 'prayer') this.renderPrayerPage(main);
     else if (pageId === 'slayer') this.renderSlayerPage(main);
     else if (pageId === 'pets') this.renderPetsPage(main);
