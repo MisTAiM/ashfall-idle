@@ -1665,7 +1665,7 @@ class UI {
         <button class="btn" onclick="game.save(); ui.toast({type:'success',text:'Game saved!'})">Save Game</button>
         <button class="btn" onclick="ui.exportSave()">Export Save</button>
         <button class="btn" onclick="ui.importSavePrompt()">Import Save</button>
-        ${typeof online !== 'undefined' && online.isOnline ? '<button class="btn" onclick="online.saveToCloud()">Save to Cloud</button><button class="btn" onclick="online.loadFromCloud().then(d=>{if(d){game.state=d;game.save();location.reload();}})">Load from Cloud</button>' : ''}
+        ${typeof online !== 'undefined' && online.isOnline ? '<button class="btn" onclick="online.saveToCloud()">Save to Cloud</button><button class="btn" onclick="online.loadFromCloud().then(d=>{if(d){game.migrateSave(d);game.save();location.reload();}})">Load from Cloud</button>' : ''}
       </div>
       <button class="btn btn-danger" onclick="if(confirm('Delete ALL progress? This cannot be undone.')){game.deleteSave(); location.reload();}">Delete Save</button>
     </div>
@@ -2365,14 +2365,14 @@ class UI {
     const save = await online.loadFromCloud();
     if (save) {
       if (confirm('Load cloud save? This will overwrite your local progress.')) {
-        game.state = save;
-        game.migrateSave();
-        game.save();
+        game.migrateSave(save); // sets game.state and migrates
+        game.save(); // persist to localStorage
+        this.toast({ type:'success', text:'Cloud save loaded!' });
         this.renderSidebar();
         this.renderPage(this.currentPage);
       }
     } else {
-      this.toast({ type:'warn', text:'No cloud save found.' });
+      this.toast({ type:'warn', text:'No cloud save found. Save to cloud first.' });
     }
   }
 

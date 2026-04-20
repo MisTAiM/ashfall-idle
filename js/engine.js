@@ -93,7 +93,7 @@ class GameEngine {
 
   migrateSave(saveData) {
     if (saveData) { this.state = saveData; }
-    const s = this.state; if (!s) return;
+    const s = this.state; if (!s) return s;
     for (const id of Object.keys(GAME_DATA.skills)) {
       if (!s.skills[id]) s.skills[id] = { level:1, xp:0 };
     }
@@ -153,6 +153,7 @@ class GameEngine {
       }
     }
     s.version = 2;
+    return s;
   }
 
   // ── TICK ───────────────────────────────────────────────

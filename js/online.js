@@ -38,20 +38,25 @@ class OnlineManager {
           // Auto cloud sync for non-anonymous users
           if (!user.isAnonymous && game && game.state) {
             try {
-              const cloudSave = await this.loadFromCloud(true); // silent mode
+              const cloudSave = await this.loadFromCloud(true);
               if (cloudSave && cloudSave._cloudSaveTime) {
                 const localTime = game.state.lastSave || 0;
                 if (cloudSave._cloudSaveTime > localTime) {
-                  // Cloud is newer - ask to load
-                  game.state = game.migrateSave(cloudSave);
-                  game.save();
+                  // Cloud is newer - load it
+                  game.migrateSave(cloudSave); // sets game.state internally + migrates
+                  game.save(); // persist to localStorage
                   this.emit('notification', { type:'success', text:'Cloud save loaded (newer than local).' });
+                  // Re-render UI with new state
+                  if (typeof ui !== 'undefined') { ui.renderSidebar(); ui.renderPage(ui.currentPage); }
                 } else {
                   // Local is newer - push to cloud
-                  this.saveToCloud(true); // silent
+                  this.saveToCloud(true);
                 }
+              } else {
+                // No cloud save exists yet - push local to cloud
+                this.saveToCloud(true);
               }
-            } catch(e) { console.log('Auto-sync check:', e.message); }
+            } catch(e) { console.error('Auto-sync error:', e.message); }
           }
           // Start periodic auto-save (every 60s)
           if (!user.isAnonymous) {
@@ -98,8 +103,18 @@ class OnlineManager {
       }
       this.displayName = displayName;
       localStorage.setItem('ashfall_displayName', displayName);
+      // Immediately save to cloud now that we have a real account
+      this.saveToCloud(false);
+      this.syncProfile();
+      this.startInboxListener();
+      // Start periodic auto-save (linking doesn't re-trigger onAuthStateChanged)
+      if (!this._autoSaveInterval) {
+        this._autoSaveInterval = setInterval(() => {
+          if (game && game.state) { this.saveToCloud(true); this.syncProfile(); }
+        }, 60000);
+      }
       this.emit('authChanged', { user:this.user, displayName });
-      this.emit('notification', { type:'success', text:'Account created!' });
+      this.emit('notification', { type:'success', text:'Account created! Your progress is now saved to the cloud.' });
       return true;
     } catch(e) {
       this.emit('notification', { type:'danger', text:e.message });
@@ -110,7 +125,8 @@ class OnlineManager {
   async signIn(email, password) {
     try {
       await this.auth.signInWithEmailAndPassword(email, password);
-      this.emit('notification', { type:'success', text:'Signed in!' });
+      // onAuthStateChanged will handle cloud sync
+      this.emit('notification', { type:'success', text:'Signed in! Syncing cloud save...' });
       return true;
     } catch(e) {
       this.emit('notification', { type:'danger', text:e.message });
