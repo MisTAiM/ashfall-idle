@@ -51,6 +51,8 @@ const NAV = [
     {id:'account',label:'Account',icon:'npc'},
     {id:'character',label:'Character',icon:'shield'},
     {id:'guilds',label:'Guilds',icon:'faction'},
+    {id:'friends',label:'Friends',icon:'npc'},
+    {id:'inbox',label:'Inbox',icon:'scroll'},
     {id:'chat',label:'Global Chat',icon:'scroll'},
     {id:'pvp_arena',label:'PvP Arena',icon:'combat'},
     {id:'bounty_board',label:'Bounty Board',icon:'coin'},
@@ -262,6 +264,8 @@ class UI {
     else if (pageId === 'account') this.renderAccountPage(main);
     else if (pageId === 'character') this.renderCharacterPage(main);
     else if (pageId === 'guilds') this.renderGuildsPage(main);
+    else if (pageId === 'friends') this.renderFriendsPage(main);
+    else if (pageId === 'inbox') this.renderInboxPage(main);
     else if (pageId === 'chat') this.renderChatPage(main);
     else if (pageId === 'pvp_arena') this.renderPvPPage(main);
     else if (pageId === 'bounty_board') this.renderBountyPage(main);
@@ -2086,7 +2090,7 @@ class UI {
       html += `<div class="alignment-display">
         <div class="al-current">Your Guild: <strong>${this.escHtml(s.guild.name)}</strong></div>
         <div class="al-desc">Role: ${s.guild.role || 'Member'}</div>
-        <button class="btn btn-xs btn-danger" style="margin-top:8px" onclick="game.state.guild=null;ui.renderPage('guilds')">Leave Guild</button>
+        <button class="btn btn-xs btn-danger" style="margin-top:8px" onclick="online.leaveGuild().then(()=>ui.renderPage('guilds'))">Leave Guild</button>
       </div>`;
     } else {
       html += `<div class="settings-section">
@@ -2122,44 +2126,185 @@ class UI {
     el.innerHTML = html;
   }
 
-  createGuild() {
+  async createGuild() {
     const name = document.getElementById('guild-name')?.value?.trim();
     const tag = document.getElementById('guild-tag')?.value?.trim()?.toUpperCase();
     if (!name || name.length < 3) { this.toast({type:'warn',text:'Guild name must be 3+ characters.'}); return; }
     if (!tag || tag.length < 2 || tag.length > 5) { this.toast({type:'warn',text:'Tag must be 2-5 characters.'}); return; }
     if (game.state.gold < 1000) { this.toast({type:'warn',text:'Need 1000 gold to create a guild.'}); return; }
     game.state.gold -= 1000;
-    game.state.guild = { name, tag, role:'Leader', created:Date.now() };
-    // Store in Firestore if online
-    if (typeof online !== 'undefined' && online.isOnline && online.firestore && online.user) {
-      online.firestore.collection('guilds').doc(name.toLowerCase().replace(/\s+/g,'_')).set({
-        name, tag, leader:online.user.uid, leaderName:online.displayName,
-        members:[{uid:online.user.uid,name:online.displayName,role:'Leader'}],
-        created:firebase.firestore.FieldValue.serverTimestamp(),
-      }).catch(e => console.error('Guild create error:', e));
-    }
-    this.toast({type:'achievement',text:`Guild "${name}" [${tag}] created!`});
+    await online.createGuild(name, tag);
     this.renderPage('guilds');
   }
 
   async joinGuild() {
     const name = document.getElementById('guild-join')?.value?.trim();
     if (!name) return;
-    if (typeof online !== 'undefined' && online.isOnline && online.firestore) {
-      try {
-        const snap = await online.firestore.collection('guilds').where('name','==',name).limit(1).get();
-        if (snap.empty) { this.toast({type:'warn',text:'Guild not found.'}); return; }
-        const doc = snap.docs[0];
-        const data = doc.data();
-        await doc.ref.update({ members: firebase.firestore.FieldValue.arrayUnion({uid:online.user.uid,name:online.displayName,role:'Member'}) });
-        game.state.guild = { name:data.name, tag:data.tag, role:'Member' };
-        this.toast({type:'success',text:`Joined ${data.name} [${data.tag}]!`});
-        this.renderPage('guilds');
-      } catch(e) { this.toast({type:'danger',text:'Error joining guild.'}); }
-    }
+    await online.joinGuild(name);
+    this.renderPage('guilds');
   }
 
   // ── ACCOUNT PAGE ────────────────────────────────────────
+  renderFriendsPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    let html = this.header('Friends','npc','Manage your friends list. Send requests, chat privately.',null);
+    if (!isOnline || !online.user || online.user.isAnonymous) {
+      html += '<div class="bank-empty">Create an account to use friends.</div>';
+      el.innerHTML = html; return;
+    }
+    // Send request
+    html += `<div class="settings-section">
+      <h3>Send Friend Request</h3>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="friend-name" class="chat-input-v2" placeholder="Player name..." style="flex:1">
+        <button class="btn btn-sm" onclick="online.sendFriendRequest(document.getElementById('friend-name').value.trim()).then(()=>ui.renderPage('friends'))">Send Request</button>
+      </div>
+    </div>`;
+    // Pending requests
+    html += '<h2 class="section-title">Pending Requests</h2><div id="friend-requests"><div class="bank-empty">Loading...</div></div>';
+    // Friends list
+    html += '<h2 class="section-title">Your Friends</h2><div id="friends-list"><div class="bank-empty">Loading...</div></div>';
+    el.innerHTML = html;
+    this._loadFriendsData();
+  }
+
+  async _loadFriendsData() {
+    // Load pending requests
+    const reqContainer = document.getElementById('friend-requests');
+    if (reqContainer) {
+      const requests = await online.getFriendRequests();
+      if (requests.length === 0) {
+        reqContainer.innerHTML = '<div class="bank-empty">No pending requests.</div>';
+      } else {
+        reqContainer.innerHTML = requests.map(r => `<div class="bz-row">
+          <span class="bz-item">${this.escHtml(r.fromName)}</span>
+          <span><button class="btn btn-xs" onclick="online.acceptFriendRequest('${r.id}','${r.from}','${this.escHtml(r.fromName)}').then(()=>ui.renderPage('friends'))">Accept</button>
+          <button class="btn btn-xs btn-danger" onclick="online.rejectFriendRequest('${r.id}').then(()=>ui.renderPage('friends'))">Reject</button></span>
+        </div>`).join('');
+      }
+    }
+    // Load friends
+    const listContainer = document.getElementById('friends-list');
+    if (listContainer) {
+      const friends = await online.getFriends();
+      if (friends.length === 0) {
+        listContainer.innerHTML = '<div class="bank-empty">No friends yet. Send a request above.</div>';
+      } else {
+        listContainer.innerHTML = '<div class="friends-grid">' + friends.map(f => `<div class="friend-card">
+          <span class="fc-name">${this.escHtml(f.name)}</span>
+          <div class="fc-btns">
+            <button class="btn btn-xs" onclick="ui.openDM('${f.uid}','${this.escHtml(f.name)}')">Message</button>
+            <button class="btn btn-xs btn-danger" onclick="online.removeFriend('${f.uid}').then(()=>ui.renderPage('friends'))">Remove</button>
+          </div>
+        </div>`).join('') + '</div>';
+      }
+    }
+  }
+
+  openDM(uid, name) {
+    this._dmTarget = { uid, name };
+    this.renderPage('inbox');
+  }
+
+  renderInboxPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    let html = this.header('Inbox','scroll','Private messages and notifications.',null);
+    if (!isOnline || !online.user || online.user.isAnonymous) {
+      html += '<div class="bank-empty">Create an account to use inbox.</div>';
+      el.innerHTML = html; return;
+    }
+    // Active DM conversation
+    if (this._dmTarget) {
+      const t = this._dmTarget;
+      html += `<div class="dm-section">
+        <div class="dm-header">
+          <span>Conversation with <strong>${this.escHtml(t.name)}</strong></span>
+          <button class="btn btn-xs" onclick="ui._dmTarget=null;ui.renderPage('inbox')">Back to Inbox</button>
+        </div>
+        <div class="dm-messages" id="dm-messages"><div class="bank-empty">Loading...</div></div>
+        <div class="dm-input">
+          <input type="text" id="dm-text" class="chat-input-v2" placeholder="Type a message..." maxlength="500" style="flex:1" onkeydown="if(event.key==='Enter')ui.sendDM()">
+          <button class="btn btn-sm" onclick="ui.sendDM()">Send</button>
+        </div>
+      </div>`;
+      el.innerHTML = html;
+      this._loadDMMessages(t.uid);
+      return;
+    }
+    // Inbox tools
+    html += `<div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-sm btn-danger" onclick="online.clearInbox().then(()=>ui.renderPage('inbox'))">Clear All</button>
+    </div>`;
+    // Conversations
+    html += '<h2 class="section-title">Recent Conversations</h2><div id="inbox-convos"><div class="bank-empty">Loading...</div></div>';
+    // Notifications
+    html += '<h2 class="section-title">Notifications</h2><div id="inbox-notifs"><div class="bank-empty">Loading...</div></div>';
+    el.innerHTML = html;
+    this._loadInboxData();
+  }
+
+  async _loadInboxData() {
+    // Load conversations
+    const convoContainer = document.getElementById('inbox-convos');
+    if (convoContainer) {
+      const convos = await online.getConversationList();
+      if (convos.length === 0) {
+        convoContainer.innerHTML = '<div class="bank-empty">No conversations. Message a friend to start.</div>';
+      } else {
+        convoContainer.innerHTML = convos.map(c => {
+          const otherUid = c.participants.find(p => p !== online.user.uid);
+          const otherName = c.participantNames?.[otherUid] || 'Unknown';
+          return `<div class="inbox-convo" onclick="ui.openDM('${otherUid}','${this.escHtml(otherName)}')">
+            <span class="ic-name">${this.escHtml(otherName)}</span>
+            <span class="ic-preview">${this.escHtml(c.lastMessage||'')}</span>
+            <span class="ic-arrow">&rarr;</span>
+          </div>`;
+        }).join('');
+      }
+    }
+    // Load notifications
+    const notifContainer = document.getElementById('inbox-notifs');
+    if (notifContainer) {
+      const items = await online.getInbox();
+      const notifs = items.filter(i => i.type !== 'message');
+      if (notifs.length === 0) {
+        notifContainer.innerHTML = '<div class="bank-empty">No notifications.</div>';
+      } else {
+        notifContainer.innerHTML = notifs.map(n => `<div class="inbox-notif ${n.read?'':'inbox-unread'}">
+          <span>${this.escHtml(n.fromName||'System')}: ${this.escHtml(n.preview||n.type)}</span>
+          ${!n.read?`<button class="btn btn-xs" onclick="online.markInboxRead('${n.id}').then(()=>ui.renderPage('inbox'))">Mark Read</button>`:''}
+        </div>`).join('');
+      }
+    }
+  }
+
+  async _loadDMMessages(targetUid) {
+    const container = document.getElementById('dm-messages');
+    if (!container) return;
+    const msgs = await online.getConversation(targetUid);
+    if (msgs.length === 0) {
+      container.innerHTML = '<div class="bank-empty">No messages yet. Say hello!</div>';
+    } else {
+      container.innerHTML = msgs.map(m => {
+        const isMe = m.sender === online.user?.uid;
+        return `<div class="dm-msg ${isMe?'dm-mine':'dm-theirs'}">
+          <span class="dm-sender">${isMe?'You':this.escHtml(m.senderName)}</span>
+          <span class="dm-text">${this.escHtml(m.text)}</span>
+        </div>`;
+      }).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
+  async sendDM() {
+    if (!this._dmTarget) return;
+    const input = document.getElementById('dm-text');
+    if (!input || !input.value.trim()) return;
+    await online.sendPrivateMessage(this._dmTarget.uid, this._dmTarget.name, input.value.trim());
+    input.value = '';
+    this._loadDMMessages(this._dmTarget.uid);
+  }
+
   renderAccountPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
     const user = isOnline ? online.user : null;

@@ -65,6 +65,8 @@ class OnlineManager {
           }
           // Set wilderness presence
           this._updatePresence();
+          // Start inbox real-time listener
+          if (!user.isAnonymous) this.startInboxListener();
           this.emit('authChanged', { user, displayName:this.displayName });
         } else {
           if (this._autoSaveInterval) clearInterval(this._autoSaveInterval);
@@ -669,6 +671,268 @@ class OnlineManager {
       game.state.stats.goldEarned += bounty.amount;
       this.emit('notification', { type:'achievement', text:`Claimed bounty on ${bounty.targetName} for ${bounty.amount} gold!` });
     } catch(e) { console.error('Claim bounty error:', e); }
+  }
+
+  // ── GUILDS ─────────────────────────────────────────────
+  async createGuild(name, tag) {
+    if (!this.isOnline || !this.user) return false;
+    try {
+      const ref = await this.firestore.collection('guilds').add({
+        name, tag, leader: this.user.uid, leaderName: this.displayName,
+        members: [{ uid:this.user.uid, name:this.displayName, role:'Leader', joined:Date.now() }],
+        created: firebase.firestore.FieldValue.serverTimestamp(),
+        memberCount: 1,
+      });
+      game.state.guild = { id:ref.id, name, tag, role:'Leader' };
+      this.emit('notification',{type:'success',text:`Guild "${name}" [${tag}] created!`});
+      return true;
+    } catch(e) { this.emit('notification',{type:'danger',text:'Guild error: '+e.message}); return false; }
+  }
+
+  async joinGuild(guildName) {
+    if (!this.isOnline || !this.user) return false;
+    try {
+      const snap = await this.firestore.collection('guilds').where('name','==',guildName).limit(1).get();
+      if (snap.empty) { this.emit('notification',{type:'warn',text:'Guild not found.'}); return false; }
+      const doc = snap.docs[0];
+      const data = doc.data();
+      if (data.members.length >= 50) { this.emit('notification',{type:'warn',text:'Guild is full (50 max).'}); return false; }
+      data.members.push({ uid:this.user.uid, name:this.displayName, role:'Member', joined:Date.now() });
+      await doc.ref.update({ members:data.members, memberCount:data.members.length });
+      game.state.guild = { id:doc.id, name:data.name, tag:data.tag, role:'Member' };
+      this.emit('notification',{type:'success',text:`Joined guild "${data.name}"!`});
+      return true;
+    } catch(e) { this.emit('notification',{type:'danger',text:'Join error: '+e.message}); return false; }
+  }
+
+  async leaveGuild() {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    try {
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const doc = await ref.get();
+      if (doc.exists) {
+        const data = doc.data();
+        data.members = data.members.filter(m => m.uid !== this.user.uid);
+        if (data.members.length === 0) { await ref.delete(); }
+        else { await ref.update({ members:data.members, memberCount:data.members.length }); }
+      }
+      const guildName = game.state.guild.name;
+      game.state.guild = null;
+      this.emit('notification',{type:'info',text:`Left guild "${guildName}".`});
+    } catch(e) { console.error('Leave guild error:', e); }
+  }
+
+  // ── FRIENDS ────────────────────────────────────────────
+  async sendFriendRequest(targetName) {
+    if (!this.isOnline || !this.user || this.user.isAnonymous) return;
+    try {
+      // Find target player by name
+      const snap = await this.firestore.collection('players').where('displayName','==',targetName).limit(1).get();
+      if (snap.empty) { this.emit('notification',{type:'warn',text:`Player "${targetName}" not found.`}); return; }
+      const targetDoc = snap.docs[0];
+      const targetUid = targetDoc.id;
+      if (targetUid === this.user.uid) { this.emit('notification',{type:'warn',text:"Can't friend yourself."}); return; }
+      // Check not already friends
+      const myFriends = await this.getFriends();
+      if (myFriends.some(f => f.uid === targetUid)) { this.emit('notification',{type:'warn',text:'Already friends.'}); return; }
+      // Send request to target's inbox
+      await this.firestore.collection('friend_requests').doc(targetUid).collection('pending').add({
+        from: this.user.uid,
+        fromName: this.displayName,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'pending',
+      });
+      this.emit('notification',{type:'success',text:`Friend request sent to ${targetName}!`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Friend request failed: '+e.message}); }
+  }
+
+  async getFriendRequests() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const snap = await this.firestore.collection('friend_requests').doc(this.user.uid).collection('pending').where('status','==','pending').get();
+      const requests = [];
+      snap.forEach(doc => requests.push({ id:doc.id, ...doc.data() }));
+      return requests;
+    } catch(e) { return []; }
+  }
+
+  async acceptFriendRequest(requestId, fromUid, fromName) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      // Add to my friends list
+      const myRef = this.firestore.collection('friends').doc(this.user.uid);
+      const myDoc = await myRef.get();
+      const myFriends = myDoc.exists ? (myDoc.data().list || []) : [];
+      myFriends.push({ uid:fromUid, name:fromName, since:Date.now() });
+      await myRef.set({ list:myFriends });
+      // Add me to their friends list
+      const theirRef = this.firestore.collection('friends').doc(fromUid);
+      const theirDoc = await theirRef.get();
+      const theirFriends = theirDoc.exists ? (theirDoc.data().list || []) : [];
+      theirFriends.push({ uid:this.user.uid, name:this.displayName, since:Date.now() });
+      await theirRef.set({ list:theirFriends });
+      // Remove the request
+      await this.firestore.collection('friend_requests').doc(this.user.uid).collection('pending').doc(requestId).delete();
+      this.emit('notification',{type:'success',text:`${fromName} added as friend!`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Accept failed: '+e.message}); }
+  }
+
+  async rejectFriendRequest(requestId) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      await this.firestore.collection('friend_requests').doc(this.user.uid).collection('pending').doc(requestId).delete();
+      this.emit('notification',{type:'info',text:'Friend request rejected.'});
+    } catch(e) { console.error(e); }
+  }
+
+  async removeFriend(friendUid) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      // Remove from my list
+      const myRef = this.firestore.collection('friends').doc(this.user.uid);
+      const myDoc = await myRef.get();
+      if (myDoc.exists) {
+        const list = (myDoc.data().list||[]).filter(f => f.uid !== friendUid);
+        await myRef.set({ list });
+      }
+      // Remove me from their list
+      const theirRef = this.firestore.collection('friends').doc(friendUid);
+      const theirDoc = await theirRef.get();
+      if (theirDoc.exists) {
+        const list = (theirDoc.data().list||[]).filter(f => f.uid !== this.user.uid);
+        await theirRef.set({ list });
+      }
+      this.emit('notification',{type:'info',text:'Friend removed.'});
+    } catch(e) { console.error(e); }
+  }
+
+  async getFriends() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const doc = await this.firestore.collection('friends').doc(this.user.uid).get();
+      return doc.exists ? (doc.data().list || []) : [];
+    } catch(e) { return []; }
+  }
+
+  // ── PRIVATE MESSAGES ───────────────────────────────────
+  _getConvoId(uid1, uid2) {
+    return [uid1, uid2].sort().join('_');
+  }
+
+  async sendPrivateMessage(targetUid, targetName, text) {
+    if (!this.isOnline || !this.user || !text.trim()) return;
+    const convoId = this._getConvoId(this.user.uid, targetUid);
+    try {
+      // Create/update conversation metadata
+      await this.firestore.collection('messages').doc(convoId).set({
+        participants: [this.user.uid, targetUid],
+        participantNames: { [this.user.uid]:this.displayName, [targetUid]:targetName },
+        lastMessage: text.substring(0, 100),
+        lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        lastSender: this.user.uid,
+      }, { merge:true });
+      // Add the message
+      await this.firestore.collection('messages').doc(convoId).collection('msgs').add({
+        sender: this.user.uid,
+        senderName: this.displayName,
+        text: text.trim().substring(0, 500),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        read: false,
+      });
+      // Add to target's inbox
+      await this.firestore.collection('inbox').doc(targetUid).collection('items').add({
+        type: 'message',
+        from: this.user.uid,
+        fromName: this.displayName,
+        preview: text.substring(0, 80),
+        convoId,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        read: false,
+      });
+    } catch(e) { this.emit('notification',{type:'danger',text:'Message failed: '+e.message}); }
+  }
+
+  async getConversation(targetUid) {
+    if (!this.isOnline || !this.user) return [];
+    const convoId = this._getConvoId(this.user.uid, targetUid);
+    try {
+      const snap = await this.firestore.collection('messages').doc(convoId).collection('msgs').orderBy('timestamp','asc').limit(100).get();
+      const msgs = [];
+      snap.forEach(doc => msgs.push({ id:doc.id, ...doc.data() }));
+      return msgs;
+    } catch(e) { return []; }
+  }
+
+  async getConversationList() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const snap = await this.firestore.collection('messages')
+        .where('participants','array-contains',this.user.uid)
+        .orderBy('lastTimestamp','desc').limit(20).get();
+      const convos = [];
+      snap.forEach(doc => convos.push({ id:doc.id, ...doc.data() }));
+      return convos;
+    } catch(e) { return []; }
+  }
+
+  // ── INBOX / NOTIFICATIONS ──────────────────────────────
+  async getInbox() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const snap = await this.firestore.collection('inbox').doc(this.user.uid)
+        .collection('items').orderBy('timestamp','desc').limit(50).get();
+      const items = [];
+      snap.forEach(doc => items.push({ id:doc.id, ...doc.data() }));
+      return items;
+    } catch(e) { return []; }
+  }
+
+  async getUnreadCount() {
+    if (!this.isOnline || !this.user) return 0;
+    try {
+      const snap = await this.firestore.collection('inbox').doc(this.user.uid)
+        .collection('items').where('read','==',false).get();
+      return snap.size;
+    } catch(e) { return 0; }
+  }
+
+  async markInboxRead(itemId) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      await this.firestore.collection('inbox').doc(this.user.uid).collection('items').doc(itemId).update({ read:true });
+    } catch(e) { console.error(e); }
+  }
+
+  async clearInbox() {
+    if (!this.isOnline || !this.user) return;
+    try {
+      const snap = await this.firestore.collection('inbox').doc(this.user.uid).collection('items').get();
+      const batch = this.firestore.batch();
+      snap.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    } catch(e) { console.error(e); }
+  }
+
+  // Start listening for real-time inbox updates
+  startInboxListener() {
+    if (!this.isOnline || !this.user || this._inboxUnsub) return;
+    this._inboxUnsub = this.firestore.collection('inbox').doc(this.user.uid)
+      .collection('items').where('read','==',false)
+      .onSnapshot(snap => {
+        const count = snap.size;
+        this.emit('inboxUpdate', { unreadCount:count });
+        // Show notification for new messages
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const d = change.doc.data();
+            if (d.type === 'message') {
+              this.emit('notification',{type:'info',text:`Message from ${d.fromName}: ${d.preview}`});
+            } else if (d.type === 'friend_request') {
+              this.emit('notification',{type:'info',text:`Friend request from ${d.fromName}`});
+            }
+          }
+        });
+      });
   }
 
   // ── EVENTS ─────────────────────────────────────────────
