@@ -1920,3 +1920,23 @@ console.log('[Ashfall] v5.9 loaded: All monster art complete, new dungeons');
 console.log('  Monster art:', Object.keys(GAME_DATA.monsterArt).length);
 console.log('  Dungeons:', GAME_DATA.dungeons.length);
 console.log('  World Bosses:', GAME_DATA.worldBosses.length);
+
+// ── MULTI-MOB ENCOUNTERS ─────────────────────────────────
+// These are special encounters where multiple mobs attack at once.
+// 3+ mobs REQUIRE prayer protection or you take +50% damage.
+GAME_DATA.multiMobEncounters = [
+  {id:'goblin_ambush',     name:'Goblin Ambush',      mobs:['goblin','goblin','goblin'],      levelReq:10, desc:'Three goblins jump you at once!'},
+  {id:'bandit_gang',       name:'Bandit Gang',        mobs:['bandit','bandit','shadow_archer'], levelReq:20, desc:'A gang of bandits and their archer. Use prayers!'},
+  {id:'troll_pack',        name:'Troll Pack',         mobs:['troll','troll'],                  levelReq:30, desc:'Two trolls charge you simultaneously.'},
+  {id:'demon_invasion',    name:'Demon Invasion',     mobs:['lesser_demon','lesser_demon','dark_mage'], levelReq:50, desc:'A rift tears open. Demons pour through. PRAYERS REQUIRED.'},
+  {id:'dragon_nest',       name:'Dragon Nest',        mobs:['dragon','dragon'],                levelReq:70, desc:'You disturb a nesting pair of dragons.'},
+  {id:'void_rift',         name:'Void Rift',          mobs:['void_walker','void_walker','abyssal_horror'], levelReq:85, desc:'The void tears open. THREE abominations emerge. MAXIMUM DANGER.'},
+  {id:'ashfall_apocalypse', name:'Ashfall Apocalypse', mobs:['ash_guardian','ashfall_titan','corrupted_golem'], levelReq:90, desc:'The citadel sends its champions. The ultimate multi-mob fight.'},
+];
+
+// Add multi-mob button to some combat areas
+GAME_DATA.combatAreas.forEach(area => {
+  area.multiMobs = GAME_DATA.multiMobEncounters.filter(e => e.levelReq <= area.levelReq + 10 && e.levelReq >= area.levelReq - 10);
+});
+
+console.log('[Ashfall] Multi-mob encounters:', GAME_DATA.multiMobEncounters.length);

@@ -30,13 +30,44 @@ class OnlineManager {
       this.firestore = firebase.firestore();
       this.isOnline = true;
 
-      this.auth.onAuthStateChanged((user) => {
+      this.auth.onAuthStateChanged(async (user) => {
         this.user = user;
         if (user) {
           this.displayName = user.displayName || localStorage.getItem('ashfall_displayName') || ('Survivor_' + user.uid.substring(0, 6));
           this.loadProfile();
+          // Auto cloud sync for non-anonymous users
+          if (!user.isAnonymous && game && game.state) {
+            try {
+              const cloudSave = await this.loadFromCloud(true); // silent mode
+              if (cloudSave && cloudSave._cloudSaveTime) {
+                const localTime = game.state.lastSave || 0;
+                if (cloudSave._cloudSaveTime > localTime) {
+                  // Cloud is newer - ask to load
+                  game.state = game.migrateSave(cloudSave);
+                  game.save();
+                  this.emit('notification', { type:'success', text:'Cloud save loaded (newer than local).' });
+                } else {
+                  // Local is newer - push to cloud
+                  this.saveToCloud(true); // silent
+                }
+              }
+            } catch(e) { console.log('Auto-sync check:', e.message); }
+          }
+          // Start periodic auto-save (every 60s)
+          if (!user.isAnonymous) {
+            if (this._autoSaveInterval) clearInterval(this._autoSaveInterval);
+            this._autoSaveInterval = setInterval(() => {
+              if (game && game.state) {
+                this.saveToCloud(true);
+                this.syncProfile();
+              }
+            }, 60000);
+          }
+          // Set wilderness presence
+          this._updatePresence();
           this.emit('authChanged', { user, displayName:this.displayName });
         } else {
+          if (this._autoSaveInterval) clearInterval(this._autoSaveInterval);
           this.signInAnonymously();
         }
       });
@@ -236,32 +267,84 @@ class OnlineManager {
   }
 
   // ── CLOUD SAVES ────────────────────────────────────────
-  async saveToCloud() {
-    if (!this.isOnline || !this.user || !game) return;
+  async saveToCloud(silent) {
+    if (!this.isOnline || !this.user || !game || this.user.isAnonymous) return;
     try {
       const save = JSON.parse(JSON.stringify(game.state));
       save._cloudSaveTime = Date.now();
-      await this.firestore.collection('players').doc(this.user.uid).set({
+      save.lastSave = Date.now();
+      await this.firestore.collection('saves').doc(this.user.uid).set({
         save,
+        uid: this.user.uid,
         displayName: this.displayName,
         lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
-      }, { merge: true });
-      this.emit('notification', { type:'success', text:'Saved to cloud.' });
+      });
+      // Also update player profile
+      this.syncProfile();
+      if (!silent) this.emit('notification', { type:'success', text:'Saved to cloud.' });
     } catch(e) {
-      this.emit('notification', { type:'danger', text:'Cloud save failed: ' + e.message });
+      if (!silent) this.emit('notification', { type:'danger', text:'Cloud save failed: ' + e.message });
     }
   }
 
-  async loadFromCloud() {
+  async loadFromCloud(silent) {
     if (!this.isOnline || !this.user) return null;
     try {
-      const doc = await this.firestore.collection('players').doc(this.user.uid).get();
+      const doc = await this.firestore.collection('saves').doc(this.user.uid).get();
       if (doc.exists && doc.data().save) {
-        this.emit('notification', { type:'success', text:'Loaded from cloud.' });
+        if (!silent) this.emit('notification', { type:'success', text:'Loaded from cloud.' });
         return doc.data().save;
       }
     } catch(e) { console.error('Cloud load error:', e); }
     return null;
+  }
+
+  // ── WILDERNESS PRESENCE ────────────────────────────────
+  // Track which zone+monster each player is fighting in real-time
+  async _updatePresence() {
+    if (!this.isOnline || !this.user || this.user.isAnonymous) return;
+    // Use Realtime Database for presence (faster than Firestore)
+    this._presenceRef = this.db.ref('presence/' + this.user.uid);
+    this._presenceRef.onDisconnect().remove();
+    this._presenceRef.set({
+      uid: this.user.uid,
+      name: this.displayName,
+      combatLevel: game ? game.getCombatLevel() : 1,
+      online: true,
+      zone: null,
+      monster: null,
+      lastUpdate: firebase.database.ServerValue.TIMESTAMP,
+    });
+  }
+
+  async setWildernessPresence(zoneId, monsterId) {
+    if (!this._presenceRef) return;
+    await this._presenceRef.update({
+      zone: zoneId,
+      monster: monsterId,
+      combatLevel: game ? game.getCombatLevel() : 1,
+      lastUpdate: firebase.database.ServerValue.TIMESTAMP,
+    });
+  }
+
+  async clearWildernessPresence() {
+    if (!this._presenceRef) return;
+    await this._presenceRef.update({ zone: null, monster: null });
+  }
+
+  async getPlayersInZone(zoneId) {
+    if (!this.isOnline) return [];
+    try {
+      const snap = await this.db.ref('presence').orderByChild('zone').equalTo(zoneId).once('value');
+      const players = [];
+      snap.forEach(child => {
+        const d = child.val();
+        if (d.uid !== this.user?.uid && d.online) {
+          players.push(d);
+        }
+      });
+      return players;
+    } catch(e) { return []; }
   }
 
   async syncProfile() {

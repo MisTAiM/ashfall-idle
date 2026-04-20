@@ -91,7 +91,8 @@ class GameEngine {
     };
   }
 
-  migrateSave() {
+  migrateSave(saveData) {
+    if (saveData) { this.state = saveData; }
     const s = this.state; if (!s) return;
     for (const id of Object.keys(GAME_DATA.skills)) {
       if (!s.skills[id]) s.skills[id] = { level:1, xp:0 };
@@ -415,8 +416,11 @@ class GameEngine {
     const c = this.state.combat;
     c.active = false; c.area = null; c.monster = null; c.dungeon = null; c.worldBoss = null;
     c._isWilderness = false; c._pvpTriggered = false; c._isDuel = false; c._teleBlocked = 0;
+    c._multiMob = false; c._requiresPrayer = false; c._pvpRealPlayer = null;
     c.statusEffects = { player:{}, monster:{} };
     c.playerHp = this.getMaxHp();
+    // Clear wilderness presence
+    if (typeof online !== 'undefined' && online.isOnline) online.clearWildernessPresence();
     this.emit('combatStop');
   }
 
@@ -579,6 +583,19 @@ class GameEngine {
       if (monster.style === 'melee' && protMelee) dmg = Math.max(1, Math.floor(dmg * (100 - protMelee) / 100));
       if (monster.style === 'ranged' && protRanged) dmg = Math.max(1, Math.floor(dmg * (100 - protRanged) / 100));
       if (monster.style === 'magic' && protMagic) dmg = Math.max(1, Math.floor(dmg * (100 - protMagic) / 100));
+      // Multi-mob penalty: +50% damage if 3+ mobs and NO prayer active
+      if (this.state.combat._requiresPrayer && this.state.activePrayers.length === 0) {
+        dmg = Math.floor(dmg * 1.5);
+      }
+      // Multi-mob: each mob attacks (simulate multiple hits)
+      if (monster._multiMob && monster._mobCount > 1) {
+        // Additional hits from extra mobs (reduced damage)
+        for (let i = 1; i < monster._mobCount; i++) {
+          const extraDmg = Math.max(1, Math.floor(this.randInt(1, Math.floor(monster.maxHit * 0.6)) * (100 - dr) / 100));
+          this.state.combat.playerHp -= extraDmg;
+          this.emit('combatHit', { who:'monster', dmg:extraDmg });
+        }
+      }
       this.state.combat.playerHp -= dmg;
       this.emit('combatHit', { who:'monster', dmg });
     }
@@ -825,20 +842,45 @@ class GameEngine {
     this.stopCombat();
   }
 
-  // Start wilderness combat with PvP chance
-  startWildernessCombat(zoneId, monsterId) {
+  // Start wilderness combat with real PvP presence checking
+  async startWildernessCombat(zoneId, monsterId) {
     const zone = GAME_DATA.wildernessLevels.find(z=>z.id===zoneId);
     if (!zone) return;
     const cb = this.getCombatLevel();
     if (cb < zone.minCb) { this.emit('notification',{type:'warn',text:`Need combat level ${zone.minCb}+`}); return; }
 
-    // PvP chance roll
-    if (typeof online !== 'undefined' && online.isOnline && Math.random() < zone.pvpChance) {
-      // Trigger wilderness PvP instead of monster fight
-      this.state.combat._isWilderness = true;
-      this.state.combat._pvpTriggered = true;
+    // Set our presence in this zone
+    if (typeof online !== 'undefined' && online.isOnline) {
+      online.setWildernessPresence(zoneId, monsterId);
+
+      // Check for REAL players in the same zone fighting the same monster
+      const others = await online.getPlayersInZone(zoneId);
+      const sameMonster = others.filter(p => p.monster === monsterId);
+
+      if (sameMonster.length > 0 && Math.random() < zone.pvpChance * 2) {
+        // Real PvP encounter with a player in the same zone!
+        const opponent = sameMonster[Math.floor(Math.random() * sameMonster.length)];
+        this.emit('notification',{type:'danger',text:`${opponent.name} (Cb ${opponent.combatLevel}) attacks you in the Wilderness!`});
+        const fakeMonster = {
+          id:'pvp_opponent', name:opponent.name, hp: Math.floor(this.getMaxHp() * (0.7 + Math.random() * 0.5)),
+          maxHit: Math.floor(opponent.combatLevel * 0.8 + 10),
+          attackSpeed: 1.8 + Math.random() * 0.6, combatLevel: opponent.combatLevel,
+          style: ['melee','ranged','magic'][Math.floor(Math.random()*3)],
+          evasion:{melee:opponent.combatLevel,ranged:opponent.combatLevel,magic:opponent.combatLevel},
+          xp: opponent.combatLevel * 50, gold:{min:50,max:opponent.combatLevel*10}, alignment:'CE',
+          drops:[{item:'bones',qty:1,chance:1.0}]
+        };
+        GAME_DATA.monsters.pvp_opponent = fakeMonster;
+        this.startCombat(null, 'pvp_opponent');
+        this.state.combat._isWilderness = true;
+        this.state.combat._pvpRealPlayer = opponent.name;
+        return;
+      }
+    }
+
+    // Normal PvP chance (simulated opponent)
+    if (Math.random() < zone.pvpChance) {
       this.emit('notification',{type:'danger',text:'A hostile player attacks you in the Wilderness!'});
-      // Simulate PvP opponent as a strong monster scaled to your level
       const fakeMonster = {
         id:'pvp_opponent', name:'Wilderness PKer', hp: Math.floor(this.getMaxHp() * 0.9),
         maxHit: Math.floor(this.state.skills.strength.level * 0.8),
@@ -856,6 +898,47 @@ class GameEngine {
 
     this.startCombat(null, monsterId);
     this.state.combat._isWilderness = true;
+  }
+
+  // ── MULTI-MOB ENCOUNTERS ───────────────────────────────
+  // Some areas/dungeons throw multiple mobs at you simultaneously
+  startMultiMobCombat(mobIds) {
+    this.stopSkill();
+    if (!mobIds || mobIds.length === 0) return;
+    // Combine all mobs into one super-mob
+    let totalHp = 0, maxHit = 0, totalXp = 0;
+    const drops = [];
+    const names = [];
+    for (const mId of mobIds) {
+      const m = GAME_DATA.monsters[mId];
+      if (!m) continue;
+      totalHp += m.hp;
+      maxHit = Math.max(maxHit, m.maxHit);
+      totalXp += m.xp;
+      names.push(m.name);
+      for (const d of (m.drops||[])) drops.push(d);
+    }
+    // Multi-mob attacks faster and hits harder
+    const combined = {
+      id:'multi_mob', name:names.join(' + '),
+      hp: totalHp, maxHit: Math.floor(maxHit * 1.3),
+      attackSpeed: 1.6, // faster than normal
+      combatLevel: Math.max(...mobIds.map(id=>GAME_DATA.monsters[id]?.combatLevel||1)),
+      style: GAME_DATA.monsters[mobIds[0]]?.style || 'melee',
+      evasion: GAME_DATA.monsters[mobIds[0]]?.evasion || {melee:30,ranged:30,magic:30},
+      xp: totalXp, gold:{min:0,max:0}, alignment:'CE',
+      drops, _multiMob:true, _mobCount:mobIds.length,
+    };
+    GAME_DATA.monsters.multi_mob = combined;
+    this._setupCombat(combined, 'multi_mob');
+    this.state.combat._multiMob = true;
+    this.state.combat._requiresPrayer = mobIds.length >= 3; // 3+ mobs forces prayer use
+    this.emit('combatStart', { monster:'multi_mob' });
+    if (mobIds.length >= 3) {
+      this.emit('notification',{type:'danger',text:`${mobIds.length} enemies attack! Use Protection Prayers or you WILL die.`});
+    } else {
+      this.emit('notification',{type:'warn',text:`${mobIds.length} enemies attack simultaneously!`});
+    }
   }
 
   // ── HELPERS ────────────────────────────────────────────

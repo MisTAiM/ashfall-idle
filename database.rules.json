@@ -1,0 +1,17 @@
+{
+  "rules": {
+    "chat": {
+      ".read": true,
+      ".write": "auth != null",
+      "$messageId": {
+        ".validate": "newData.hasChildren(['uid', 'text', 'timestamp'])"
+      }
+    },
+    "presence": {
+      "$uid": {
+        ".read": true,
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}

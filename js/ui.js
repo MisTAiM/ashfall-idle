@@ -669,7 +669,21 @@ class UI {
             <span class="mb-info">Lv${m.combatLevel} | ${m.hp}hp | ${m.style}</span>
           </button>`;
         }
-        html += '</div></div>';
+        html += '</div>';
+        // Multi-mob encounters for this area
+        const multiMobs = (GAME_DATA.multiMobEncounters||[]).filter(e => e.levelReq >= area.levelReq - 10 && e.levelReq <= area.levelReq + 15);
+        if (multiMobs.length > 0 && !locked) {
+          html += '<div class="multi-mob-section"><div class="mm-label">Multi-Mob Encounters</div>';
+          for (const enc of multiMobs) {
+            const encLocked = this.engine.getCombatLevel() < enc.levelReq;
+            html += `<button class="monster-btn-v2 mm-btn ${encLocked?'locked':''}" ${encLocked?'disabled':''} onclick="game.startMultiMobCombat(${JSON.stringify(enc.mobs).replace(/"/g,'&quot;')})">
+              <span class="mb-name mm-name">${enc.name} <small>(${enc.mobs.length} mobs)</small></span>
+              <span class="mb-info">${enc.desc}</span>
+            </button>`;
+          }
+          html += '</div>';
+        }
+        html += '</div>';
       }
       html += '</div>';
     }
