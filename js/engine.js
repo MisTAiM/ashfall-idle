@@ -21,6 +21,17 @@ class GameEngine {
   init() {
     this.state = this.loadSave() || this.newGame();
     this.migrateSave();
+    // Reset stale combat (monster from previous session may not exist)
+    if (this.state.combat.active && this.state.combat.monster) {
+      const mon = GAME_DATA.monsters[this.state.combat.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===this.state.combat.monster);
+      if (!mon) {
+        console.log('[Ashfall] Resetting stale combat: monster', this.state.combat.monster, 'not found');
+        this.state.combat.active = false;
+        this.state.combat.monster = null;
+        this.state.combat.area = null;
+        this.state.combat.playerHp = this.getMaxHp();
+      }
+    }
     this.processOffline();
     this.startTick();
     this.autoSaveInterval = setInterval(() => {
@@ -392,10 +403,12 @@ class GameEngine {
     this.stopSkill();
     if (areaId) {
       const area = GAME_DATA.combatAreas.find(a => a.id === areaId);
-      if (!area || !area.monsters.includes(monsterId)) return;
+      if (!area) { this.emit('notification',{type:'warn',text:'Area not found.'}); return; }
+      if (!area.monsters.includes(monsterId)) { this.emit('notification',{type:'warn',text:'Monster not in this area.'}); return; }
       if (this.getCombatLevel() < area.levelReq) { this.emit('notification', { type:'warn', text:`Requires combat level ${area.levelReq}.` }); return; }
     }
-    const monster = GAME_DATA.monsters[monsterId]; if (!monster) return;
+    const monster = GAME_DATA.monsters[monsterId];
+    if (!monster) { this.emit('notification',{type:'warn',text:`Monster "${monsterId}" not found in game data.`}); return; }
     this._setupCombat(monster, monsterId);
     this.state.combat.area = areaId;
     this.emit('combatStart', { area:areaId, monster:monsterId });
@@ -450,8 +463,8 @@ class GameEngine {
     const c = this.state.combat;
     if (!c.active || !c.monster) return;
     const isWB = !!c.worldBoss;
-    const monster = isWB ? GAME_DATA.worldBosses.find(b=>b.id===c.monster) : GAME_DATA.monsters[c.monster];
-    if (!monster) return;
+    const monster = isWB ? (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster) : GAME_DATA.monsters[c.monster];
+    if (!monster) { this.stopCombat(); this.emit('notification',{type:'warn',text:'Combat ended: monster data unavailable.'}); return; }
     if (c.autoEat && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
     this._tickStatusEffects(c.statusEffects.monster, dt, 'monster');
     this._tickStatusEffects(c.statusEffects.player, dt, 'player');
@@ -982,38 +995,39 @@ class GameEngine {
   // Start wilderness combat with real PvP presence checking
   async startWildernessCombat(zoneId, monsterId) {
     const zone = GAME_DATA.wildernessLevels.find(z=>z.id===zoneId);
-    if (!zone) return;
+    if (!zone) { this.emit('notification',{type:'warn',text:'Zone not found.'}); return; }
     const cb = this.getCombatLevel();
     if (cb < zone.minCb) { this.emit('notification',{type:'warn',text:`Need combat level ${zone.minCb}+`}); return; }
 
-    // Set our presence in this zone
-    if (typeof online !== 'undefined' && online.isOnline) {
-      online.setWildernessPresence(zoneId, monsterId);
+    // Set our presence in this zone (non-blocking)
+    try {
+      if (typeof online !== 'undefined' && online.isOnline) {
+        online.setWildernessPresence(zoneId, monsterId);
 
-      // Check for REAL players in the same zone fighting the same monster
-      const others = await online.getPlayersInZone(zoneId);
-      const sameMonster = others.filter(p => p.monster === monsterId);
+        // Check for REAL players in the same zone fighting the same monster
+        const others = await online.getPlayersInZone(zoneId);
+        const sameMonster = others.filter(p => p.monster === monsterId);
 
-      if (sameMonster.length > 0 && Math.random() < zone.pvpChance * 2) {
-        // Real PvP encounter with a player in the same zone!
-        const opponent = sameMonster[Math.floor(Math.random() * sameMonster.length)];
-        this.emit('notification',{type:'danger',text:`${opponent.name} (Cb ${opponent.combatLevel}) attacks you in the Wilderness!`});
-        const fakeMonster = {
-          id:'pvp_opponent', name:opponent.name, hp: Math.floor(this.getMaxHp() * (0.7 + Math.random() * 0.5)),
-          maxHit: Math.floor(opponent.combatLevel * 0.8 + 10),
-          attackSpeed: 1.8 + Math.random() * 0.6, combatLevel: opponent.combatLevel,
-          style: ['melee','ranged','magic'][Math.floor(Math.random()*3)],
-          evasion:{melee:opponent.combatLevel,ranged:opponent.combatLevel,magic:opponent.combatLevel},
-          xp: opponent.combatLevel * 50, gold:{min:50,max:opponent.combatLevel*10}, alignment:'CE',
-          drops:[{item:'bones',qty:1,chance:1.0}]
-        };
-        GAME_DATA.monsters.pvp_opponent = fakeMonster;
-        this.startCombat(null, 'pvp_opponent');
-        this.state.combat._isWilderness = true;
-        this.state.combat._pvpRealPlayer = opponent.name;
-        return;
+        if (sameMonster.length > 0 && Math.random() < zone.pvpChance * 2) {
+          const opponent = sameMonster[Math.floor(Math.random() * sameMonster.length)];
+          this.emit('notification',{type:'danger',text:`${opponent.name} (Cb ${opponent.combatLevel}) attacks you in the Wilderness!`});
+          const fakeMonster = {
+            id:'pvp_opponent', name:opponent.name, hp: Math.floor(this.getMaxHp() * (0.7 + Math.random() * 0.5)),
+            maxHit: Math.floor(opponent.combatLevel * 0.8 + 10),
+            attackSpeed: 1.8 + Math.random() * 0.6, combatLevel: opponent.combatLevel,
+            style: ['melee','ranged','magic'][Math.floor(Math.random()*3)],
+            evasion:{melee:opponent.combatLevel,ranged:opponent.combatLevel,magic:opponent.combatLevel},
+            xp: opponent.combatLevel * 50, gold:{min:50,max:opponent.combatLevel*10}, alignment:'CE',
+            drops:[{item:'bones',qty:1,chance:1.0}]
+          };
+          GAME_DATA.monsters.pvp_opponent = fakeMonster;
+          this.startCombat(null, 'pvp_opponent');
+          this.state.combat._isWilderness = true;
+          this.state.combat._pvpRealPlayer = opponent.name;
+          return;
+        }
       }
-    }
+    } catch(e) { console.error('Wilderness online check failed:', e); }
 
     // Normal PvP chance (simulated opponent)
     if (Math.random() < zone.pvpChance) {
