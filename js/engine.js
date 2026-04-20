@@ -135,6 +135,7 @@ class GameEngine {
     if (!s.equipment.cape) s.equipment.cape = null;
     if (!s.equipment.gloves) s.equipment.gloves = null;
     if (!s.familiar) s.familiar = { active:null, timeLeft:0 };
+    if (!s.potionBelt) s.potionBelt = [{id:null,qty:0},{id:null,qty:0},{id:null,qty:0},{id:null,qty:0}];
     s.version = 2;
   }
 
@@ -186,7 +187,7 @@ class GameEngine {
       this.emit('notification', { type:'warn', text:`Requires ${skill.name} level ${action.level}.` });
       return false;
     }
-    if (skill.type === 'artisan' && action.input && !this.hasItems(action.input)) {
+    if ((skill.type === 'artisan' || skillId === 'summoning') && action.input && !this.hasItems(action.input)) {
       this.emit('notification', { type:'warn', text:'Missing required materials.' });
       return false;
     }
@@ -1020,11 +1021,78 @@ class GameEngine {
     if (!this.state.food.equipped || this.state.food.qty <= 0) return;
     const item = GAME_DATA.items[this.state.food.equipped]; if (!item) return;
     const max = this.getMaxHp();
-    if (this.state.combat.playerHp >= max) return;
-    this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + (item.heals || 0));
+    if (item.type === 'food') {
+      if (this.state.combat.playerHp >= max) return;
+      this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + (item.heals || 0));
+    }
+    // Potion buffs applied when eaten from food slot
+    if (item.buff) {
+      this.state.combat.activeBuffs.push({ ...item.buff, remaining: item.buff.duration || 120 });
+      this.emit('notification', { type:'info', text:`${item.name} buff active! +${item.buff.value} ${item.buff.stat.replace('Bonus','')} for ${item.buff.duration||120}s` });
+    }
+    if (item.prayerRestore) {
+      this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
+      this.emit('notification', { type:'info', text:`Restored ${item.prayerRestore} prayer points.` });
+    }
+    if (item.heals && item.type === 'potion') {
+      this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + item.heals);
+    }
     this.state.food.qty--;
     this.state.stats.foodEaten++;
     if (this.state.food.qty <= 0) this.state.food.equipped = null;
+  }
+
+  // ── POTION BELT ────────────────────────────────────────
+  equipPotionBelt(slotIdx, itemId) {
+    if (slotIdx < 0 || slotIdx >= 4) return;
+    const item = GAME_DATA.items[itemId];
+    if (!item || item.type !== 'potion') { this.emit('notification',{type:'warn',text:'Only potions can go in the belt.'}); return; }
+    const have = this.state.bank[itemId] || 0;
+    if (have <= 0) return;
+    const slot = this.state.potionBelt[slotIdx];
+    // Return existing potion to bank
+    if (slot.id && slot.qty > 0) this.addItem(slot.id, slot.qty);
+    // Fill belt slot (max 5)
+    const amt = Math.min(have, 5);
+    this.state.bank[itemId] -= amt;
+    if (this.state.bank[itemId] <= 0) delete this.state.bank[itemId];
+    this.state.potionBelt[slotIdx] = { id:itemId, qty:amt };
+    this.emit('notification',{type:'success',text:`${item.name} x${amt} loaded into belt slot ${slotIdx+1}.`});
+  }
+
+  drinkPotionBelt(slotIdx) {
+    if (slotIdx < 0 || slotIdx >= 4) return;
+    const slot = this.state.potionBelt[slotIdx];
+    if (!slot.id || slot.qty <= 0) { this.emit('notification',{type:'warn',text:'Empty potion slot.'}); return; }
+    const item = GAME_DATA.items[slot.id]; if (!item) return;
+    // Apply buff
+    if (item.buff) {
+      // Check if already have this buff - refresh instead of stack
+      const existing = this.state.combat.activeBuffs.find(b => b.stat === item.buff.stat);
+      if (existing) {
+        existing.remaining = item.buff.duration || 120;
+        existing.value = Math.max(existing.value, item.buff.value);
+      } else {
+        this.state.combat.activeBuffs.push({ ...item.buff, remaining: item.buff.duration || 120 });
+      }
+      this.emit('notification', { type:'info', text:`${item.name}: +${item.buff.value} ${item.buff.stat.replace('Bonus','')} for ${item.buff.duration||120}s` });
+    }
+    if (item.prayerRestore) {
+      this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
+    }
+    if (item.heals) {
+      this.state.combat.playerHp = Math.min(this.getMaxHp(), this.state.combat.playerHp + item.heals);
+    }
+    slot.qty--;
+    this.state.stats.foodEaten = (this.state.stats.foodEaten || 0) + 1;
+    if (slot.qty <= 0) { slot.id = null; slot.qty = 0; }
+  }
+
+  clearPotionBelt(slotIdx) {
+    if (slotIdx < 0 || slotIdx >= 4) return;
+    const slot = this.state.potionBelt[slotIdx];
+    if (slot.id && slot.qty > 0) this.addItem(slot.id, slot.qty);
+    this.state.potionBelt[slotIdx] = { id:null, qty:0 };
   }
 
   // ── EQUIPMENT ──────────────────────────────────────────

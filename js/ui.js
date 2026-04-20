@@ -520,16 +520,32 @@ class UI {
     if (s.skills.prayer.level < 1) html += '<div class="cc-info">Train Prayer to unlock</div>';
     html += '</div></div>';
 
-    // ── FOOD + EQUIPMENT STATS ──
+    // ── FOOD + POTION BELT + EQUIPMENT STATS ──
     html += `<div class="combat-loadout">
       <div class="cl-food">
         <div class="cs-header">${icon('heart',14)} Food</div>
-        ${s.food.equipped ? `<div class="cl-food-item">${window.renderItemSprite?window.renderItemSprite(s.food.equipped,24):''} ${GAME_DATA.items[s.food.equipped]?.name} x<span id="food-qty">${s.food.qty}</span> <small>(+${GAME_DATA.items[s.food.equipped]?.heals||0} hp)</small></div>` : '<div class="cc-info">None equipped</div>'}
+        ${s.food.equipped ? `<div class="cl-food-item">${GAME_DATA.items[s.food.equipped]?.name} x<span id="food-qty">${s.food.qty}</span> <small>(+${GAME_DATA.items[s.food.equipped]?.heals||0} hp)</small></div>` : '<div class="cc-info">None equipped</div>'}
         <div class="cl-food-btns">
           <button class="btn btn-xs" onclick="game.eatFood()">Eat</button>
           <label class="auto-eat-label"><input type="checkbox" ${c.autoEat?'checked':''} onchange="ui.toggleAutoEat()"> Auto-Eat @ 40%</label>
         </div>
       </div>
+      <div class="cl-potions">
+        <div class="cs-header">${icon('potion',14)} Potion Belt</div>
+        <div class="potion-belt" id="potion-belt">`;
+    for (let i = 0; i < 4; i++) {
+      const slot = s.potionBelt[i];
+      const pot = slot?.id ? GAME_DATA.items[slot.id] : null;
+      if (pot) {
+        html += `<button class="pb-slot pb-filled" onclick="game.drinkPotionBelt(${i})" title="${pot.name} - Click to drink">
+          <span class="pb-name">${pot.name.replace(' Potion','').replace('Super ','S.')}</span>
+          <span class="pb-qty" id="pb-qty-${i}">${slot.qty}</span>
+        </button>`;
+      } else {
+        html += `<div class="pb-slot pb-empty">${i+1}</div>`;
+      }
+    }
+    html += `</div></div>
       <div class="cl-stats">
         <div class="cs-header">${icon('shield',14)} Equipment Bonuses</div>
         <div class="cl-stat-chips">`;
@@ -539,6 +555,16 @@ class UI {
     }
     html += `<span class="stat-chip stat-speed">${this.engine.getPlayerAttackSpeed().toFixed(1)}s spd</span>`;
     html += '</div></div></div>';
+
+    // ── ACTIVE BUFFS DISPLAY ──
+    if (c.activeBuffs.length > 0) {
+      html += '<div class="active-buffs-bar" id="active-buffs">';
+      for (const buff of c.activeBuffs) {
+        const label = buff.stat === 'damageMult' ? 'Dmg x'+buff.value.toFixed(1) : buff.stat.replace('Bonus','') + ' +' + buff.value;
+        html += `<span class="buff-chip">${label} <small>${Math.ceil(buff.remaining)}s</small></span>`;
+      }
+      html += '</div>';
+    }
 
     // ── ACTIVE COMBAT ──
     if (c.active && c.monster) {
@@ -981,6 +1007,25 @@ class UI {
     html += '</div>';
     html += '<h2 class="section-title">Food</h2><div class="food-display">';
     html += s.food.equipped ? `${GAME_DATA.items[s.food.equipped]?.name} x${s.food.qty} (Heals ${GAME_DATA.items[s.food.equipped]?.heals||0})` : 'No food equipped. Equip from your Bank.';
+    html += '</div>';
+
+    // Potion Belt management
+    html += '<h2 class="section-title">Potion Belt</h2><div class="pb-manage">';
+    for (let i = 0; i < 4; i++) {
+      const slot = s.potionBelt[i];
+      const pot = slot?.id ? GAME_DATA.items[slot.id] : null;
+      html += `<div class="pb-manage-slot">
+        <div class="pb-label">Slot ${i+1}</div>
+        ${pot ? `<div class="pb-current">${pot.name} x${slot.qty} <button class="btn btn-xs btn-danger" onclick="game.clearPotionBelt(${i});ui.renderPage('equipment')">X</button></div>` : '<div class="pb-current pb-empty-text">Empty</div>'}
+        <select class="chat-input-v2 pb-select" onchange="if(this.value)game.equipPotionBelt(${i},this.value);ui.renderPage('equipment')">
+          <option value="">-- Load Potion --</option>`;
+      for (const [id, qty] of Object.entries(s.bank)) {
+        if (qty > 0 && GAME_DATA.items[id]?.type === 'potion') {
+          html += `<option value="${id}">${GAME_DATA.items[id].name} (x${qty})</option>`;
+        }
+      }
+      html += '</select></div>';
+    }
     html += '</div>';
     el.innerHTML = html;
   }
@@ -2613,6 +2658,21 @@ class UI {
     const famTimer = document.getElementById('fam-timer');
     if (famTimer && s.familiar?.active) {
       famTimer.textContent = Math.floor(s.familiar.timeLeft / 60) + 'm';
+    }
+
+    // ── POTION BELT QTY (live) ──
+    for (let i = 0; i < 4; i++) {
+      const el = document.getElementById('pb-qty-' + i);
+      if (el && s.potionBelt[i]) el.textContent = s.potionBelt[i].qty;
+    }
+
+    // ── ACTIVE BUFFS (live) ──
+    const buffsEl = document.getElementById('active-buffs');
+    if (buffsEl && s.combat.activeBuffs) {
+      buffsEl.innerHTML = s.combat.activeBuffs.map(buff => {
+        const label = buff.stat === 'damageMult' ? 'Dmg x'+buff.value.toFixed(1) : buff.stat.replace('Bonus','') + ' +' + buff.value;
+        return `<span class="buff-chip">${label} <small>${Math.ceil(buff.remaining)}s</small></span>`;
+      }).join('');
     }
 
     // ── LEVEL TRACKER in sidebar (live) ──

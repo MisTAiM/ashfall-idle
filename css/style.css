@@ -3094,3 +3094,86 @@ html, body {
   margin-top: 6px;
   justify-content: center;
 }
+
+/* ── POTION BELT ──────────────────────────────────────── */
+.cl-potions {
+  flex: 1;
+  min-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+.potion-belt {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 6px;
+}
+.pb-slot {
+  padding: 6px 4px;
+  text-align: center;
+  border-radius: 4px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.pb-empty {
+  background: var(--bg-deep);
+  color: var(--text-dim);
+  border-style: dashed;
+  cursor: default;
+}
+.pb-filled {
+  background: rgba(74,138,62,0.1);
+  border-color: rgba(74,138,62,0.3);
+  cursor: pointer;
+}
+.pb-filled:hover {
+  border-color: #4a8a3e;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(74,138,62,0.2);
+}
+.pb-name { font-family: 'Cinzel', serif; font-size: 9px; color: var(--text); display: block; line-height: 1.2; }
+.pb-qty { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a8a3e; font-weight: 700; display: block; margin-top: 2px; }
+
+/* Potion belt management on equipment page */
+.pb-manage {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.pb-manage-slot {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+.pb-label { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.pb-current { font-size: 12px; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.pb-empty-text { color: var(--text-dim); font-style: italic; }
+.pb-select { font-size: 11px; padding: 4px 6px; width: 100%; }
+
+/* ── ACTIVE BUFFS BAR ─────────────────────────────────── */
+.active-buffs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.buff-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 3px 8px;
+  background: rgba(74,138,62,0.12);
+  border: 1px solid rgba(74,138,62,0.25);
+  border-radius: 4px;
+  color: #4a8a3e;
+  animation: buffPulse 2s ease-in-out infinite;
+}
+.buff-chip small { color: var(--text-dim); margin-left: 4px; }
+@keyframes buffPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74,138,62,0); }
+  50% { box-shadow: 0 0 6px 1px rgba(74,138,62,0.15); }
+}
