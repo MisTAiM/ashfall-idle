@@ -361,3 +361,14 @@ console.log('  Total recipes:', Object.values(GAME_DATA.recipes).reduce((a,r)=>a
   }
   console.log('[Ashfall] Recipe categories assigned');
 })();
+
+// ── FIX SHOP DUPLICATES ──────────────────────────────────
+(function dedupeShop() {
+  const seen = new Set();
+  GAME_DATA.shop = GAME_DATA.shop.filter(si => {
+    if (seen.has(si.item)) return false;
+    seen.add(si.item);
+    return true;
+  });
+  console.log('[Ashfall] Shop deduped:', GAME_DATA.shop.length, 'items');
+})();

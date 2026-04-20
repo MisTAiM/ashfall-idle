@@ -146,6 +146,12 @@ class GameEngine {
     if (!s.familiar) s.familiar = { active:null, timeLeft:0 };
     if (!s.potionBelt) s.potionBelt = [{id:null,qty:0},{id:null,qty:0},{id:null,qty:0},{id:null,qty:0}];
     if (s.specEnergy === undefined) s.specEnergy = 100;
+    if (!Array.isArray(s.foodBag)) {
+      s.foodBag = [];
+      if (s.food?.equipped && s.food.qty > 0) {
+        s.foodBag.push({ id: s.food.equipped, qty: s.food.qty });
+      }
+    }
     s.version = 2;
   }
 
@@ -1224,42 +1230,89 @@ class GameEngine {
     if (!this.state.bank[itemId] || this.state.bank[itemId] <= 0) return;
     const item = GAME_DATA.items[itemId];
     if (!item || (item.type !== 'food' && item.type !== 'potion')) return;
-    if (this.state.food.equipped === itemId) {
-      const amt = Math.min(this.state.bank[itemId], 28 - this.state.food.qty);
-      this.state.bank[itemId] -= amt; this.state.food.qty += amt;
-    } else {
-      if (this.state.food.equipped && this.state.food.qty > 0) this.addItem(this.state.food.equipped, this.state.food.qty);
-      const amt = Math.min(this.state.bank[itemId], 28);
-      this.state.bank[itemId] -= amt;
-      this.state.food.equipped = itemId;
-      this.state.food.qty = amt;
+    // Migrate old format
+    if (!Array.isArray(this.state.foodBag)) {
+      this.state.foodBag = [];
+      if (this.state.food?.equipped && this.state.food.qty > 0) {
+        this.state.foodBag.push({ id: this.state.food.equipped, qty: this.state.food.qty });
+      }
     }
+    // Check if already in bag
+    const existing = this.state.foodBag.find(f => f.id === itemId);
+    if (existing) {
+      const add = Math.min(this.state.bank[itemId], 28 - existing.qty);
+      if (add <= 0) { this.emit('notification',{type:'warn',text:'Food bag full for this type (28 max).'}); return; }
+      this.state.bank[itemId] -= add;
+      existing.qty += add;
+    } else {
+      if (this.state.foodBag.length >= 4) { this.emit('notification',{type:'warn',text:'Food bag full (4 types max). Remove one first.'}); return; }
+      const add = Math.min(this.state.bank[itemId], 28);
+      this.state.bank[itemId] -= add;
+      if (this.state.bank[itemId] <= 0) delete this.state.bank[itemId];
+      this.state.foodBag.push({ id: itemId, qty: add });
+    }
+    // Keep legacy food field in sync for backward compat
+    this.state.food.equipped = this.state.foodBag[0]?.id || null;
+    this.state.food.qty = this.state.foodBag.reduce((s,f) => s + f.qty, 0);
+    this.emit('foodChanged');
+  }
+
+  removeFromFoodBag(index) {
+    if (!Array.isArray(this.state.foodBag)) return;
+    const slot = this.state.foodBag[index];
+    if (!slot) return;
+    this.addItem(slot.id, slot.qty);
+    this.state.foodBag.splice(index, 1);
+    this.state.food.equipped = this.state.foodBag[0]?.id || null;
+    this.state.food.qty = this.state.foodBag.reduce((s,f) => s + f.qty, 0);
     this.emit('foodChanged');
   }
 
   eatFood() {
-    if (!this.state.food.equipped || this.state.food.qty <= 0) return;
-    const item = GAME_DATA.items[this.state.food.equipped]; if (!item) return;
+    if (!Array.isArray(this.state.foodBag)) {
+      // Migrate old format
+      this.state.foodBag = [];
+      if (this.state.food?.equipped && this.state.food.qty > 0) {
+        this.state.foodBag.push({ id: this.state.food.equipped, qty: this.state.food.qty });
+      }
+    }
+    if (this.state.foodBag.length === 0) return;
+    // Pick best food: highest heals first
+    let bestIdx = 0, bestHeals = 0;
+    for (let i = 0; i < this.state.foodBag.length; i++) {
+      const slot = this.state.foodBag[i];
+      if (slot.qty <= 0) continue;
+      const item = GAME_DATA.items[slot.id];
+      const heals = item?.heals || 0;
+      if (heals > bestHeals) { bestHeals = heals; bestIdx = i; }
+    }
+    const slot = this.state.foodBag[bestIdx];
+    if (!slot || slot.qty <= 0) return;
+    const item = GAME_DATA.items[slot.id]; if (!item) return;
     const max = this.getMaxHp();
     if (item.type === 'food') {
       if (this.state.combat.playerHp >= max) return;
       this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + (item.heals || 0));
     }
-    // Potion buffs applied when eaten from food slot
     if (item.buff) {
-      this.state.combat.activeBuffs.push({ ...item.buff, remaining: item.buff.duration || 120 });
-      this.emit('notification', { type:'info', text:`${item.name} buff active! +${item.buff.value} ${item.buff.stat.replace('Bonus','')} for ${item.buff.duration||120}s` });
+      const existing = this.state.combat.activeBuffs.find(b => b.stat === item.buff.stat);
+      if (existing) { existing.remaining = item.buff.duration || 120; existing.value = Math.max(existing.value, item.buff.value); }
+      else { this.state.combat.activeBuffs.push({ ...item.buff, remaining: item.buff.duration || 120 }); }
     }
     if (item.prayerRestore) {
       this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
-      this.emit('notification', { type:'info', text:`Restored ${item.prayerRestore} prayer points.` });
     }
     if (item.heals && item.type === 'potion') {
       this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + item.heals);
     }
-    this.state.food.qty--;
-    this.state.stats.foodEaten++;
-    if (this.state.food.qty <= 0) this.state.food.equipped = null;
+    slot.qty--;
+    this.state.stats.foodEaten = (this.state.stats.foodEaten || 0) + 1;
+    this.emit('notification',{type:'info',text:`Ate ${item.name} (+${item.heals||0} HP)`});
+    // Remove empty slots
+    this.state.foodBag = this.state.foodBag.filter(f => f.qty > 0);
+    // Sync legacy
+    this.state.food.equipped = this.state.foodBag[0]?.id || null;
+    this.state.food.qty = this.state.foodBag.reduce((s,f) => s + f.qty, 0);
   }
 
   // ── POTION BELT ────────────────────────────────────────

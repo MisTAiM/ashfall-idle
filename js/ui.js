@@ -572,11 +572,27 @@ class UI {
     // ── FOOD + POTION BELT + EQUIPMENT STATS ──
     html += `<div class="combat-loadout">
       <div class="cl-food">
-        <div class="cs-header">${icon('heart',14)} Food</div>
-        ${s.food.equipped ? `<div class="cl-food-item">${GAME_DATA.items[s.food.equipped]?.name} x<span id="food-qty">${s.food.qty}</span> <small>(+${GAME_DATA.items[s.food.equipped]?.heals||0} hp)</small></div>` : '<div class="cc-info">None equipped</div>'}
+        <div class="cs-header">${icon('heart',14)} Food Bag</div>
+        <div class="food-bag" id="food-bag">`;
+    const foodBag = s.foodBag || [];
+    if (foodBag.length > 0) {
+      for (let i = 0; i < foodBag.length; i++) {
+        const slot = foodBag[i];
+        const item = GAME_DATA.items[slot.id];
+        if (!item) continue;
+        html += `<div class="fb-slot" title="${item.name}: Heals ${item.heals||0} HP">
+          <span class="fb-name">${item.name}</span>
+          <span class="fb-qty" id="fb-qty-${i}">x${slot.qty}</span>
+          <span class="fb-heals">+${item.heals||0}hp</span>
+        </div>`;
+      }
+    } else {
+      html += '<div class="cc-info">No food. Equip from Bank.</div>';
+    }
+    html += `</div>
         <div class="cl-food-btns">
-          <button class="btn btn-xs" onclick="game.eatFood()">Eat</button>
-          <label class="auto-eat-label"><input type="checkbox" ${c.autoEat?'checked':''} onchange="ui.toggleAutoEat()"> Auto-Eat @ 40%</label>
+          <button class="btn btn-xs" onclick="game.eatFood()">Eat Best</button>
+          <label class="auto-eat-label"><input type="checkbox" ${c.autoEat?'checked':''} onchange="ui.toggleAutoEat()"> Auto @ 40%</label>
         </div>
       </div>
       <div class="cl-potions">
@@ -1087,9 +1103,18 @@ class UI {
       if (v > 0) html += `<div class="stat-row"><span>${stat.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}</span><span>+${v}</span></div>`;
     }
     html += '</div>';
-    html += '<h2 class="section-title">Food</h2><div class="food-display">';
-    html += s.food.equipped ? `${GAME_DATA.items[s.food.equipped]?.name} x${s.food.qty} (Heals ${GAME_DATA.items[s.food.equipped]?.heals||0})` : 'No food equipped. Equip from your Bank.';
-    html += '</div>';
+    html += '<h2 class="section-title">Food Bag (4 slots)</h2><div class="fb-manage">';
+    const foodBag = s.foodBag || [];
+    for (let i = 0; i < 4; i++) {
+      const slot = foodBag[i];
+      const item = slot ? GAME_DATA.items[slot.id] : null;
+      html += `<div class="fb-manage-slot">
+        ${item ? `<div class="fb-current"><span class="fb-name">${item.name}</span> <span>x${slot.qty}</span> <small>(+${item.heals||0}hp)</small>
+          <button class="btn btn-xs btn-danger" onclick="game.removeFromFoodBag(${i});ui.renderPage('equipment')">Remove</button>
+        </div>` : '<div class="fb-empty">Empty slot</div>'}
+      </div>`;
+    }
+    html += '</div><p style="font-size:11px;color:var(--text-dim);margin-bottom:14px">Equip food from your Bank. Up to 4 different types, 28 each. Auto-eat uses highest healing food first.</p>';
 
     // Potion Belt management
     html += '<h2 class="section-title">Potion Belt</h2><div class="pb-manage">';
@@ -2632,6 +2657,40 @@ class UI {
     splat.style.left = (20 + Math.random() * 60) + '%';
     area.appendChild(splat);
     setTimeout(() => splat.remove(), 900);
+
+    // Attack animation overlay
+    const combatArena = document.querySelector('.combat-arena');
+    if (!combatArena) return;
+    const anim = document.createElement('div');
+    if (d.who === 'player') {
+      // Player attacks monster
+      const style = this.engine.state.combat.combatStyle;
+      if (style === 'melee') {
+        anim.className = 'atk-anim atk-slash';
+        anim.innerHTML = `<svg viewBox="0 0 80 80"><path d="M10 70 Q40 20 70 10" stroke="${d.crit?'#d4a83a':'#c8cad4'}" stroke-width="${d.crit?4:2.5}" fill="none" stroke-linecap="round" opacity="0.8"><animate attributeName="stroke-dasharray" from="0 200" to="200 0" dur="0.3s" fill="freeze"/></path>${d.crit?'<circle cx="40" cy="40" r="0" fill="none" stroke="#d4a83a" stroke-width="2" opacity="0.6"><animate attributeName="r" from="5" to="35" dur="0.4s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.4s" fill="freeze"/></circle>':''}</svg>`;
+      } else if (style === 'ranged') {
+        anim.className = 'atk-anim atk-arrow';
+        anim.innerHTML = `<svg viewBox="0 0 80 40"><line x1="0" y1="20" x2="80" y2="20" stroke="#8a6a3a" stroke-width="2"><animate attributeName="x1" from="-20" to="80" dur="0.25s" fill="freeze"/></line><polygon points="75,15 85,20 75,25" fill="#8a6a3a"><animate attributeName="opacity" from="1" to="0" dur="0.3s" begin="0.2s" fill="freeze"/></polygon></svg>`;
+      } else {
+        anim.className = 'atk-anim atk-spell';
+        anim.innerHTML = `<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="3" fill="#6a8ae8" opacity="0.9"><animate attributeName="r" from="3" to="25" dur="0.35s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></circle><circle cx="40" cy="40" r="1" fill="#a0c0ff"><animate attributeName="r" from="1" to="15" dur="0.25s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.3s" fill="freeze"/></circle></svg>`;
+      }
+    } else {
+      // Monster attacks player
+      anim.className = 'atk-anim atk-claw';
+      anim.innerHTML = `<svg viewBox="0 0 60 60"><path d="M10 50 L30 20 L15 45" stroke="#c44040" stroke-width="2" fill="none" opacity="0.8"><animate attributeName="stroke-dasharray" from="0 100" to="100 0" dur="0.2s" fill="freeze"/></path><path d="M25 50 L40 15 L30 45" stroke="#c44040" stroke-width="2" fill="none" opacity="0.7"><animate attributeName="stroke-dasharray" from="0 100" to="100 0" dur="0.2s" begin="0.05s" fill="freeze"/></path><path d="M40 50 L50 20 L45 45" stroke="#c44040" stroke-width="2" fill="none" opacity="0.6"><animate attributeName="stroke-dasharray" from="0 100" to="100 0" dur="0.2s" begin="0.1s" fill="freeze"/></path></svg>`;
+    }
+    combatArena.appendChild(anim);
+    setTimeout(() => anim.remove(), 600);
+
+    // Shake/flash the target
+    if (d.who === 'player' && !d.miss) {
+      const monArt = document.querySelector('.monster-art');
+      if (monArt) { monArt.classList.add('hit-shake'); setTimeout(()=>monArt.classList.remove('hit-shake'), 200); }
+    } else if (d.who === 'monster' && !d.miss) {
+      const pSide = document.querySelector('.player-side');
+      if (pSide) { pSide.classList.add('hit-flash'); setTimeout(()=>pSide.classList.remove('hit-flash'), 300); }
+    }
   }
 
   showXpGain(d) {
@@ -2728,9 +2787,11 @@ class UI {
         // Prayer points
         const ppEl = document.getElementById('pp-live');
         if (ppEl) ppEl.textContent = s.prayerPoints;
-        // Food qty
-        const fqEl = document.getElementById('food-qty');
-        if (fqEl) fqEl.textContent = s.food.qty;
+        // Food bag quantities
+        for (let i = 0; i < (s.foodBag||[]).length; i++) {
+          const el = document.getElementById('fb-qty-' + i);
+          if (el && s.foodBag[i]) el.textContent = 'x' + s.foodBag[i].qty;
+        }
         // Combat XP bars (live updating)
         for (const sId of ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer']) {
           const sk = s.skills[sId]; if (!sk) continue;

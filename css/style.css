@@ -3832,3 +3832,91 @@ html, body {
 .skill-cat-section {
   margin-bottom: 8px;
 }
+
+/* ── ATTACK ANIMATIONS ────────────────────────────────── */
+.atk-anim {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  animation: atkFade 0.5s ease-out forwards;
+}
+.atk-slash {
+  width: 80px; height: 80px;
+  top: 30%; right: 25%;
+}
+.atk-arrow {
+  width: 100px; height: 40px;
+  top: 45%; left: 10%;
+}
+.atk-spell {
+  width: 80px; height: 80px;
+  top: 30%; right: 20%;
+}
+.atk-claw {
+  width: 60px; height: 60px;
+  top: 25%; left: 20%;
+}
+@keyframes atkFade {
+  0% { opacity: 1; }
+  80% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+/* Monster shake on hit */
+.monster-art.hit-shake {
+  animation: monsterShake 0.2s ease-out;
+}
+@keyframes monsterShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+/* Player flash on hit */
+.player-side.hit-flash {
+  animation: playerFlash 0.3s ease-out;
+}
+@keyframes playerFlash {
+  0% { background: rgba(196,64,64,0.2); }
+  100% { background: transparent; }
+}
+
+/* ── FOOD BAG ─────────────────────────────────────────── */
+.food-bag {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 6px 0;
+}
+.fb-slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.fb-name { flex: 1; color: var(--text); font-family: 'Cinzel', serif; font-size: 11px; }
+.fb-qty { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; font-size: 12px; }
+.fb-heals { font-family: 'JetBrains Mono', monospace; color: #3a9e5c; font-size: 10px; }
+
+/* Food bag management on equipment page */
+.fb-manage {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.fb-manage-slot {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  min-height: 36px;
+}
+.fb-current { display: flex; align-items: center; gap: 6px; font-size: 12px; flex-wrap: wrap; }
+.fb-empty { color: var(--text-dim); font-style: italic; font-size: 12px; }
