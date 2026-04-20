@@ -425,6 +425,7 @@ class GameEngine {
     c.active = false; c.area = null; c.monster = null; c.dungeon = null; c.worldBoss = null;
     c._isWilderness = false; c._pvpTriggered = false; c._isDuel = false; c._teleBlocked = 0;
     c._multiMob = false; c._requiresPrayer = false; c._pvpRealPlayer = null;
+    c._pvpArena = false; c._pvpOpponent = null;
     c.statusEffects = { player:{}, monster:{} };
     c.playerHp = this.getMaxHp();
     // Clear wilderness presence
@@ -665,13 +666,29 @@ class GameEngine {
       this.state.stats.pvpStreak = (this.state.stats.pvpStreak || 0) + 1;
       const streak = this.state.stats.pvpStreak;
       if (!this.state.stats.pvpBestStreak || streak > this.state.stats.pvpBestStreak) this.state.stats.pvpBestStreak = streak;
-      // Alignment penalty for PvP kills
       this.shiftAlignment('evil', 5);
       this.shiftAlignment('chaotic', 3);
-      // Streak bonus
       if (streak >= 3) this.emit('notification',{type:'achievement',text:`PvP Streak: ${streak} kills!`});
       if (typeof online !== 'undefined' && online.isOnline) {
         online.sendSystemMessage(`[PVP] ${online.displayName} killed a player in the Wilderness! (Streak: ${streak})`);
+      }
+    }
+
+    // PvP Arena victory
+    if (this.state.combat._pvpArena && mId === 'pvp_arena_opponent') {
+      const opp = this.state.combat._pvpOpponent;
+      if (opp && typeof online !== 'undefined') {
+        const goldReward = Math.floor(50 + (opp.combatLevel || 10) * 10);
+        const ratingChange = Math.floor(15 + Math.max(0, (opp.pvpRating || 1000) - online.pvpRating) * 0.1);
+        this.state.gold += goldReward;
+        this.state.stats.goldEarned += goldReward;
+        this.state.stats.pvpWins = (this.state.stats.pvpWins || 0) + 1;
+        online.pvpRating = Math.max(0, online.pvpRating + ratingChange);
+        this.emit('notification', { type:'achievement', text:`ARENA VICTORY vs ${opp.name}! +${goldReward}g, +${ratingChange} rating` });
+        // Store result
+        online.storePvPResult({ won:true, ratingChange, goldReward, opponentName:opp.name, opponentLevel:opp.combatLevel, opponentRating:opp.pvpRating }, opp);
+        // Announce
+        online.sendSystemMessage(`[ARENA] ${online.displayName} defeated ${opp.name} in the PvP Arena!`);
       }
     }
 
@@ -808,6 +825,16 @@ class GameEngine {
       this.emit('notification', { type:'danger', text:`Killed in the Wilderness! Lost ${lostGold} gold.` });
       if (typeof online !== 'undefined' && online.isOnline) {
         online.sendSystemMessage(`[PVP] ${online.displayName} was slain in the Wilderness!`);
+      }
+    } else if (this.state.combat._pvpArena) {
+      // PvP Arena defeat
+      const opp = this.state.combat._pvpOpponent;
+      if (opp && typeof online !== 'undefined') {
+        const ratingChange = -10;
+        online.pvpRating = Math.max(0, online.pvpRating + ratingChange);
+        this.state.stats.pvpDeaths = (this.state.stats.pvpDeaths || 0) + 1;
+        this.emit('notification', { type:'danger', text:`ARENA DEFEAT vs ${opp.name}. ${ratingChange} rating.` });
+        online.storePvPResult({ won:false, ratingChange, goldReward:0, opponentName:opp.name, opponentLevel:opp.combatLevel, opponentRating:opp.pvpRating }, opp);
       }
     } else {
       this.emit('notification', { type:'danger', text:'You have been defeated!' });

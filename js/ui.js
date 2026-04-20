@@ -47,22 +47,6 @@ const ICONS = {
 function icon(name, size=18) { return `<span class="icon" style="width:${size}px;height:${size}px">${ICONS[name] || ICONS.sparkle}</span>`; }
 
 const NAV = [
-  { header:'Gathering', items:[
-    {id:'woodcutting',label:'Woodcutting',icon:'axe'},
-    {id:'mining',label:'Mining',icon:'pickaxe'},
-    {id:'fishing',label:'Fishing',icon:'fish'},
-    {id:'foraging',label:'Foraging',icon:'herb'},
-    {id:'hunting',label:'Hunting',icon:'paw'},
-  ]},
-  { header:'Artisan', items:[
-    {id:'cooking',label:'Cooking',icon:'cauldron'},
-    {id:'smithing',label:'Smithing',icon:'anvil'},
-    {id:'fletching',label:'Fletching',icon:'bow'},
-    {id:'crafting',label:'Crafting',icon:'ring'},
-    {id:'alchemy',label:'Alchemy',icon:'potion'},
-    {id:'enchanting',label:'Enchanting',icon:'sparkle'},
-    {id:'incantation',label:'Incantation',icon:'wand'},
-  ]},
   { header:'Combat', items:[
     {id:'combat',label:'Combat',icon:'combat'},
     {id:'wilderness',label:'Wilderness',icon:'combat'},
@@ -71,30 +55,42 @@ const NAV = [
     {id:'abilities',label:'Abilities',icon:'banner'},
     {id:'prayer',label:'Prayer',icon:'sparkle'},
     {id:'slayer',label:'Slayer',icon:'target'},
-    {id:'necromancy',label:'Necromancy',icon:'skull'},
+    {id:'summoning',label:'Summoning',icon:'sparkle'},
     {id:'spellbooks',label:'Spellbooks',icon:'wand'},
+    {id:'necromancy',label:'Necromancy',icon:'skull'},
   ]},
-  { header:'Support', items:[
+  { header:'Skills', items:[
+    {id:'woodcutting',label:'Woodcutting',icon:'axe'},
+    {id:'mining',label:'Mining',icon:'pickaxe'},
+    {id:'fishing',label:'Fishing',icon:'fish'},
+    {id:'foraging',label:'Foraging',icon:'herb'},
+    {id:'hunting',label:'Hunting',icon:'paw'},
+    {id:'cooking',label:'Cooking',icon:'cauldron'},
+    {id:'smithing',label:'Smithing',icon:'anvil'},
+    {id:'fletching',label:'Fletching',icon:'bow'},
+    {id:'crafting',label:'Crafting',icon:'ring'},
+    {id:'alchemy',label:'Alchemy',icon:'potion'},
+    {id:'enchanting',label:'Enchanting',icon:'sparkle'},
+    {id:'incantation',label:'Incantation',icon:'wand'},
     {id:'farming',label:'Farming',icon:'seedling'},
     {id:'thieving',label:'Thieving',icon:'mask'},
-    {id:'summoning',label:'Summoning',icon:'sparkle'},
-    {id:'pets',label:'Pets',icon:'paw'},
   ]},
-  { header:'Social', items:[
+  { header:'World', items:[
     {id:'npcs',label:'NPCs',icon:'npc'},
     {id:'quests',label:'Quests',icon:'scroll'},
     {id:'storyline',label:'Storyline',icon:'book'},
     {id:'factions',label:'Factions',icon:'faction'},
     {id:'alignment',label:'Alignment',icon:'alignment'},
+    {id:'pets',label:'Pets',icon:'paw'},
+    {id:'achievements',label:'Achievements',icon:'trophy'},
+    {id:'wiki',label:'Wiki',icon:'book'},
   ]},
-  { header:'General', items:[
+  { header:'Inventory', items:[
     {id:'bank',label:'Bank',icon:'bank'},
     {id:'shop',label:'Shop',icon:'shop'},
     {id:'bazaar',label:'Ashen Bazaar',icon:'coin'},
     {id:'equipment',label:'Equipment',icon:'shield'},
     {id:'gear_sets',label:'Gear Sets',icon:'shield'},
-    {id:'achievements',label:'Achievements',icon:'trophy'},
-    {id:'wiki',label:'Wiki',icon:'book'},
     {id:'statistics',label:'Statistics',icon:'stats'},
     {id:'settings_page',label:'Settings',icon:'settings'},
   ]},
@@ -316,13 +312,13 @@ class UI {
         inputHtml = '<div class="recipe-inputs">' + action.input.map(inp => {
           const it = GAME_DATA.items[inp.item];
           const have = s.bank[inp.item] || 0;
-          return `<span class="recipe-mat ${have>=inp.qty?'':'mat-missing'}">${it?.name||inp.item} x${inp.qty} <small>(${have})</small></span>`;
+          return `<span class="recipe-mat ${have>=inp.qty?'':'mat-missing'}" data-mat="${inp.item}" data-need="${inp.qty}">${it?.name||inp.item} x${inp.qty} <small data-item-qty="${inp.item}">(${have})</small></span>`;
         }).join('') + '</div>';
       }
       let outputHtml = '';
       if (action.output) {
         const o = GAME_DATA.items[action.output.item];
-        outputHtml = `<div class="recipe-output">${o?.name||action.output.item}${action.output.qty>1?' x'+action.output.qty:''}</div>`;
+        outputHtml = `<div class="recipe-output">${o?.name||action.output.item}${action.output.qty>1?' x'+action.output.qty:''} <small data-item-qty="${action.output.item}">(${s.bank[action.output.item]||0})</small></div>`;
       }
       if (action.loot) {
         outputHtml = `<div class="recipe-output">${action.loot.map(l=>{const i=GAME_DATA.items[l.item]; return (i?.name||l.item)+(l.qty>1?' x'+l.qty:'');}).join(', ')}</div>`;
@@ -943,7 +939,7 @@ class UI {
         <div class="bi-icon">${window.renderItemSprite ? window.renderItemSprite(id, 32) : ''}</div>
         <div class="bi-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name} ${this.getRarityTag(id)}</div>
         ${statStr ? `<div class="bi-stats">${statStr}</div>` : ''}
-        <div class="bi-qty">x${this.fmt(q)}</div>
+        <div class="bi-qty" data-bank-qty="${id}">x${this.fmt(q)}</div>
         <div class="bi-actions">
           ${item.slot ? `<button class="btn btn-xs" onclick="game.equipItem('${id}')">Equip</button>` : ''}
           ${item.type==='food'||item.type==='potion' ? `<button class="btn btn-xs" onclick="game.equipFood('${id}')">Eat/Use</button>` : ''}
@@ -1593,9 +1589,9 @@ class UI {
     for (const cId of ['gold_charm','green_charm','crimson_charm','blue_charm']) {
       const qty = s.bank[cId] || 0;
       const item = GAME_DATA.items[cId];
-      html += `<div class="charm-slot"><span class="charm-name">${item?.name||cId}</span><span class="charm-qty">${qty}</span></div>`;
+      html += `<div class="charm-slot"><span class="charm-name">${item?.name||cId}</span><span class="charm-qty" id="charm-${cId}">${qty}</span></div>`;
     }
-    html += `<div class="charm-slot"><span class="charm-name">Spirit Shards</span><span class="charm-qty">${s.bank.spirit_shards||0}</span></div>`;
+    html += `<div class="charm-slot"><span class="charm-name">Spirit Shards</span><span class="charm-qty" id="charm-spirit_shards">${s.bank.spirit_shards||0}</span></div>`;
     html += '</div>';
 
     // Pouches in bank (activate buttons)
@@ -1643,7 +1639,7 @@ class UI {
         <div class="recipe-inputs">${r.input.map(inp => {
           const it = GAME_DATA.items[inp.item];
           const have = s.bank[inp.item]||0;
-          return `<span class="recipe-mat ${have>=inp.qty?'':'mat-missing'}">${it?.name||inp.item} x${inp.qty} <small>(${have})</small></span>`;
+          return `<span class="recipe-mat ${have>=inp.qty?'':'mat-missing'}" data-mat="${inp.item}" data-need="${inp.qty}">${it?.name||inp.item} x${inp.qty} <small data-item-qty="${inp.item}">(${have})</small></span>`;
         }).join('')}</div>
         <div class="ac-footer"><span class="ac-xp">+${r.xp} XP</span><span class="ac-time">${r.time}s</span></div>
         ${locked?`<div class="locked-overlay">Level ${r.level}</div>`:''}
@@ -2304,20 +2300,8 @@ class UI {
     if (btn) { btn.disabled = true; btn.textContent = 'Searching...'; }
     const result = await online.submitPvPChallenge();
     if (btn) { btn.disabled = false; btn.textContent = 'Fight'; }
-    const container = document.getElementById('pvp-result');
-    if (!container || !result) return;
-
-    container.innerHTML = `<div class="alignment-display" style="border-color:${result.won?'#4a8a3e':'#8a3a3a'}">
-      <div class="al-current" style="color:${result.won?'#4a8a3e':'#8a3a3a'}">${result.won ? 'VICTORY' : 'DEFEAT'}</div>
-      <div class="al-desc">
-        vs <strong>${result.opponentName}</strong> (Cb Lv ${result.opponentLevel}, Rating ${result.opponentRating})<br>
-        ${result.turns} turns | You: ${result.playerHpLeft}/${result.playerMaxHp} HP | Them: ${result.opponentHpLeft}/${result.opponentMaxHp} HP
-      </div>
-      <div class="al-points">
-        ${result.won ? `+${result.goldReward} gold` : ''} | Rating: ${result.ratingChange > 0 ? '+' : ''}${result.ratingChange}
-      </div>
-    </div>`;
-    this.loadPvPHistory();
+    // Combat started via engine - combatStart event auto-navigates to combat page
+    // Results handled by onMonsterDeath/onPlayerDeath with _pvpArena flag
   }
 
   async loadPvPHistory() {
@@ -2717,6 +2701,34 @@ class UI {
         el.style.width = pct.toFixed(1) + '%';
       }
     });
+
+    // ── LIVE ITEM QUANTITIES (skill pages, bank, recipes) ──
+    // Update all elements with data-item-qty attribute
+    document.querySelectorAll('[data-item-qty]').forEach(el => {
+      const itemId = el.getAttribute('data-item-qty');
+      const qty = s.bank[itemId] || 0;
+      const newText = '(' + qty + ')';
+      if (el.textContent !== newText) el.textContent = newText;
+    });
+    // Update material missing/available status
+    document.querySelectorAll('[data-mat]').forEach(el => {
+      const itemId = el.getAttribute('data-mat');
+      const need = parseInt(el.getAttribute('data-need')) || 1;
+      const have = s.bank[itemId] || 0;
+      if (have >= need) el.classList.remove('mat-missing');
+      else el.classList.add('mat-missing');
+    });
+    // Bank page quantities
+    document.querySelectorAll('[data-bank-qty]').forEach(el => {
+      const itemId = el.getAttribute('data-bank-qty');
+      const qty = s.bank[itemId] || 0;
+      if (el.textContent !== 'x' + this.fmt(qty)) el.textContent = 'x' + this.fmt(qty);
+    });
+    // Charm counts on summoning page
+    for (const cId of ['gold_charm','green_charm','crimson_charm','blue_charm','spirit_shards']) {
+      const el = document.getElementById('charm-' + cId);
+      if (el) el.textContent = s.bank[cId] || 0;
+    }
   }
 
   fmt(n) {

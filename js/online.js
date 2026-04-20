@@ -456,13 +456,37 @@ class OnlineManager {
       });
 
       if (!opponent) {
-        this.emit('notification', { type:'warn', text:'No opponents found near your level. Try again later.' });
-        return null;
+        // No real opponent found - create a scaled AI opponent from player stats
+        opponent = {
+          uid: 'ai_' + Date.now(),
+          name: 'Arena Champion',
+          combatLevel: myLevel + Math.floor(Math.random() * 6) - 3,
+          pvpRating: this.pvpRating + Math.floor(Math.random() * 200) - 100,
+          skills: {
+            attack: game.state.skills.attack.level + Math.floor(Math.random() * 10) - 5,
+            strength: game.state.skills.strength.level + Math.floor(Math.random() * 10) - 5,
+            defence: game.state.skills.defence.level + Math.floor(Math.random() * 10) - 5,
+            hitpoints: game.state.skills.hitpoints.level + Math.floor(Math.random() * 5) - 2,
+            ranged: game.state.skills.ranged.level,
+            magic: game.state.skills.magic.level,
+          },
+          equipment: { ...game.state.equipment }, // mirror player gear roughly
+          combatStyle: game.state.combat.combatStyle,
+        };
+        // Clamp skill levels
+        for (const k of Object.keys(opponent.skills)) {
+          opponent.skills[k] = Math.max(1, Math.min(99, opponent.skills[k]));
+        }
+        this.emit('notification', { type:'info', text:'No players online. Fighting an Arena Champion.' });
+      } else {
+        this.emit('notification', { type:'danger', text:`Matched against ${opponent.name} (Cb ${opponent.combatLevel})!` });
       }
 
-      const result = this.resolvePvPCombat(game.state, opponent);
-      await this.storePvPResult(result, opponent);
-      return result;
+      // Start LIVE combat (navigates to combat page)
+      const status = this.resolvePvPCombat(game.state, opponent);
+      // Clean up queue
+      try { await this.firestore.collection('pvp_queue').doc(this.user.uid).delete(); } catch(e) {}
+      return status;
     } catch(e) {
       console.error('Match error:', e);
       return null;
@@ -470,74 +494,50 @@ class OnlineManager {
   }
 
   resolvePvPCombat(playerState, opponent) {
-    const pSkills = playerState.skills;
+    // Instead of instant simulation, create a real monster from opponent stats
+    // and start actual engine combat so the player SEES the fight
     const oSkills = opponent.skills;
-
-    // Calculate effective stats
-    const pAtk = pSkills.attack.level + this.getEquipStat(playerState.equipment, 'attackBonus');
-    const pStr = pSkills.strength.level + this.getEquipStat(playerState.equipment, 'strengthBonus');
-    const pDef = pSkills.defence.level + this.getEquipStat(playerState.equipment, 'defenceBonus');
-    const pHp = pSkills.hitpoints.level * 10 + 10;
-    const pMaxHit = Math.max(1, Math.floor(0.5 + pStr * 64 / 640));
-
+    const oHp = oSkills.hitpoints * 10 + 10;
     const oAtk = oSkills.attack + this.getEquipStat(opponent.equipment, 'attackBonus');
     const oStr = oSkills.strength + this.getEquipStat(opponent.equipment, 'strengthBonus');
     const oDef = oSkills.defence + this.getEquipStat(opponent.equipment, 'defenceBonus');
-    const oHp = oSkills.hitpoints * 10 + 10;
-    const oMaxHit = Math.max(1, Math.floor(0.5 + oStr * 64 / 640));
+    const oRng = (oSkills.ranged || 1) + this.getEquipStat(opponent.equipment, 'rangedBonus');
+    const oMag = (oSkills.magic || 1) + this.getEquipStat(opponent.equipment, 'magicBonus');
+    // Use the proper damage formula: (1 + level/10) * (1 + bonus/80) * 4
+    const oMaxHit = Math.max(4, Math.floor((1 + oStr / 10) * (1 + this.getEquipStat(opponent.equipment, 'strengthBonus') / 80) * 4));
+    const oDR = this.getEquipStat(opponent.equipment, 'damageReduction');
+    const oStyle = opponent.combatStyle || 'melee';
 
-    // Simulate 50 turns max
-    let pHealth = pHp, oHealth = oHp;
-    let turns = 0;
-    const log = [];
-
-    while (pHealth > 0 && oHealth > 0 && turns < 50) {
-      turns++;
-      // Player attacks
-      const pAccuracy = (pAtk + 8) * 64;
-      const oEvasion = (oDef + 8) * 64;
-      const pHitChance = Math.min(0.95, Math.max(0.05, pAccuracy / (pAccuracy + oEvasion)));
-      if (Math.random() < pHitChance) {
-        const dmg = Math.floor(Math.random() * pMaxHit) + 1;
-        oHealth -= dmg;
-        log.push({ turn:turns, who:'player', dmg });
-      } else {
-        log.push({ turn:turns, who:'player', dmg:0, miss:true });
-      }
-
-      if (oHealth <= 0) break;
-
-      // Opponent attacks
-      const oAccuracy = (oAtk + 8) * 64;
-      const pEvasion = (pDef + 8) * 64;
-      const oHitChance = Math.min(0.95, Math.max(0.05, oAccuracy / (oAccuracy + pEvasion)));
-      if (Math.random() < oHitChance) {
-        const dmg = Math.floor(Math.random() * oMaxHit) + 1;
-        pHealth -= dmg;
-        log.push({ turn:turns, who:'opponent', dmg });
-      } else {
-        log.push({ turn:turns, who:'opponent', dmg:0, miss:true });
-      }
-    }
-
-    const won = oHealth <= 0 || (pHealth > oHealth);
-    const goldReward = won ? Math.floor(50 + opponent.combatLevel * 10) : 0;
-    const ratingChange = won ? Math.floor(15 + Math.max(0, opponent.pvpRating - this.pvpRating) * 0.1) : -Math.floor(10);
-
-    return {
-      won,
-      turns,
-      playerHpLeft: Math.max(0, pHealth),
-      opponentHpLeft: Math.max(0, oHealth),
-      playerMaxHp: pHp,
-      opponentMaxHp: oHp,
-      opponentName: opponent.name,
-      opponentLevel: opponent.combatLevel,
-      opponentRating: opponent.pvpRating || 1000,
-      goldReward,
-      ratingChange,
-      log,
+    // Create opponent as a monster in the engine
+    const pvpMonster = {
+      id: 'pvp_arena_opponent',
+      name: opponent.name || 'Arena Challenger',
+      hp: oHp,
+      maxHit: oMaxHit,
+      attackSpeed: 2.0,
+      combatLevel: opponent.combatLevel || 10,
+      style: oStyle,
+      evasion: { melee: oDef, ranged: oDef, magic: oDef },
+      xp: opponent.combatLevel * 30,
+      gold: { min: 50 + opponent.combatLevel * 5, max: 100 + opponent.combatLevel * 15 },
+      alignment: 'NN',
+      drops: [{ item: 'bones', qty: 1, chance: 1.0 }],
     };
+    GAME_DATA.monsters.pvp_arena_opponent = pvpMonster;
+
+    // Start REAL combat via the engine
+    game.startCombat(null, 'pvp_arena_opponent');
+    game.state.combat._isDuel = true; // no flee
+    game.state.combat._pvpArena = true;
+    game.state.combat._pvpOpponent = {
+      uid: opponent.uid,
+      name: opponent.name,
+      combatLevel: opponent.combatLevel,
+      pvpRating: opponent.pvpRating,
+    };
+
+    // Return null - results will come from onMonsterDeath/onPlayerDeath
+    return 'STARTED';
   }
 
   getEquipStat(equipment, stat) {
@@ -555,28 +555,21 @@ class OnlineManager {
   async storePvPResult(result, opponent) {
     if (!this.isOnline || !this.user) return;
     try {
-      // Update rating
-      this.pvpRating = Math.max(0, this.pvpRating + result.ratingChange);
-
-      // Award gold + loot
+      // Roll PvP loot on win
       if (result.won && game) {
-        game.state.gold += result.goldReward;
-        game.state.stats.goldEarned += result.goldReward;
-        // Roll PvP loot
-        const loot = this.rollPvPLoot(opponent.combatLevel);
+        const loot = this.rollPvPLoot(opponent.combatLevel || 10);
         for (const l of loot) {
           game.addItem(l.item, l.qty);
           this.emit('notification', { type:'rare', text:`PvP Loot: ${GAME_DATA.items[l.item]?.name || l.item}!` });
         }
       }
 
-      // Store result
+      // Store result in Firestore
       await this.firestore.collection('pvp_results').add({
-        winner: result.won ? this.user.uid : opponent.uid,
-        loser: result.won ? opponent.uid : this.user.uid,
-        winnerName: result.won ? this.displayName : opponent.name,
-        loserName: result.won ? opponent.name : this.displayName,
-        turns: result.turns,
+        winner: result.won ? this.user.uid : (opponent.uid || 'ai'),
+        loser: result.won ? (opponent.uid || 'ai') : this.user.uid,
+        winnerName: result.won ? this.displayName : (result.opponentName || opponent.name),
+        loserName: result.won ? (result.opponentName || opponent.name) : this.displayName,
         ratingChange: result.ratingChange,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       });
@@ -591,12 +584,7 @@ class OnlineManager {
         lastFight: firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge:true });
 
-      // Sync profile
       this.syncProfile();
-
-      // Remove from queue
-      await this.firestore.collection('pvp_queue').doc(this.user.uid).delete();
-
     } catch(e) { console.error('Store PvP result error:', e); }
   }
 
