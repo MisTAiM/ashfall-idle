@@ -77,7 +77,7 @@ class GameEngine {
       farming: { plots:[{seed:null,plantedAt:null,growTime:0,ready:false},{seed:null,plantedAt:null,growTime:0,ready:false},{seed:null,plantedAt:null,growTime:0,ready:false}] },
       mastery: {},
       alignment: 'true_neutral',
-      alignmentPoints: { good:0, evil:0, lawful:0, chaotic:0 },
+      alignmentPoints: { moral:0, order:0 },
       reputation: {},
       quests: { active:[], completed:[], progress:{} },
       equippedAbilities: [null, null, null, null],
@@ -98,7 +98,16 @@ class GameEngine {
       if (!s.skills[id]) s.skills[id] = { level:1, xp:0 };
     }
     if (!s.alignment) s.alignment = 'true_neutral';
-    if (!s.alignmentPoints) s.alignmentPoints = { good:0, evil:0, lawful:0, chaotic:0 };
+    // alignmentPoints: migrate old {good,evil,lawful,chaotic} to new {moral,order}
+    if (!s.alignmentPoints) s.alignmentPoints = { moral:0, order:0 };
+    if (s.alignmentPoints.moral === undefined) {
+      // Convert old format to new
+      const old = s.alignmentPoints;
+      s.alignmentPoints = {
+        moral: (old.good || 0) - (old.evil || 0),
+        order: (old.lawful || 0) - (old.chaotic || 0),
+      };
+    }
     if (!s.reputation) s.reputation = {};
     if (!s.quests) s.quests = { active:[], completed:[], progress:{} };
     if (!s.quests.progress) s.quests.progress = {};
@@ -129,7 +138,6 @@ class GameEngine {
     if (!s.profile) s.profile = { avatarSeed:'', hair:'short04', skinColor:'c68642', hairColor:'2c1b18', accessory:'', mouth:'happy01', eyes:'variant04', clothing:'variant04', clothingColor:'4a90d4', bio:'' };
     if (!s.guild) s.guild = null;
     if (!s.storyline) s.storyline = {};
-    if (!s.alignmentPoints) s.alignmentPoints = { moral:0, order:0 };
     if (!s.gearSets) s.gearSets = {};
     if (!s.equipment.ring) s.equipment.ring = null;
     if (!s.equipment.amulet) s.equipment.amulet = null;
@@ -439,6 +447,8 @@ class GameEngine {
     c.monsterAttackTimer += dt;
     const monsterSpeed = monster.attackSpeed * 0.7;
     if (c.monsterAttackTimer >= monsterSpeed) { c.monsterAttackTimer -= monsterSpeed; this.monsterAttack(monster); }
+    // Auto-eat AFTER monster attack (critical - eat before death check)
+    if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
     if (c.monsterHp <= 0) this.onMonsterDeath(monster, isWB);
     if (c.playerHp <= 0) this.onPlayerDeath();
   }
@@ -584,7 +594,7 @@ class GameEngine {
       if (monster.style === 'ranged' && protRanged) dmg = Math.max(1, Math.floor(dmg * (100 - protRanged) / 100));
       if (monster.style === 'magic' && protMagic) dmg = Math.max(1, Math.floor(dmg * (100 - protMagic) / 100));
       // Multi-mob penalty: +50% damage if 3+ mobs and NO prayer active
-      if (this.state.combat._requiresPrayer && this.state.activePrayers.length === 0) {
+      if (this.state.combat._requiresPrayer && (!this.state.activePrayers || this.state.activePrayers.length === 0)) {
         dmg = Math.floor(dmg * 1.5);
       }
       // Multi-mob: each mob attacks (simulate multiple hits)
@@ -634,7 +644,9 @@ class GameEngine {
       else if (xpMode === 'defensive')  xpParts.push(`+${Math.floor(xp*0.9)} Def`);
       else { xpParts.push(`+${Math.floor(xp*0.33)} Atk`); xpParts.push(`+${Math.floor(xp*0.33)} Str`); xpParts.push(`+${Math.floor(xp*0.34)} Def`); }
     } else if (style === 'ranged') {
-      xpParts.push(`+${Math.floor(xp*0.8)} Rng`);
+      if (xpMode === 'accurate')   xpParts.push(`+${Math.floor(xp*0.9)} Rng`, `+${Math.floor(xp*0.1)} Def`);
+      else if (xpMode === 'rapid') xpParts.push(`+${xp} Rng`);
+      else                         xpParts.push(`+${Math.floor(xp*0.5)} Rng`, `+${Math.floor(xp*0.5)} Def`);
     } else {
       xpParts.push(`+${Math.floor(xp*0.8)} Mag`);
     }
@@ -712,7 +724,6 @@ class GameEngine {
       }
     }
 
-    if (monster.alignment) this.shiftAlignment(monster.alignment);
     this.trackQuestProgress('kill', { monster:mId, qty:1 });
     // v3: Slayer, Pets, Magic kills
     this.trackSlayerKill(mId);
@@ -1294,27 +1305,7 @@ class GameEngine {
   }
 
   // ── ALIGNMENT ──────────────────────────────────────────
-  shiftAlignment(monsterAxis) {
-    // Killing evil creatures shifts you toward good, etc.
-    const ap = this.state.alignmentPoints;
-    if (monsterAxis.includes('E')) ap.good += 1;
-    if (monsterAxis.includes('G')) ap.evil += 1;
-    if (monsterAxis.includes('C')) ap.lawful += 0.3;
-    if (monsterAxis.includes('L')) ap.chaotic += 0.3;
-    this.recomputeAlignment();
-  }
-
-  recomputeAlignment() {
-    const ap = this.state.alignmentPoints;
-    const mAxis = ap.lawful >= ap.chaotic + 50 ? 'L' : ap.chaotic >= ap.lawful + 50 ? 'C' : 'N';
-    const eAxis = ap.good >= ap.evil + 50 ? 'G' : ap.evil >= ap.good + 50 ? 'E' : 'N';
-    const map = {'LG':'lawful_good','NG':'neutral_good','CG':'chaotic_good','LN':'lawful_neutral','NN':'true_neutral','CN':'chaotic_neutral','LE':'lawful_evil','NE':'neutral_evil','CE':'chaotic_evil'};
-    const next = map[mAxis + eAxis] || 'true_neutral';
-    if (next !== this.state.alignment) {
-      this.state.alignment = next;
-      this.emit('notification', { type:'info', text:`Your alignment has shifted to ${GAME_DATA.alignments[next].name}.` });
-    }
-  }
+  // (Active shiftAlignment is below, near storyline code)
 
   // ── REPUTATION ─────────────────────────────────────────
   addReputation(factionId, amount) {
