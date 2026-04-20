@@ -293,3 +293,71 @@ console.log('  Spec weapons:', _specWeapons.filter(w=>w.specCost).length);
 console.log('  Bows:', _bows.length, '| Staves:', _staves.length);
 console.log('  Total items:', Object.keys(GAME_DATA.items).length);
 console.log('  Total recipes:', Object.values(GAME_DATA.recipes).reduce((a,r)=>a+r.length,0));
+
+// ── RECIPE CATEGORIES ────────────────────────────────────
+// Assign categories to smithing recipes for organized display
+(function categorizeSmithing() {
+  for (const r of GAME_DATA.recipes.smithing) {
+    if (r.category) continue; // already set
+    const id = r.id.toLowerCase();
+    if (id.startsWith('smelt_'))          r.category = 'Bars';
+    else if (id.includes('_scimitar'))    r.category = 'Scimitars';
+    else if (id.includes('_sword') || id.includes('_blade') || id.includes('_longsword')) r.category = 'Swords';
+    else if (id.includes('_axe') || id.includes('_mace') || id.includes('_dagger')) r.category = 'Weapons';
+    else if (id.includes('_helm'))        r.category = 'Helms';
+    else if (id.includes('_plate'))       r.category = 'Platebodies';
+    else if (id.includes('_legs'))        r.category = 'Platelegs';
+    else if (id.includes('_boots'))       r.category = 'Boots';
+    else if (id.includes('_gloves') || id.includes('_gauntlet')) r.category = 'Gauntlets';
+    else if (id.includes('_shield'))      r.category = 'Shields';
+    else if (id.includes('_pickaxe'))     r.category = 'Pickaxes';
+    else if (id.includes('_hatchet'))     r.category = 'Hatchets';
+    else r.category = 'Other';
+  }
+  // Categorize cooking
+  for (const r of GAME_DATA.recipes.cooking) {
+    if (r.category) continue;
+    r.category = 'Cooking';
+  }
+  // Categorize fletching
+  for (const r of GAME_DATA.recipes.fletching) {
+    if (r.category) continue;
+    const id = r.id.toLowerCase();
+    if (id.includes('arrow'))        r.category = 'Arrows';
+    else if (id.includes('bow'))     r.category = 'Bows';
+    else if (id.includes('rod'))     r.category = 'Fishing Rods';
+    else r.category = 'Other';
+  }
+  // Categorize crafting
+  for (const r of GAME_DATA.recipes.crafting) {
+    if (r.category) continue;
+    const id = r.id.toLowerCase();
+    if (id.includes('ring'))         r.category = 'Rings';
+    else if (id.includes('amulet') || id.includes('necklace')) r.category = 'Amulets';
+    else if (id.includes('coif') || id.includes('body') || id.includes('chaps') || id.includes('vamb') || id.includes('leather')) r.category = 'Ranged Armor';
+    else if (id.includes('bracelet') || id.includes('cape') || id.includes('gloves')) r.category = 'Accessories';
+    else r.category = 'Other';
+  }
+  // Categorize incantation
+  for (const r of GAME_DATA.recipes.incantation) {
+    if (r.category) continue;
+    if (r.id.includes('_x10'))       r.category = 'Bulk Crafting';
+    else r.category = 'Runes';
+  }
+  // Categorize enchanting
+  for (const r of (GAME_DATA.recipes.enchanting||[])) {
+    if (r.category) continue;
+    const id = r.id.toLowerCase();
+    if (id.includes('weapon') || id.includes('sword') || id.includes('staff') || id.includes('bow')) r.category = 'Enchant Weapons';
+    else if (id.includes('helm') || id.includes('plate') || id.includes('legs') || id.includes('shield') || id.includes('robe')) r.category = 'Enchant Armor';
+    else r.category = 'Enchant Other';
+  }
+  // Categorize alchemy
+  for (const r of (GAME_DATA.recipes.alchemy||[])) {
+    if (r.category) continue;
+    const id = r.id.toLowerCase();
+    if (id.includes('potion'))       r.category = 'Potions';
+    else r.category = 'Transmutation';
+  }
+  console.log('[Ashfall] Recipe categories assigned');
+})();

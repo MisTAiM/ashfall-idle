@@ -3785,3 +3785,50 @@ html, body {
   text-align: center;
   font-style: italic;
 }
+
+/* ── SKILL CATEGORY TABS ──────────────────────────────── */
+.skill-cat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.cat-tab {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  padding: 5px 12px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+.cat-tab:hover {
+  border-color: var(--accent-dim);
+  color: var(--text);
+  background: var(--bg-card-hover);
+}
+.cat-tab.cat-active {
+  background: rgba(201,135,62,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px rgba(201,135,62,0.15);
+}
+.cat-header {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  padding: 8px 0 4px;
+  border-bottom: 1px solid rgba(201,135,62,0.15);
+  margin-bottom: 8px;
+}
+.skill-cat-section {
+  margin-bottom: 8px;
+}

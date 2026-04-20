@@ -308,41 +308,70 @@ class UI {
         </div>`;
       }
     }
-    html += '<div class="actions-grid">';
-    const toolPct = this.engine.getToolSpeedBonus(sId);
+    // Determine categories
+    const categories = [];
+    const catMap = {};
     for (const action of actions) {
-      const locked = s.skills[sId].level < action.level;
-      const isActive = s.activeSkill === sId && s.activeAction === action.id;
-      const m = this.engine.getMasteryLevel(sId, action.masteryId||action.id);
-      let inputHtml = '';
-      if (action.input) {
-        inputHtml = '<div class="recipe-inputs">' + action.input.map(inp => {
-          const it = GAME_DATA.items[inp.item];
-          const have = s.bank[inp.item] || 0;
-          return `<span class="recipe-mat ${have>=inp.qty?'':'mat-missing'}" data-mat="${inp.item}" data-need="${inp.qty}">${it?.name||inp.item} x${inp.qty} <small data-item-qty="${inp.item}">(${have})</small></span>`;
-        }).join('') + '</div>';
-      }
-      let outputHtml = '';
-      if (action.output) {
-        const o = GAME_DATA.items[action.output.item];
-        outputHtml = `<div class="recipe-output">${o?.name||action.output.item}${action.output.qty>1?' x'+action.output.qty:''} <small data-item-qty="${action.output.item}">(${s.bank[action.output.item]||0})</small></div>`;
-      }
-      if (action.loot) {
-        outputHtml = `<div class="recipe-output">${action.loot.map(l=>{const i=GAME_DATA.items[l.item]; return `${(i?.name||l.item)}${l.qty>1?' x'+l.qty:''} <small data-item-qty="${l.item}">(${s.bank[l.item]||0})</small>`;}).join(', ')}</div>`;
-      }
-      html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('${sId}','${action.id}')"`}>
-        <div class="ac-header"><span class="ac-name">${action.name}</span><span class="ac-level">Lv ${action.level}</span></div>
-        ${action.altarName ? `<div class="altar-info"><span class="altar-name">${action.altarName}</span>${action.altarDesc ? `<span class="altar-desc">${action.altarDesc}</span>`:''}</div>` : ''}
-        ${inputHtml}${outputHtml}
-        <div class="ac-footer">
-          <span class="ac-xp">+${action.xp} XP</span>
-          <span class="ac-time">${toolPct>0?(action.time*(1-toolPct/100)).toFixed(1)+'s':action.time+'s'}</span>
-          ${m>0?`<span class="ac-mastery">M:${m}</span>`:''}
-        </div>
-        ${locked?`<div class="locked-overlay">Requires Level ${action.level}</div>`:''}
-      </div>`;
+      const cat = action.category || 'All';
+      if (!catMap[cat]) { catMap[cat] = []; categories.push(cat); }
+      catMap[cat].push(action);
     }
-    html += '</div>';
+    const hasCategories = categories.length > 1;
+
+    // Category filter tabs
+    if (hasCategories) {
+      html += `<div class="skill-cat-tabs" id="skill-tabs">
+        <button class="cat-tab cat-active" onclick="ui.filterSkillCat('all',this)">All (${actions.length})</button>`;
+      for (const cat of categories) {
+        html += `<button class="cat-tab" onclick="ui.filterSkillCat('${cat.replace(/'/g,"\\'")}',this)">${cat} (${catMap[cat].length})</button>`;
+      }
+      html += '</div>';
+    }
+
+    const toolPct = this.engine.getToolSpeedBonus(sId);
+
+    // Render by category
+    for (const cat of categories) {
+      if (hasCategories) {
+        html += `<div class="skill-cat-section" data-cat="${cat}"><h3 class="cat-header">${cat}</h3><div class="actions-grid">`;
+      } else {
+        html += '<div class="actions-grid">';
+      }
+      for (const action of catMap[cat]) {
+        const locked = s.skills[sId].level < action.level;
+        const isActive = s.activeSkill === sId && s.activeAction === action.id;
+        const m = this.engine.getMasteryLevel(sId, action.masteryId||action.id);
+        let inputHtml = '';
+        if (action.input) {
+          inputHtml = '<div class="recipe-inputs">' + action.input.map(inp => {
+            const it = GAME_DATA.items[inp.item];
+            const have = s.bank[inp.item] || 0;
+            return `<span class="recipe-mat ${have>=inp.qty?'':'mat-missing'}" data-mat="${inp.item}" data-need="${inp.qty}">${it?.name||inp.item} x${inp.qty} <small data-item-qty="${inp.item}">(${have})</small></span>`;
+          }).join('') + '</div>';
+        }
+        let outputHtml = '';
+        if (action.output) {
+          const o = GAME_DATA.items[action.output.item];
+          outputHtml = `<div class="recipe-output">${o?.name||action.output.item}${action.output.qty>1?' x'+action.output.qty:''} <small data-item-qty="${action.output.item}">(${s.bank[action.output.item]||0})</small></div>`;
+        }
+        if (action.loot) {
+          outputHtml = `<div class="recipe-output">${action.loot.map(l=>{const i=GAME_DATA.items[l.item]; return `${(i?.name||l.item)}${l.qty>1?' x'+l.qty:''} <small data-item-qty="${l.item}">(${s.bank[l.item]||0})</small>`;}).join(', ')}</div>`;
+        }
+        html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('${sId}','${action.id}')"`}>
+          <div class="ac-header"><span class="ac-name">${action.name}</span><span class="ac-level">Lv ${action.level}</span></div>
+          ${action.altarName ? `<div class="altar-info"><span class="altar-name">${action.altarName}</span>${action.altarDesc ? `<span class="altar-desc">${action.altarDesc}</span>`:''}</div>` : ''}
+          ${inputHtml}${outputHtml}
+          <div class="ac-footer">
+            <span class="ac-xp">+${action.xp} XP</span>
+            <span class="ac-time">${toolPct>0?(action.time*(1-toolPct/100)).toFixed(1)+'s':action.time+'s'}</span>
+            ${m>0?`<span class="ac-mastery">M:${m}</span>`:''}
+          </div>
+          ${locked?`<div class="locked-overlay">Requires Level ${action.level}</div>`:''}
+        </div>`;
+      }
+      html += '</div>';
+      if (hasCategories) html += '</div>';
+    }
 
     // Fishing Zones (zone-based random catch pools)
     if (sId === 'fishing' && GAME_DATA.fishingZones) {
@@ -2310,6 +2339,19 @@ class UI {
   }
 
   escHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+
+  filterSkillCat(cat, btn) {
+    // Toggle category filter
+    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('cat-active'));
+    btn.classList.add('cat-active');
+    document.querySelectorAll('.skill-cat-section').forEach(sec => {
+      if (cat === 'all' || sec.getAttribute('data-cat') === cat) {
+        sec.style.display = '';
+      } else {
+        sec.style.display = 'none';
+      }
+    });
+  }
 
   getRarityColor(itemId) {
     const item = GAME_DATA.items[itemId];
