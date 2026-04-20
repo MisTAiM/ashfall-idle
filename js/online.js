@@ -196,10 +196,11 @@ class OnlineManager {
 
   // ── ASHFALL BAZAAR (Grand Exchange) ──────────────────────
   async postListing(itemId, qty, priceEach) {
-    if (!this.isOnline || !this.user || !game) return null;
-    if (!GAME_DATA.items[itemId]) return null;
-    if (qty <= 0 || priceEach <= 0) return null;
-    if ((game.state.bank[itemId] || 0) < qty) { this.emit('notification',{type:'warn',text:'Not enough items.'}); return null; }
+    if (!this.isOnline || !this.user || !game) { this.emit('notification',{type:'warn',text:'Not connected.'}); return null; }
+    if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account to use the Bazaar.'}); return null; }
+    if (!GAME_DATA.items[itemId]) { this.emit('notification',{type:'warn',text:'Invalid item.'}); return null; }
+    if (qty <= 0 || priceEach <= 0) { this.emit('notification',{type:'warn',text:'Invalid quantity or price.'}); return null; }
+    if ((game.state.bank[itemId] || 0) < qty) { this.emit('notification',{type:'warn',text:'Not enough items in bank.'}); return null; }
     // Remove items from bank
     game.state.bank[itemId] -= qty;
     if (game.state.bank[itemId] <= 0) delete game.state.bank[itemId];
@@ -215,25 +216,42 @@ class OnlineManager {
         posted: firebase.firestore.FieldValue.serverTimestamp(),
         status: 'active',
       });
-      this.emit('notification',{type:'success',text:`Listed ${qty}x ${GAME_DATA.items[itemId].name} for ${priceEach}g each.`});
+      this.emit('notification',{type:'success',text:`Listed ${qty}x ${GAME_DATA.items[itemId].name} for ${priceEach}g each!`});
       return ref.id;
-    } catch(e) { console.error('Bazaar post error:',e); game.addItem(itemId, qty); return null; }
+    } catch(e) {
+      console.error('Bazaar post error:', e);
+      // Return items on failure
+      game.addItem(itemId, qty);
+      this.emit('notification',{type:'danger',text:'Bazaar error: ' + e.message});
+      return null;
+    }
   }
 
   async getBazaarListings(searchItem) {
     if (!this.isOnline) return [];
     try {
-      let q = this.firestore.collection('bazaar').where('status','==','active').orderBy('posted','desc').limit(50);
-      if (searchItem) q = this.firestore.collection('bazaar').where('status','==','active').where('item','==',searchItem).orderBy('priceEach','asc').limit(50);
+      let q;
+      if (searchItem) {
+        q = this.firestore.collection('bazaar').where('status','==','active').where('item','==',searchItem).limit(50);
+      } else {
+        q = this.firestore.collection('bazaar').where('status','==','active').limit(50);
+      }
       const snap = await q.get();
       const list = [];
       snap.forEach(doc => list.push({ id:doc.id, ...doc.data() }));
+      // Sort client-side (avoids index requirement)
+      list.sort((a,b) => (b.posted?.seconds||0) - (a.posted?.seconds||0));
       return list;
-    } catch(e) { console.error('Bazaar fetch error:',e); return []; }
+    } catch(e) {
+      console.error('Bazaar fetch error:', e);
+      this.emit('notification',{type:'danger',text:'Bazaar load failed. Check Firebase indexes.'});
+      return [];
+    }
   }
 
   async buyListing(listingId) {
-    if (!this.isOnline || !this.user || !game) return false;
+    if (!this.isOnline || !this.user || !game) { this.emit('notification',{type:'warn',text:'Not connected.'}); return false; }
+    if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account to buy items.'}); return false; }
     try {
       const ref = this.firestore.collection('bazaar').doc(listingId);
       const doc = await ref.get();
@@ -740,26 +758,51 @@ class OnlineManager {
 
   // ── FRIENDS ────────────────────────────────────────────
   async sendFriendRequest(targetName) {
-    if (!this.isOnline || !this.user || this.user.isAnonymous) return;
+    if (!this.isOnline || !this.user) { this.emit('notification',{type:'warn',text:'Not connected.'}); return; }
+    if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account first to add friends.'}); return; }
+    if (!targetName || targetName.trim().length < 1) { this.emit('notification',{type:'warn',text:'Enter a player name.'}); return; }
     try {
-      // Find target player by name
-      const snap = await this.firestore.collection('players').where('displayName','==',targetName).limit(1).get();
-      if (snap.empty) { this.emit('notification',{type:'warn',text:`Player "${targetName}" not found.`}); return; }
+      // Search by displayName field
+      let snap = await this.firestore.collection('players').where('displayName','==',targetName.trim()).limit(1).get();
+      // Fallback: try case-insensitive by checking all recent players
+      if (snap.empty) {
+        const allSnap = await this.firestore.collection('players').limit(100).get();
+        let found = null;
+        allSnap.forEach(doc => {
+          if (doc.data().displayName?.toLowerCase() === targetName.trim().toLowerCase()) {
+            found = doc;
+          }
+        });
+        if (!found) { this.emit('notification',{type:'warn',text:`Player "${targetName}" not found. They must have an account and be synced.`}); return; }
+        snap = { empty:false, docs:[found] };
+      }
       const targetDoc = snap.docs[0];
       const targetUid = targetDoc.id;
-      if (targetUid === this.user.uid) { this.emit('notification',{type:'warn',text:"Can't friend yourself."}); return; }
+      if (targetUid === this.user.uid) { this.emit('notification',{type:'warn',text:"Can't add yourself."}); return; }
       // Check not already friends
       const myFriends = await this.getFriends();
-      if (myFriends.some(f => f.uid === targetUid)) { this.emit('notification',{type:'warn',text:'Already friends.'}); return; }
-      // Send request to target's inbox
+      if (myFriends.some(f => f.uid === targetUid)) { this.emit('notification',{type:'warn',text:'Already friends with this player.'}); return; }
+      // Send request
       await this.firestore.collection('friend_requests').doc(targetUid).collection('pending').add({
         from: this.user.uid,
         fromName: this.displayName,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         status: 'pending',
       });
+      // Also add to their inbox
+      await this.firestore.collection('inbox').doc(targetUid).collection('items').add({
+        type: 'friend_request',
+        from: this.user.uid,
+        fromName: this.displayName,
+        preview: `${this.displayName} wants to be friends`,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        read: false,
+      });
       this.emit('notification',{type:'success',text:`Friend request sent to ${targetName}!`});
-    } catch(e) { this.emit('notification',{type:'danger',text:'Friend request failed: '+e.message}); }
+    } catch(e) {
+      console.error('Friend request error:', e);
+      this.emit('notification',{type:'danger',text:'Friend request failed: ' + e.message});
+    }
   }
 
   async getFriendRequests() {
@@ -836,7 +879,8 @@ class OnlineManager {
   }
 
   async sendPrivateMessage(targetUid, targetName, text) {
-    if (!this.isOnline || !this.user || !text.trim()) return;
+    if (!this.isOnline || !this.user || !text.trim()) { this.emit('notification',{type:'warn',text:'Cannot send empty message.'}); return; }
+    if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account to send messages.'}); return; }
     const convoId = this._getConvoId(this.user.uid, targetUid);
     try {
       // Create/update conversation metadata
@@ -876,7 +920,17 @@ class OnlineManager {
       const msgs = [];
       snap.forEach(doc => msgs.push({ id:doc.id, ...doc.data() }));
       return msgs;
-    } catch(e) { return []; }
+    } catch(e) {
+      console.error('Conversation load error:', e);
+      // Fallback without orderBy
+      try {
+        const snap2 = await this.firestore.collection('messages').doc(convoId).collection('msgs').limit(100).get();
+        const msgs = [];
+        snap2.forEach(doc => msgs.push({ id:doc.id, ...doc.data() }));
+        msgs.sort((a,b) => (a.timestamp?.seconds||0) - (b.timestamp?.seconds||0));
+        return msgs;
+      } catch(e2) { return []; }
+    }
   }
 
   async getConversationList() {
@@ -884,11 +938,13 @@ class OnlineManager {
     try {
       const snap = await this.firestore.collection('messages')
         .where('participants','array-contains',this.user.uid)
-        .orderBy('lastTimestamp','desc').limit(20).get();
+        .limit(20).get();
       const convos = [];
       snap.forEach(doc => convos.push({ id:doc.id, ...doc.data() }));
+      // Sort client-side to avoid index requirement
+      convos.sort((a,b) => (b.lastTimestamp?.seconds||0) - (a.lastTimestamp?.seconds||0));
       return convos;
-    } catch(e) { return []; }
+    } catch(e) { console.error('Conversations error:', e); return []; }
   }
 
   // ── INBOX / NOTIFICATIONS ──────────────────────────────
@@ -896,11 +952,12 @@ class OnlineManager {
     if (!this.isOnline || !this.user) return [];
     try {
       const snap = await this.firestore.collection('inbox').doc(this.user.uid)
-        .collection('items').orderBy('timestamp','desc').limit(50).get();
+        .collection('items').limit(50).get();
       const items = [];
       snap.forEach(doc => items.push({ id:doc.id, ...doc.data() }));
+      items.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
       return items;
-    } catch(e) { return []; }
+    } catch(e) { console.error('Inbox error:', e); return []; }
   }
 
   async getUnreadCount() {

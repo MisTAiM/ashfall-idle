@@ -1147,7 +1147,7 @@ class UI {
     let html = this.header('Ashen Bazaar','coin','Trade items with other players. List items for sale, buy from others.',null);
 
     if (!isOnline || !online.user || online.user.isAnonymous) {
-      html += '<div class="bank-empty">Create an account to access the Bazaar. Anonymous users cannot trade.</div>';
+      html += '<div class="bank-empty">Create an account to access the Bazaar. Go to Online &gt; Account to register.</div>';
       el.innerHTML = html; return;
     }
 
@@ -2210,7 +2210,7 @@ class UI {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
     let html = this.header('Inbox','scroll','Private messages and notifications.',null);
     if (!isOnline || !online.user || online.user.isAnonymous) {
-      html += '<div class="bank-empty">Create an account to use inbox.</div>';
+      html += '<div class="bank-empty">Create an account to use inbox and messaging.</div>';
       el.innerHTML = html; return;
     }
     // Active DM conversation
@@ -2231,16 +2231,56 @@ class UI {
       this._loadDMMessages(t.uid);
       return;
     }
+
+    // Compose new message
+    html += `<div class="settings-section">
+      <h3>Send Message</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="msg-to" class="chat-input-v2" placeholder="Player name..." style="width:160px">
+        <input type="text" id="msg-text" class="chat-input-v2" placeholder="Your message..." style="flex:1" maxlength="500">
+        <button class="btn btn-sm" onclick="ui.sendMessageToPlayer()">Send</button>
+      </div>
+    </div>`;
+
     // Inbox tools
     html += `<div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-sm" onclick="ui.renderPage('inbox')">Refresh</button>
       <button class="btn btn-sm btn-danger" onclick="online.clearInbox().then(()=>ui.renderPage('inbox'))">Clear All</button>
     </div>`;
+
     // Conversations
-    html += '<h2 class="section-title">Recent Conversations</h2><div id="inbox-convos"><div class="bank-empty">Loading...</div></div>';
+    html += '<h2 class="section-title">Conversations</h2><div id="inbox-convos"><div class="bank-empty">Loading...</div></div>';
     // Notifications
     html += '<h2 class="section-title">Notifications</h2><div id="inbox-notifs"><div class="bank-empty">Loading...</div></div>';
     el.innerHTML = html;
     this._loadInboxData();
+  }
+
+  async sendMessageToPlayer() {
+    const toName = document.getElementById('msg-to')?.value?.trim();
+    const text = document.getElementById('msg-text')?.value?.trim();
+    if (!toName) { this.toast({type:'warn',text:'Enter a player name.'}); return; }
+    if (!text) { this.toast({type:'warn',text:'Enter a message.'}); return; }
+    try {
+      // Find player
+      const allSnap = await online.firestore.collection('players').limit(100).get();
+      let targetDoc = null;
+      allSnap.forEach(doc => {
+        if (doc.data().displayName?.toLowerCase() === toName.toLowerCase()) targetDoc = doc;
+      });
+      if (!targetDoc) { this.toast({type:'warn',text:`Player "${toName}" not found.`}); return; }
+      const targetUid = targetDoc.id;
+      const targetName = targetDoc.data().displayName;
+      if (targetUid === online.user.uid) { this.toast({type:'warn',text:"Can't message yourself."}); return; }
+      await online.sendPrivateMessage(targetUid, targetName, text);
+      document.getElementById('msg-text').value = '';
+      this.toast({type:'success',text:`Message sent to ${targetName}!`});
+      // Open the DM view
+      this._dmTarget = { uid:targetUid, name:targetName };
+      this.renderPage('inbox');
+    } catch(e) {
+      this.toast({type:'danger',text:'Failed to send: ' + e.message});
+    }
   }
 
   async _loadInboxData() {
