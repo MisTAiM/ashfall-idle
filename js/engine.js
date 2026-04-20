@@ -145,6 +145,7 @@ class GameEngine {
     if (!s.equipment.gloves) s.equipment.gloves = null;
     if (!s.familiar) s.familiar = { active:null, timeLeft:0 };
     if (!s.potionBelt) s.potionBelt = [{id:null,qty:0},{id:null,qty:0},{id:null,qty:0},{id:null,qty:0}];
+    if (s.specEnergy === undefined) s.specEnergy = 100;
     s.version = 2;
   }
 
@@ -580,6 +581,92 @@ class GameEngine {
       this.state.combat.playerHp = Math.min(this.getMaxHp(), this.state.combat.playerHp + famHeal);
     }
     // Familiar damageMult applied in maxHit calc via activeBuffs already
+    // Regen spec energy (10% per attack)
+    if (this.state.specEnergy < 100) {
+      this.state.specEnergy = Math.min(100, (this.state.specEnergy||0) + (GAME_DATA.specRegenRate || 10));
+    }
+  }
+
+  // ── SPECIAL ATTACK ─────────────────────────────────────
+  useSpecialAttack() {
+    const c = this.state.combat;
+    if (!c.active || !c.monster) return;
+    const weapon = this.getEquippedItem('weapon');
+    if (!weapon?.specCost || !weapon.specEffect) {
+      this.emit('notification',{type:'warn',text:'Your weapon has no special attack.'}); return;
+    }
+    if ((this.state.specEnergy||0) < weapon.specCost) {
+      this.emit('notification',{type:'warn',text:`Need ${weapon.specCost}% spec energy. Have ${this.state.specEnergy||0}%.`}); return;
+    }
+    // Consume spec energy
+    this.state.specEnergy -= weapon.specCost;
+
+    const monster = GAME_DATA.monsters[c.monster] || GAME_DATA.worldBosses.find(b=>b.id===c.monster);
+    if (!monster) return;
+    const spec = weapon.specEffect;
+    const style = c.combatStyle;
+
+    // Calculate base max hit
+    const sL = this.state.skills.strength.level;
+    const sB = this.getStatTotal('strengthBonus');
+    let baseMaxHit = Math.floor((1 + sL / 10) * (1 + sB / 80) * 4);
+
+    // Apply spec multiplier
+    const specMaxHit = Math.floor(baseMaxHit * (spec.mult || 1.0));
+
+    // Execute spec based on type
+    if (spec.type === 'doubleHit') {
+      // Two rapid hits
+      for (let i = 0; i < 2; i++) {
+        let dmg = this.randInt(Math.floor(specMaxHit * 0.1), specMaxHit);
+        c.monsterHp -= dmg;
+        this.emit('combatHit', { who:'player', dmg, crit:true }); // show as crit-style
+      }
+      if (spec.poisonChance && Math.random() < spec.poisonChance) {
+        this.applyStatus('monster', 'poison', 2, 10);
+      }
+    } else if (spec.type === 'doubleShot') {
+      const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
+      const rMaxHit = Math.floor((1 + this.state.skills.ranged.level / 10) * (1 + rB / 80) * 4 * spec.mult);
+      for (let i = 0; i < 2; i++) {
+        let dmg = this.randInt(Math.floor(rMaxHit * 0.2), rMaxHit);
+        c.monsterHp -= dmg;
+        this.emit('combatHit', { who:'player', dmg, crit:true });
+      }
+      this.consumeAmmo(); this.consumeAmmo();
+    } else if (spec.type === 'armorPierce' || spec.type === 'piercing') {
+      // Ignore defence percentage
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.3), specMaxHit);
+      c.monsterHp -= dmg;
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+    } else if (spec.type === 'burnStrike') {
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.2), specMaxHit);
+      c.monsterHp -= dmg;
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.applyStatus('monster', 'burn', spec.burnStacks || 2, 12);
+    } else if (spec.type === 'energyDrain') {
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.3), specMaxHit);
+      const drain = Math.floor(c.monsterHp * (spec.drainPct || 10) / 100);
+      dmg += drain;
+      c.monsterHp -= dmg;
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+    } else if (spec.type === 'execute') {
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.5), specMaxHit);
+      c.monsterHp -= dmg;
+      // Heal percentage of damage
+      const heal = Math.floor(dmg * (spec.healPct || 50) / 100);
+      c.playerHp = Math.min(this.getMaxHp(), c.playerHp + heal);
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.emit('notification',{type:'info',text:`Healed ${heal} HP from Voidreaper!`});
+    } else if (spec.type === 'magicShield') {
+      c.activeBuffs.push({ stat:'damageReduction', value:spec.reduceDmg, remaining:spec.duration*2 });
+      this.emit('notification',{type:'success',text:`Magic shield active! -${spec.reduceDmg}% damage for ${spec.duration} attacks.`});
+    } else if (spec.type === 'runeRecovery') {
+      c.activeBuffs.push({ stat:'runeRecovery', value:spec.chance, remaining:30 });
+      this.emit('notification',{type:'success',text:`Rune recovery active! ${(spec.chance*100).toFixed(0)}% chance to save runes.`});
+    }
+
+    this.emit('notification',{type:'achievement',text:`SPECIAL ATTACK! (${this.state.specEnergy}% energy left)`});
   }
 
   monsterAttack(monster) {

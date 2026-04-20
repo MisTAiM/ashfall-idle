@@ -3581,7 +3581,7 @@ html, body {
 /* ── SIDEBAR POLISH ───────────────────────────────────── */
 .sidebar-header {
   position: relative;
-  overflow: hidden;
+  /* overflow:hidden removed - was clipping logo */
 }
 .sidebar-header::after {
   content: '';
@@ -3704,4 +3704,84 @@ html, body {
 @keyframes pageIn {
   0% { opacity: 0; transform: translateY(4px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SPEC BAR ─────────────────────────────────────────── */
+.spec-bar-section {
+  margin: 10px 0;
+  padding: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.spec-bar-label {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+.spec-bar-label span {
+  font-family: 'JetBrains Mono', monospace;
+  color: #4ac4a0;
+}
+.spec-bar {
+  position: relative;
+  height: 18px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.spec-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1a5a4a, #2a9a7a, #4ac4a0);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(74,196,160,0.3);
+}
+.spec-segments {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.spec-seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(0,0,0,0.5);
+  border-left: 1px solid rgba(255,255,255,0.1);
+}
+.spec-btn {
+  width: 100%;
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #4ac4a0;
+  background: rgba(74,196,160,0.08);
+  border: 1px solid rgba(74,196,160,0.3);
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.spec-btn:hover:not(:disabled) {
+  background: rgba(74,196,160,0.15);
+  box-shadow: 0 0 12px rgba(74,196,160,0.2);
+  transform: translateY(-1px);
+}
+.spec-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.spec-no-weapon {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
 }

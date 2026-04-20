@@ -660,6 +660,25 @@ class UI {
           <button class="btn" onclick="game.castTeleHome()">TeleHome (3 Fire + 5 Air)</button>
         </div>`;
       }
+
+      // ── SPEC BAR ──
+      const weapon = GAME_DATA.items[s.equipment.weapon];
+      const hasSpec = weapon?.specCost && weapon?.specEffect;
+      const specE = s.specEnergy || 0;
+      html += `<div class="spec-bar-section">
+        <div class="spec-bar-label">Special Attack <span id="spec-pct">${specE}%</span></div>
+        <div class="spec-bar">
+          <div class="spec-fill" id="spec-fill" style="width:${specE}%"></div>
+          <div class="spec-segments">
+            <div class="spec-seg" style="left:25%"></div>
+            <div class="spec-seg" style="left:50%"></div>
+            <div class="spec-seg" style="left:75%"></div>
+          </div>
+        </div>
+        ${hasSpec ? `<button class="btn spec-btn ${specE >= weapon.specCost ? '' : 'btn-disabled'}" onclick="game.useSpecialAttack()" ${specE >= weapon.specCost ? '' : 'disabled'}>
+          ${weapon.specEffect.type === 'doubleHit' ? 'Double Hit' : weapon.specEffect.type === 'armorPierce' ? 'Armor Pierce' : weapon.specEffect.type === 'execute' ? 'Execute' : weapon.specEffect.type === 'burnStrike' ? 'Burn Strike' : weapon.specEffect.type === 'doubleShot' ? 'Double Shot' : weapon.specEffect.type === 'energyDrain' ? 'Energy Drain' : weapon.specEffect.type === 'magicShield' ? 'Magic Shield' : weapon.specEffect.type === 'runeRecovery' ? 'Rune Recovery' : 'Special'} (${weapon.specCost}%)
+        </button>` : '<div class="spec-no-weapon">No spec weapon equipped</div>'}
+      </div>`;
       // Active familiar in combat
       if (s.familiar?.active) {
         const mins = Math.floor(s.familiar.timeLeft / 60);
@@ -2685,6 +2704,11 @@ class UI {
         // Kill counter
         const killEl = document.getElementById('kill-count');
         if (killEl) killEl.textContent = s.stats.monstersKilled;
+        // Spec bar
+        const specFill = document.getElementById('spec-fill');
+        const specPct = document.getElementById('spec-pct');
+        if (specFill) specFill.style.width = (s.specEnergy||0) + '%';
+        if (specPct) specPct.textContent = (s.specEnergy||0) + '%';
         // Ability cooldown overlays (real-time)
         for (let i = 0; i < 4; i++) {
           const aid = s.equippedAbilities[i];
