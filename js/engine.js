@@ -341,6 +341,10 @@ class GameEngine {
       if (align.bonus.gatherXp && skill?.type === 'gathering') amount = Math.floor(amount * (1 + align.bonus.gatherXp/100));
       if (align.bonus.diplomacyXp && skillId === 'diplomacy') amount = Math.floor(amount * (1 + align.bonus.diplomacyXp/100));
     }
+    // 5% XP reduction for levels 10+ (slows mid-late game progression)
+    if (this.state.skills[skillId].level >= 10) {
+      amount = Math.floor(amount * 0.95);
+    }
     const before = this.state.skills[skillId].level;
     this.state.skills[skillId].xp += amount;
     this.state.stats.totalXpGained += amount;

@@ -276,13 +276,17 @@ class UI {
       const sk = s.skills[sId];
       const p = this.engine.getXpProgress(sId);
       const next = sk.level >= 99 ? 'MAX' : this.fmt(this.engine.getXpForLevel(sk.level + 1) - sk.xp);
+      const toolPct = this.engine.getToolSpeedBonus(sId);
       bar = `<div class="skill-header-bar">
         <div class="sh-level">Level ${sk.level}</div>
         <div class="sh-xp-bar"><div class="sh-xp-fill" style="width:${(p*100).toFixed(1)}%"></div></div>
         <div class="sh-xp-text">${this.fmt(sk.xp)} XP ${sk.level<99?`(${next} to next)`:''}</div>
+        ${toolPct > 0 ? `<div class="sh-tool-bonus">Equipped tool: -${toolPct}% time</div>` : ''}
       </div>`;
     }
-    return `<div class="page-header"><div class="ph-icon">${icon(ic,32)}</div><div class="ph-info"><h1>${title}</h1><p>${desc}</p></div></div>${bar}`;
+    // Decorative divider SVG
+    const divider = `<svg class="header-divider" viewBox="0 0 400 8" preserveAspectRatio="none"><path d="M0 4 Q100 0 200 4 Q300 8 400 4" stroke="rgba(201,135,62,0.3)" stroke-width="1" fill="none"/></svg>`;
+    return `<div class="page-header skill-header"><div class="ph-icon">${icon(ic,32)}</div><div class="ph-info"><h1>${title}</h1><p>${desc}</p></div></div>${bar}${divider}`;
   }
 
   renderSkillPage(el, sId, skill) {
@@ -2541,13 +2545,21 @@ class UI {
   }
 
   toast(n) {
-    const c = document.getElementById('toast-container');
+    let c = document.getElementById('notif-container');
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'notif-container';
+      c.className = 'notif-container';
+      document.body.appendChild(c);
+    }
     const t = document.createElement('div');
-    t.className = `toast toast-${n.type||'info'}`;
+    t.className = `notif notif-${n.type||'info'}`;
     t.textContent = n.text;
     c.appendChild(t);
-    setTimeout(()=>t.classList.add('toast-show'), 10);
-    setTimeout(()=>{ t.classList.remove('toast-show'); setTimeout(()=>t.remove(), 300); }, 3500);
+    const duration = n.type === 'achievement' || n.type === 'levelup' ? 5000 : n.type === 'rare' ? 4500 : 3000;
+    setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(100%)'; t.style.transition='all 0.3s'; setTimeout(()=>t.remove(), 300); }, duration);
+    // Keep max 5 notifications
+    while (c.children.length > 5) c.removeChild(c.firstChild);
   }
 
   showHitSplat(d) {
