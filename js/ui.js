@@ -292,17 +292,20 @@ class UI {
     if (s.activeSkill === sId && s.activeAction) {
       const action = actions.find(a => a.id === s.activeAction);
       if (action) {
-        const reduction = 1 + (this.engine.getMasteryLevel(sId, action.masteryId||action.id) * 0.005);
-        const t = action.time / reduction;
+        const masteryRed = 1 + (this.engine.getMasteryLevel(sId, action.masteryId||action.id) * 0.005);
+        const toolRed = 1 + (this.engine.getToolSpeedBonus(sId) / 100);
+        const t = action.time / masteryRed / toolRed;
         const p = Math.min(1, s.actionProgress / t);
+        const toolPct = this.engine.getToolSpeedBonus(sId);
         html += `<div class="active-action-bar">
-          <div class="aa-label">Training: ${action.name}</div>
+          <div class="aa-label">Training: ${action.name} ${toolPct>0?`<span class="tool-bonus">(-${toolPct}% tool)</span>`:''}</div>
           <div class="aa-progress"><div class="aa-fill" style="width:${(p*100).toFixed(0)}%"></div></div>
           <button class="btn btn-danger btn-sm" onclick="ui.stopAction()">Stop</button>
         </div>`;
       }
     }
     html += '<div class="actions-grid">';
+    const toolPct = this.engine.getToolSpeedBonus(sId);
     for (const action of actions) {
       const locked = s.skills[sId].level < action.level;
       const isActive = s.activeSkill === sId && s.activeAction === action.id;
@@ -329,7 +332,7 @@ class UI {
         ${inputHtml}${outputHtml}
         <div class="ac-footer">
           <span class="ac-xp">+${action.xp} XP</span>
-          <span class="ac-time">${action.time}s</span>
+          <span class="ac-time">${toolPct>0?(action.time*(1-toolPct/100)).toFixed(1)+'s':action.time+'s'}</span>
           ${m>0?`<span class="ac-mastery">M:${m}</span>`:''}
         </div>
         ${locked?`<div class="locked-overlay">Requires Level ${action.level}</div>`:''}
@@ -1060,34 +1063,35 @@ class UI {
   // ── ASHEN BAZAAR ───────────────────────────────────────
   renderBazaarPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Ashen Bazaar','coin','The marketplace of the Ashfall. Trade items with other players.',null);
+    let html = this.header('Ashen Bazaar','coin','Trade items with other players. List items for sale, buy from others.',null);
 
-    if (!isOnline) {
-      html += '<div class="bank-empty">Sign in to access the Bazaar.</div>';
+    if (!isOnline || !online.user || online.user.isAnonymous) {
+      html += '<div class="bank-empty">Create an account to access the Bazaar. Anonymous users cannot trade.</div>';
       el.innerHTML = html; return;
     }
 
-    // Collect gold button
-    html += `<div class="bazaar-actions">
-      <button class="btn btn-sm" onclick="online.collectBazaarGold()">Collect Pending Gold</button>
-      <span class="ba-gold">Your Gold: <b id="bazaar-gold">${this.fmt(game.state.gold)}</b></span>
+    // Gold + pending
+    html += `<div class="bazaar-header">
+      <span class="bz-gold">${icon('coin',16)} <span data-bank-gold>${this.fmt(game.state.gold)}</span> Gold</span>
+      <button class="btn btn-sm" onclick="online.collectBazaarGold().then(()=>ui.renderPage('bazaar'))">Collect Pending Sales</button>
     </div>`;
 
-    // Post listing
+    // Post listing form
     html += `<div class="bazaar-post">
       <h3 class="section-title">Sell an Item</h3>
       <div class="bp-form">
-        <select id="bz-item" class="chat-input-v2" style="flex:1">
+        <select id="bz-item" class="chat-input-v2 bz-select">
           <option value="">-- Select Item --</option>`;
-    for (const [id, qty] of Object.entries(game.state.bank)) {
-      if (qty > 0 && GAME_DATA.items[id]) {
-        html += `<option value="${id}">${GAME_DATA.items[id].name} (x${qty})</option>`;
-      }
+    const bankItems = Object.entries(game.state.bank).filter(([id,q]) => q > 0 && GAME_DATA.items[id]).sort((a,b) => (GAME_DATA.items[a[0]]?.name||'').localeCompare(GAME_DATA.items[b[0]]?.name||''));
+    for (const [id, qty] of bankItems) {
+      const item = GAME_DATA.items[id];
+      const rarCol = this.getRarityColor(id);
+      html += `<option value="${id}" style="${rarCol?'color:'+rarCol:''}">${item.name} (x${qty})</option>`;
     }
     html += `</select>
         <input type="number" id="bz-qty" class="qty-input" min="1" value="1" placeholder="Qty" style="width:60px">
-        <input type="number" id="bz-price" class="qty-input" min="1" value="100" placeholder="Price ea" style="width:80px">
-        <button class="btn btn-sm" onclick="ui.postBazaarListing()">List</button>
+        <input type="number" id="bz-price" class="qty-input" min="1" value="100" placeholder="Price/ea" style="width:80px">
+        <button class="btn" onclick="ui.postBazaarListing()">List for Sale</button>
       </div>
     </div>`;
 
@@ -1095,21 +1099,28 @@ class UI {
     html += `<div class="bazaar-search">
       <h3 class="section-title">Browse Listings</h3>
       <div style="display:flex;gap:6px;margin-bottom:10px">
-        <input type="text" id="bz-search" class="chat-input-v2" placeholder="Search item name..." style="flex:1">
+        <input type="text" id="bz-search" class="chat-input-v2" placeholder="Search by item name..." style="flex:1">
         <button class="btn btn-sm" onclick="ui.searchBazaar()">Search</button>
-        <button class="btn btn-sm" onclick="ui.loadBazaarAll()">Show All</button>
+        <button class="btn btn-sm" onclick="ui.loadBazaarAll()">All</button>
+        <button class="btn btn-sm" onclick="ui.loadBazaarMine()">My Listings</button>
       </div>
     </div>`;
 
-    html += '<div id="bazaar-listings"><div class="bank-empty">Click "Show All" to load listings.</div></div>';
+    html += '<div id="bazaar-listings"><div class="bank-empty">Loading listings...</div></div>';
     el.innerHTML = html;
+    // Auto-load all listings on page visit
+    this.loadBazaarAll();
   }
 
   async postBazaarListing() {
     const itemId = document.getElementById('bz-item')?.value;
     const qty = parseInt(document.getElementById('bz-qty')?.value) || 1;
     const price = parseInt(document.getElementById('bz-price')?.value) || 100;
-    if (!itemId) { this.toast({type:'warn',text:'Select an item.'}); return; }
+    if (!itemId) { this.toast({type:'warn',text:'Select an item to sell.'}); return; }
+    if (qty <= 0) { this.toast({type:'warn',text:'Quantity must be at least 1.'}); return; }
+    if (price <= 0) { this.toast({type:'warn',text:'Price must be at least 1.'}); return; }
+    const have = game.state.bank[itemId] || 0;
+    if (have < qty) { this.toast({type:'warn',text:`You only have ${have}. Cannot list ${qty}.`}); return; }
     await online.postListing(itemId, qty, price);
     this.renderPage('bazaar');
   }
@@ -1122,34 +1133,44 @@ class UI {
     this.renderBazaarListings(container, listings);
   }
 
+  async loadBazaarMine() {
+    const container = document.getElementById('bazaar-listings');
+    if (!container) return;
+    container.innerHTML = '<div class="bank-empty">Loading your listings...</div>';
+    const all = await online.getBazaarListings();
+    const mine = all.filter(l => online.user && l.seller === online.user.uid);
+    this.renderBazaarListings(container, mine);
+  }
+
   async searchBazaar() {
     const search = document.getElementById('bz-search')?.value?.trim().toLowerCase();
     if (!search) { this.loadBazaarAll(); return; }
     const container = document.getElementById('bazaar-listings');
     if (!container) return;
     container.innerHTML = '<div class="bank-empty">Searching...</div>';
-    // Search by item name matching
     const all = await online.getBazaarListings();
-    const filtered = all.filter(l => l.itemName?.toLowerCase().includes(search));
+    const filtered = all.filter(l => (l.itemName||'').toLowerCase().includes(search) || (l.item||'').toLowerCase().includes(search));
     this.renderBazaarListings(container, filtered);
   }
 
   renderBazaarListings(container, listings) {
     if (listings.length === 0) {
-      container.innerHTML = '<div class="bank-empty">No listings found.</div>';
+      container.innerHTML = '<div class="bank-empty">No listings found. Be the first to sell something!</div>';
       return;
     }
     let html = `<div class="bz-table">
       <div class="bz-header"><span>Item</span><span>Qty</span><span>Price/ea</span><span>Total</span><span>Seller</span><span></span></div>`;
     for (const l of listings) {
       const isMe = online.user && l.seller === online.user.uid;
+      const item = GAME_DATA.items[l.item];
+      const rarCol = item ? (GAME_DATA.rarities?.[item.rarity]?.color || '') : '';
       html += `<div class="bz-row ${isMe?'bz-mine':''}">
-        <span class="bz-item">${l.itemName || l.item}</span>
+        <span class="bz-item" style="${rarCol?'color:'+rarCol:''}">${l.itemName || l.item}${item?.rarity && item.rarity !== 'common' ? ` <small class="rarity-tag" style="color:${rarCol}">${GAME_DATA.rarities[item.rarity]?.name}</small>` : ''}</span>
         <span class="bz-qty">${l.qty}</span>
         <span class="bz-price">${this.fmt(l.priceEach)}g</span>
         <span class="bz-total">${this.fmt(l.totalPrice)}g</span>
         <span class="bz-seller">${this.escHtml(l.sellerName||'Unknown')}</span>
-        <span>${isMe ? `<button class="btn btn-xs btn-danger" onclick="online.cancelListing('${l.id}').then(()=>ui.renderPage('bazaar'))">Cancel</button>` : `<button class="btn btn-xs" onclick="online.buyListing('${l.id}').then(()=>ui.renderPage('bazaar'))">Buy</button>`}</span>
+        <span>${isMe ? `<button class="btn btn-xs btn-danger" onclick="online.cancelListing('${l.id}').then(()=>ui.renderPage('bazaar'))">Cancel</button>` : `<button class="btn btn-xs" ${game.state.gold>=l.totalPrice?'':'disabled'} onclick="online.buyListing('${l.id}').then(()=>ui.renderPage('bazaar'))">Buy</button>`}</span>
       </div>`;
     }
     html += '</div>';
@@ -2576,8 +2597,9 @@ class UI {
     if (tbFill && s.activeSkill && s.activeAction) {
       const action = this.engine._findAction(s.activeSkill, s.activeAction);
       if (action) {
-        const red = 1 + (this.engine.getMasteryLevel(s.activeSkill, action.masteryId||action.id) * 0.005);
-        tbFill.style.width = (Math.min(1, Math.max(0, s.actionProgress / (action.time / red))) * 100).toFixed(0) + '%';
+        const mRed = 1 + (this.engine.getMasteryLevel(s.activeSkill, action.masteryId||action.id) * 0.005);
+        const tRed = 1 + (this.engine.getToolSpeedBonus(s.activeSkill) / 100);
+        tbFill.style.width = (Math.min(1, Math.max(0, s.actionProgress / (action.time / mRed / tRed))) * 100).toFixed(0) + '%';
       }
     }
 
@@ -2586,8 +2608,9 @@ class UI {
     if (aaFill && s.activeSkill && s.activeAction) {
       const action = this.engine._findAction(s.activeSkill, s.activeAction);
       if (action) {
-        const red = 1 + (this.engine.getMasteryLevel(s.activeSkill, action.masteryId||action.id) * 0.005);
-        aaFill.style.width = (Math.min(1, Math.max(0, s.actionProgress / (action.time / red))) * 100).toFixed(0) + '%';
+        const mRed = 1 + (this.engine.getMasteryLevel(s.activeSkill, action.masteryId||action.id) * 0.005);
+        const tRed = 1 + (this.engine.getToolSpeedBonus(s.activeSkill) / 100);
+        aaFill.style.width = (Math.min(1, Math.max(0, s.actionProgress / (action.time / mRed / tRed))) * 100).toFixed(0) + '%';
       }
     }
 

@@ -244,8 +244,9 @@ class GameEngine {
     if (!sId || !aId) return;
     const action = this._findAction(sId, aId);
     if (!action) { this.stopSkill(); return; }
-    const reduction = 1 + (this.getMasteryLevel(sId, action.masteryId||action.id) * 0.005);
-    const actionTime = action.time / reduction;
+    const masteryRed = 1 + (this.getMasteryLevel(sId, action.masteryId||action.id) * 0.005);
+    const toolRed = 1 + (this.getToolSpeedBonus(sId) / 100);
+    const actionTime = action.time / masteryRed / toolRed;
     this.state.actionProgress += dt;
     if (this.state.actionProgress >= actionTime) {
       this.state.actionProgress -= actionTime;
@@ -1014,6 +1015,13 @@ class GameEngine {
 
   getEquippedItem(slot) { return this.state.equipment[slot] ? GAME_DATA.items[this.state.equipment[slot]] : null; }
   getAmmoBonus() { return this.getEquippedItem('ammo')?.rangedBonus || 0; }
+
+  // Returns percentage speed bonus from equipped tool for a given skill
+  getToolSpeedBonus(skillId) {
+    const weapon = this.getEquippedItem('weapon');
+    if (!weapon?.toolSpeed) return 0;
+    return weapon.toolSpeed[skillId] || 0;
+  }
 
   consumeAmmo() {
     const id = this.state.equipment.ammo;

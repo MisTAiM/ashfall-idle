@@ -3405,3 +3405,33 @@ html, body {
   color: var(--text-dim);
   margin-left: 3px;
 }
+
+/* ── BAZAAR IMPROVEMENTS ──────────────────────────────── */
+.bazaar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+}
+.bz-gold { font-family: 'Cinzel', serif; font-size: 16px; color: var(--accent); display: flex; align-items: center; gap: 6px; }
+.bz-select { max-width: 300px; }
+.bp-form { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.bz-table { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.bz-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 80px; gap: 4px; padding: 8px 12px; background: var(--bg-elevated); font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.bz-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 80px; gap: 4px; padding: 8px 12px; border-top: 1px solid var(--border); font-size: 12px; align-items: center; transition: background 0.15s; }
+.bz-row:hover { background: var(--bg-card-hover); }
+.bz-mine { background: rgba(201,135,62,0.04); border-left: 3px solid var(--accent); }
+.bz-price { color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+.bz-total { color: var(--text-bright); font-weight: 600; }
+
+/* ── TOOL BONUS DISPLAY ───────────────────────────────── */
+.tool-bonus {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #4a8a3e;
+  margin-left: 6px;
+}
