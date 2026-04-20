@@ -465,7 +465,9 @@ class UI {
   }
 
   renderCombatPage(el) {
+    try {
     const s = this.engine.state, c = s.combat;
+    if (!c) { el.innerHTML = '<div class="bank-empty">Combat state error. Try refreshing.</div>'; return; }
     const xpMode = c.xpMode || 'controlled';
     // Determine which skills get XP based on style + mode
     let xpSkills = {};
@@ -637,38 +639,45 @@ class UI {
 
     // ── ACTIVE COMBAT ──
     if (c.active && c.monster) {
-      const mon = GAME_DATA.monsters[c.monster] || GAME_DATA.worldBosses.find(b=>b.id===c.monster);
+      const mon = GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster);
+      if (!mon) { html += '<div class="bank-empty">Monster data missing. <button class="btn btn-sm" onclick="game.stopCombat();ui.renderPage(\'combat\')">Reset</button></div></div>'; el.innerHTML = html; return; }
       const max = this.engine.getMaxHp();
-      const pHpPct = Math.max(0, c.playerHp / max * 100);
-      const mHpPct = Math.max(0, c.monsterHp / mon.hp * 100);
+      const pHpPct = Math.max(0, Math.min(100, (c.playerHp||0) / max * 100));
+      const mHpPct = Math.max(0, Math.min(100, (c.monsterHp||0) / (mon.hp||1) * 100));
       const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
       const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
 
-      html += `<div class="combat-arena-v2">
-        <div class="ca-side ca-player">
+      // Player avatar
+      const _prof = s.profile || {};
+      const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
+      const _playerAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&size=64`;
+
+      html += `<div class="combat-arena-v2 combat-arena">
+        <div class="ca-side ca-player player-side">
+          <div class="ca-avatar"><img src="${_playerAvatar}" alt="You" width="64" height="64" class="player-combat-avatar"></div>
           <div class="ca-name">${typeof online!=='undefined'&&online.displayName?online.displayName:'You'}</div>
           <div class="ca-level">Combat Lv ${this.engine.getCombatLevel()}</div>
           <div class="ca-hp-container">
             <div class="ca-hp-bar"><div class="ca-hp-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
-            <div class="ca-hp-text" id="php-text">${Math.max(0,Math.floor(c.playerHp))} / ${max}</div>
+            <div class="ca-hp-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))} / ${max}</div>
           </div>
           <div class="splat-area" id="player-splats"></div>
-          ${this.renderStatusEffects(c.statusEffects.player)}
+          ${c.statusEffects?.player ? this.renderStatusEffects(c.statusEffects.player) : ''}
         </div>
         <div class="ca-center">
           <div class="ca-vs-badge">VS</div>
-          <div class="ca-kills">Kills: <span id="kill-count">${s.stats.monstersKilled}</span></div>
+          <div class="ca-kills">Kills: <span id="kill-count">${s.stats.monstersKilled||0}</span></div>
         </div>
         <div class="ca-side ca-monster">
           ${GAME_DATA.monsterArt?.[c.monster] ? `<div class="monster-art">${GAME_DATA.monsterArt[c.monster]}</div>` : `<div class="monster-art-placeholder">${icon('combat',48)}</div>`}
           <div class="ca-name">${mon.name}</div>
-          <div class="ca-level">Level ${mon.combatLevel} | ${mon.style}</div>
+          <div class="ca-level">Level ${mon.combatLevel||0} | ${mon.style||'melee'}</div>
           <div class="ca-hp-container">
             <div class="ca-hp-bar ca-hp-monster"><div class="ca-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
-            <div class="ca-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp))} / ${mon.hp}</div>
+            <div class="ca-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))} / ${mon.hp||0}</div>
           </div>
           <div class="splat-area" id="monster-splats"></div>
-          ${this.renderStatusEffects(c.statusEffects.monster)}
+          ${c.statusEffects?.monster ? this.renderStatusEffects(c.statusEffects.monster) : ''}
         </div>
       </div>`;
 
@@ -778,14 +787,20 @@ class UI {
     }
     html += '</div>';
     el.innerHTML = html;
+    } catch(err) {
+      console.error('Combat page render error:', err);
+      el.innerHTML = `<div class="bank-empty">Combat page error: ${err.message}. <button class="btn" onclick="game.stopCombat();ui.renderPage('combat')">Reset Combat</button></div>`;
+    }
   }
 
   renderStatusEffects(effects) {
+    if (!effects || typeof effects !== 'object') return '';
     const entries = Object.entries(effects);
     if (entries.length === 0) return '';
     return '<div class="status-bar">' + entries.map(([k,fx]) => {
-      const def = GAME_DATA.statusEffects[k];
-      return `<span class="status-tag" style="background:${def.color}22;color:${def.color}" title="${def.desc}">${def.name} x${fx.stacks} (${Math.ceil(fx.duration)}s)</span>`;
+      const def = GAME_DATA.statusEffects?.[k];
+      if (!def) return `<span class="status-tag">${k} x${fx?.stacks||1}</span>`;
+      return `<span class="status-tag" style="background:${def.color}22;color:${def.color}" title="${def.desc||''}">${def.name} x${fx?.stacks||1} (${Math.ceil(fx?.duration||0)}s)</span>`;
     }).join('') + '</div>';
   }
 
