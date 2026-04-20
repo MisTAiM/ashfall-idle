@@ -1513,12 +1513,7 @@ html, body {
   padding: 3px 6px !important;
   transition: all 0.15s;
 }
-.prayer-active {
-  background: var(--accent) !important;
-  color: var(--bg-deep) !important;
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 8px rgba(201,135,62,0.4);
-}
+/* old .prayer-active removed - see v6.3 polish section */
 
 /* Equipment stat chips in combat */
 .equip-summary {
@@ -1976,17 +1971,7 @@ html, body {
 .sc-name { font-size:11px; color:var(--text-bright); font-family:'Cinzel',serif; }
 .sc-info { font-size:9px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
 
-/* Prayer Grid */
-.prayer-grid { display:flex; flex-wrap:wrap; gap:3px; }
-.prayer-card {
-  padding:4px 8px; background:var(--bg-deep); border:1px solid var(--border);
-  border-radius:3px; cursor:pointer; transition:all 0.15s; text-align:center;
-}
-.prayer-card:hover { border-color:var(--accent-dim); }
-.prayer-active { border-color:var(--accent)!important; background:var(--accent)!important; color:var(--bg-deep)!important; box-shadow:0 0 10px rgba(201,135,62,0.4); }
-.pc-name { font-size:10px; font-family:'Cinzel',serif; }
-.pc-cost { font-size:8px; font-family:'JetBrains Mono',monospace; color:var(--text-dim); }
-.prayer-active .pc-cost { color:var(--bg-deep); }
+/* Prayer Grid - see v6.3 polish section for updated styles */
 
 /* Combat Loadout */
 .combat-loadout { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
@@ -3200,3 +3185,223 @@ html, body {
   background: rgba(196,64,64,0.08) !important;
 }
 .mm-name { color: #c44040 !important; }
+
+/* ================================================================
+   v6.3 POLISH - Prayer, Rune Pouch, Animations
+   ================================================================ */
+
+/* ── PRAYER FIX (was black on black) ──────────────────── */
+.prayer-section {
+  background: rgba(201,135,62,0.04);
+  border: 1px solid rgba(201,135,62,0.15);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.prayer-pts {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-left: 6px;
+}
+.prayer-slots {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: 4px;
+}
+.prayer-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.prayer-btn {
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  color: var(--text); /* FIX: explicit light text */
+}
+.prayer-btn:hover { border-color: var(--accent-dim); background: var(--bg-card-hover); }
+.prayer-btn.prayer-active {
+  border-color: var(--accent) !important;
+  background: linear-gradient(135deg, rgba(201,135,62,0.2), rgba(201,135,62,0.1)) !important;
+  color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(201,135,62,0.3);
+  animation: prayerGlow 2s ease-in-out infinite;
+}
+.prayer-btn .pc-name {
+  font-size: 10px;
+  font-family: 'Cinzel', serif;
+  color: inherit;
+}
+.prayer-btn .pc-cost {
+  font-size: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+}
+.prayer-btn.prayer-active .pc-cost { color: var(--accent-dim); }
+@keyframes prayerGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(201,135,62,0.2); }
+  50% { box-shadow: 0 0 16px rgba(201,135,62,0.4); }
+}
+
+/* ── RUNE POUCH ───────────────────────────────────────── */
+.rune-pouch-section {
+  background: rgba(138,94,196,0.04);
+  border: 1px solid rgba(138,94,196,0.15);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.rune-pouch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.rp-rune {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: default;
+  transition: all 0.15s;
+}
+.rp-rune:hover { border-color: rgba(138,94,196,0.4); }
+.rp-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.rp-qty {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+}
+
+/* ── SKILL PAGE POLISH ────────────────────────────────── */
+/* Action cards: subtle hover animation */
+.action-card {
+  transition: all 0.2s ease;
+}
+.action-card:not(.locked):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.action-card.active {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(201,135,62,0.15);
+  animation: activeGlow 3s ease-in-out infinite;
+}
+@keyframes activeGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(201,135,62,0.1); }
+  50% { box-shadow: 0 0 16px rgba(201,135,62,0.25); }
+}
+
+/* Active training bar animation */
+.aa-fill {
+  transition: width 0.1s linear;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent), var(--accent-glow));
+  background-size: 200% 100%;
+  animation: fillShimmer 2s linear infinite;
+}
+@keyframes fillShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Hit splat improvements */
+.hit-splat {
+  animation: splatPop 0.5s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes splatPop {
+  0% { transform: scale(0.5) translateY(0); opacity: 1; }
+  40% { transform: scale(1.2) translateY(-10px); }
+  100% { transform: scale(0.8) translateY(-30px); opacity: 0; }
+}
+.splat-hit { background: var(--red); color: #fff; border-radius: 4px; padding: 2px 6px; font-weight: 700; font-size: 14px; }
+.splat-big { background: var(--red); color: #fff; border-radius: 4px; padding: 2px 8px; font-weight: 900; font-size: 16px; text-shadow: 0 0 8px rgba(196,64,64,0.6); }
+.splat-miss { background: var(--border); color: var(--text-dim); border-radius: 4px; padding: 2px 6px; font-size: 12px; }
+
+/* HP bar animations */
+.hp-fill {
+  transition: width 0.3s ease;
+}
+.php-fill {
+  background: linear-gradient(90deg, #2a7a3e, #3a9e5c, #4abe6c);
+}
+.mhp-fill {
+  background: linear-gradient(90deg, #8a2828, #c44040, #e05050);
+}
+
+/* Monster art pulse when in combat */
+.monster-art svg {
+  animation: monsterIdle 4s ease-in-out infinite;
+}
+@keyframes monsterIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Level up flash */
+.level-up-flash {
+  animation: levelFlash 0.8s ease-out;
+}
+@keyframes levelFlash {
+  0% { background: rgba(201,135,62,0.3); }
+  100% { background: transparent; }
+}
+
+/* XP gain text float */
+.xp-gain-float {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(201,135,62,0.5);
+  pointer-events: none;
+  animation: xpFloat 1.5s ease-out forwards;
+  z-index: 100;
+}
+@keyframes xpFloat {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-60px); }
+}
+
+/* Notification toast animation */
+.notification-toast {
+  animation: toastSlide 0.3s ease-out;
+}
+@keyframes toastSlide {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Sidebar nav hover effect */
+.nav-item:hover {
+  background: var(--bg-card-hover);
+  padding-left: 20px;
+  transition: all 0.2s ease;
+}
+.nav-item.active {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-bg);
+}
+
+/* Bank item hover */
+.bank-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: all 0.15s;
+}
+
+/* Recipe output bank qty styling */
+.recipe-output small {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-left: 3px;
+}

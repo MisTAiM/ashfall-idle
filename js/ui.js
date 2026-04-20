@@ -47,6 +47,24 @@ const ICONS = {
 function icon(name, size=18) { return `<span class="icon" style="width:${size}px;height:${size}px">${ICONS[name] || ICONS.sparkle}</span>`; }
 
 const NAV = [
+  { header:'Online', items:[
+    {id:'account',label:'Account',icon:'npc'},
+    {id:'character',label:'Character',icon:'shield'},
+    {id:'guilds',label:'Guilds',icon:'faction'},
+    {id:'chat',label:'Global Chat',icon:'scroll'},
+    {id:'pvp_arena',label:'PvP Arena',icon:'combat'},
+    {id:'bounty_board',label:'Bounty Board',icon:'coin'},
+    {id:'leaderboard',label:'Leaderboard',icon:'trophy'},
+  ]},
+  { header:'Inventory', items:[
+    {id:'bank',label:'Bank',icon:'bank'},
+    {id:'shop',label:'Shop',icon:'shop'},
+    {id:'bazaar',label:'Ashen Bazaar',icon:'coin'},
+    {id:'equipment',label:'Equipment',icon:'shield'},
+    {id:'gear_sets',label:'Gear Sets',icon:'shield'},
+    {id:'statistics',label:'Statistics',icon:'stats'},
+    {id:'settings_page',label:'Settings',icon:'settings'},
+  ]},
   { header:'Combat', items:[
     {id:'combat',label:'Combat',icon:'combat'},
     {id:'wilderness',label:'Wilderness',icon:'combat'},
@@ -84,24 +102,6 @@ const NAV = [
     {id:'pets',label:'Pets',icon:'paw'},
     {id:'achievements',label:'Achievements',icon:'trophy'},
     {id:'wiki',label:'Wiki',icon:'book'},
-  ]},
-  { header:'Inventory', items:[
-    {id:'bank',label:'Bank',icon:'bank'},
-    {id:'shop',label:'Shop',icon:'shop'},
-    {id:'bazaar',label:'Ashen Bazaar',icon:'coin'},
-    {id:'equipment',label:'Equipment',icon:'shield'},
-    {id:'gear_sets',label:'Gear Sets',icon:'shield'},
-    {id:'statistics',label:'Statistics',icon:'stats'},
-    {id:'settings_page',label:'Settings',icon:'settings'},
-  ]},
-  { header:'Online', items:[
-    {id:'account',label:'Account',icon:'npc'},
-    {id:'character',label:'Character',icon:'shield'},
-    {id:'guilds',label:'Guilds',icon:'faction'},
-    {id:'chat',label:'Global Chat',icon:'scroll'},
-    {id:'pvp_arena',label:'PvP Arena',icon:'combat'},
-    {id:'bounty_board',label:'Bounty Board',icon:'coin'},
-    {id:'leaderboard',label:'Leaderboard',icon:'trophy'},
   ]},
 ];
 
@@ -321,7 +321,7 @@ class UI {
         outputHtml = `<div class="recipe-output">${o?.name||action.output.item}${action.output.qty>1?' x'+action.output.qty:''} <small data-item-qty="${action.output.item}">(${s.bank[action.output.item]||0})</small></div>`;
       }
       if (action.loot) {
-        outputHtml = `<div class="recipe-output">${action.loot.map(l=>{const i=GAME_DATA.items[l.item]; return (i?.name||l.item)+(l.qty>1?' x'+l.qty:'');}).join(', ')}</div>`;
+        outputHtml = `<div class="recipe-output">${action.loot.map(l=>{const i=GAME_DATA.items[l.item]; return `${(i?.name||l.item)}${l.qty>1?' x'+l.qty:''} <small data-item-qty="${l.item}">(${s.bank[l.item]||0})</small>`;}).join(', ')}</div>`;
       }
       html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('${sId}','${action.id}')"`}>
         <div class="ac-header"><span class="ac-name">${action.name}</span><span class="ac-level">Lv ${action.level}</span></div>
@@ -503,17 +503,35 @@ class UI {
     }
 
     // ── PRAYER BAR ──
-    html += `<div class="combat-section"><div class="cs-header">${icon('sparkle',14)} Prayers <span class="cs-sub" id="pp-live">${s.prayerPoints} pts</span> <span class="cs-sub">${s.activePrayers.length}/2</span></div><div class="prayer-grid">`;
+    html += `<div class="combat-section prayer-section"><div class="cs-header">${icon('sparkle',14)} Prayers <span class="prayer-pts" id="pp-live">${s.prayerPoints} pts</span> <span class="prayer-slots">${s.activePrayers.length}/2</span></div><div class="prayer-grid">`;
     for (const p of GAME_DATA.prayers) {
       if (s.skills.prayer.level < p.level) continue;
       const active = s.activePrayers.includes(p.id);
-      html += `<button class="prayer-card ${active?'prayer-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc} (${p.pointCost} pts/atk)">
+      html += `<button class="prayer-btn ${active?'prayer-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc} (${p.pointCost} pts/atk)">
         <div class="pc-name">${p.name}</div>
         <div class="pc-cost">${p.pointCost}pp</div>
       </button>`;
     }
     if (s.skills.prayer.level < 1) html += '<div class="cc-info">Train Prayer to unlock</div>';
     html += '</div></div>';
+
+    // ── RUNE POUCH ──
+    const runeTypes = ['air_rune','water_rune','earth_rune','fire_rune','mind_rune','body_rune','chaos_rune','cosmic_rune','nature_rune','law_rune','astral_rune','death_rune','blood_rune','soul_rune','wrath_rune'];
+    const ownedRunes = runeTypes.filter(r => (s.bank[r]||0) > 0);
+    if (ownedRunes.length > 0 || s.combat.combatStyle === 'magic') {
+      html += `<div class="combat-section rune-pouch-section"><div class="cs-header">${icon('wand',14)} Rune Pouch</div><div class="rune-pouch-grid">`;
+      for (const rId of runeTypes) {
+        const qty = s.bank[rId] || 0;
+        if (qty <= 0) continue;
+        const item = GAME_DATA.items[rId];
+        const color = rId.includes('fire') ? '#d63a1a' : rId.includes('water') ? '#4a7ec4' : rId.includes('earth') ? '#8a6a3a' : rId.includes('air') ? '#c8cad4' : rId.includes('mind') ? '#5ac4c4' : rId.includes('body') ? '#4a7ec4' : rId.includes('chaos') ? '#8a5ec4' : rId.includes('death') ? '#3a3a4a' : rId.includes('blood') ? '#c44040' : rId.includes('soul') ? '#b585e0' : rId.includes('wrath') ? '#ff4040' : rId.includes('cosmic') ? '#8a5ec4' : rId.includes('nature') ? '#3a9e5c' : rId.includes('law') ? '#e8eaf2' : rId.includes('astral') ? '#5ac4c4' : 'var(--text)';
+        html += `<div class="rp-rune" title="${item?.name}: ${qty}">
+          <svg class="rp-icon" viewBox="0 0 20 20"><polygon points="10,2 18,8 15,18 5,18 2,8" fill="${color}" opacity="0.8"/><text x="10" y="13" text-anchor="middle" fill="#fff" font-size="6" font-weight="bold">${rId[0].toUpperCase()}</text></svg>
+          <span class="rp-qty" data-item-qty="${rId}">(${qty})</span>
+        </div>`;
+      }
+      html += '</div></div>';
+    }
 
     // ── FOOD + POTION BELT + EQUIPMENT STATS ──
     html += `<div class="combat-loadout">
