@@ -134,6 +134,51 @@ class OnlineManager {
     }
   }
 
+  async signInWithGoogle() {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      if (this.user && this.user.isAnonymous) {
+        // Link anonymous account to Google
+        await this.user.linkWithPopup(provider);
+        this.displayName = this.user.displayName || this.user.email?.split('@')[0] || 'Survivor';
+        localStorage.setItem('ashfall_displayName', this.displayName);
+        // Immediate cloud save + sync
+        this.saveToCloud(false);
+        this.syncProfile();
+        this.startInboxListener();
+        if (!this._autoSaveInterval) {
+          this._autoSaveInterval = setInterval(() => {
+            if (game && game.state) { this.saveToCloud(true); this.syncProfile(); }
+          }, 60000);
+        }
+        this.emit('authChanged', { user:this.user, displayName:this.displayName });
+        this.emit('notification', { type:'success', text:`Linked to Google as ${this.displayName}! Cloud save active.` });
+      } else {
+        // Fresh Google sign-in
+        await this.auth.signInWithPopup(provider);
+        // onAuthStateChanged handles the rest
+        this.emit('notification', { type:'success', text:'Signed in with Google! Syncing...' });
+      }
+      return true;
+    } catch(e) {
+      if (e.code === 'auth/credential-already-in-use') {
+        // Google account already linked to another user - sign in directly
+        try {
+          await this.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+          this.emit('notification', { type:'success', text:'Signed in with existing Google account.' });
+          return true;
+        } catch(e2) { this.emit('notification',{type:'danger',text:e2.message}); return false; }
+      }
+      if (e.code === 'auth/popup-closed-by-user') {
+        this.emit('notification', { type:'info', text:'Google sign-in cancelled.' });
+        return false;
+      }
+      console.error('Google sign-in error:', e);
+      this.emit('notification', { type:'danger', text:'Google sign-in failed: ' + e.message });
+      return false;
+    }
+  }
+
   async signOut() {
     try { await this.auth.signOut(); } catch(e) { console.error(e); }
   }
