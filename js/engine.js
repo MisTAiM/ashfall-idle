@@ -845,6 +845,36 @@ class GameEngine {
       }
     }
     // Universal Rare Drop Table (1/200 chance per kill, better monsters = better table)
+
+    // ── MULTI-ROLL DROP TABLES ──
+    // Each monster has rollTables: [{table:'gems', chance:0.10}, ...]
+    // Each table is rolled independently per kill
+    if (monster.rollTables && GAME_DATA.dropTables) {
+      for (const roll of monster.rollTables) {
+        if (Math.random() > roll.chance) continue;
+        const table = GAME_DATA.dropTables[roll.table];
+        if (!table || table.length === 0) continue;
+        // Weighted random selection from table
+        const totalWeight = table.reduce((s, e) => s + (e.weight || 1), 0);
+        let rand = Math.random() * totalWeight;
+        for (const entry of table) {
+          rand -= entry.weight || 1;
+          if (rand <= 0) {
+            if (GAME_DATA.items[entry.item]) {
+              const qty = entry.qty || 1;
+              this.addItem(entry.item, qty);
+              const _it = GAME_DATA.items[entry.item];
+              if (_it.rarity === 'rare' || _it.rarity === 'epic' || _it.rarity === 'legendary') {
+                this.emit('notification', { type:'rare', text:`Drop table: ${_it.name} x${qty}!` });
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // Universal Rare Drop Table cont. (1/200 chance per kill, better monsters = better table)
     if (Math.random() < 0.005 * (1 + monster.combatLevel / 100)) {
       const rdt = this._rollRareDropTable(monster.combatLevel);
       if (rdt) {
