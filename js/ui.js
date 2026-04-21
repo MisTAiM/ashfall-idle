@@ -1741,8 +1741,8 @@ class UI {
           <div class="ac-header"><span class="ac-name" style="color:${this.getRarityColor(pId)||''}">${pouch.name}</span><span class="ac-level">x${qty}</span></div>
           <p class="area-desc">${pouch.desc}</p>
           <div class="fa-buffs">`;
-        if (pouch.buff) {
-          for (const [stat,val] of Object.entries(pouch.buff)) {
+        if (famData?.buff) {
+          for (const [stat,val] of Object.entries(famData.buff)) {
             const label = stat === 'healOverTime' ? 'Heal/atk' : stat === 'damageMult' ? 'Dmg' : stat.replace('Bonus','');
             html += `<span class="fa-buff">+${stat==='damageMult'?((val-1)*100).toFixed(0)+'%':val} ${label}</span>`;
           }
