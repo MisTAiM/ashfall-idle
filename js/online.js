@@ -881,43 +881,25 @@ class OnlineManager {
     if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account first to add friends.'}); return; }
     if (!targetName || targetName.trim().length < 1) { this.emit('notification',{type:'warn',text:'Enter a player name.'}); return; }
     try {
-      // Search by displayName field
-      let snap = await this.firestore.collection('players').where('displayName','==',targetName.trim()).limit(1).get();
-      // Fallback: try case-insensitive by checking all recent players
-      if (snap.empty) {
-        const allSnap = await this.firestore.collection('players').limit(100).get();
-        let found = null;
-        allSnap.forEach(doc => {
-          if (doc.data().displayName?.toLowerCase() === targetName.trim().toLowerCase()) {
-            found = doc;
-          }
-        });
-        if (!found) { this.emit('notification',{type:'warn',text:`Player "${targetName}" not found. They must have an account and be synced.`}); return; }
-        snap = { empty:false, docs:[found] };
-      }
-      const targetDoc = snap.docs[0];
-      const targetUid = targetDoc.id;
+      // Find target player
+      const results = await this.searchPlayers(targetName.trim());
+      const exact = results.find(r => r.name.toLowerCase() === targetName.trim().toLowerCase()) || results[0];
+      if (!exact) { this.emit('notification',{type:'warn',text:`Player "${targetName}" not found.`}); return; }
+      const targetUid = exact.uid;
       if (targetUid === this.user.uid) { this.emit('notification',{type:'warn',text:"Can't add yourself."}); return; }
       // Check not already friends
       const myFriends = await this.getFriends();
-      if (myFriends.some(f => f.uid === targetUid)) { this.emit('notification',{type:'warn',text:'Already friends with this player.'}); return; }
-      // Send request
-      await this.firestore.collection('friend_requests').doc(targetUid).collection('pending').add({
+      if (myFriends.some(f => f.uid === targetUid)) { this.emit('notification',{type:'warn',text:'Already friends.'}); return; }
+      // Write to flat collection: /friend_requests/{autoId}
+      await this.firestore.collection('friend_requests').add({
         from: this.user.uid,
         fromName: this.displayName,
+        to: targetUid,
+        toName: exact.name,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         status: 'pending',
       });
-      // Also add to their inbox
-      await this.firestore.collection('inbox').doc(targetUid).collection('items').add({
-        type: 'friend_request',
-        from: this.user.uid,
-        fromName: this.displayName,
-        preview: `${this.displayName} wants to be friends`,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        read: false,
-      });
-      this.emit('notification',{type:'success',text:`Friend request sent to ${targetName}!`});
+      this.emit('notification',{type:'success',text:`Friend request sent to ${exact.name}!`});
     } catch(e) {
       console.error('Friend request error:', e);
       this.emit('notification',{type:'danger',text:'Friend request failed: ' + e.message});
@@ -927,11 +909,15 @@ class OnlineManager {
   async getFriendRequests() {
     if (!this.isOnline || !this.user) return [];
     try {
-      const snap = await this.firestore.collection('friend_requests').doc(this.user.uid).collection('pending').where('status','==','pending').get();
+      // Read from flat collection where to == my uid
+      const snap = await this.firestore.collection('friend_requests')
+        .where('to','==',this.user.uid)
+        .where('status','==','pending')
+        .limit(20).get();
       const requests = [];
       snap.forEach(doc => requests.push({ id:doc.id, ...doc.data() }));
       return requests;
-    } catch(e) { return []; }
+    } catch(e) { console.error('Get friend requests error:', e); return []; }
   }
 
   async acceptFriendRequest(requestId, fromUid, fromName) {
@@ -941,16 +927,20 @@ class OnlineManager {
       const myRef = this.firestore.collection('friends').doc(this.user.uid);
       const myDoc = await myRef.get();
       const myFriends = myDoc.exists ? (myDoc.data().list || []) : [];
-      myFriends.push({ uid:fromUid, name:fromName, since:Date.now() });
-      await myRef.set({ list:myFriends });
+      if (!myFriends.some(f => f.uid === fromUid)) {
+        myFriends.push({ uid:fromUid, name:fromName, since:Date.now() });
+        await myRef.set({ list:myFriends });
+      }
       // Add me to their friends list
       const theirRef = this.firestore.collection('friends').doc(fromUid);
       const theirDoc = await theirRef.get();
       const theirFriends = theirDoc.exists ? (theirDoc.data().list || []) : [];
-      theirFriends.push({ uid:this.user.uid, name:this.displayName, since:Date.now() });
-      await theirRef.set({ list:theirFriends });
-      // Remove the request
-      await this.firestore.collection('friend_requests').doc(this.user.uid).collection('pending').doc(requestId).delete();
+      if (!theirFriends.some(f => f.uid === this.user.uid)) {
+        theirFriends.push({ uid:this.user.uid, name:this.displayName, since:Date.now() });
+        await theirRef.set({ list:theirFriends });
+      }
+      // Mark request as accepted
+      await this.firestore.collection('friend_requests').doc(requestId).update({ status:'accepted' });
       this.emit('notification',{type:'success',text:`${fromName} added as friend!`});
     } catch(e) { this.emit('notification',{type:'danger',text:'Accept failed: '+e.message}); }
   }
@@ -958,7 +948,7 @@ class OnlineManager {
   async rejectFriendRequest(requestId) {
     if (!this.isOnline || !this.user) return;
     try {
-      await this.firestore.collection('friend_requests').doc(this.user.uid).collection('pending').doc(requestId).delete();
+      await this.firestore.collection('friend_requests').doc(requestId).update({ status:'rejected' });
       this.emit('notification',{type:'info',text:'Friend request rejected.'});
     } catch(e) { console.error(e); }
   }
@@ -1002,32 +992,18 @@ class OnlineManager {
     if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account to send messages.'}); return; }
     const convoId = this._getConvoId(this.user.uid, targetUid);
     try {
-      // Create/update conversation metadata
-      await this.firestore.collection('messages').doc(convoId).set({
-        participants: [this.user.uid, targetUid],
-        participantNames: { [this.user.uid]:this.displayName, [targetUid]:targetName },
-        lastMessage: text.substring(0, 100),
-        lastTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        lastSender: this.user.uid,
-      }, { merge:true });
-      // Add the message
-      await this.firestore.collection('messages').doc(convoId).collection('msgs').add({
+      // Write message to flat /messages collection
+      await this.firestore.collection('messages').add({
+        convoId,
         sender: this.user.uid,
         senderName: this.displayName,
+        recipient: targetUid,
+        recipientName: targetName,
         text: text.trim().substring(0, 500),
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         read: false,
       });
-      // Add to target's inbox
-      await this.firestore.collection('inbox').doc(targetUid).collection('items').add({
-        type: 'message',
-        from: this.user.uid,
-        fromName: this.displayName,
-        preview: text.substring(0, 80),
-        convoId,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        read: false,
-      });
+      this.emit('notification',{type:'info',text:`Message sent to ${targetName}.`});
     } catch(e) { this.emit('notification',{type:'danger',text:'Message failed: '+e.message}); }
   }
 
@@ -1035,34 +1011,36 @@ class OnlineManager {
     if (!this.isOnline || !this.user) return [];
     const convoId = this._getConvoId(this.user.uid, targetUid);
     try {
-      const snap = await this.firestore.collection('messages').doc(convoId).collection('msgs').orderBy('timestamp','asc').limit(100).get();
+      const snap = await this.firestore.collection('messages')
+        .where('convoId','==',convoId).limit(100).get();
       const msgs = [];
       snap.forEach(doc => msgs.push({ id:doc.id, ...doc.data() }));
+      msgs.sort((a,b) => (a.timestamp?.seconds||0) - (b.timestamp?.seconds||0));
       return msgs;
-    } catch(e) {
-      console.error('Conversation load error:', e);
-      // Fallback without orderBy
-      try {
-        const snap2 = await this.firestore.collection('messages').doc(convoId).collection('msgs').limit(100).get();
-        const msgs = [];
-        snap2.forEach(doc => msgs.push({ id:doc.id, ...doc.data() }));
-        msgs.sort((a,b) => (a.timestamp?.seconds||0) - (b.timestamp?.seconds||0));
-        return msgs;
-      } catch(e2) { return []; }
-    }
+    } catch(e) { console.error('Conversation error:', e); return []; }
   }
 
   async getConversationList() {
     if (!this.isOnline || !this.user) return [];
     try {
+      // Get recent messages involving me
       const snap = await this.firestore.collection('messages')
-        .where('participants','array-contains',this.user.uid)
-        .limit(20).get();
-      const convos = [];
-      snap.forEach(doc => convos.push({ id:doc.id, ...doc.data() }));
-      // Sort client-side to avoid index requirement
-      convos.sort((a,b) => (b.lastTimestamp?.seconds||0) - (a.lastTimestamp?.seconds||0));
-      return convos;
+        .where('sender','==',this.user.uid).limit(50).get();
+      const snap2 = await this.firestore.collection('messages')
+        .where('recipient','==',this.user.uid).limit(50).get();
+      // Group by convoId
+      const convos = {};
+      const process = (doc) => {
+        const d = doc.data();
+        if (!convos[d.convoId] || (d.timestamp?.seconds||0) > (convos[d.convoId].timestamp?.seconds||0)) {
+          const otherUid = d.sender === this.user.uid ? d.recipient : d.sender;
+          const otherName = d.sender === this.user.uid ? d.recipientName : d.senderName;
+          convos[d.convoId] = { id:d.convoId, otherUid, otherName, lastMessage:d.text, timestamp:d.timestamp, participants:[d.sender,d.recipient] };
+        }
+      };
+      snap.forEach(process);
+      snap2.forEach(process);
+      return Object.values(convos).sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
     } catch(e) { console.error('Conversations error:', e); return []; }
   }
 
@@ -1070,8 +1048,8 @@ class OnlineManager {
   async getInbox() {
     if (!this.isOnline || !this.user) return [];
     try {
-      const snap = await this.firestore.collection('inbox').doc(this.user.uid)
-        .collection('items').limit(50).get();
+      const snap = await this.firestore.collection('inbox')
+        .where('to','==',this.user.uid).limit(50).get();
       const items = [];
       snap.forEach(doc => items.push({ id:doc.id, ...doc.data() }));
       items.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
@@ -1082,8 +1060,9 @@ class OnlineManager {
   async getUnreadCount() {
     if (!this.isOnline || !this.user) return 0;
     try {
-      const snap = await this.firestore.collection('inbox').doc(this.user.uid)
-        .collection('items').where('read','==',false).get();
+      const snap = await this.firestore.collection('inbox')
+        .where('to','==',this.user.uid)
+        .where('read','==',false).limit(50).get();
       return snap.size;
     } catch(e) { return 0; }
   }
@@ -1091,14 +1070,15 @@ class OnlineManager {
   async markInboxRead(itemId) {
     if (!this.isOnline || !this.user) return;
     try {
-      await this.firestore.collection('inbox').doc(this.user.uid).collection('items').doc(itemId).update({ read:true });
+      await this.firestore.collection('inbox').doc(itemId).update({ read:true });
     } catch(e) { console.error(e); }
   }
 
   async clearInbox() {
     if (!this.isOnline || !this.user) return;
     try {
-      const snap = await this.firestore.collection('inbox').doc(this.user.uid).collection('items').get();
+      const snap = await this.firestore.collection('inbox')
+        .where('to','==',this.user.uid).limit(50).get();
       const batch = this.firestore.batch();
       snap.forEach(doc => batch.delete(doc.ref));
       await batch.commit();
@@ -1108,12 +1088,12 @@ class OnlineManager {
   // Start listening for real-time inbox updates
   startInboxListener() {
     if (!this.isOnline || !this.user || this._inboxUnsub) return;
-    this._inboxUnsub = this.firestore.collection('inbox').doc(this.user.uid)
-      .collection('items').where('read','==',false)
+    this._inboxUnsub = this.firestore.collection('inbox')
+      .where('to','==',this.user.uid)
+      .where('read','==',false)
       .onSnapshot(snap => {
         const count = snap.size;
         this.emit('inboxUpdate', { unreadCount:count });
-        // Show notification for new messages
         snap.docChanges().forEach(change => {
           if (change.type === 'added') {
             const d = change.doc.data();
@@ -1124,7 +1104,7 @@ class OnlineManager {
             }
           }
         });
-      });
+      }, err => { console.error('Inbox listener error:', err); });
   }
 
   // ── EVENTS ─────────────────────────────────────────────

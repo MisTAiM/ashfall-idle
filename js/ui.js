@@ -2370,10 +2370,8 @@ class UI {
         convoContainer.innerHTML = '<div class="bank-empty">No conversations. Message a friend to start.</div>';
       } else {
         convoContainer.innerHTML = convos.map(c => {
-          const otherUid = c.participants.find(p => p !== online.user.uid);
-          const otherName = c.participantNames?.[otherUid] || 'Unknown';
-          return `<div class="inbox-convo" onclick="ui.openDM('${otherUid}','${this.escHtml(otherName)}')">
-            <span class="ic-name">${this.escHtml(otherName)}</span>
+          return `<div class="inbox-convo" onclick="ui.openDM('${c.otherUid}','${this.escHtml(c.otherName||'Unknown')}')">
+            <span class="ic-name">${this.escHtml(c.otherName||'Unknown')}</span>
             <span class="ic-preview">${this.escHtml(c.lastMessage||'')}</span>
             <span class="ic-arrow">&rarr;</span>
           </div>`;
