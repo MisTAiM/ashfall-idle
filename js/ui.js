@@ -150,8 +150,7 @@ class UI {
     const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
     const _avUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${_prof.hair||'short04'}&skinColor=${_prof.skinColor||'c68642'}&size=32`;
     let html = `<div class="sidebar-header">
-      <div class="logo-text">ASHFALL</div>
-      <div class="logo-sub">IDLE</div>
+      <img src="logo.png" alt="Ashfall Idle" class="sidebar-logo-img">
     </div>
     <div class="player-info">
       <div class="pi-row"><img src="${_avUrl}" class="player-avatar-mini" alt=""><span style="font-family:Cinzel,serif;color:var(--accent)">${typeof online !== 'undefined' && online.displayName ? online.displayName : 'Survivor'}</span></div>
@@ -2103,10 +2102,24 @@ class UI {
 
     if (s.guild) {
       html += `<div class="alignment-display">
-        <div class="al-current">Your Guild: <strong>${this.escHtml(s.guild.name)}</strong></div>
+        <div class="al-current">Your Guild: <strong>${this.escHtml(s.guild.name)}</strong> [${this.escHtml(s.guild.tag||'')}]</div>
         <div class="al-desc">Role: ${s.guild.role || 'Member'}</div>
-        <button class="btn btn-xs btn-danger" style="margin-top:8px" onclick="online.leaveGuild().then(()=>ui.renderPage('guilds'))">Leave Guild</button>
+        <div class="shop-btns" style="margin-top:8px">
+          <button class="btn btn-xs btn-danger" onclick="online.leaveGuild().then(()=>ui.renderPage('guilds'))">Leave Guild</button>
+        </div>
       </div>`;
+      // Guild Bank
+      html += `<div class="settings-section">
+        <h3>Guild Bank</h3>
+        <div id="guild-bank-display"><div class="bank-empty">Loading...</div></div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <input type="number" id="guild-gold" class="qty-input" min="1" value="100" style="width:100px">
+          <button class="btn btn-sm" onclick="online.depositGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>ui._loadGuildData())">Deposit Gold</button>
+          ${s.guild.role==='Leader'?'<button class="btn btn-sm" onclick="online.withdrawGuildGold(parseInt(document.getElementById(\'guild-gold\').value)||0).then(()=>ui._loadGuildData())">Withdraw</button>':''}
+        </div>
+      </div>`;
+      // Member list
+      html += '<h2 class="section-title">Members</h2><div id="guild-members"><div class="bank-empty">Loading...</div></div>';
     } else {
       html += `<div class="settings-section">
         <h3>Create a Guild</h3>
@@ -2139,6 +2152,33 @@ class UI {
     }
     html += '</div>';
     el.innerHTML = html;
+    if (s.guild) this._loadGuildData();
+  }
+
+  async _loadGuildData() {
+    // Load guild bank
+    const bankEl = document.getElementById('guild-bank-display');
+    if (bankEl) {
+      const bank = await online.getGuildBank();
+      bankEl.innerHTML = `<span class="bz-gold" style="font-size:14px">${icon('coin',16)} ${this.fmt(bank)} Gold</span>`;
+    }
+    // Load members
+    const membersEl = document.getElementById('guild-members');
+    if (membersEl) {
+      const members = await online.getGuildMembers();
+      const isLeader = game.state.guild?.role === 'Leader';
+      if (members.length === 0) {
+        membersEl.innerHTML = '<div class="bank-empty">No members found.</div>';
+      } else {
+        membersEl.innerHTML = '<div class="friends-grid">' + members.map(m => `<div class="friend-card">
+          <span class="fc-name">${this.escHtml(m.name)} <small style="color:var(--text-dim)">(${m.role})</small></span>
+          <div class="fc-btns">
+            <button class="btn btn-xs" onclick="ui.openDM('${m.uid}','${this.escHtml(m.name)}')">Message</button>
+            ${isLeader && m.uid !== online.user?.uid ? `<button class="btn btn-xs btn-danger" onclick="online.kickMember('${m.uid}').then(()=>ui._loadGuildData())">Kick</button>` : ''}
+          </div>
+        </div>`).join('') + '</div>';
+      }
+    }
   }
 
   async createGuild() {
@@ -2167,13 +2207,13 @@ class UI {
       html += '<div class="bank-empty">Create an account to use friends.</div>';
       el.innerHTML = html; return;
     }
-    // Send request
+    // Send request with search
     html += `<div class="settings-section">
-      <h3>Send Friend Request</h3>
+      <h3>Find Players</h3>
       <div style="display:flex;gap:8px">
-        <input type="text" id="friend-name" class="chat-input-v2" placeholder="Player name..." style="flex:1">
-        <button class="btn btn-sm" onclick="online.sendFriendRequest(document.getElementById('friend-name').value.trim()).then(()=>ui.renderPage('friends'))">Send Request</button>
+        <input type="text" id="friend-search" class="chat-input-v2" placeholder="Search player name..." style="flex:1" oninput="ui._searchPlayers(this.value)">
       </div>
+      <div id="player-search-results" style="margin-top:8px"></div>
     </div>`;
     // Pending requests
     html += '<h2 class="section-title">Pending Requests</h2><div id="friend-requests"><div class="bank-empty">Loading...</div></div>';
@@ -2203,7 +2243,7 @@ class UI {
     if (listContainer) {
       const friends = await online.getFriends();
       if (friends.length === 0) {
-        listContainer.innerHTML = '<div class="bank-empty">No friends yet. Send a request above.</div>';
+        listContainer.innerHTML = '<div class="bank-empty">No friends yet. Search for players above.</div>';
       } else {
         listContainer.innerHTML = '<div class="friends-grid">' + friends.map(f => `<div class="friend-card">
           <span class="fc-name">${this.escHtml(f.name)}</span>
@@ -2214,6 +2254,29 @@ class UI {
         </div>`).join('') + '</div>';
       }
     }
+  }
+
+  async _searchPlayers(query) {
+    const container = document.getElementById('player-search-results');
+    if (!container) return;
+    if (!query || query.length < 2) { container.innerHTML = ''; return; }
+    // Debounce
+    clearTimeout(this._searchTimeout);
+    this._searchTimeout = setTimeout(async () => {
+      container.innerHTML = '<div class="bank-empty">Searching...</div>';
+      const results = await online.searchPlayers(query);
+      if (results.length === 0) {
+        container.innerHTML = '<div class="bank-empty">No players found.</div>';
+      } else {
+        container.innerHTML = '<div class="friends-grid">' + results.map(p => `<div class="friend-card">
+          <span class="fc-name">${this.escHtml(p.name)} <small style="color:var(--text-dim)">Cb${p.combatLevel} | Total ${p.totalLevel}</small></span>
+          <div class="fc-btns">
+            <button class="btn btn-xs" onclick="online.sendFriendRequest('${this.escHtml(p.name)}').then(()=>ui.renderPage('friends'))">Add Friend</button>
+            <button class="btn btn-xs" onclick="ui.openDM('${p.uid}','${this.escHtml(p.name)}')">Message</button>
+          </div>
+        </div>`).join('') + '</div>';
+      }
+    }, 400);
   }
 
   openDM(uid, name) {

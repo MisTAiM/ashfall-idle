@@ -801,6 +801,80 @@ class OnlineManager {
     } catch(e) { console.error('Leave guild error:', e); }
   }
 
+  async kickMember(memberUid) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    if (game.state.guild.role !== 'Leader') { this.emit('notification',{type:'warn',text:'Only the guild leader can kick members.'}); return; }
+    try {
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const doc = await ref.get();
+      if (!doc.exists) return;
+      const data = doc.data();
+      const member = data.members.find(m => m.uid === memberUid);
+      if (!member) { this.emit('notification',{type:'warn',text:'Member not found.'}); return; }
+      data.members = data.members.filter(m => m.uid !== memberUid);
+      await ref.update({ members:data.members, memberCount:data.members.length });
+      this.emit('notification',{type:'success',text:`Kicked ${member.name} from the guild.`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Kick failed: '+e.message}); }
+  }
+
+  async getGuildMembers() {
+    if (!this.isOnline || !this.user || !game.state.guild) return [];
+    try {
+      const doc = await this.firestore.collection('guilds').doc(game.state.guild.id).get();
+      return doc.exists ? (doc.data().members || []) : [];
+    } catch(e) { return []; }
+  }
+
+  async depositGuildGold(amount) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    if (amount <= 0 || game.state.gold < amount) { this.emit('notification',{type:'warn',text:'Not enough gold.'}); return; }
+    try {
+      game.state.gold -= amount;
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      await ref.update({ bank: firebase.firestore.FieldValue.increment(amount) });
+      this.emit('notification',{type:'success',text:`Deposited ${amount}g to guild bank.`});
+    } catch(e) { game.state.gold += amount; this.emit('notification',{type:'danger',text:'Deposit failed: '+e.message}); }
+  }
+
+  async getGuildBank() {
+    if (!this.isOnline || !this.user || !game.state.guild) return 0;
+    try {
+      const doc = await this.firestore.collection('guilds').doc(game.state.guild.id).get();
+      return doc.exists ? (doc.data().bank || 0) : 0;
+    } catch(e) { return 0; }
+  }
+
+  async withdrawGuildGold(amount) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    if (game.state.guild.role !== 'Leader') { this.emit('notification',{type:'warn',text:'Only the leader can withdraw.'}); return; }
+    try {
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const doc = await ref.get();
+      const bank = doc.data()?.bank || 0;
+      if (amount > bank) { this.emit('notification',{type:'warn',text:`Guild bank only has ${bank}g.`}); return; }
+      await ref.update({ bank: firebase.firestore.FieldValue.increment(-amount) });
+      game.state.gold += amount;
+      this.emit('notification',{type:'success',text:`Withdrew ${amount}g from guild bank.`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Withdraw failed: '+e.message}); }
+  }
+
+  // Search for players by partial name
+  async searchPlayers(query) {
+    if (!this.isOnline || !query || query.length < 2) return [];
+    try {
+      const snap = await this.firestore.collection('players').limit(200).get();
+      const results = [];
+      const q = query.toLowerCase();
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.displayName?.toLowerCase().includes(q)) {
+          results.push({ uid:doc.id, name:d.displayName, combatLevel:d.combatLevel||1, totalLevel:d.totalLevel||1 });
+        }
+      });
+      return results.slice(0, 20);
+    } catch(e) { return []; }
+  }
+
   // ── FRIENDS ────────────────────────────────────────────
   async sendFriendRequest(targetName) {
     if (!this.isOnline || !this.user) { this.emit('notification',{type:'warn',text:'Not connected.'}); return; }

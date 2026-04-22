@@ -921,10 +921,13 @@ class GameEngine {
       } else {
         const nextId = d.waves[this.state.combat.dungeonWave];
         const next = GAME_DATA.monsters[nextId];
+        if (!next) { this.emit('notification',{type:'warn',text:'Dungeon error: missing monster data.'}); this.stopCombat(); return; }
         this.state.combat.monster = nextId;
         this.state.combat.monsterHp = next.hp;
         this.state.combat.monsterAttackTimer = 0;
         this.state.combat.statusEffects.monster = {};
+        this.emit('notification',{type:'info',text:`Wave ${this.state.combat.dungeonWave+1}/${d.waves.length}: ${next.name}!`});
+        this.emit('combatStart', { dungeon:this.state.combat.dungeon, wave:this.state.combat.dungeonWave });
       }
     } else {
       this.state.combat.monsterHp = monster.hp;
