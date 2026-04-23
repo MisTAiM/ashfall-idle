@@ -1529,8 +1529,13 @@ class UI {
         const isPast = ci < prog.chapter;
         const isFuture = ci > prog.chapter && !prog.completed;
 
+        // Check chapter level requirements
+        const chReqMet = !ch.reqLevels || Object.entries(ch.reqLevels).every(([sk,lv])=>(s.skills[sk]?.level||1)>=lv);
+        const chLockMsg = ch.reqLevels && !chReqMet ? Object.entries(ch.reqLevels).filter(([sk,lv])=>(s.skills[sk]?.level||1)<lv).map(([sk,lv])=>`${GAME_DATA.skills[sk]?.name||sk} ${lv}`).join(', ') : '';
+
         html += `<div class="sc-chapter ${isPast?'ch-done':''} ${isCurrentChapter?'ch-active':''} ${isFuture?'ch-locked':''}">
-          <div class="ch-title">${isPast?'&#x2714; ':''}${ch.name}${isFuture?' (Locked)':''}</div>`;
+          <div class="ch-title">${isPast?'&#x2714; ':''}${ch.name}${isFuture?' (Locked)':''}</div>
+          ${ch.reqLevels && Object.keys(ch.reqLevels).length ? `<div class="ch-reqs">${Object.entries(ch.reqLevels).map(([sk,lv])=>{const have=(s.skills[sk]?.level||1);return `<span class="qr-req ${have>=lv?'qr-req-ok':'qr-req-fail'}">${GAME_DATA.skills[sk]?.name||sk} ${lv}</span>`;}).join('')}</div>` : ''}`;
 
         if (isCurrentChapter || isPast) {
           for (let si = 0; si < ch.steps.length; si++) {
@@ -1686,7 +1691,7 @@ class UI {
             <div class="quest-rewards-row">${rewardStr}</div>
           </div>
           <div class="qr-actions">
-            ${isDone ? '<span class="qr-badge-done">Done</span>' : isActive ? '<span class="qr-badge-active">Active</span>' : locked ? '<span class="qr-badge-locked">Locked</span>' : `<button class="btn btn-xs" onclick="game.startQuest('${q.id}');ui.renderPage('quests')">Start</button>`}
+            ${isDone ? '<span class="qr-badge-done">Done</span>' : isActive ? '<span class="qr-badge-active">Active</span>' : locked ? '<span class="qr-badge-locked">Locked</span>' : `<button class="btn btn-xs" onclick="game.acceptQuest('${q.id}');ui.renderPage('quests')">Start</button>`}
           </div>
         </div>`;
       }

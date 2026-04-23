@@ -5109,3 +5109,6 @@ html, body {
 .admin-widget-wide { grid-column:span 2; }
 .aw-title { font-size:12px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
 @media(max-width:600px) { .admin-widget-wide { grid-column:span 1; } }
+
+/* ── STORYLINE CHAPTER REQS ────────────────────────────── */
+.ch-reqs { display:flex; flex-wrap:wrap; gap:3px; margin:4px 0; }

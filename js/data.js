@@ -2039,6 +2039,7 @@ GAME_DATA.quests.push(
 // ── NEW NPCs for the above chains ─────────────────────────────────────────
 GAME_DATA.npcs.push(
   {id:'zara',   name:'Zara',      faction:null, title:'Herbalist',   desc:'A wise woman who knows every plant in the forest.',   location:'Forest Edge'},
+    {id:'aldric',  name:'Aldric',    faction:null, title:'Archivist',   desc:'A keeper of ancient rune lore and forbidden texts.',    location:'Library'},
   {id:'rena',   name:'Captain Rena', faction:null, title:'Sea Captain', desc:'A grizzled captain who knows the coast like her own hand.', location:'Harbour'},
   {id:'mira',   name:'Scout Mira', faction:null, title:'Scout',       desc:'A daring explorer who maps dangerous territories.',    location:'Outpost'},
 );
@@ -2192,3 +2193,193 @@ GAME_DATA.quests.push(
 );
 
 console.log('[Ashfall] Expanded quests loaded. Total:', GAME_DATA.quests.length);
+
+// ═══════════════════════════════════════════════════════════════
+// v9.4 MASSIVE CONTENT EXPANSION
+// New monsters, combat areas, dungeons, storyline chapters
+// ═══════════════════════════════════════════════════════════════
+
+// ── NEW MONSTERS ─────────────────────────────────────────────────
+(function addNewMonsters() {
+  const m = GAME_DATA.monsters;
+
+  // Tier: Lv 5-15 (starter)
+  m.giant_spider  = {id:'giant_spider', name:'Giant Spider',combatLevel:8,hp:55,attack:7,strength:7,defence:3,style:'melee',drops:[{item:'spider_leg',qty:1,chance:0.25},{item:'venom_gland',qty:1,chance:0.15},{item:'coins',qty:8,chance:1}],xp:{attack:14,strength:14,hitpoints:5},rollTables:[]};
+  m.forest_troll  = {id:'forest_troll', name:'Forest Troll',combatLevel:12,hp:90,attack:12,strength:14,defence:6,style:'melee',drops:[{item:'troll_hide',qty:1,chance:0.30},{item:'iron_ore',qty:2,chance:0.20},{item:'coins',qty:20,chance:1}],xp:{attack:20,strength:22,hitpoints:9},rollTables:[]};
+  m.river_snake   = {id:'river_snake',  name:'River Snake', combatLevel:6, hp:40,attack:6,strength:5,defence:2,style:'melee',drops:[{item:'snake_skin',qty:1,chance:0.35},{item:'raw_shrimp',qty:1,chance:0.15},{item:'coins',qty:5,chance:1}],xp:{attack:10,strength:9,hitpoints:4},rollTables:[]};
+
+  // Tier: Lv 20-35 (midgame)
+  m.cave_troll    = {id:'cave_troll',   name:'Cave Troll',  combatLevel:28,hp:180,attack:22,strength:26,defence:14,style:'melee',drops:[{item:'troll_bones',qty:1,chance:0.40},{item:'coal_ore',qty:3,chance:0.25},{item:'steel_bar',qty:1,chance:0.10},{item:'coins',qty:60,chance:1}],xp:{attack:40,strength:45,hitpoints:18},rollTables:[]};
+  m.dark_archer   = {id:'dark_archer',  name:'Dark Archer', combatLevel:24,hp:130,attack:20,strength:18,defence:12,style:'ranged',drops:[{item:'iron_arrows',qty:10,chance:0.60},{item:'bow_string',qty:1,chance:0.20},{item:'coins',qty:45,chance:1}],xp:{attack:35,strength:30,hitpoints:13},rollTables:[]};
+  m.shadow_wolf   = {id:'shadow_wolf',  name:'Shadow Wolf', combatLevel:22,hp:120,attack:20,strength:22,defence:10,style:'melee',drops:[{item:'shadow_pelt',qty:1,chance:0.25},{item:'wolf_bones',qty:1,chance:0.50},{item:'coins',qty:38,chance:1}],xp:{attack:32,strength:36,hitpoints:12},rollTables:[]};
+  m.swamp_witch   = {id:'swamp_witch',  name:'Swamp Witch', combatLevel:30,hp:150,attack:25,strength:20,defence:15,style:'magic',drops:[{item:'eye_of_newt',qty:2,chance:0.40},{item:'death_rune',qty:3,chance:0.15},{item:'magic_potion',qty:1,chance:0.08},{item:'coins',qty:70,chance:1}],xp:{attack:42,strength:34,hitpoints:15},rollTables:[]};
+  m.iron_golem    = {id:'iron_golem',   name:'Iron Golem',  combatLevel:35,hp:220,attack:28,strength:32,defence:20,style:'melee',drops:[{item:'iron_bar',qty:2,chance:0.50},{item:'steel_bar',qty:1,chance:0.20},{item:'golem_core',qty:1,chance:0.05},{item:'coins',qty:85,chance:1}],xp:{attack:50,strength:56,hitpoints:22},rollTables:[]};
+
+  // Tier: Lv 40-60 (advanced)
+  m.venomspitter  = {id:'venomspitter', name:'Venomspitter',combatLevel:45,hp:280,attack:38,strength:35,defence:22,style:'ranged',drops:[{item:'venom_sac',qty:1,chance:0.30},{item:'adamant_ore',qty:1,chance:0.15},{item:'ranging_potion',qty:1,chance:0.10},{item:'coins',qty:120,chance:1}],xp:{attack:65,strength:60,hitpoints:28},rollTables:[]};
+  m.cursed_knight = {id:'cursed_knight',name:'Cursed Knight',combatLevel:50,hp:320,attack:44,strength:42,defence:30,style:'melee',drops:[{item:'cursed_bones',qty:1,chance:0.35},{item:'steel_sword',qty:1,chance:0.08},{item:'mithril_bar',qty:1,chance:0.12},{item:'coins',qty:150,chance:1}],xp:{attack:75,strength:72,hitpoints:32},rollTables:[]};
+  m.frost_giant   = {id:'frost_giant',  name:'Frost Giant',combatLevel:55,hp:380,attack:48,strength:52,defence:35,style:'melee',drops:[{item:'frost_core',qty:1,chance:0.20},{item:'adamant_bar',qty:1,chance:0.15},{item:'mithril_sword',qty:1,chance:0.06},{item:'coins',qty:200,chance:1}],xp:{attack:82,strength:88,hitpoints:38},rollTables:[]};
+  m.soul_reaper   = {id:'soul_reaper',  name:'Soul Reaper', combatLevel:58,hp:350,attack:50,strength:44,defence:28,style:'magic',drops:[{item:'soul_rune',qty:5,chance:0.40},{item:'death_rune',qty:8,chance:0.35},{item:'spirit_shield',qty:1,chance:0.03},{item:'coins',qty:180,chance:1}],xp:{attack:85,strength:76,hitpoints:35},rollTables:[]};
+
+  // Tier: Lv 65-80 (endgame)
+  m.abyssal_demon = {id:'abyssal_demon',name:'Abyssal Demon',combatLevel:70,hp:450,attack:60,strength:65,defence:40,style:'melee',drops:[{item:'abyssal_whip',qty:1,chance:0.008},{item:'rune_bar',qty:2,chance:0.20},{item:'wrath_rune',qty:5,chance:0.30},{item:'coins',qty:400,chance:1}],xp:{attack:115,strength:120,hitpoints:45},rollTables:[]};
+  m.lava_titan    = {id:'lava_titan',   name:'Lava Titan',  combatLevel:75,hp:520,attack:66,strength:70,defence:45,style:'melee',drops:[{item:'lava_core',qty:1,chance:0.25},{item:'obsidian_bar',qty:2,chance:0.20},{item:'fire_cape',qty:1,chance:0.01},{item:'coins',qty:500,chance:1}],xp:{attack:125,strength:130,hitpoints:52},rollTables:[]};
+  m.void_stalker  = {id:'void_stalker', name:'Void Stalker',combatLevel:78,hp:480,attack:68,strength:62,defence:42,style:'magic',drops:[{item:'void_sigil',qty:1,chance:0.05},{item:'soul_rune',qty:10,chance:0.35},{item:'wrath_rune',qty:8,chance:0.25},{item:'coins',qty:450,chance:1}],xp:{attack:120,strength:110,hitpoints:48},rollTables:[]};
+
+  // Tier: Lv 85-100 (elite)
+  m.elder_dragon  = {id:'elder_dragon', name:'Elder Dragon',combatLevel:88,hp:700,attack:80,strength:85,defence:60,style:'melee',drops:[{item:'elder_dragon_bone',qty:1,chance:0.70},{item:'draconic_visage',qty:1,chance:0.002},{item:'ashsteel_bar',qty:3,chance:0.25},{item:'coins',qty:800,chance:1}],xp:{attack:160,strength:168,hitpoints:70},rollTables:[]};
+  m.bone_colossus = {id:'bone_colossus',name:'Bone Colossus',combatLevel:92,hp:800,attack:85,strength:88,defence:65,style:'melee',drops:[{item:'colossus_shard',qty:1,chance:0.15},{item:'wrath_rune',qty:15,chance:0.40},{item:'berserker_ring',qty:1,chance:0.005},{item:'coins',qty:900,chance:1}],xp:{attack:172,strength:176,hitpoints:80},rollTables:[]};
+  m.shadow_lord   = {id:'shadow_lord',  name:'Shadow Lord',combatLevel:97,hp:900,attack:90,strength:88,defence:70,style:'magic',drops:[{item:'shadow_orb',qty:1,chance:0.10},{item:'soul_rune',qty:20,chance:0.45},{item:'shadow_shield',qty:1,chance:0.004},{item:'coins',qty:1200,chance:1}],xp:{attack:185,strength:180,hitpoints:90},rollTables:[]};
+})();
+
+// ── NEW ITEMS ─────────────────────────────────────────────────────
+(function addNewItems() {
+  const add = (id, data) => { GAME_DATA.items[id] = Object.assign({id}, data); };
+
+  // Monster drops
+  add('spider_leg',      {name:'Spider Leg',       type:'resource', subtype:'misc',   sellPrice:15,  desc:'A spindly leg from a giant spider.'});
+  add('venom_gland',     {name:'Venom Gland',       type:'resource', subtype:'misc',   sellPrice:30,  desc:'Potent venom sac.'});
+  add('troll_hide',      {name:'Troll Hide',         type:'resource', subtype:'misc',   sellPrice:25,  desc:'Thick and rough hide.'});
+  add('troll_bones',     {name:'Troll Bones',        type:'resource', subtype:'misc',   sellPrice:40,  desc:'Dense troll bones.'});
+  add('snake_skin',      {name:'Snake Skin',         type:'resource', subtype:'misc',   sellPrice:20,  desc:'Supple snake skin.'});
+  add('shadow_pelt',     {name:'Shadow Pelt',        type:'resource', subtype:'misc',   sellPrice:80,  desc:'A dark shimmering pelt.'});
+  add('wolf_bones',      {name:'Wolf Bones',         type:'resource', subtype:'misc',   sellPrice:35,  desc:'Sturdy wolf bones.'});
+  add('eye_of_newt',     {name:'Eye of Newt',        type:'resource', subtype:'misc',   sellPrice:60,  desc:'A classic alchemical ingredient.'});
+  add('golem_core',      {name:'Golem Core',         type:'resource', subtype:'misc',   sellPrice:500, desc:'The magical core of an iron golem.'});
+  add('venom_sac',       {name:'Venom Sac',          type:'resource', subtype:'misc',   sellPrice:200, desc:'A sac full of pure venom.'});
+  add('cursed_bones',    {name:'Cursed Bones',       type:'resource', subtype:'misc',   sellPrice:150, desc:'Bones that glow faintly.'});
+  add('frost_core',      {name:'Frost Core',         type:'resource', subtype:'misc',   sellPrice:800, desc:'A shard of pure frost magic.'});
+  add('lava_core',       {name:'Lava Core',          type:'resource', subtype:'misc',   sellPrice:1200,desc:'A chunk of solidified magma.'});
+  add('void_sigil',      {name:'Void Sigil',         type:'resource', subtype:'misc',   sellPrice:2000,desc:'A rune from the void itself.'});
+  add('elder_dragon_bone',{name:'Elder Dragon Bone', type:'resource', subtype:'misc',   sellPrice:3000,desc:'A massive ancient bone.'});
+  add('draconic_visage', {name:'Draconic Visage',    type:'resource', subtype:'misc',   sellPrice:50000,desc:'The face of an elder dragon. Very rare.'});
+  add('colossus_shard',  {name:'Colossus Shard',     type:'resource', subtype:'misc',   sellPrice:2500,desc:'A fragment of a bone colossus.'});
+  add('shadow_orb',      {name:'Shadow Orb',         type:'resource', subtype:'misc',   sellPrice:3500,desc:'An orb of pure shadow energy.'});
+
+  // New equipment rewards
+  add('abyssal_whip',    {name:'Abyssal Whip',       type:'weapon', slot:'weapon',     sellPrice:80000, stats:{attackBonus:75,strengthBonus:60}, levelReq:{attack:70}, rarity:'epic',   desc:'A whip from the abyss.'});
+  add('fire_cape',       {name:'Fire Cape',          type:'armor',  slot:'back',       sellPrice:50000, stats:{defenceBonus:18,strengthBonus:4},  levelReq:{defence:60}, rarity:'epic',  desc:'A cape woven from fire.'});
+  add('spirit_shield',   {name:'Spirit Shield',      type:'armor',  slot:'shield',     sellPrice:40000, stats:{defenceBonus:30,prayerBonus:8},    levelReq:{defence:55}, rarity:'rare',  desc:'A blessed spirit shield.'});
+  add('shadow_shield',   {name:'Shadow Shield',      type:'armor',  slot:'shield',     sellPrice:120000,stats:{defenceBonus:40,magicBonus:15},    levelReq:{defence:75}, rarity:'epic',  desc:'Made from void essence.'});
+  add('berserker_ring',  {name:'Berserker Ring',     type:'armor',  slot:'ring',       sellPrice:35000, stats:{strengthBonus:8},                  levelReq:{strength:70},rarity:'rare',  desc:'+8 str, renowned ring.'});
+  add('master_herbalist_cape',{name:"Herbalist's Cape",type:'armor',slot:'back',       sellPrice:5000,  stats:{defenceBonus:8,magicBonus:5},      levelReq:{herblore:65},rarity:'rare',  desc:'Cape of master herbalists.'});
+  add('master_fisher_rod',{name:"Master's Rod",      type:'weapon', slot:'weapon',     sellPrice:8000,  stats:{attackBonus:5},                    levelReq:{fishing:85}, rarity:'rare',  desc:'Catches the deepest fish.'});
+  add('master_smithing_hammer',{name:"Master's Hammer",type:'weapon',slot:'weapon',    sellPrice:10000, stats:{attackBonus:8,strengthBonus:5},    levelReq:{smithing:80},rarity:'rare',  desc:'For the finest smithwork.'});
+  add('master_runecrafter_hat',{name:"Runemaster's Hat",type:'armor',slot:'head',      sellPrice:12000, stats:{defenceBonus:10,magicBonus:12},    levelReq:{runecrafting:75},rarity:'rare',desc:'Hat of the runemasters.'});
+  add('apex_hunter_amulet',{name:'Apex Amulet',      type:'armor',  slot:'amulet',     sellPrice:25000, stats:{attackBonus:12,strengthBonus:8,defenceBonus:6}, levelReq:{slayer:75}, rarity:'epic', desc:'Worn by the greatest hunters.'});
+})();
+
+// ── NEW COMBAT AREAS ─────────────────────────────────────────────
+(function addNewAreas() {
+  GAME_DATA.combatAreas.push(
+    {id:'spider_cave',   name:'Spider Cave',      monsters:['giant_spider','cave_troll','venomspitter'],  levelReq:8,  desc:'A cave thick with webs and skittering things.'},
+    {id:'swamp',         name:'Cursed Swamp',     monsters:['river_snake','swamp_witch','shadow_wolf'],   levelReq:18, desc:'A festering swamp hiding ancient evil.'},
+    {id:'iron_mine',     name:'Collapsed Mine',   monsters:['iron_golem','cave_troll','dark_archer'],     levelReq:30, desc:'An old mine now crawling with constructs.'},
+    {id:'frozen_peak',   name:'Frozen Peak',      monsters:['frost_giant','cursed_knight','soul_reaper'], levelReq:50, desc:'A mountain blanketed in deadly frost.'},
+    {id:'abyssal_rift',  name:'Abyssal Rift',     monsters:['abyssal_demon','void_stalker','soul_reaper'],levelReq:68, desc:'A crack in reality bleeding void energy.'},
+    {id:'lava_wastes',   name:'Lava Wastes',      monsters:['lava_titan','elder_dragon','abyssal_demon'], levelReq:75, desc:'A scorched hellscape of magma and ash.'},
+    {id:'shadow_realm',  name:'Shadow Realm',     monsters:['shadow_lord','void_stalker','bone_colossus'],levelReq:82, desc:'The dark mirror of the waking world.'},
+    {id:'elder_sanctum', name:"Elder Dragon's Sanctum",monsters:['elder_dragon','bone_colossus','shadow_lord'],levelReq:88,desc:'Where the oldest dragons make their final stand.'}
+  );
+})();
+
+// ── NEW DUNGEONS ──────────────────────────────────────────────────
+(function addNewDungeons() {
+  GAME_DATA.dungeons = GAME_DATA.dungeons || [];
+  GAME_DATA.dungeons.push(
+    {id:'spider_lair',   name:'Spider Queen Lair',  waves:['giant_spider','giant_spider','venomspitter','giant_spider','venomspitter','spider_queen'],                  levelReq:15, rewards:[{item:'venom_gland',qty:5,chance:0.50},{item:'spider_leg',qty:10,chance:0.70},{item:'mithril_ore',qty:2,chance:0.20}], desc:'The brood queen reigns in the deepest cavern.'},
+    {id:'troll_fortress',name:'Troll Fortress',      waves:['forest_troll','cave_troll','iron_golem','cave_troll','iron_golem','troll_warchief'],                       levelReq:30, rewards:[{item:'golem_core',qty:1,chance:0.25},{item:'steel_bar',qty:5,chance:0.60},{item:'iron_bar',qty:10,chance:0.80}], desc:'An ancient fortress commandeered by trolls.'},
+    {id:'frozen_citadel',name:'Frozen Citadel',      waves:['cursed_knight','frost_giant','cursed_knight','frost_giant','frost_giant','frost_lord'],                    levelReq:52, rewards:[{item:'frost_core',qty:1,chance:0.30},{item:'mithril_bar',qty:3,chance:0.50},{item:'adamant_bar',qty:2,chance:0.35}], desc:'The ancient seat of an ice-bound king.'},
+    {id:'void_sanctum',  name:'Void Sanctum',        waves:['void_stalker','soul_reaper','abyssal_demon','void_stalker','soul_reaper','void_herald'],                   levelReq:70, rewards:[{item:'void_sigil',qty:1,chance:0.20},{item:'soul_rune',qty:20,chance:0.60},{item:'spirit_shield',qty:1,chance:0.015}], desc:'A shrine to the void between worlds.'},
+    {id:'shadow_fortress',name:'Shadow Fortress',    waves:['shadow_lord','bone_colossus','shadow_lord','void_stalker','bone_colossus','void_elder'],                   levelReq:85, rewards:[{item:'shadow_orb',qty:1,chance:0.20},{item:'shadow_shield',qty:1,chance:0.008},{item:'wrath_rune',qty:25,chance:0.50}], desc:'The fortress at the heart of the shadow realm.'},
+    {id:'elder_vault',   name:"Elder Dragon Vault",  waves:['elder_dragon','lava_titan','elder_dragon','bone_colossus','elder_dragon','elder_dragon_sovereign'],        levelReq:90, rewards:[{item:'draconic_visage',qty:1,chance:0.003},{item:'elder_dragon_bone',qty:3,chance:0.60},{item:'fire_cape',qty:1,chance:0.015}], desc:'The hoard of the elder dragon sovereign.'}
+  );
+})();
+
+// ── EXPANDED STORYLINE with level reqs ─────────────────────────
+(function addStorylineChapter3() {
+  GAME_DATA.storylines.push({
+    id:'shadow_rising',
+    name:'The Shadow Rising',
+    desc:'Something ancient stirs in the dark. Investigate before it is too late.',
+    reqStory: 'main_story',
+    chapters: [
+      {
+        id:'sr_1',
+        name:'Chapter 1: Whispers',
+        reqLevels: {attack:40, magic:30},
+        steps: [
+          {id:'sr_1_1',text:'Strange disappearances plague the northern villages. Shadow wolves have been seen bearing unnatural intelligence. Investigate by slaying 20 shadow wolves.',objective:{type:'kill',monster:'shadow_wolf',qty:20},reward:{xp:{attack:2000,strength:1500},gold:1000},alignShift:{direction:'good',amount:5}},
+          {id:'sr_1_2',text:'A survivor clutches a void sigil. The shadows are being commanded from the Abyssal Rift. Scout the area by defeating soul reapers.',objective:{type:'kill',monster:'soul_reaper',qty:15},reward:{xp:{magic:2500,defence:1500},gold:1500},alignShift:{direction:'lawful',amount:3}},
+          {id:'sr_1_3',text:'The sigil vibrates near the Frozen Peak. Defeat the frost giants guarding the path northward.',objective:{type:'kill',monster:'frost_giant',qty:10},reward:{xp:{attack:3000,strength:2000,defence:2000},gold:3000,items:[{item:'frost_core',qty:2}]},alignShift:{direction:'good',amount:5}},
+        ]
+      },
+      {
+        id:'sr_2',
+        name:'Chapter 2: The Void Herald',
+        reqLevels: {attack:60, magic:50, defence:55},
+        steps: [
+          {id:'sr_2_1',text:'The Void Herald emerges from the Abyssal Rift, commanding an army of demons. Breach the rift by slaying abyssal demons.',objective:{type:'kill',monster:'abyssal_demon',qty:25},reward:{xp:{attack:5000,strength:4000,defence:3000},gold:5000},alignShift:{direction:'good',amount:8}},
+          {id:'sr_2_2',text:'To seal the rift you need wrath runes and soul runes. Gather them from the depths.',objective:{type:'collect',item:'wrath_rune',qty:20},reward:{xp:{magic:5000,runecrafting:3000},gold:4000,items:[{item:'void_sigil',qty:1}]},alignShift:null},
+          {id:'sr_2_3',text:'Storm the Void Sanctum dungeon and defeat the herald within.',objective:{type:'dungeon',dungeon:'void_sanctum',qty:1},reward:{xp:{attack:8000,strength:6000,defence:6000,magic:4000},gold:10000,items:[{item:'spirit_shield',qty:1},{item:'void_sigil',qty:3}]},alignShift:{direction:'good',amount:15}},
+        ]
+      },
+      {
+        id:'sr_3',
+        name:'Chapter 3: Into Shadow',
+        reqLevels: {attack:80, magic:70, defence:75},
+        steps: [
+          {id:'sr_3_1',text:'The Shadow Lord commands from his fortress. Battle through the shadow realm to reach him.',objective:{type:'kill',monster:'shadow_lord',qty:5},reward:{xp:{attack:10000,strength:8000,defence:8000},gold:15000},alignShift:{direction:'good',amount:10}},
+          {id:'sr_3_2',text:'The Shadow Fortress shields itself with bone collosi. Break through them.',objective:{type:'kill',monster:'bone_colossus',qty:8},reward:{xp:{attack:12000,strength:10000,defence:10000},gold:20000,items:[{item:'shadow_orb',qty:2}]},alignShift:{direction:'lawful',amount:5}},
+          {id:'sr_3_3',text:'Conquer the Shadow Fortress and banish the Shadow Lord forever.',objective:{type:'dungeon',dungeon:'shadow_fortress',qty:1},reward:{xp:{attack:20000,strength:16000,defence:16000,magic:10000,prayer:5000},gold:50000,items:[{item:'shadow_shield',qty:1},{item:'berserker_ring',qty:1}]},alignShift:{direction:'good',amount:25}},
+        ]
+      }
+    ]
+  });
+})();
+
+// ── SVG MONSTER ART for new monsters ─────────────────────────────
+(function addNewMonsterArt() {
+  const art = GAME_DATA.monsterArt = GAME_DATA.monsterArt || {};
+
+  art.giant_spider   = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="44" rx="16" ry="12" fill="#2a1a2a"/><ellipse cx="40" cy="34" rx="10" ry="8" fill="#3a2a3a"/><circle cx="36" cy="31" r="2.5" fill="#cc2020"/><circle cx="44" cy="31" r="2.5" fill="#cc2020"/><circle cx="36" cy="31" r="1" fill="#ff4040"/><circle cx="44" cy="31" r="1" fill="#ff4040"/><path d="M24 46 Q14 38 8 28" stroke="#2a1a2a" stroke-width="3" fill="none"/><path d="M24 48 Q12 44 6 36" stroke="#2a1a2a" stroke-width="3" fill="none"/><path d="M24 50 Q14 52 8 48" stroke="#2a1a2a" stroke-width="3" fill="none"/><path d="M24 52 Q16 58 10 62" stroke="#2a1a2a" stroke-width="3" fill="none"/><path d="M56 46 Q66 38 72 28" stroke="#2a1a2a" stroke-width="3" fill="none"/><path d="M56 48 Q68 44 74 36" stroke="#2a1a2a" stroke-width="3" fill="none"/><path d="M56 50 Q66 52 72 48" stroke="#2a1a2a" stroke-width="3" fill="none"/><path d="M56 52 Q64 58 70 62" stroke="#2a1a2a" stroke-width="3" fill="none"/></svg>`;
+
+  art.forest_troll   = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="60" rx="20" ry="16" fill="#4a6a2a"/><circle cx="40" cy="34" r="18" fill="#5a7a30"/><circle cx="30" cy="22" r="7" fill="#4a6a28"/><circle cx="50" cy="22" r="7" fill="#4a6a28"/><circle cx="34" cy="32" r="4" fill="#1a1a1a"/><circle cx="46" cy="32" r="4" fill="#1a1a1a"/><circle cx="35" cy="31" r="1.5" fill="#fff" opacity=".6"/><circle cx="47" cy="31" r="1.5" fill="#fff" opacity=".6"/><path d="M32 42 L36 46 L40 42 L44 46 L48 42" stroke="#3a5a20" stroke-width="2" fill="none"/></svg>`;
+
+  art.shadow_wolf    = `<svg viewBox="0 0 80 80"><ellipse cx="50" cy="52" rx="22" ry="14" fill="#1a1430"/><circle cx="54" cy="36" r="16" fill="#241840"/><polygon points="46,24 42,14 50,22" fill="#1a1430"/><polygon points="62,22 60,12 66,20" fill="#1a1430"/><circle cx="50" cy="33" r="3.5" fill="#8060ff" opacity=".9"/><circle cx="60" cy="33" r="3.5" fill="#8060ff" opacity=".9"/><circle cx="50" cy="33" r="1.5" fill="#fff"/><circle cx="60" cy="33" r="1.5" fill="#fff"/></svg>`;
+
+  art.swamp_witch    = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="62" rx="12" ry="16" fill="#2a4a1a"/><circle cx="40" cy="34" r="16" fill="#3a3a20"/><path d="M22 14 L40 28 L58 14 L40 8Z" fill="#2a2a10"/><circle cx="35" cy="31" r="3" fill="#a0e040"/><circle cx="45" cy="31" r="3" fill="#a0e040"/><circle cx="35" cy="31" r="1.2" fill="#1a1a1a"/><circle cx="45" cy="31" r="1.2" fill="#1a1a1a"/><path d="M34 40 Q40 44 46 40" stroke="#3a4a20" stroke-width="2" fill="none"/><path d="M20 46 Q14 44 12 38" stroke="#2a4a1a" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M60 46 Q66 44 68 38" stroke="#2a4a1a" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`;
+
+  art.iron_golem     = `<svg viewBox="0 0 80 80"><rect x="20" y="42" width="40" height="32" rx="4" fill="#6a7080"/><rect x="16" y="24" width="48" height="22" rx="4" fill="#7a8090"/><rect x="8" y="28" width="14" height="28" rx="4" fill="#6a7080"/><rect x="58" y="28" width="14" height="28" rx="4" fill="#6a7080"/><rect x="24" y="10" width="32" height="18" rx="6" fill="#7a8090"/><rect x="30" y="16" width="8" height="6" rx="2" fill="#40c0e0" opacity=".8"/><rect x="42" y="16" width="8" height="6" rx="2" fill="#40c0e0" opacity=".8"/><circle cx="40" cy="42" r="6" fill="#50a0c0" opacity=".6"/></svg>`;
+
+  art.cursed_knight  = `<svg viewBox="0 0 80 80"><rect x="24" y="44" width="32" height="28" rx="3" fill="#3a3848"/><rect x="18" y="28" width="44" height="20" rx="4" fill="#4a4858"/><rect x="14" y="32" width="14" height="22" rx="3" fill="#3a3848"/><rect x="52" y="32" width="14" height="22" rx="3" fill="#3a3848"/><rect x="22" y="8" width="36" height="24" rx="8" fill="#4a4858"/><circle cx="32" cy="18" r="4" fill="#c04040" opacity=".9"/><circle cx="48" cy="18" r="4" fill="#c04040" opacity=".9"/><rect x="30" y="26" width="20" height="4" rx="2" fill="#3a3848"/></svg>`;
+
+  art.frost_giant    = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="62" rx="22" ry="16" fill="#3a5a80"/><circle cx="40" cy="30" r="22" fill="#4a70a0"/><circle cx="28" cy="16" r="8" fill="#3a5a80"/><circle cx="52" cy="16" r="8" fill="#3a5a80"/><circle cx="33" cy="28" r="4" fill="#c0e8ff"/><circle cx="47" cy="28" r="4" fill="#c0e8ff"/><circle cx="33" cy="28" r="1.8" fill="#1a1a3a"/><circle cx="47" cy="28" r="1.8" fill="#1a1a3a"/><path d="M30 40 Q40 46 50 40" stroke="#3a5a80" stroke-width="2.5" fill="none"/></svg>`;
+
+  art.soul_reaper    = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="66" rx="16" ry="10" fill="#1a1430" opacity=".5"/><path d="M20 70 Q20 40 40 20 Q60 40 60 70Z" fill="#1a1030"/><circle cx="32" cy="36" r="4" fill="#9040c0" opacity=".9"/><circle cx="48" cy="36" r="4" fill="#9040c0" opacity=".9"/><path d="M54 28 Q62 14 72 10 Q70 20 64 24" stroke="#1a1030" stroke-width="6" stroke-linecap="round" fill="none"/><ellipse cx="68" cy="10" rx="5" ry="3" fill="#3a2060"/></svg>`;
+
+  art.abyssal_demon  = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="60" rx="18" ry="14" fill="#1a0830"/><circle cx="40" cy="30" r="20" fill="#2a1040"/><polygon points="28,14 24,4 32,12" fill="#3a1050"/><polygon points="52,14 56,4 48,12" fill="#3a1050"/><circle cx="33" cy="27" r="4" fill="#ff2040" opacity=".95"/><circle cx="47" cy="27" r="4" fill="#ff2040" opacity=".95"/><circle cx="33" cy="27" r="1.8" fill="#ff8000"/><circle cx="47" cy="27" r="1.8" fill="#ff8000"/><path d="M20 50 Q14 46 10 36" stroke="#2a1040" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M60 50 Q66 46 70 36" stroke="#2a1040" stroke-width="5" stroke-linecap="round" fill="none"/></svg>`;
+
+  art.lava_titan     = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="64" rx="24" ry="14" fill="#3a1008"/><rect x="20" y="38" width="40" height="28" rx="6" fill="#5a2010"/><circle cx="40" cy="26" r="20" fill="#6a2810"/><circle cx="28" cy="20" r="7" fill="#5a2010"/><circle cx="52" cy="20" r="7" fill="#5a2010"/><circle cx="32" cy="24" r="4" fill="#ff6010" opacity=".95"/><circle cx="48" cy="24" r="4" fill="#ff6010" opacity=".95"/><circle cx="32" cy="24" r="1.8" fill="#ffa040"/><circle cx="48" cy="24" r="1.8" fill="#ffa040"/><path d="M20 52 Q12 48 8 40" stroke="#5a2010" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M60 52 Q68 48 72 40" stroke="#5a2010" stroke-width="6" stroke-linecap="round" fill="none"/></svg>`;
+
+  art.void_stalker   = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="66" rx="16" ry="10" fill="#0a0818" opacity=".6"/><path d="M18 72 Q18 46 40 22 Q62 46 62 72Z" fill="#120820"/><circle cx="32" cy="38" r="4.5" fill="#b040ff" opacity=".95"/><circle cx="48" cy="38" r="4.5" fill="#b040ff" opacity=".95"/><circle cx="32" cy="38" r="1.8" fill="#fff"/><circle cx="48" cy="38" r="1.8" fill="#fff"/><path d="M28 56 Q24 62 18 66" stroke="#1a0830" stroke-width="3" fill="none"/><path d="M52 56 Q56 62 62 66" stroke="#1a0830" stroke-width="3" fill="none"/></svg>`;
+
+  art.elder_dragon   = `<svg viewBox="0 0 80 80"><ellipse cx="36" cy="60" rx="28" ry="16" fill="#3a5020"/><circle cx="44" cy="28" r="24" fill="#4a6828"/><path d="M22 24 Q4 12 2 26 Q10 30 22 28Z" fill="#2a4818"/><path d="M66 24 Q82 12 78 26 Q70 30 66 28Z" fill="#2a4818"/><path d="M36 14 Q32 2 28 0" stroke="#5a7830" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M52 12 Q56 0 60 -2" stroke="#5a7830" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="38" cy="24" r="5" fill="#ff8000" opacity=".95"/><circle cx="52" cy="22" r="5" fill="#ff8000" opacity=".95"/><circle cx="38" cy="24" r="2" fill="#fff"/><circle cx="52" cy="22" r="2" fill="#fff"/><path d="M58 32 Q68 24 72 16" stroke="#ff6000" stroke-width="3" fill="none" opacity=".8"/></svg>`;
+
+  art.bone_colossus  = `<svg viewBox="0 0 80 80"><rect x="22" y="44" width="36" height="30" rx="4" fill="#d4c8a0"/><rect x="14" y="30" width="52" height="18" rx="6" fill="#e8dab4"/><rect x="6" y="34" width="18" height="26" rx="4" fill="#d4c8a0"/><rect x="56" y="34" width="18" height="26" rx="4" fill="#d4c8a0"/><rect x="24" y="8" width="32" height="26" rx="8" fill="#e8dab4"/><circle cx="32" cy="18" r="5" fill="#d0a020" opacity=".9"/><circle cx="48" cy="18" r="5" fill="#d0a020" opacity=".9"/><circle cx="32" cy="18" r="2" fill="#1a1a1a"/><circle cx="48" cy="18" r="2" fill="#1a1a1a"/></svg>`;
+
+  art.shadow_lord    = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="68" rx="18" ry="10" fill="#080612" opacity=".7"/><path d="M16 74 Q16 44 40 16 Q64 44 64 74Z" fill="#0e0820"/><path d="M20 20 Q14 8 8 4" stroke="#0e0820" stroke-width="8" stroke-linecap="round" fill="none"/><path d="M60 20 Q66 8 72 4" stroke="#0e0820" stroke-width="8" stroke-linecap="round" fill="none"/><circle cx="33" cy="36" r="5" fill="#d040ff" opacity=".95"/><circle cx="47" cy="36" r="5" fill="#d040ff" opacity=".95"/><circle cx="33" cy="36" r="2" fill="#fff"/><circle cx="47" cy="36" r="2" fill="#fff"/><ellipse cx="40" cy="52" rx="10" ry="4" fill="#2a1040" opacity=".6"/></svg>`;
+
+  art.dark_archer    = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="62" rx="14" ry="18" fill="#2a2818"/><circle cx="40" cy="28" r="16" fill="#3a3828"/><path d="M36 14 Q24 8 20 12" stroke="#2a2818" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="36" cy="26" r="3" fill="#1a1a1a"/><circle cx="46" cy="26" r="3" fill="#1a1a1a"/><path d="M62 38 L80 28 M62 42 L80 32" stroke="#7a6040" stroke-width="2.5" fill="none"/><line x1="62" y1="38" x2="62" y2="46" stroke="#5a4030" stroke-width="2"/></svg>`;
+
+  art.river_snake    = `<svg viewBox="0 0 80 80"><path d="M10 60 Q20 40 40 50 Q60 60 70 40 Q78 28 72 18" stroke="#4a6a20" stroke-width="12" fill="none" stroke-linecap="round"/><circle cx="72" cy="16" r="8" fill="#5a7a28"/><circle cx="69" cy="13" r="2" fill="#1a1a1a"/><circle cx="76" cy="13" r="2" fill="#1a1a1a"/><path d="M76 20 L80 24 L72 24Z" fill="#c04040"/></svg>`;
+
+  art.cave_troll     = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="64" rx="22" ry="14" fill="#4a4a3a"/><circle cx="40" cy="32" r="22" fill="#5a5a40"/><circle cx="28" cy="18" r="8" fill="#4a4a38"/><circle cx="52" cy="18" r="8" fill="#4a4a38"/><circle cx="33" cy="30" r="4.5" fill="#1a1a1a"/><circle cx="47" cy="30" r="4.5" fill="#1a1a1a"/><ellipse cx="40" cy="38" rx="7" ry="5" fill="#6a6050"/><path d="M18 54 Q10 50 6 40" stroke="#4a4a3a" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M62 54 Q70 50 74 40" stroke="#4a4a3a" stroke-width="6" stroke-linecap="round" fill="none"/></svg>`;
+
+  art.venomspitter   = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="62" rx="18" ry="14" fill="#2a4a10"/><circle cx="40" cy="30" r="20" fill="#3a5a18"/><path d="M26 18 Q20 8 18 12" stroke="#2a4a10" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M54 18 Q60 8 62 12" stroke="#2a4a10" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="33" cy="27" r="4" fill="#a0e040"/><circle cx="47" cy="27" r="4" fill="#a0e040"/><circle cx="33" cy="27" r="1.6" fill="#1a1a1a"/><circle cx="47" cy="27" r="1.6" fill="#1a1a1a"/><path d="M34 40 Q40 46 46 40" stroke="#2a4a10" stroke-width="3" fill="none"/><circle cx="60" cy="38" r="4" fill="#c0e040" opacity=".8"/></svg>`;
+
+  art.frost_lord     = `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="64" rx="24" ry="14" fill="#1a3060"/><rect x="18" y="40" width="44" height="26" rx="5" fill="#2a4888"/><circle cx="40" cy="24" r="22" fill="#3a5898"/><circle cx="26" cy="12" r="9" fill="#2a4888"/><circle cx="54" cy="12" r="9" fill="#2a4888"/><circle cx="32" cy="22" r="5" fill="#c0e8ff"/><circle cx="48" cy="22" r="5" fill="#c0e8ff"/><circle cx="32" cy="22" r="2" fill="#0a1a40"/><circle cx="48" cy="22" r="2" fill="#0a1a40"/><path d="M36 32 L40 40 L44 32" stroke="#2a4888" stroke-width="2" fill="none"/></svg>`;
+
+})();
+
+console.log('[Ashfall] v9.4 content: Monsters:', Object.keys(GAME_DATA.monsters).length, '| Dungeons:', GAME_DATA.dungeons?.length, '| Storylines:', GAME_DATA.storylines.length);
