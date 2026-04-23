@@ -3417,6 +3417,12 @@ This will overwrite your current local progress.`)) {
           </div>
         </div>
         <div class="aw aw-wide">
+          <div class="aw-t">Known Players — Quick Restore</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Players with registered accounts. Click Restore to send them a compensation package.</div>
+          <button class="btn btn-sm" onclick="ui._adminLoadKnownPlayers()" style="margin-bottom:10px">Load Players from Firestore</button>
+          <div id="ap-known-players" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px"></div>
+        </div>
+        <div class="aw aw-wide">
           <div class="aw-t">Global Game Settings (Affects All Players Next Login)</div>
           <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">These settings are stored in Firestore and loaded by all players on next session.</div>
           <div class="admin-grid" style="margin-top:0;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
@@ -3751,6 +3757,47 @@ This will overwrite your current local progress.`)) {
     });
   }
 
+  async _adminRestorePlayer(uid, name) {
+    if (!online?.isOnline || !online?.firestore) { this.toast({type:'danger',text:'Not connected'}); return; }
+    if (!confirm(`Send full restoration package to ${name}?`)) return;
+    try {
+      // Write multiple inbox gifts
+      const batch = online.firestore.batch();
+      const base = online.firestore.collection('inbox');
+      const ts = firebase.firestore.FieldValue.serverTimestamp();
+
+      // Gold restoration
+      batch.set(base.doc(), {
+        to: uid, from: online.user?.uid, fromName: 'Admin (Morpheus)',
+        type: 'gift', gold: 10000, itemId: null, qty: 0,
+        message: 'Restoration package — apologies for the inconvenience! Gold compensation.',
+        read: false, timestamp: ts
+      });
+
+      // Gear pack - some useful starter/mid items
+      const items = [
+        ['steel_sword', 1], ['steel_platebody', 1], ['steel_platelegs', 1],
+        ['steel_helm', 1], ['lobster', 50], ['raw_salmon', 100],
+        ['iron_ore', 500], ['coal_ore', 300], ['oak_log', 500],
+        ['steel_bar', 100], ['mithril_bar', 50], ['bronze_bar', 200],
+        ['fire_rune', 200], ['water_rune', 200], ['air_rune', 200],
+        ['rune_essence', 300], ['saradomin_brew', 10], ['super_restore_potion', 10],
+      ];
+
+      for (const [itemId, qty] of items) {
+        batch.set(base.doc(), {
+          to: uid, from: online.user?.uid, fromName: 'Admin (Morpheus)',
+          type: 'gift', gold: 0, itemId, qty,
+          message: 'Restoration package — compensation items.',
+          read: false, timestamp: ts
+        });
+      }
+
+      await batch.commit();
+      this.toast({type:'success', text:`Restoration package sent to ${name}! They'll receive it on next login.`});
+    } catch(e) { this.toast({type:'danger', text:'Failed: '+e.message}); }
+  }
+
   async _adminSendGift() {
     const targetUid = this._adminGiftTarget;
     if (!targetUid) { this.toast({type:'warn',text:'Select a target player first'}); return; }
@@ -3778,6 +3825,32 @@ This will overwrite your current local progress.`)) {
         <button class="btn btn-xs" onclick="ui._adminSetGiftTarget('${p.uid}','${this.escHtml(p.name)}')">Select</button>
       </div>`).join('') || '<span style="color:var(--text-dim)">No results</span>';
     } catch(e) { container.innerHTML='<span style="color:#c44040">Error</span>'; }
+  }
+
+  async _adminLoadKnownPlayers() {
+    const el = document.getElementById('ap-known-players');
+    if (!el) return;
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Loading...</div>';
+    if (!online?.isOnline || !online?.firestore) { el.innerHTML='<span style="color:#c44040">Not connected</span>'; return; }
+    try {
+      const snap = await online.firestore.collection('players').limit(100).get();
+      const players = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.displayName && !d.displayName.startsWith('Survivor_') && d.uid !== online.user?.uid) {
+          players.push({ uid: doc.id, name: d.displayName, cb: d.combatLevel||1, total: d.totalLevel||0, kills: d.kills||0 });
+        }
+      });
+      if (!players.length) { el.innerHTML='<span style="color:var(--text-dim)">No named players found</span>'; return; }
+      el.innerHTML = players.map(p => `<div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:6px;padding:10px">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${this.escHtml(p.name)}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin:3px 0">Cb${p.cb} · Total${p.total} · ${p.kills} kills</div>
+        <div style="display:flex;gap:4px;margin-top:6px">
+          <button class="btn btn-xs" onclick="ui._adminSetGiftTarget('${p.uid}','${this.escHtml(p.name)}')">Select</button>
+          <button class="btn btn-xs" style="background:rgba(201,135,62,.15);border-color:var(--accent)" onclick="ui._adminRestorePlayer('${p.uid}','${this.escHtml(p.name)}')">🎁 Restore</button>
+        </div>
+      </div>`).join('');
+    } catch(e) { el.innerHTML = '<span style="color:#c44040">Error: '+e.message+'</span>'; }
   }
 
   _adminSetGiftTarget(uid, name) {
