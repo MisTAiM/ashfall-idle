@@ -5179,3 +5179,23 @@ html, body {
 .adq-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); }
 .adq-done { opacity:.5; }
 .adq-active { color:var(--accent); }
+
+/* ── INBOX GIFT CARDS ───────────────────────────────────── */
+.inbox-gift-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; transition:border-color .15s; }
+.inbox-unread.inbox-gift-card { border-color:rgba(201,135,62,.4); background:rgba(201,135,62,.04); }
+.inbox-read.inbox-gift-card { opacity:.7; }
+.gift-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; gap:10px; }
+.gift-from { display:flex; gap:10px; align-items:flex-start; }
+.gift-icon { font-size:24px; flex-shrink:0; margin-top:2px; }
+.gift-sender { font-size:13px; font-weight:700; color:var(--accent); margin-bottom:2px; }
+.gift-msg { font-size:13px; color:var(--text-dim); line-height:1.4; }
+.gift-ts { font-size:11px; color:var(--text-dim); flex-shrink:0; }
+.gift-contents { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.gift-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600; }
+.gift-chip.gift-gold { background:rgba(212,168,58,.15); color:#d4a83a; border:1px solid rgba(212,168,58,.3); }
+.gift-chip.gift-item { background:rgba(74,126,196,.15); color:#5a9edc; border:1px solid rgba(74,126,196,.3); }
+.gift-actions { display:flex; align-items:center; gap:8px; }
+.gift-claim-btn { background:linear-gradient(135deg,rgba(201,135,62,.3),rgba(201,135,62,.15)); border:1px solid var(--accent) !important; color:var(--accent) !important; font-weight:600; letter-spacing:.5px; }
+.gift-claim-btn:hover { background:rgba(201,135,62,.4) !important; transform:translateY(-1px); box-shadow:0 4px 12px rgba(201,135,62,.2); }
+.gift-claimed { font-size:12px; color:#3a9e5c; font-weight:600; }
+.inbox-notif { background:var(--bg-hover); border:1px solid var(--border); border-radius:6px; padding:8px 12px; margin-bottom:6px; font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:8px; }

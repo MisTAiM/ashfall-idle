@@ -2944,7 +2944,7 @@ class UI {
     // Conversations
     html += '<h2 class="section-title">Conversations</h2><div id="inbox-convos"><div class="bank-empty">Loading...</div></div>';
     // Notifications
-    html += '<h2 class="section-title">Notifications</h2><div id="inbox-notifs"><div class="bank-empty">Loading...</div></div>';
+    html += '<h2 class="section-title">Gifts &amp; Notifications <span id="gift-count-badge" style="font-size:12px;color:var(--accent)"></span></h2><div id="inbox-notifs"><div class="bank-empty">Loading...</div></div>';
     el.innerHTML = html;
     this._loadInboxData();
   }
@@ -2999,13 +2999,110 @@ class UI {
       const items = await online.getInbox();
       const notifs = items.filter(i => i.type !== 'message');
       if (notifs.length === 0) {
-        notifContainer.innerHTML = '<div class="bank-empty">No notifications.</div>';
+        notifContainer.innerHTML = '<div class="bank-empty">No notifications or gifts.</div>';
       } else {
-        notifContainer.innerHTML = notifs.map(n => `<div class="inbox-notif ${n.read?'':'inbox-unread'}">
-          <span>${this.escHtml(n.fromName||'System')}: ${this.escHtml(n.preview||n.type)}</span>
-          ${!n.read?`<button class="btn btn-xs" onclick="online.markInboxRead('${n.id}').then(()=>ui.renderPage('inbox'))">Mark Read</button>`:''}
-        </div>`).join('');
+        notifContainer.innerHTML = notifs.map(n => {
+          const isGift = n.type === 'gift';
+          const hasGold = isGift && n.gold > 0;
+          const hasItem = isGift && n.itemId;
+          const itemName = hasItem ? (GAME_DATA.items[n.itemId]?.name || n.itemId) : null;
+
+          let contentsHtml = '';
+          if (isGift) {
+            contentsHtml = '<div class="gift-contents">';
+            if (hasGold) contentsHtml += `<span class="gift-chip gift-gold">💰 ${this.fmt(n.gold)} Gold</span>`;
+            if (hasItem) contentsHtml += `<span class="gift-chip gift-item">📦 ${n.qty}x ${this.escHtml(itemName)}</span>`;
+            contentsHtml += '</div>';
+          }
+
+          const isOverride = n.type === 'stat_override';
+          let claimBtn = '';
+          if (isGift && !n.claimed) {
+            claimBtn = `<button class="btn btn-sm gift-claim-btn" id="claim-btn-${n.id}"
+              onclick="ui._claimGift('${n.id}',${n.gold||0},'${n.itemId||''}',${n.qty||0})">
+              ✨ Claim Gift
+            </button>`;
+          } else if (isOverride && !n.claimed) {
+            claimBtn = `<button class="btn btn-sm gift-claim-btn" id="claim-btn-${n.id}"
+              onclick="ui._applyOverride('${n.id}')">
+              ⚡ Apply Changes
+            </button>`;
+          } else if (n.claimed) {
+            claimBtn = '<span class="gift-claimed">✓ Applied</span>';
+          } else {
+            claimBtn = `<button class="btn btn-xs" onclick="online.markInboxRead('${n.id}').then(()=>ui.renderPage('inbox'))">Dismiss</button>`;
+          }
+
+          return `<div class="inbox-notif inbox-gift-card ${n.read&&n.claimed?'inbox-read':'inbox-unread'}" id="notif-${n.id}">
+            <div class="gift-header">
+              <div class="gift-from">
+                <span class="gift-icon">${isGift ? '🎁' : '📢'}</span>
+                <div>
+                  <div class="gift-sender">${this.escHtml(n.fromName || 'System')}</div>
+                  <div class="gift-msg">${this.escHtml(n.message || n.preview || n.type || '')}</div>
+                </div>
+              </div>
+              <div class="gift-ts">${n.timestamp?.seconds ? new Date(n.timestamp.seconds*1000).toLocaleDateString() : ''}</div>
+            </div>
+            ${contentsHtml}
+            <div class="gift-actions">${claimBtn}</div>
+          </div>`;
+        }).join('');
       }
+    }
+  }
+
+  async _claimGift(itemId, gold, itemItemId, qty) {
+    const btn = document.getElementById('claim-btn-' + itemId);
+    if (btn) { btn.disabled = true; btn.textContent = 'Claiming…'; }
+    try {
+      const ok = await online.claimGift(itemId, gold, itemItemId || null, qty || 0);
+      if (ok) {
+        const card = document.getElementById('notif-' + itemId);
+        if (card) {
+          card.classList.remove('inbox-unread');
+          card.classList.add('inbox-read');
+          const actionsDiv = card.querySelector('.gift-actions');
+          if (actionsDiv) actionsDiv.innerHTML = '<span class="gift-claimed">✓ Claimed! Items added to bank.</span>';
+        }
+        // Show what was claimed
+        const parts = [];
+        if (gold > 0) parts.push(`${this.fmt(gold)} gold`);
+        if (itemItemId && qty > 0) parts.push(`${qty}x ${GAME_DATA.items[itemItemId]?.name || itemItemId}`);
+        this.toast({ type:'success', text:`🎁 Claimed: ${parts.join(', ')}!` });
+        this.renderSidebar(); // update gold display
+      }
+    } catch(e) {
+      this.toast({ type:'danger', text:'Claim failed: ' + e.message });
+      if (btn) { btn.disabled = false; btn.textContent = '✨ Claim Gift'; }
+    }
+  }
+
+  async _applyOverride(itemId) {
+    const btn = document.getElementById('claim-btn-' + itemId);
+    if (btn) { btn.disabled = true; btn.textContent = 'Applying…'; }
+    try {
+      // Find this item in the rendered inbox to get override data
+      const items = await online.getInbox();
+      const item = items.find(i => i.id === itemId);
+      if (!item || !item.override) {
+        this.toast({type:'warn', text:'Override data not found'}); return;
+      }
+      const ok = await online.applyStatOverride(itemId, item.override);
+      if (ok) {
+        const card = document.getElementById('notif-' + itemId);
+        if (card) {
+          card.classList.remove('inbox-unread');
+          const actionsDiv = card.querySelector('.gift-actions');
+          if (actionsDiv) actionsDiv.innerHTML = '<span class="gift-claimed">✓ Applied!</span>';
+        }
+        this.toast({ type:'success', text:'⚡ ' + (item.message || 'Stat changes applied!') });
+        this.renderSidebar();
+        this.renderPage(this.currentPage);
+      }
+    } catch(e) {
+      this.toast({ type:'danger', text:'Apply failed: ' + e.message });
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ Apply Changes'; }
     }
   }
 
@@ -3276,6 +3373,7 @@ This will overwrite your current local progress.`)) {
     const tabs = [
       {id:'overview',   label:'Overview'},
       {id:'player_mgr', label:'Player Mgmt'},
+      {id:'mod_player',  label:'Modify Player'},
       {id:'give_player',label:'Give to Player'},
       {id:'skills',     label:'Skills / XP'},
       {id:'items',      label:'Items'},
@@ -3374,6 +3472,75 @@ This will overwrite your current local progress.`)) {
           <button class="btn" style="width:100%;margin-bottom:6px" onclick="ui._adminExportSave()">📥 Export Save as JSON</button>
           <input type="file" id="aw-import-file" accept=".json" style="font-size:12px;margin-bottom:6px;width:100%">
           <button class="btn btn-danger" style="width:100%" onclick="ui._adminImportSave()">📤 Import JSON Save</button>
+        </div>
+      </div>
+    </div>`;
+
+    // ── MODIFY PLAYER ─────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-mod_player" style="display:none">
+      <div class="admin-grid">
+        <div class="aw aw-wide">
+          <div class="aw-t">Find Player to Modify</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;background:rgba(196,68,68,.07);padding:10px;border-radius:6px;border-left:2px solid var(--red)">
+            ⚠ Changes here affect the player's Firestore <strong>player profile</strong> (leaderboard/display data) and queue a <strong>stat override</strong> inbox message that their client applies on next load.
+          </div>
+          <input type="text" id="aw-mod-search" class="chat-input" placeholder="Search player name..." oninput="ui._adminModSearch(this.value)">
+          <div id="aw-mod-results" style="margin-top:8px;font-size:12px"></div>
+          <div id="aw-mod-target-bar" style="display:none;margin-top:10px;padding:10px;background:var(--bg-hover);border-radius:6px;border:1px solid var(--accent)">
+            <div style="font-size:13px;font-weight:600;color:var(--accent)" id="aw-mod-target-name">No player selected</div>
+            <div style="font-size:11px;color:var(--text-dim)" id="aw-mod-target-uid"></div>
+          </div>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Set Skill Levels</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Sends a stat-override inbox that applies when the player next loads.</div>
+          <select id="aw-mod-skill" class="rank-select" style="width:100%;margin-bottom:6px">
+            ${Object.keys(game.state.skills).map(sk=>`<option value="${sk}">${GAME_DATA.skills[sk]?.name||sk}</option>`).join('')}
+          </select>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input type="number" id="aw-mod-skill-lv" class="qty-input" value="50" min="1" max="99" style="width:70px">
+            <button class="btn btn-sm" style="flex:1" onclick="ui._adminModSendSkill()">Set Level</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${[1,10,30,50,70,85,99].map(v=>`<button class="btn btn-xs" onclick="document.getElementById('aw-mod-skill-lv').value=${v}">Lv${v}</button>`).join('')}
+          </div>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Set All Skills to Level</div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input type="number" id="aw-mod-all-lv" class="qty-input" value="99" min="1" max="99" style="width:70px">
+            <button class="btn btn-sm" style="flex:1" onclick="ui._adminModSendAllSkills()">Set All</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${[1,30,50,70,85,99].map(v=>`<button class="btn btn-xs" onclick="document.getElementById('aw-mod-all-lv').value=${v}">All→${v}</button>`).join('')}
+          </div>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Set Gold</div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input type="number" id="aw-mod-gold" class="qty-input" value="100000" min="0" style="width:110px">
+            <button class="btn btn-sm" style="flex:1" onclick="ui._adminModSendGold()">Set Gold</button>
+          </div>
+          ${[1000,10000,100000,1000000].map(v=>`<button class="btn btn-xs" style="margin:2px" onclick="document.getElementById('aw-mod-gold').value=${v}">${this.fmt(v)}g</button>`).join('')}
+        </div>
+        <div class="aw">
+          <div class="aw-t">Set Alignment</div>
+          <select id="aw-mod-align" class="rank-select" style="width:100%;margin-bottom:6px">
+            ${Object.keys(GAME_DATA.alignments||{}).map(a=>`<option value="${a}">${GAME_DATA.alignments[a].name}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm" style="width:100%" onclick="ui._adminModSendAlignment()">Set Alignment</button>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Complete Quests for Player</div>
+          <select id="aw-mod-quest" class="rank-select" style="width:100%;margin-bottom:6px">
+            <option value="ALL">— All Quests —</option>
+            ${GAME_DATA.quests.map(q=>`<option value="${q.id}">${q.name}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm" style="width:100%" onclick="ui._adminModCompleteQuest()">Complete Quest(s)</button>
+        </div>
+        <div class="aw aw-wide">
+          <div class="aw-t">Send Log</div>
+          <div id="aw-mod-log" style="font-size:12px;font-family:var(--font-mono);background:var(--bg-hover);padding:10px;border-radius:4px;min-height:60px;color:var(--accent);max-height:200px;overflow-y:auto"></div>
         </div>
       </div>
     </div>`;
@@ -3825,6 +3992,121 @@ This will overwrite your current local progress.`)) {
         <button class="btn btn-xs" onclick="ui._adminSetGiftTarget('${p.uid}','${this.escHtml(p.name)}')">Select</button>
       </div>`).join('') || '<span style="color:var(--text-dim)">No results</span>';
     } catch(e) { container.innerHTML='<span style="color:#c44040">Error</span>'; }
+  }
+
+  _adminModLog(msg) {
+    const el = document.getElementById('aw-mod-log');
+    if (!el) return;
+    const ts = new Date().toLocaleTimeString();
+    el.innerHTML = `<div>[${ts}] ${msg}</div>` + el.innerHTML;
+  }
+
+  async _adminModSearch(query) {
+    const container = document.getElementById('aw-mod-results');
+    if (!container || !query || query.length < 2) { if(container) container.innerHTML=''; return; }
+    if (!online?.isOnline) { container.innerHTML='<span style="color:#c44040">Offline</span>'; return; }
+    try {
+      const results = await online.searchPlayers(query);
+      container.innerHTML = results.slice(0,8).map(p=>`<div style="padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;font-size:12px">
+        <div style="flex:1"><strong>${this.escHtml(p.name)}</strong> — Cb${p.combatLevel||0} Total${p.totalLevel||0}</div>
+        <button class="btn btn-xs" onclick="ui._adminModSelect('${p.uid}','${this.escHtml(p.name)}')">Select</button>
+      </div>`).join('') || '<span style="color:var(--text-dim)">No results</span>';
+    } catch(e) { container.innerHTML='<span style="color:#c44040">Error: '+e.message+'</span>'; }
+  }
+
+  _adminModSelect(uid, name) {
+    this._adminModTargetUid = uid;
+    this._adminModTargetName = name;
+    const bar = document.getElementById('aw-mod-target-bar');
+    if (bar) bar.style.display = 'block';
+    const nameEl = document.getElementById('aw-mod-target-name');
+    if (nameEl) nameEl.textContent = '🎯 Target: ' + name;
+    const uidEl = document.getElementById('aw-mod-target-uid');
+    if (uidEl) uidEl.textContent = 'UID: ' + uid;
+    // Clear search results
+    const res = document.getElementById('aw-mod-results');
+    if (res) res.innerHTML = '';
+    this._adminModLog(`Selected target: ${name} (${uid})`);
+  }
+
+  async _adminModSendSkill() {
+    const uid = this._adminModTargetUid;
+    const name = this._adminModTargetName;
+    if (!uid) { this.toast({type:'warn',text:'Select a player first'}); return; }
+    const skill = document.getElementById('aw-mod-skill')?.value;
+    const level = parseInt(document.getElementById('aw-mod-skill-lv')?.value)||1;
+    if (!skill || level < 1 || level > 99) return;
+    const skillName = GAME_DATA.skills[skill]?.name || skill;
+    await this._adminSendStatOverride(uid, name, { type:'set_skill', skill, level,
+      message: `Admin set your ${skillName} to level ${level}.` });
+    this._adminModLog(`Sent skill override: ${name} → ${skillName} Lv${level}`);
+    this.toast({type:'success', text:`Sent: ${name} ${skillName} → Lv${level}`});
+  }
+
+  async _adminModSendAllSkills() {
+    const uid = this._adminModTargetUid;
+    const name = this._adminModTargetName;
+    if (!uid) { this.toast({type:'warn',text:'Select a player first'}); return; }
+    const level = parseInt(document.getElementById('aw-mod-all-lv')?.value)||99;
+    await this._adminSendStatOverride(uid, name, { type:'set_all_skills', level,
+      message: `Admin set all your skills to level ${level}.` });
+    this._adminModLog(`Sent all-skills override: ${name} → all Lv${level}`);
+    this.toast({type:'success', text:`Sent: ${name} all skills → Lv${level}`});
+  }
+
+  async _adminModSendGold() {
+    const uid = this._adminModTargetUid;
+    const name = this._adminModTargetName;
+    if (!uid) { this.toast({type:'warn',text:'Select a player first'}); return; }
+    const gold = parseInt(document.getElementById('aw-mod-gold')?.value)||0;
+    if (gold < 0) return;
+    await this._adminSendStatOverride(uid, name, { type:'set_gold', gold,
+      message: `Admin set your gold to ${this.fmt(gold)}.` });
+    this._adminModLog(`Sent gold override: ${name} → ${this.fmt(gold)}g`);
+    this.toast({type:'success', text:`Sent: ${name} gold → ${this.fmt(gold)}g`});
+  }
+
+  async _adminModSendAlignment() {
+    const uid = this._adminModTargetUid;
+    const name = this._adminModTargetName;
+    if (!uid) { this.toast({type:'warn',text:'Select a player first'}); return; }
+    const alignment = document.getElementById('aw-mod-align')?.value;
+    if (!alignment) return;
+    const alignName = GAME_DATA.alignments[alignment]?.name || alignment;
+    await this._adminSendStatOverride(uid, name, { type:'set_alignment', alignment,
+      message: `Admin changed your alignment to ${alignName}.` });
+    this._adminModLog(`Sent alignment override: ${name} → ${alignName}`);
+    this.toast({type:'success', text:`Sent: ${name} alignment → ${alignName}`});
+  }
+
+  async _adminModCompleteQuest() {
+    const uid = this._adminModTargetUid;
+    const name = this._adminModTargetName;
+    if (!uid) { this.toast({type:'warn',text:'Select a player first'}); return; }
+    const questId = document.getElementById('aw-mod-quest')?.value;
+    const questName = questId === 'ALL' ? 'All Quests' : GAME_DATA.quests.find(q=>q.id===questId)?.name || questId;
+    await this._adminSendStatOverride(uid, name, { type: questId === 'ALL' ? 'complete_all_quests' : 'complete_quest', questId,
+      message: `Admin completed ${questName} for you.` });
+    this._adminModLog(`Sent quest completion: ${name} → ${questName}`);
+    this.toast({type:'success', text:`Sent: ${name} → ${questName} completed`});
+  }
+
+  async _adminSendStatOverride(uid, name, overrideData) {
+    if (!online?.isOnline || !online?.firestore) throw new Error('Not connected');
+    await online.firestore.collection('inbox').add({
+      to: uid,
+      from: online.user?.uid || 'admin',
+      fromName: 'Admin (Morpheus)',
+      type: 'stat_override',
+      read: false,
+      claimed: false,
+      gold: 0,
+      itemId: null,
+      qty: 0,
+      override: overrideData,
+      message: overrideData.message || 'Admin stat modification.',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    });
   }
 
   async _adminLoadKnownPlayers() {

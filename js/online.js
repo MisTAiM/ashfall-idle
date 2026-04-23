@@ -1256,6 +1256,74 @@ class OnlineManager {
     } catch(e) { console.error(e); }
   }
 
+  async claimGift(itemId, gold, itemItemId, qty) {
+    if (!this.isOnline || !this.user) return false;
+    try {
+      if (gold && gold > 0) game.state.gold = (game.state.gold || 0) + gold;
+      if (itemItemId && qty > 0) game.addItem(itemItemId, qty);
+      await this.firestore.collection('inbox').doc(itemId).delete();
+      game.save();
+      this.saveToCloud(true);
+      return true;
+    } catch(e) {
+      console.error('Claim gift error:', e);
+      this.emit('notification', { type:'danger', text:'Claim failed: ' + e.message });
+      return false;
+    }
+  }
+
+  async applyStatOverride(itemId, override) {
+    if (!this.isOnline || !this.user || !override) return false;
+    try {
+      const s = game.state;
+      switch (override.type) {
+        case 'set_skill':
+          if (s.skills[override.skill]) {
+            s.skills[override.skill].level = Math.min(99, Math.max(1, override.level || 1));
+            s.skills[override.skill].xp = GAME_DATA.xpTable?.[s.skills[override.skill].level] || 0;
+          }
+          break;
+        case 'set_all_skills':
+          for (const sk of Object.keys(s.skills)) {
+            s.skills[sk].level = Math.min(99, Math.max(1, override.level || 1));
+            s.skills[sk].xp = GAME_DATA.xpTable?.[s.skills[sk].level] || 0;
+          }
+          break;
+        case 'set_gold':
+          s.gold = Math.max(0, override.gold || 0);
+          break;
+        case 'set_alignment':
+          if (GAME_DATA.alignments?.[override.alignment]) s.alignment = override.alignment;
+          break;
+        case 'complete_quest':
+          if (override.questId && !s.quests.completed.includes(override.questId)) {
+            s.quests.active = s.quests.active.filter(q => q !== override.questId);
+            s.quests.completed.push(override.questId);
+          }
+          break;
+        case 'complete_all_quests':
+          for (const q of (GAME_DATA.quests || [])) {
+            if (!s.quests.completed.includes(q.id)) s.quests.completed.push(q.id);
+          }
+          s.quests.active = [];
+          break;
+        default:
+          console.warn('Unknown override type:', override.type);
+      }
+      // Delete the inbox doc
+      await this.firestore.collection('inbox').doc(itemId).delete();
+      game.save();
+      this.saveToCloud(true);
+      // Re-render sidebar to reflect new levels
+      if (typeof ui !== 'undefined') { ui.renderSidebar(); }
+      return true;
+    } catch(e) {
+      console.error('Apply stat override error:', e);
+      this.emit('notification', { type:'danger', text:'Override failed: ' + e.message });
+      return false;
+    }
+  }
+
   async clearInbox() {
     if (!this.isOnline || !this.user) return;
     try {
