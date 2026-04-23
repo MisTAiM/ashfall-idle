@@ -40,20 +40,46 @@ class OnlineManager {
             try {
               const cloudSave = await this.loadFromCloud(true);
               if (cloudSave && cloudSave._cloudSaveTime) {
-                const localTime = game.state.lastSave || 0;
-                if (cloudSave._cloudSaveTime > localTime) {
-                  // Cloud is newer - load it
-                  game.migrateSave(cloudSave); // sets game.state internally + migrates
-                  game.save(); // persist to localStorage
-                  this.emit('notification', { type:'success', text:'Cloud save loaded (newer than local).' });
-                  // Re-render UI with new state
-                  if (typeof ui !== 'undefined') { ui.renderSidebar(); ui.renderPage(ui.currentPage); }
-                } else {
-                  // Local is newer - push to cloud
+                // Compare cloud vs local using cloudSaveTime on both
+                const cloudTime = cloudSave._cloudSaveTime || 0;
+                const localCloudTime = game.state._cloudSaveTime || 0;
+                const localSaveTime = game.state.lastSave || 0;
+                const localBestTime = Math.max(localCloudTime, localSaveTime);
+
+                console.log('[Ashfall Cloud] Cloud time:', new Date(cloudTime).toISOString(),
+                  '| Local best time:', new Date(localBestTime).toISOString(),
+                  '| Cloud newer:', cloudTime > localBestTime);
+
+                if (cloudTime > localBestTime) {
+                  // Cloud is definitively newer — load it
+                  console.log('[Ashfall Cloud] Loading cloud save. Skills:', JSON.stringify(Object.fromEntries(Object.entries(cloudSave.skills||{}).map(([k,v])=>[k,v.level]))));
+                  game.state = game.migrateSave(cloudSave);
+                  game.state._cloudSaveTime = cloudTime;
+                  game.save();
+                  this.emit('notification', { type:'success', text:'☁ Cloud save restored!' });
+                  if (typeof ui !== 'undefined') {
+                    ui.renderSidebar();
+                    ui.renderPage(ui.currentPage);
+                  }
+                } else if (localBestTime > cloudTime + 30000) {
+                  // Local is meaningfully newer (>30s) — push to cloud
+                  console.log('[Ashfall Cloud] Local is newer, pushing to cloud.');
                   this.saveToCloud(true);
+                } else {
+                  // Times are within 30s of each other — cloud wins to be safe
+                  console.log('[Ashfall Cloud] Times close — preferring cloud save.');
+                  game.state = game.migrateSave(cloudSave);
+                  game.state._cloudSaveTime = cloudTime;
+                  game.save();
+                  this.emit('notification', { type:'success', text:'☁ Cloud save loaded.' });
+                  if (typeof ui !== 'undefined') {
+                    ui.renderSidebar();
+                    ui.renderPage(ui.currentPage);
+                  }
                 }
               } else {
-                // No cloud save exists yet - push local to cloud
+                // No cloud save yet — first login, push local up
+                console.log('[Ashfall Cloud] No cloud save found. Uploading local save.');
                 this.saveToCloud(true);
               }
             } catch(e) { console.error('Auto-sync error:', e.message); }
@@ -354,16 +380,18 @@ class OnlineManager {
   async saveToCloud(silent) {
     if (!this.isOnline || !this.user || !game || this.user.isAnonymous) return;
     try {
+      const now = Date.now();
       const save = JSON.parse(JSON.stringify(game.state));
-      save._cloudSaveTime = Date.now();
-      save.lastSave = Date.now();
+      save._cloudSaveTime = now;
+      save.lastSave = now;
+      // Also stamp on live state so next comparison uses this time
+      game.state._cloudSaveTime = now;
       await this.firestore.collection('saves').doc(this.user.uid).set({
         save,
         uid: this.user.uid,
         displayName: this.displayName,
         lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
       });
-      // Also update player profile
       this.syncProfile();
       if (!silent) this.emit('notification', { type:'success', text:'Saved to cloud.' });
     } catch(e) {

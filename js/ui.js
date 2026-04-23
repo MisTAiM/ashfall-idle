@@ -1883,7 +1883,7 @@ class UI {
         <button class="btn" onclick="game.save(); ui.toast({type:'success',text:'Game saved!'})">Save Game</button>
         <button class="btn" onclick="ui.exportSave()">Export Save</button>
         <button class="btn" onclick="ui.importSavePrompt()">Import Save</button>
-        ${typeof online !== 'undefined' && online.isOnline ? '<button class="btn" onclick="online.saveToCloud()">Save to Cloud</button><button class="btn" onclick="online.loadFromCloud().then(d=>{if(d){game.migrateSave(d);game.save();location.reload();}})">Load from Cloud</button>' : ''}
+        ${typeof online !== 'undefined' && online.isOnline ? '<button class="btn" onclick="online.saveToCloud()">Save to Cloud</button><button class="btn" onclick="online.loadFromCloud().then(d=>{if(d){game.state=game.migrateSave(d);game.state._cloudSaveTime=d._cloudSaveTime||Date.now();game.save();location.reload();}})">Load from Cloud</button>' : ''}
       </div>
       <button class="btn btn-danger" onclick="if(confirm('Delete ALL progress? This cannot be undone.')){game.deleteSave(); location.reload();}">Delete Save</button>
     </div>
@@ -3054,8 +3054,12 @@ class UI {
         <div class="al-desc">Email: ${user.email}</div>
         <div class="al-points">UID: ${user.uid}</div>
         <div class="shop-btns" style="margin-top:12px">
-          <button class="btn btn-sm" onclick="online.saveToCloud()">Save to Cloud</button>
-          <button class="btn btn-sm" onclick="ui.cloudLoad()">Load from Cloud</button>
+          <button class="btn btn-sm" onclick="online.saveToCloud();ui.toast({type:'success',text:'Saved to cloud!'})">💾 Save to Cloud</button>
+          <button class="btn btn-sm" onclick="ui.cloudLoad()">☁ Load from Cloud</button>
+          <div id="cloud-save-status" style="font-size:11px;color:var(--text-dim);margin-top:6px">
+            Local save: <span style="color:var(--accent)">${game.state.lastSave ? new Date(game.state.lastSave).toLocaleString() : 'Never'}</span><br>
+            Cloud stamp: <span style="color:var(--accent)">${game.state._cloudSaveTime ? new Date(game.state._cloudSaveTime).toLocaleString() : 'Not yet synced'}</span>
+          </div>
           <button class="btn btn-sm btn-danger" onclick="online.signOut()">Sign Out</button>
         </div>
       </div>`;
@@ -3096,18 +3100,21 @@ class UI {
   }
 
   async cloudLoad() {
-    if (typeof online === 'undefined' || !online.isOnline) return;
+    if (typeof online === 'undefined' || !online.isOnline) { this.toast({type:'warn',text:'Not connected'}); return; }
+    this.toast({type:'info', text:'Loading from cloud...'});
     const save = await online.loadFromCloud();
     if (save) {
-      if (confirm('Load cloud save? This will overwrite your local progress.')) {
-        game.migrateSave(save); // sets game.state and migrates
-        game.save(); // persist to localStorage
-        this.toast({ type:'success', text:'Cloud save loaded!' });
-        this.renderSidebar();
-        this.renderPage(this.currentPage);
+      if (confirm(`Load cloud save? (Saved: ${save._cloudSaveTime ? new Date(save._cloudSaveTime).toLocaleString() : 'unknown time'})
+
+This will overwrite your current local progress.`)) {
+        game.state = game.migrateSave(save);
+        game.state._cloudSaveTime = save._cloudSaveTime || Date.now();
+        game.save();
+        this.toast({ type:'success', text:'☁ Cloud save loaded! Reloading...' });
+        setTimeout(() => location.reload(), 800);
       }
     } else {
-      this.toast({ type:'warn', text:'No cloud save found. Save to cloud first.' });
+      this.toast({ type:'warn', text:'No cloud save found for your account.' });
     }
   }
 
