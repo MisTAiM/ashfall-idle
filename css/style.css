@@ -3196,8 +3196,8 @@ html, body {
 
 /* ── PRAYER FIX (was black on black) ──────────────────── */
 .prayer-section {
-  background: rgba(201,135,62,0.04);
-  border: 1px solid rgba(201,135,62,0.15);
+  background: rgba(32,128,96,0.04);
+  border: 1px solid rgba(64,200,160,0.15);
   border-radius: var(--radius);
   padding: 10px;
   margin-bottom: 10px;
@@ -3205,7 +3205,7 @@ html, body {
 .prayer-pts {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: var(--accent);
+  color: #40d0a0;
   margin-left: 6px;
 }
 .prayer-slots {
@@ -3214,6 +3214,72 @@ html, body {
   color: var(--text-dim);
   margin-left: 4px;
 }
+
+/* New prayer book grid */
+.prayer-book-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.pb-group { display: flex; flex-direction: column; gap: 4px; }
+.pb-group-label {
+  font-size: 10px;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  padding-left: 2px;
+}
+.pb-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.prayer-btn2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  min-width: 64px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s;
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+}
+.prayer-btn2:hover {
+  border-color: var(--border-light);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+.prayer-btn2.prayer-active2 {
+  border-color: var(--accent);
+  background: rgba(201,135,62,0.12);
+  box-shadow: 0 0 10px rgba(201,135,62,0.25), inset 0 0 8px rgba(201,135,62,0.08);
+  animation: prayerGlow 2s ease-in-out infinite;
+}
+.prayer-btn2.prayer-active2::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.pb-name {
+  font-size: 9px;
+  font-family: 'Cinzel', serif;
+  color: inherit;
+  line-height: 1.1;
+  text-align: center;
+  max-width: 60px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pb-cost {
+  font-size: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+}
+.prayer-btn2.prayer-active2 .pb-cost { color: var(--accent-dim); }
+
+/* Legacy (keep for other uses) */
 .prayer-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .prayer-btn {
   padding: 6px 10px;
@@ -3223,7 +3289,7 @@ html, body {
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
-  color: var(--text); /* FIX: explicit light text */
+  color: var(--text);
 }
 .prayer-btn:hover { border-color: var(--accent-dim); background: var(--bg-card-hover); }
 .prayer-btn.prayer-active {
@@ -3231,22 +3297,12 @@ html, body {
   background: linear-gradient(135deg, rgba(201,135,62,0.2), rgba(201,135,62,0.1)) !important;
   color: var(--accent) !important;
   box-shadow: 0 0 12px rgba(201,135,62,0.3);
-  animation: prayerGlow 2s ease-in-out infinite;
 }
-.prayer-btn .pc-name {
-  font-size: 10px;
-  font-family: 'Cinzel', serif;
-  color: inherit;
-}
-.prayer-btn .pc-cost {
-  font-size: 8px;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--text-dim);
-}
-.prayer-btn.prayer-active .pc-cost { color: var(--accent-dim); }
+.prayer-btn .pc-name { font-size: 10px; font-family: 'Cinzel', serif; color: inherit; }
+.prayer-btn .pc-cost { font-size: 8px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); }
 @keyframes prayerGlow {
   0%, 100% { box-shadow: 0 0 8px rgba(201,135,62,0.2); }
-  50% { box-shadow: 0 0 16px rgba(201,135,62,0.4); }
+  50% { box-shadow: 0 0 16px rgba(201,135,62,0.45); }
 }
 
 /* ── RUNE POUCH ───────────────────────────────────────── */
@@ -4794,3 +4850,101 @@ html, body {
 .fr-result-actions { display:flex; gap:5px; flex-shrink:0; }
 .fr-add-btn { display:flex; align-items:center; gap:4px; font-size:11px; padding:5px 10px; background:rgba(201,135,62,0.12); border-color:rgba(201,135,62,0.3); color:var(--accent); }
 .fr-add-btn:hover { background:rgba(201,135,62,0.22); }
+
+/* ── NAV BADGES (friend requests, inbox) ─────────────────── */
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--red);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  margin-left: auto;
+  animation: badge-pop 0.3s ease-out;
+}
+@keyframes badge-pop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* ── ONLINE PLAYERS PAGE ─────────────────────────────────── */
+.online-players-wrap { padding: 4px 0; }
+.op-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.op-list { display: flex; flex-direction: column; gap: 6px; }
+.op-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  transition: border-color 0.2s, background 0.2s;
+  animation: fr-card-in 0.25s ease-out;
+}
+.op-card:hover { border-color: var(--border-light); background: var(--bg-card-hover); }
+.op-card-me { border-color: rgba(201,135,62,0.3); background: rgba(201,135,62,0.04); }
+.op-info { flex: 1; min-width: 0; }
+.op-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.op-you { font-size: 10px; color: var(--accent); font-style: italic; }
+.op-meta { display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+.op-activity {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+.op-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.op-time {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+}
+
+/* ── SLAYER BAR POLISH ───────────────────────────────────── */
+.slayer-combat-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(201,135,62,0.06);
+  border: 1px solid rgba(201,135,62,0.2);
+  border-radius: 6px;
+  margin: 6px 0;
+}
+.slayer-combat-bar span {
+  font-size: 11px;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.slayer-combat-bar span b { color: var(--accent-glow); font-weight: 700; }

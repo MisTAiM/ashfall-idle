@@ -232,6 +232,11 @@ class GameEngine {
       this.emit('notification', { type:'info', text:`Stopped ${GAME_DATA.skills[wasActive]?.name}, started ${skill.name}.` });
     }
     this.emit('skillStart', { skill:skillId, action:actionId });
+    // Update online presence activity
+    if (typeof online !== 'undefined' && online.isOnline) {
+      const actName = action.name || `${skill.name}`;
+      online.updateActivity(`Training ${actName}`);
+    }
     return true;
   }
 
@@ -412,6 +417,7 @@ class GameEngine {
     this._setupCombat(monster, monsterId);
     this.state.combat.area = areaId;
     this.emit('combatStart', { area:areaId, monster:monsterId });
+    if (typeof online !== 'undefined' && online.isOnline) online.updateActivity(`Fighting ${monster.name}`);
   }
 
   startDungeon(dungeonId) {

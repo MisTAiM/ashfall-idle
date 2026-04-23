@@ -52,6 +52,7 @@ const NAV = [
     {id:'character',label:'Character',icon:'shield'},
     {id:'guilds',label:'Guilds',icon:'faction'},
     {id:'friends',label:'Friends',icon:'npc'},
+    {id:'online_players',label:'Online Players',icon:'npc'},
     {id:'inbox',label:'Inbox',icon:'scroll'},
     {id:'chat',label:'Global Chat',icon:'scroll'},
     {id:'pvp_arena',label:'PvP Arena',icon:'combat'},
@@ -142,6 +143,8 @@ class UI {
       online.on('notification', (n) => this.toast(n));
       online.on('authChanged', () => { this.renderSidebar(); if (this.currentPage === 'account') this.renderPage('account'); });
       online.on('status', (s) => { if (!s.online) console.log('Offline:', s.reason); });
+      online.on('friendRequestUpdate', (d) => this._updateFriendBadge(d.count));
+      online.on('inboxUpdate', (d) => this._updateInboxBadge(d.unreadCount));
       online.init();
     }
   }
@@ -269,6 +272,7 @@ class UI {
     else if (pageId === 'guilds') this.renderGuildsPage(main);
     else if (pageId === 'friends') this.renderFriendsPage(main);
     else if (pageId === 'inbox') this.renderInboxPage(main);
+    else if (pageId === 'online_players') this.renderOnlinePlayersPage(main);
     else if (pageId === 'chat') this.renderChatPage(main);
     else if (pageId === 'pvp_arena') this.renderPvPPage(main);
     else if (pageId === 'bounty_board') this.renderBountyPage(main);
@@ -549,18 +553,75 @@ class UI {
       html += '</div></div>';
     }
 
-    // ── PRAYER BAR ──
-    html += `<div class="combat-section prayer-section"><div class="cs-header">${icon('sparkle',14)} Prayers <span class="prayer-pts" id="pp-live">${s.prayerPoints} pts</span> <span class="prayer-slots">${s.activePrayers.length}/2</span></div><div class="prayer-grid">`;
-    for (const p of GAME_DATA.prayers) {
-      if (s.skills.prayer.level < p.level) continue;
-      const active = s.activePrayers.includes(p.id);
-      html += `<button class="prayer-btn ${active?'prayer-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc} (${p.pointCost} pts/atk)">
-        <div class="pc-name">${p.name}</div>
-        <div class="pc-cost">${p.pointCost}pp</div>
-      </button>`;
+    // ── PRAYER BOOK ──
+    const _pp = s.prayerPoints; const _maxPp = s.skills.prayer.level;
+    const _ppPct = _maxPp > 0 ? Math.min(100, (_pp/_maxPp)*100) : 0;
+    html += `<div class="combat-section prayer-section">
+      <div class="cs-header">
+        <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="1.5"><path d="M9 2 L9 16 M5 5 Q2 9 5 13 M13 5 Q16 9 13 13"/></svg>
+        Prayer Book
+        <span class="pp-orb" id="pp-orb" style="margin-left:auto;display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--text-dim)">Points</span>
+          <span id="pp-live" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#60d4b0;font-weight:600">${_pp}</span>
+          <div style="width:60px;height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden">
+            <div id="pp-bar-fill" style="height:100%;width:${_ppPct.toFixed(1)}%;background:linear-gradient(90deg,#208060,#40d0a0);border-radius:3px;transition:width 0.3s"></div>
+          </div>
+        </span>
+      </div>`;
+
+    // Group prayers
+    const _prayerGroups = [
+      { label:'⚔ Melee',   icon:'#c87a40', ids:['thick_skin','burst_of_str','clarity_of_thought','rock_skin','superhuman_str','improved_reflexes','steel_skin','ultimate_str','incredible_reflexes','piety'] },
+      { label:'🏹 Ranged',  icon:'#5aaa60', ids:['sharp_eye','hawk_eye','eagle_eye','rigour'] },
+      { label:'✨ Magic',   icon:'#6a80d4', ids:['mystic_will','mystic_lore','mystic_might','augury'] },
+      { label:'🛡 Protection', icon:'#d4a830', ids:['protect_melee','protect_ranged','protect_magic'] },
+    ];
+
+    const _prayerIcon = {
+      thick_skin:`<path d="M8 2 L14 4 L14 10 Q14 14 8 16 Q2 14 2 10 L2 4Z" fill="none" stroke="currentColor" stroke-width="1.5"/>`,
+      burst_of_str:`<circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8 L8 5 L11 8" fill="none" stroke="currentColor" stroke-width="1.5"/>`,
+      clarity_of_thought:`<circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="4" x2="8" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.5"/>`,
+      sharp_eye:`<circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M1 8 Q8 2 15 8 Q8 14 1 8Z" fill="none" stroke="currentColor" stroke-width="1.2"/>`,
+      mystic_will:`<path d="M8 2 L10 7 L15 7 L11 10 L13 15 L8 12 L3 15 L5 10 L1 7 L6 7Z" fill="none" stroke="currentColor" stroke-width="1.2"/>`,
+      rock_skin:`<path d="M3 12 L5 4 L11 3 L14 8 L12 14 L6 14Z" fill="none" stroke="currentColor" stroke-width="1.5"/>`,
+      superhuman_str:`<path d="M3 8 L5 5 L8 8 L11 5 L13 8 L11 11 L8 8 L5 11Z" fill="none" stroke="currentColor" stroke-width="1.3"/>`,
+      improved_reflexes:`<path d="M2 12 L8 4 L14 12" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="4" x2="8" y2="14" stroke="currentColor" stroke-width="1.5"/>`,
+      hawk_eye:`<path d="M1 8 Q8 1 15 8 Q8 15 1 8Z" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.3"/>`,
+      mystic_lore:`<circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5 6 Q8 4 11 6 Q11 10 8 12 Q5 10 5 6Z" fill="none" stroke="currentColor" stroke-width="1.2"/>`,
+      steel_skin:`<path d="M2 12 L4 3 L12 2 L15 8 L13 14 L7 15Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8 L8 5 L11 8" fill="none" stroke="currentColor" stroke-width="1.2"/>`,
+      ultimate_str:`<path d="M4 12 L8 2 L12 12 M5 9 L11 9" fill="none" stroke="currentColor" stroke-width="1.5"/>`,
+      incredible_reflexes:`<path d="M2 14 L8 2 L14 14 M4 10 L8 4 L12 10" fill="none" stroke="currentColor" stroke-width="1.5"/>`,
+      eagle_eye:`<path d="M1 8 Q8 1 15 8 Q8 15 1 8Z" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2" fill="currentColor"/><circle cx="8" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1"/>`,
+      mystic_might:`<path d="M8 1 L10 6 L15 6 L11 9 L13 14 L8 11 L3 14 L5 9 L1 6 L6 6Z" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2" fill="currentColor"/>`,
+      piety:`<path d="M8 1 L15 4 L15 10 Q15 14 8 16 Q1 14 1 10 L1 4Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 6 L8 12 M5 9 L11 9" stroke="currentColor" stroke-width="1.5"/>`,
+      rigour:`<path d="M1 8 Q8 1 15 8 Q8 15 1 8Z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4 L8 12 M5 8 L11 8" stroke="currentColor" stroke-width="1.3"/>`,
+      augury:`<circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1 L8 3 M8 13 L8 15 M1 8 L3 8 M13 8 L15 8" stroke="currentColor" stroke-width="1.3"/>`,
+      protect_melee:`<path d="M8 2 L14 4 L14 10 Q14 14 8 16 Q2 14 2 10 L2 4Z" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="9" x2="11" y2="9" stroke="currentColor" stroke-width="2"/>`,
+      protect_ranged:`<path d="M8 2 L14 4 L14 10 Q14 14 8 16 Q2 14 2 10 L2 4Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 12 L11 6" stroke="currentColor" stroke-width="1.5"/><polygon points="11,6 9,6 11,8" fill="currentColor"/>`,
+      protect_magic:`<path d="M8 2 L14 4 L14 10 Q14 14 8 16 Q2 14 2 10 L2 4Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 5 L10 9 L14 9 L11 11 L12 15 L8 13 L4 15 L5 11 L2 9 L6 9Z" fill="none" stroke="currentColor" stroke-width="1" transform="scale(0.6) translate(5,3)"/>`,
+    };
+
+    html += `<div class="prayer-book-grid">`;
+    for (const grp of _prayerGroups) {
+      const grpPrayers = GAME_DATA.prayers.filter(p => grp.ids.includes(p.id) && s.skills.prayer.level >= p.level);
+      if (grpPrayers.length === 0) continue;
+      html += `<div class="pb-group">
+        <div class="pb-group-label" style="color:${grp.icon}">${grp.label}</div>
+        <div class="pb-row">`;
+      for (const p of grpPrayers) {
+        const active = s.activePrayers.includes(p.id);
+        const svgIcon = _prayerIcon[p.id] || `<circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>`;
+        html += `<button class="prayer-btn2 ${active?'prayer-active2':''}" id="pb-${p.id}"
+          onclick="game.activatePrayer('${p.id}');ui._updatePrayerBtn('${p.id}')"
+          title="${p.name} — ${p.desc} (${p.pointCost}pp/atk)">
+          <svg viewBox="0 0 16 16" width="20" height="20" style="color:${active?grp.icon:'var(--text-dim)'}">${svgIcon}</svg>
+          <span class="pb-name">${p.name}</span>
+          <span class="pb-cost">${p.pointCost}pp</span>
+        </button>`;
+      }
+      html += `</div></div>`;
     }
-    if (s.skills.prayer.level < 1) html += '<div class="cc-info">Train Prayer to unlock</div>';
-    html += '</div></div>';
+    html += `</div></div>`; // prayer-book-grid + prayer-section
 
     // ── RUNE POUCH ──
     const runeTypes = ['air_rune','water_rune','earth_rune','fire_rune','mind_rune','body_rune','chaos_rune','cosmic_rune','nature_rune','law_rune','astral_rune','death_rune','blood_rune','soul_rune','wrath_rune'];
@@ -652,54 +713,11 @@ class UI {
       const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
       const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
 
-      // Player avatar — inline SVG so it always renders
+      // Player avatar — clean avatar using same system as friends page
       const _prof = s.profile || {};
       const _playerName = typeof online !== 'undefined' && online.displayName ? online.displayName : 'You';
       const _cbLv = this.engine.getCombatLevel();
-      const _armorColor = _cbLv >= 80 ? '#c9873e' : _cbLv >= 50 ? '#6a9ed4' : _cbLv >= 30 ? '#7a9a7a' : '#8a7a6a';
-      const _capeColor  = _cbLv >= 80 ? '#d4a83a' : _cbLv >= 50 ? '#4a70c4' : '#5a6a5a';
-      const _playerSvg = `<svg viewBox="0 0 64 80" width="64" height="80" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="helm_g" cx="50%" cy="40%"><stop offset="0%" stop-color="${_armorColor}"/><stop offset="100%" stop-color="#3a2a1a"/></radialGradient>
-          <radialGradient id="body_g" cx="50%" cy="30%"><stop offset="0%" stop-color="${_armorColor}"/><stop offset="100%" stop-color="#2a1a0a"/></radialGradient>
-        </defs>
-        <!-- Cape -->
-        <path d="M20 28 Q10 50 12 72 Q18 68 22 56 Q24 68 26 72" fill="${_capeColor}" opacity="0.85"/>
-        <!-- Body/chest plate -->
-        <rect x="20" y="30" width="24" height="28" rx="3" fill="url(#body_g)"/>
-        <!-- Chest detail lines -->
-        <line x1="32" y1="32" x2="32" y2="56" stroke="${_armorColor}" stroke-width="0.8" opacity="0.5"/>
-        <ellipse cx="32" cy="40" rx="6" ry="4" fill="none" stroke="${_armorColor}" stroke-width="0.8" opacity="0.4"/>
-        <!-- Pauldrons -->
-        <ellipse cx="20" cy="32" rx="6" ry="4" fill="url(#helm_g)"/>
-        <ellipse cx="44" cy="32" rx="6" ry="4" fill="url(#helm_g)"/>
-        <!-- Helmet -->
-        <rect x="22" y="10" width="20" height="18" rx="4" fill="url(#helm_g)"/>
-        <rect x="22" y="16" width="20" height="4" fill="#1a1a2a" opacity="0.7"/>
-        <!-- Visor glow eyes -->
-        <circle cx="27" cy="18" r="2.5" fill="#d4a83a" opacity="0.9"/>
-        <circle cx="37" cy="18" r="2.5" fill="#d4a83a" opacity="0.9"/>
-        <circle cx="27" cy="18" r="1" fill="#fff" opacity="0.8"/>
-        <circle cx="37" cy="18" r="1" fill="#fff" opacity="0.8"/>
-        <!-- Sword arm -->
-        <rect x="44" y="30" width="6" height="18" rx="2" fill="url(#helm_g)"/>
-        <rect x="46" y="18" width="3" height="22" rx="1" fill="#d4d8e4"/>
-        <rect x="43" y="30" width="9" height="2" rx="1" fill="${_armorColor}"/>
-        <!-- Shield arm -->
-        <rect x="14" y="30" width="6" height="16" rx="2" fill="url(#helm_g)"/>
-        <ellipse cx="14" cy="40" rx="6" ry="9" fill="${_armorColor}" opacity="0.9"/>
-        <ellipse cx="14" cy="40" rx="4" ry="6" fill="none" stroke="${_capeColor}" stroke-width="1.2"/>
-        <!-- Legs -->
-        <rect x="22" y="56" width="9" height="18" rx="2" fill="#3a3a4a"/>
-        <rect x="33" y="56" width="9" height="18" rx="2" fill="#3a3a4a"/>
-        <!-- Boots -->
-        <rect x="20" y="70" width="12" height="6" rx="2" fill="#2a2a1a"/>
-        <rect x="32" y="70" width="12" height="6" rx="2" fill="#2a2a1a"/>
-        <!-- Belt -->
-        <rect x="20" y="54" width="24" height="4" rx="1" fill="${_capeColor}" opacity="0.8"/>
-        <!-- Helm crest -->
-        <path d="M28 10 Q32 2 36 10" fill="${_capeColor}" stroke="${_armorColor}" stroke-width="0.5"/>
-      </svg>`;
+      const _playerSvg = this._playerAvatarSvg(_playerName, 72, _cbLv);
 
       html += `<div class="combat-arena-v2 combat-arena">
         <div class="ca-side ca-player player-side">
@@ -756,7 +774,7 @@ class UI {
       // Slayer task progress
       if (s.slayerTask && s.slayerTask.monster === c.monster) {
         const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
-        html += `<div class="slayer-combat-bar"><span>${icon('target',14)} Slayer: ${s.slayerTask.killed}/${s.slayerTask.amount}</span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" style="width:${pct}%"></div></div></div>`;
+        html += `<div class="slayer-combat-bar"><span id="slayer-kills-text">${icon('target',14)} Slayer: <b>${s.slayerTask.killed}</b>/${s.slayerTask.amount}</span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" id="slayer-kills-fill" style="width:${pct.toFixed(1)}%"></div></div></div>`;
       }
       html += `<button class="btn btn-danger btn-flee" onclick="game.stopCombat()">${icon('combat',16)} Flee Combat</button>`;
       // Wilderness-specific buttons
@@ -2304,6 +2322,73 @@ class UI {
     </svg>`;
   }
 
+  async renderOnlinePlayersPage(el) {
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    let html = this.header('Online Players', 'npc', 'See who\'s currently adventuring in Ashfall.', null);
+    if (!isOnline) {
+      html += `<div class="bank-empty">Connect to see online players.</div>`;
+      el.innerHTML = html; return;
+    }
+    html += `<div class="online-players-wrap">
+      <div class="op-toolbar">
+        <input class="fr-search-input" id="op-search" placeholder="Filter by name…" oninput="ui._filterOnlinePlayers(this.value)" style="max-width:220px">
+        <button class="btn btn-sm" onclick="ui.renderOnlinePlayersPage(document.querySelector('.main-content'))">↻ Refresh</button>
+      </div>
+      <div id="op-list" class="op-list">
+        <div class="fr-loading"><svg class="fr-spinner" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-dim)" stroke-width="2" stroke-dasharray="28 8"/></svg> Loading...</div>
+      </div>
+    </div>`;
+    el.innerHTML = html;
+
+    try {
+      const players = await online.getOnlinePlayers();
+      this._onlinePlayerCache = players;
+      this._renderOnlinePlayersList(players);
+    } catch(e) {
+      const list = document.getElementById('op-list');
+      if (list) list.innerHTML = '<div class="fr-empty">Could not load online players.</div>';
+    }
+  }
+
+  _renderOnlinePlayersList(players) {
+    const list = document.getElementById('op-list');
+    if (!list) return;
+    if (players.length === 0) {
+      list.innerHTML = `<div class="fr-empty">No players online right now.</div>`;
+      return;
+    }
+    const myUid = (typeof online !== 'undefined') ? online.user?.uid : null;
+    list.innerHTML = players.map(p => {
+      const isMe = p.uid === myUid;
+      const since = p.lastSeen ? Math.round((Date.now() - p.lastSeen) / 1000 / 60) : null;
+      const timeStr = since === null ? '' : since < 1 ? 'Just now' : `${since}m ago`;
+      return `<div class="op-card ${isMe?'op-card-me':''}">
+        ${this._playerAvatarSvg(p.name, 44, p.combatLevel)}
+        <div class="op-info">
+          <div class="op-name">${this.escHtml(p.name)} ${isMe?'<span class="op-you">(You)</span>':''}</div>
+          <div class="op-meta">
+            <span class="fr-stat fr-stat-cb">⚔ ${p.combatLevel}</span>
+            <span class="fr-stat fr-stat-tot">★ ${p.totalLevel}</span>
+            <span class="op-activity">${this.escHtml(p.currentActivity)}</span>
+          </div>
+        </div>
+        <div class="op-actions">
+          ${timeStr ? `<span class="op-time">${timeStr}</span>` : ''}
+          ${!isMe ? `<button class="btn fr-add-btn" onclick="online.sendFriendRequest('${this.escHtml(p.name)}').then(b=>{ this.textContent='Sent!';this.disabled=true; })">+ Add</button>` : ''}
+          ${!isMe ? `<button class="btn fr-msg-btn" onclick="ui.openDM('${p.uid}','${this.escHtml(p.name)}')">Msg</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  _filterOnlinePlayers(query) {
+    if (!this._onlinePlayerCache) return;
+    const q = query.toLowerCase();
+    const filtered = q.length < 2 ? this._onlinePlayerCache
+      : this._onlinePlayerCache.filter(p => p.name.toLowerCase().includes(q));
+    this._renderOnlinePlayersList(filtered);
+  }
+
   renderFriendsPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
     let html = this.header('Friends','npc','Connect with other adventurers across Ashfall.',null);
@@ -3193,17 +3278,58 @@ class UI {
     setTimeout(() => { const el = document.getElementById('session-loot-summary'); if (el) el.remove(); }, 30000);
   }
 
-  _updateSlayerBar(d) {
-    // Update the in-combat slayer progress bar without re-rendering the whole page
-    const bar  = document.querySelector('.slayer-combat-bar .cxp-fill');
-    const text = document.querySelector('.slayer-combat-bar span');
-    if (bar && text) {
-      const pct = Math.min(100, (d.killed / d.amount) * 100);
-      bar.style.width = pct + '%';
-      const icon_part = text.innerHTML.split('Slayer:')[0];
-      text.innerHTML = icon_part + `Slayer: ${d.killed}/${d.amount}`;
+  _updateFriendBadge(count) {
+    // Update badge on Friends nav item
+    let badge = document.getElementById('friends-nav-badge');
+    if (!badge) {
+      const navEl = document.querySelector('[data-page="friends"] .nav-label');
+      if (navEl) {
+        badge = document.createElement('span');
+        badge.id = 'friends-nav-badge';
+        badge.className = 'nav-badge';
+        navEl.appendChild(badge);
+      }
     }
-    // Also update the kill count badge in the center of the arena
+    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline-flex' : 'none'; }
+    // If friends page is open, reload it
+    if (this.currentPage === 'friends') this._loadFriendsData();
+  }
+
+  _updateInboxBadge(count) {
+    let badge = document.getElementById('inbox-nav-badge');
+    if (!badge) {
+      const navEl = document.querySelector('[data-page="inbox"] .nav-label');
+      if (navEl) {
+        badge = document.createElement('span');
+        badge.id = 'inbox-nav-badge';
+        badge.className = 'nav-badge';
+        navEl.appendChild(badge);
+      }
+    }
+    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline-flex' : 'none'; }
+  }
+
+  _updatePrayerBtn(prayerId) {
+    // Update just the clicked prayer button state without re-rendering entire combat page
+    const active = this.engine.state.activePrayers?.includes(prayerId)
+                || this.engine.state.activePrayers?.indexOf(prayerId) >= 0;
+    const btn = document.getElementById('pb-' + prayerId);
+    if (btn) {
+      const isActive = btn.classList.contains('prayer-active2');
+      btn.classList.toggle('prayer-active2', !isActive);
+      const svg = btn.querySelector('svg');
+      if (svg) svg.style.color = !isActive ? 'var(--accent)' : 'var(--text-dim)';
+    }
+    // Update pp display
+    const ppLive = document.getElementById('pp-live');
+    if (ppLive) ppLive.textContent = Math.floor(this.engine.state.prayerPoints);
+  }
+
+  _updateSlayerBar(d) {
+    const fill = document.getElementById('slayer-kills-fill');
+    const text = document.getElementById('slayer-kills-text');
+    if (fill) fill.style.width = Math.min(100, (d.killed / d.amount) * 100).toFixed(1) + '%';
+    if (text) text.innerHTML = `🎯 Slayer: <b>${d.killed}</b>/${d.amount}`;
     const kills = document.getElementById('kill-count');
     if (kills) kills.textContent = this.engine.state.stats.monstersKilled || 0;
   }

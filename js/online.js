@@ -70,8 +70,11 @@ class OnlineManager {
           }
           // Set wilderness presence
           this._updatePresence();
-          // Start inbox real-time listener
-          if (!user.isAnonymous) this.startInboxListener();
+          // Start real-time listeners
+          if (!user.isAnonymous) {
+            this.startInboxListener();
+            this.startFriendRequestListener();
+          }
           this.emit('authChanged', { user, displayName:this.displayName });
         } else {
           if (this._autoSaveInterval) clearInterval(this._autoSaveInterval);
@@ -1118,6 +1121,66 @@ class OnlineManager {
   }
 
   // Start listening for real-time inbox updates
+  startFriendRequestListener() {
+    if (!this.isOnline || !this.user || this._friendReqUnsub) return;
+    this._friendReqUnsub = this.firestore.collection('friend_requests')
+      .where('to', '==', this.user.uid)
+      .where('status', '==', 'pending')
+      .onSnapshot(snap => {
+        const count = snap.size;
+        this.emit('friendRequestUpdate', { count });
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const d = change.doc.data();
+            // Only notify if not very old (within 60s of now)
+            const ts = d.timestamp?.seconds;
+            if (!ts || (Date.now()/1000 - ts) < 60) {
+              this.emit('notification', { type:'info', text:`⚔ Friend request from ${d.fromName}!` });
+            }
+          }
+        });
+      }, err => console.error('Friend request listener error:', err));
+  }
+
+  async getOnlinePlayers() {
+    if (!this.isOnline) return [];
+    try {
+      // Players who updated presence in last 5 minutes
+      const cutoff = Date.now() - 5 * 60 * 1000;
+      const snap = await this.firestore.collection('players')
+        .orderBy('lastSeen', 'desc').limit(50).get();
+      const players = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        const lastSeen = d.lastSeen?.toMillis?.() || d.lastSeen || 0;
+        if (lastSeen > cutoff) {
+          players.push({
+            uid: doc.id,
+            name: d.displayName || 'Survivor',
+            combatLevel: d.combatLevel || 1,
+            totalLevel: d.totalLevel || 1,
+            currentActivity: d.currentActivity || 'Idle',
+            lastSeen,
+          });
+        }
+      });
+      return players;
+    } catch(e) { console.error('getOnlinePlayers error:', e); return []; }
+  }
+
+  async updateActivity(activity) {
+    if (!this.isOnline || !this.user || this.user.isAnonymous) return;
+    try {
+      await this.firestore.collection('players').doc(this.user.uid).set({
+        displayName: this.displayName,
+        combatLevel: (typeof game !== 'undefined') ? game.engine?.getCombatLevel?.() || 1 : 1,
+        totalLevel: (typeof game !== 'undefined') ? game.engine?.getTotalLevel?.() || 1 : 1,
+        currentActivity: activity,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    } catch(e) { /* silent */ }
+  }
+
   startInboxListener() {
     if (!this.isOnline || !this.user || this._inboxUnsub) return;
     this._inboxUnsub = this.firestore.collection('inbox')
