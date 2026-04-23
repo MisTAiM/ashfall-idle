@@ -38,51 +38,64 @@ class OnlineManager {
           // Auto cloud sync for non-anonymous users
           if (!user.isAnonymous && game && game.state) {
             try {
+              // Block auto-save during cloud sync to prevent race condition
+              this._cloudSyncing = true;
+
               const cloudSave = await this.loadFromCloud(true);
+
               if (cloudSave && cloudSave._cloudSaveTime) {
-                // Compare cloud vs local using cloudSaveTime on both
-                const cloudTime = cloudSave._cloudSaveTime || 0;
+                const cloudTime = cloudSave._cloudSaveTime;
+
+                // A brand-new game has _isNewGame=true or lastSave=0.
+                // In that case, ALWAYS load the cloud save — never let a
+                // fresh local game beat someone's existing cloud progress.
+                const isNewLocalGame = game.state._isNewGame === true || game.state.lastSave === 0;
+
+                // For existing local saves: only prefer local if it was
+                // explicitly pushed to cloud more recently (_cloudSaveTime
+                // is only set after a successful saveToCloud).
                 const localCloudTime = game.state._cloudSaveTime || 0;
-                const localSaveTime = game.state.lastSave || 0;
-                const localBestTime = Math.max(localCloudTime, localSaveTime);
 
-                console.log('[Ashfall Cloud] Cloud time:', new Date(cloudTime).toISOString(),
-                  '| Local best time:', new Date(localBestTime).toISOString(),
-                  '| Cloud newer:', cloudTime > localBestTime);
+                const shouldLoadCloud = isNewLocalGame || (cloudTime > localCloudTime);
 
-                if (cloudTime > localBestTime) {
-                  // Cloud is definitively newer — load it
-                  console.log('[Ashfall Cloud] Loading cloud save. Skills:', JSON.stringify(Object.fromEntries(Object.entries(cloudSave.skills||{}).map(([k,v])=>[k,v.level]))));
+                console.log('[Ashfall Cloud Sync]',
+                  'cloudTime:', new Date(cloudTime).toISOString(),
+                  '| localCloudTime:', localCloudTime ? new Date(localCloudTime).toISOString() : 'never',
+                  '| isNewLocal:', isNewLocalGame,
+                  '| loadCloud:', shouldLoadCloud);
+
+                if (shouldLoadCloud) {
+                  // Load cloud save
                   game.state = game.migrateSave(cloudSave);
                   game.state._cloudSaveTime = cloudTime;
-                  game.save();
-                  this.emit('notification', { type:'success', text:'☁ Cloud save restored!' });
+                  game.state._isNewGame = false;
+                  game.save(); // persist to localStorage
+                  this.emit('notification', { type:'success', text:'☁ Cloud save loaded!' });
                   if (typeof ui !== 'undefined') {
                     ui.renderSidebar();
                     ui.renderPage(ui.currentPage);
                   }
-                } else if (localBestTime > cloudTime + 30000) {
-                  // Local is meaningfully newer (>30s) — push to cloud
-                  console.log('[Ashfall Cloud] Local is newer, pushing to cloud.');
-                  this.saveToCloud(true);
+                  console.log('[Ashfall Cloud Sync] Cloud save applied. Skills sample:',
+                    JSON.stringify(Object.fromEntries(
+                      Object.entries(cloudSave.skills || {}).slice(0,5).map(([k,v])=>[k,v.level])
+                    )));
                 } else {
-                  // Times are within 30s of each other — cloud wins to be safe
-                  console.log('[Ashfall Cloud] Times close — preferring cloud save.');
-                  game.state = game.migrateSave(cloudSave);
-                  game.state._cloudSaveTime = cloudTime;
-                  game.save();
-                  this.emit('notification', { type:'success', text:'☁ Cloud save loaded.' });
-                  if (typeof ui !== 'undefined') {
-                    ui.renderSidebar();
-                    ui.renderPage(ui.currentPage);
-                  }
+                  // Local is confirmed newer (was pushed to cloud at localCloudTime > cloudTime)
+                  // Push local state up to sync the cloud
+                  console.log('[Ashfall Cloud Sync] Local is newer, pushing to cloud.');
+                  this.saveToCloud(true);
                 }
               } else {
-                // No cloud save yet — first login, push local up
-                console.log('[Ashfall Cloud] No cloud save found. Uploading local save.');
+                // No cloud save exists for this account yet — upload current local state
+                console.log('[Ashfall Cloud Sync] No cloud save found. Uploading local state.');
                 this.saveToCloud(true);
               }
-            } catch(e) { console.error('Auto-sync error:', e.message); }
+            } catch(e) {
+              console.error('[Ashfall Cloud Sync] Error:', e.message);
+              this.emit('notification', { type:'warn', text:'Cloud sync error: ' + e.message });
+            } finally {
+              this._cloudSyncing = false;
+            }
           }
           // Start periodic auto-save (every 60s)
           if (!user.isAnonymous) {
@@ -132,8 +145,22 @@ class OnlineManager {
       }
       this.displayName = displayName;
       localStorage.setItem('ashfall_displayName', displayName);
-      // Immediately save to cloud now that we have a real account
-      this.saveToCloud(false);
+      // Upload save to cloud (this is a new account or new link — safe to push)
+      // Note: if linking an anonymous account that already has a UID match in saves,
+      // we check first to not overwrite older cloud data.
+      const existingCloud = await this.loadFromCloud(true);
+      if (!existingCloud) {
+        // No cloud save at all — safe to push local state up
+        this.saveToCloud(false);
+      } else {
+        // Cloud save exists for this UID (shouldn't normally happen on create,
+        // but guard against it). Cloud wins.
+        game.state = game.migrateSave(existingCloud);
+        game.state._isNewGame = false;
+        game.save();
+        this.emit('notification', { type:'success', text:'Account linked! Existing cloud save restored.' });
+        if (typeof ui !== 'undefined') { ui.renderSidebar(); ui.renderPage(ui.currentPage); }
+      }
       this.syncProfile();
       this.startInboxListener();
       // Start periodic auto-save (linking doesn't re-trigger onAuthStateChanged)
@@ -171,8 +198,17 @@ class OnlineManager {
         await this.user.linkWithPopup(provider);
         this.displayName = this.user.displayName || this.user.email?.split('@')[0] || 'Survivor';
         localStorage.setItem('ashfall_displayName', this.displayName);
-        // Immediate cloud save + sync
-        this.saveToCloud(false);
+        // Check if cloud save exists before pushing (don't overwrite existing data)
+        const googleExistingCloud = await this.loadFromCloud(true);
+        if (!googleExistingCloud) {
+          this.saveToCloud(false);
+        } else {
+          game.state = game.migrateSave(googleExistingCloud);
+          game.state._isNewGame = false;
+          game.save();
+          this.emit('notification', { type:'success', text:'Google linked! Cloud save restored.' });
+          if (typeof ui !== 'undefined') { ui.renderSidebar(); ui.renderPage(ui.currentPage); }
+        }
         this.syncProfile();
         this.startInboxListener();
         if (!this._autoSaveInterval) {
@@ -379,6 +415,8 @@ class OnlineManager {
   // ── CLOUD SAVES ────────────────────────────────────────
   async saveToCloud(silent) {
     if (!this.isOnline || !this.user || !game || this.user.isAnonymous) return;
+    // Don't overwrite cloud during initial sync — would clobber the user's real save
+    if (this._cloudSyncing) { console.log('[Ashfall] saveToCloud blocked during sync'); return; }
     try {
       const now = Date.now();
       const save = JSON.parse(JSON.stringify(game.state));

@@ -71,7 +71,7 @@ class GameEngine {
       skills[id] = { level: id==='hitpoints'?10:1, xp: id==='hitpoints'?1154:0 };
     }
     return {
-      version: 2, created: Date.now(), lastSave: Date.now(), gold: 25,
+      version: 2, created: Date.now(), lastSave: 0, _isNewGame: true, gold: 25,
       skills,
       bank: { oak_log:0, copper_ore:0, tin_ore:0, raw_shrimp:0 },
       equipment: { weapon:null,shield:null,head:null,body:null,legs:null,boots:null,gloves:null,ring:null,amulet:null,cape:null,ammo:null },
@@ -164,6 +164,12 @@ class GameEngine {
       }
     }
     s.version = 2;
+    // Clear new-game flag if the save has real progress
+    const hasProgress = (s.stats?.monstersKilled > 0) ||
+      (s.quests?.completed?.length > 0) ||
+      (s.gold > 100) ||
+      Object.values(s.skills || {}).some(sk => (sk.level||1) > 1);
+    if (hasProgress) s._isNewGame = false;
     return s;
   }
 
