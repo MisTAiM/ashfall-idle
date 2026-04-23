@@ -713,11 +713,14 @@ class UI {
       const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
       const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
 
-      // Player avatar — clean avatar using same system as friends page
+      // Player avatar — DiceBear pixel-art avatar matching Character page
       const _prof = s.profile || {};
       const _playerName = typeof online !== 'undefined' && online.displayName ? online.displayName : 'You';
       const _cbLv = this.engine.getCombatLevel();
-      const _playerSvg = this._playerAvatarSvg(_playerName, 72, _cbLv);
+      const _avatarSeed = _prof.avatarSeed || _playerName || 'Survivor';
+      const _avatarUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_avatarSeed)}&hair=${_prof.hair||'short04'}&skinColor=${_prof.skinColor||'c68642'}&hairColor=${_prof.hairColor||'2c1b18'}&mouth=${_prof.mouth||'happy01'}&eyes=${_prof.eyes||'variant04'}&clothing=${_prof.clothing||'variant04'}&clothingColor=${_prof.clothingColor||'4a90d4'}${_prof.accessory?'&accessories='+_prof.accessory:''}`;
+      const _clvlFrame = _cbLv >= 100 ? '#d4a83a' : _cbLv >= 70 ? '#8a5ec4' : _cbLv >= 40 ? '#4a90d4' : '#5a7a5a';
+      const _playerSvg = `<div style="position:relative;display:inline-block"><img src="${_avatarUrl}" width="72" height="72" id="combat-player-avatar" style="border-radius:50%;border:2px solid ${_clvlFrame};display:block" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'"><div style="display:none;width:72px;height:72px;border-radius:50%;background:hsl(210,30%,20%);border:2px solid ${_clvlFrame};align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:#fff;font-family:serif">${_playerName[0]?.toUpperCase()||'?'}</div></div>`;
 
       html += `<div class="combat-arena-v2 combat-arena">
         <div class="ca-side ca-player player-side">
@@ -2182,19 +2185,87 @@ class UI {
           <button class="btn btn-xs btn-danger" onclick="online.leaveGuild().then(()=>ui.renderPage('guilds'))">Leave Guild</button>
         </div>
       </div>`;
-      // Guild Bank
+      // Guild info bar
+      const isLeader = s.guild.role === 'Leader';
       const canWithdraw = s.guild.role === 'Leader' || s.guild.role === 'General';
-      html += `<div class="settings-section">
-        <h3>Guild Bank</h3>
-        <div id="guild-bank-display"><div class="bank-empty">Loading...</div></div>
-        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-          <input type="number" id="guild-gold" class="qty-input" min="1" value="100" style="width:100px">
-          <button class="btn btn-sm" onclick="online.depositGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>ui._loadGuildData())">Deposit Gold</button>
-          ${canWithdraw?'<button class="btn btn-sm" onclick="online.withdrawGuildGold(parseInt(document.getElementById(\'guild-gold\').value)||0).then(()=>ui._loadGuildData())">Withdraw</button>':''}
+      const canManageItems = s.guild.role === 'Leader' || s.guild.role === 'General' || s.guild.role === 'Captain';
+      const guildEmblems = ['⚔','🛡','🔥','⚡','🌙','💀','🐉','🦅','🌟','⚓'];
+      html += `<div class="guild-header-bar">
+        <div class="ghb-emblem" id="guild-emblem-display">${s.guild.emblem||'⚔'}</div>
+        <div class="ghb-info">
+          <div class="ghb-name">${this.escHtml(s.guild.name)} <span class="ghb-tag">[${this.escHtml(s.guild.tag||'')}]</span></div>
+          <div class="ghb-desc" id="guild-desc-display">${this.escHtml(s.guild.description||'No description set.')}</div>
+          <div class="ghb-role">Your role: <span style="color:var(--accent);font-weight:600">${s.guild.role||'Member'}</span></div>
+        </div>
+        <div class="ghb-actions">
+          ${isLeader ? `<button class="btn btn-sm" onclick="ui._toggleGuildSettings()">⚙ Settings</button>` : ''}
+          <button class="btn btn-sm btn-danger" style="margin-left:4px" onclick="if(confirm('Leave guild?'))online.leaveGuild().then(()=>ui.renderPage('guilds'))">Leave</button>
         </div>
       </div>`;
+
+      // Guild Settings Panel (Leader only, hidden by default)
+      if (isLeader) {
+        html += `<div id="guild-settings-panel" class="guild-settings-panel" style="display:none">
+          <h3 class="guild-settings-title">Guild Settings</h3>
+          <div class="guild-settings-grid">
+            <label class="gs-label">Guild Name</label>
+            <input type="text" id="gs-name" class="chat-input" value="${this.escHtml(s.guild.name)}" maxlength="30">
+            <label class="gs-label">Tag (2-5 chars)</label>
+            <input type="text" id="gs-tag" class="chat-input" value="${this.escHtml(s.guild.tag||'')}" maxlength="5" style="width:100px">
+            <label class="gs-label">Description</label>
+            <input type="text" id="gs-desc" class="chat-input" value="${this.escHtml(s.guild.description||'')}" maxlength="120" placeholder="Write a short description...">
+            <label class="gs-label">Emblem</label>
+            <div class="gs-emblem-picker">${guildEmblems.map(e=>`<button class="gs-emblem-btn ${(s.guild.emblem||'⚔')===e?'active':''}" onclick="ui._selectGuildEmblem('${e}',this)">${e}</button>`).join('')}</div>
+            <label class="gs-label">Min. Rank to deposit items</label>
+            <select id="gs-deposit-rank" class="rank-select">
+              ${['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'].map(r=>`<option value="${r}" ${(s.guild.depositRank||'Member')===r?'selected':''}>${r}</option>`).join('')}
+            </select>
+            <label class="gs-label">Min. Rank to withdraw items</label>
+            <select id="gs-withdraw-rank" class="rank-select">
+              ${['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'].map(r=>`<option value="${r}" ${(s.guild.withdrawRank||'Captain')===r?'selected':''}>${r}</option>`).join('')}
+            </select>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="ui._saveGuildSettings()">Save Settings</button>
+            <button class="btn btn-sm" onclick="ui._toggleGuildSettings()">Cancel</button>
+          </div>
+        </div>`;
+      }
+
+      // Guild Bank - Gold
+      html += `<div class="guild-tabs">
+        <button class="guild-tab active" onclick="ui._guildTab('gold',this)">Gold Bank</button>
+        <button class="guild-tab" onclick="ui._guildTab('items',this)">Item Bank</button>
+        <button class="guild-tab" onclick="ui._guildTab('members',this)">Members</button>
+      </div>`;
+
+      html += `<div id="guild-tab-gold" class="guild-tab-content">
+        <div id="guild-bank-display"><div class="bank-empty">Loading...</div></div>
+        <div class="guild-bank-actions">
+          <input type="number" id="guild-gold" class="qty-input" min="1" value="100" style="width:90px">
+          <button class="btn btn-sm" onclick="online.depositGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>ui._loadGuildData())">Deposit</button>
+          ${canWithdraw?`<button class="btn btn-sm" onclick="online.withdrawGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>ui._loadGuildData())">Withdraw</button>`:''}
+        </div>
+      </div>`;
+
+      // Item Bank
+      const rankOrder2 = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
+      const myRankIdx2 = rankOrder2.indexOf(s.guild.role||'Recruit');
+      const depositRankIdx = rankOrder2.indexOf(s.guild.depositRank||'Member');
+      const withdrawRankIdx = rankOrder2.indexOf(s.guild.withdrawRank||'Captain');
+      const canDepositItems = myRankIdx2 <= depositRankIdx;
+      const canWithdrawItems = myRankIdx2 <= withdrawRankIdx;
+      html += `<div id="guild-tab-items" class="guild-tab-content" style="display:none">
+        <div id="guild-item-bank"><div class="bank-empty">Loading...</div></div>
+        ${canDepositItems ? `<div class="guild-bank-actions" style="margin-top:10px">
+          <select id="guild-item-id" class="rank-select" style="min-width:160px">${Object.values(GAME_DATA.items||{}).filter(i=>!i.type||!['quest'].includes(i.type)).sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${i.id}">${this.escHtml(i.name)} (${game.state.bank[i.id]||0})</option>`).join('')}</select>
+          <input type="number" id="guild-item-qty" class="qty-input" min="1" value="1" style="width:70px">
+          <button class="btn btn-sm" onclick="ui._depositGuildItem()">Deposit Item</button>
+        </div>` : `<div class="fr-empty" style="font-size:12px">Requires ${s.guild.depositRank||'Member'} rank to deposit items.</div>`}
+      </div>`;
+
       // Member list
-      html += '<h2 class="section-title">Members</h2><div id="guild-members"><div class="bank-empty">Loading...</div></div>';
+      html += `<div id="guild-tab-members" class="guild-tab-content" style="display:none"><div id="guild-members"><div class="bank-empty">Loading...</div></div></div>`;
     } else {
       html += `<div class="settings-section">
         <h3>Create a Guild</h3>
@@ -2227,58 +2298,152 @@ class UI {
     }
     html += '</div>';
     el.innerHTML = html;
-    if (s.guild) this._loadGuildData();
+    if (s.guild) { this._loadGuildData(); this._guildItemsLoaded = false; }
   }
 
   async _loadGuildData() {
-    // Load guild bank
+    // Load guild bank gold
     const bankEl = document.getElementById('guild-bank-display');
     if (bankEl) {
       const bank = await online.getGuildBank();
-      bankEl.innerHTML = `<span class="bz-gold" style="font-size:14px">${icon('coin',16)} ${this.fmt(bank)} Gold</span>`;
+      bankEl.innerHTML = `<div class="guild-bank-gold-display"><svg viewBox="0 0 20 20" width="18" height="18" fill="#d4a83a"><circle cx="10" cy="10" r="9"/><text x="10" y="14" text-anchor="middle" fill="#5a3010" font-size="11" font-weight="bold">G</text></svg><span class="bz-gold" style="font-size:16px;font-weight:600">${this.fmt(bank)} Gold</span></div>`;
     }
-    // Load members
+  }
+
+  _guildTab(tab, btn) {
+    document.querySelectorAll('.guild-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.guild-tab-content').forEach(c=>c.style.display='none');
+    btn.classList.add('active');
+    const el = document.getElementById('guild-tab-'+tab);
+    if (el) el.style.display='block';
+    if (tab==='items' && !this._guildItemsLoaded) { this._loadGuildItems(); this._guildItemsLoaded=true; }
+    if (tab==='members') this._loadGuildMembers();
+  }
+
+  _toggleGuildSettings() {
+    const p = document.getElementById('guild-settings-panel');
+    if (p) p.style.display = p.style.display==='none' ? 'block' : 'none';
+  }
+
+  _selectGuildEmblem(emblem, btn) {
+    document.querySelectorAll('.gs-emblem-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    this._selectedGuildEmblem = emblem;
+  }
+
+  async _saveGuildSettings() {
+    const name = document.getElementById('gs-name')?.value?.trim();
+    const tag = document.getElementById('gs-tag')?.value?.trim()?.toUpperCase();
+    const desc = document.getElementById('gs-desc')?.value?.trim();
+    const emblem = this._selectedGuildEmblem || game.state.guild?.emblem || '⚔';
+    const depositRank = document.getElementById('gs-deposit-rank')?.value;
+    const withdrawRank = document.getElementById('gs-withdraw-rank')?.value;
+    if (!name || name.length < 3) { this.toast({type:'warn',text:'Name must be 3+ chars'}); return; }
+    if (!tag || tag.length < 2) { this.toast({type:'warn',text:'Tag must be 2-5 chars'}); return; }
+    try {
+      await online.updateGuildSettings({ name, tag, description:desc, emblem, depositRank, withdrawRank });
+      game.state.guild = { ...game.state.guild, name, tag, description:desc, emblem, depositRank, withdrawRank };
+      document.getElementById('guild-emblem-display').textContent = emblem;
+      document.getElementById('guild-desc-display').textContent = desc || 'No description set.';
+      this._toggleGuildSettings();
+      this.toast({type:'success',text:'Guild settings saved!'});
+    } catch(e) { this.toast({type:'danger',text:'Save failed: '+e.message}); }
+  }
+
+  async _loadGuildItems() {
+    const el = document.getElementById('guild-item-bank');
+    if (!el) return;
+    try {
+      const items = await online.getGuildItems();
+      const canWithdrawItems = (() => {
+        const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
+        const myIdx = rankOrder.indexOf(game.state.guild?.role||'Recruit');
+        const wIdx = rankOrder.indexOf(game.state.guild?.withdrawRank||'Captain');
+        return myIdx <= wIdx;
+      })();
+      if (!items || items.length === 0) {
+        el.innerHTML = '<div class="fr-empty">Guild item bank is empty.</div>';
+      } else {
+        el.innerHTML = '<div class="guild-item-bank-grid">' + items.map(it => {
+          const itemData = GAME_DATA.items?.[it.id];
+          return `<div class="guild-bank-item">
+            <div class="gbi-name">${this.escHtml(itemData?.name||it.id)}</div>
+            <div class="gbi-qty">x${it.qty}</div>
+            ${canWithdrawItems ? `<input type="number" class="qty-input" id="gwi-qty-${it.id}" value="1" min="1" max="${it.qty}" style="width:50px">
+              <button class="btn btn-xs" onclick="ui._withdrawGuildItem('${it.id}')">Take</button>` : ''}
+          </div>`;
+        }).join('') + '</div>';
+      }
+    } catch(e) { el.innerHTML = '<div class="fr-empty">Could not load items.</div>'; }
+  }
+
+  async _depositGuildItem() {
+    const itemId = document.getElementById('guild-item-id')?.value;
+    const qty = parseInt(document.getElementById('guild-item-qty')?.value)||1;
+    const have = game.state.bank[itemId]||0;
+    if (!itemId || qty < 1 || have < qty) { this.toast({type:'warn',text:`Not enough ${GAME_DATA.items?.[itemId]?.name||itemId} (have ${have})`}); return; }
+    try {
+      await online.depositGuildItem(itemId, qty);
+      game.state.bank[itemId] = (game.state.bank[itemId]||0) - qty;
+      if (game.state.bank[itemId] <= 0) delete game.state.bank[itemId];
+      this._guildItemsLoaded = false;
+      this._loadGuildItems();
+      this.toast({type:'success',text:`Deposited ${qty}x ${GAME_DATA.items?.[itemId]?.name||itemId}`});
+    } catch(e) { this.toast({type:'danger',text:'Failed: '+e.message}); }
+  }
+
+  async _withdrawGuildItem(itemId) {
+    const qty = parseInt(document.getElementById('gwi-qty-'+itemId)?.value)||1;
+    try {
+      await online.withdrawGuildItem(itemId, qty);
+      game.state.bank[itemId] = (game.state.bank[itemId]||0) + qty;
+      this._guildItemsLoaded = false;
+      this._loadGuildItems();
+      this.toast({type:'success',text:`Withdrew ${qty}x ${GAME_DATA.items?.[itemId]?.name||itemId}`});
+    } catch(e) { this.toast({type:'danger',text:'Failed: '+e.message}); }
+  }
+
+  async _loadGuildMembers() {
     const membersEl = document.getElementById('guild-members');
-    if (membersEl) {
+    if (!membersEl) return;
+    membersEl.innerHTML = '<div class="fr-loading"><svg class="fr-spinner" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-dim)" stroke-width="2" stroke-dasharray="28 8"/></svg> Loading…</div>';
+    try {
       const members = await online.getGuildMembers();
       const myRank = game.state.guild?.role || 'Recruit';
       const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
       const myIdx = rankOrder.indexOf(myRank);
-      const canManage = myIdx <= 2; // Leader, General, Captain can kick
-      const canRank = myIdx <= 1; // Leader, General can change ranks
-      if (members.length === 0) {
-        membersEl.innerHTML = '<div class="bank-empty">No members found.</div>';
-      } else {
-        const rankColors = {Leader:'#c9873e',General:'#c44040',Captain:'#4a7ec4',Lieutenant:'#8a5ec4',Sergeant:'#3a9e5c',Member:'#c8cad4',Recruit:'#7a7e94'};
-        membersEl.innerHTML = '<div class="friends-grid">' + members.map(m => {
-          const rank = m.rank || m.role || 'Recruit';
-          const theirIdx = rankOrder.indexOf(rank);
-          const isMe = m.uid === online.user?.uid;
-          const canKickThis = canManage && !isMe && theirIdx > myIdx;
-          const canRankThis = canRank && !isMe && theirIdx > myIdx;
-          let rankSelect = '';
-          if (canRankThis) {
-            rankSelect = `<select class="rank-select" onchange="online.setMemberRank('${m.uid}',this.value).then(()=>ui._loadGuildData())">`;
-            for (const r of rankOrder) {
-              if (rankOrder.indexOf(r) <= myIdx) continue; // Can't set equal or above own rank
-              rankSelect += `<option value="${r}" ${r===rank?'selected':''}>${r}</option>`;
-            }
-            rankSelect += '</select>';
+      const canManage = myIdx <= 2;
+      const canRank = myIdx <= 1;
+      if (members.length === 0) { membersEl.innerHTML = '<div class="bank-empty">No members found.</div>'; return; }
+      const rankColors = {Leader:'#c9873e',General:'#c44040',Captain:'#4a7ec4',Lieutenant:'#8a5ec4',Sergeant:'#3a9e5c',Member:'#c8cad4',Recruit:'#7a7e94'};
+      membersEl.innerHTML = '<div class="friends-grid">' + members.map(m => {
+        const rank = m.rank || m.role || 'Recruit';
+        const theirIdx = rankOrder.indexOf(rank);
+        const isMe = m.uid === online.user?.uid;
+        const canKickThis = canManage && !isMe && theirIdx > myIdx;
+        const canRankThis = canRank && !isMe && theirIdx > myIdx;
+        let rankSelect = '';
+        if (canRankThis) {
+          rankSelect = `<select class="rank-select" onchange="online.setMemberRank('${m.uid}',this.value).then(()=>ui._loadGuildMembers())">`;
+          for (const r of rankOrder) {
+            if (rankOrder.indexOf(r) <= myIdx) continue;
+            rankSelect += `<option value="${r}" ${r===rank?'selected':''}>${r}</option>`;
           }
-          return `<div class="friend-card">
-            <span class="fc-name">
-              <span class="guild-rank" style="color:${rankColors[rank]||'#7a7e94'}">${rank}</span>
-              ${this.escHtml(m.name)} ${isMe?'<small>(You)</small>':''}
-            </span>
-            <div class="fc-btns">
-              ${rankSelect}
-              ${!isMe?`<button class="btn btn-xs" onclick="ui.openDM('${m.uid}','${this.escHtml(m.name)}')">Msg</button>`:''}
-              ${canKickThis?`<button class="btn btn-xs btn-danger" onclick="online.kickMember('${m.uid}').then(()=>ui._loadGuildData())">Kick</button>`:''}
-            </div>
-          </div>`;
-        }).join('') + '</div>';
-      }
-    }
+          rankSelect += '</select>';
+        }
+        return `<div class="friend-card">
+          <span class="fc-name">
+            <span class="guild-rank" style="color:${rankColors[rank]||'#7a7e94'}">${rank}</span>
+            ${this.escHtml(m.name)} ${isMe?'<small>(You)</small>':''}
+          </span>
+          <div class="fc-btns">
+            ${rankSelect}
+            ${!isMe?`<button class="btn btn-xs" onclick="ui.openDM('${m.uid}','${this.escHtml(m.name)}')">Msg</button>`:''}
+            ${canKickThis?`<button class="btn btn-xs btn-danger" onclick="online.kickMember('${m.uid}').then(()=>ui._loadGuildMembers())">Kick</button>`:''}
+          </div>
+        </div>`;
+      }).join('') + '</div>';
+    } catch(e) { membersEl.innerHTML = '<div class="bank-empty">Could not load members.</div>'; }
   }
 
   async createGuild() {
@@ -2433,10 +2598,18 @@ class UI {
         <span id="fr-req-badge" class="fr-badge" style="display:none"></span>
       </div>
       <div id="friend-requests" class="fr-list-area">
-        <div class="fr-loading">
-          <svg class="fr-spinner" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-dim)" stroke-width="2" stroke-dasharray="28 8"/></svg>
-          Loading…
-        </div>
+        <div class="fr-loading"><svg class="fr-spinner" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-dim)" stroke-width="2" stroke-dasharray="28 8"/></svg>Loading…</div>
+      </div>
+    </div>
+    <div class="fr-section">
+      <div class="fr-section-title">
+        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="var(--accent)" stroke-width="1.8">
+          <path d="M2 10 L18 10 M12 4 L18 10 L12 16" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Sent Requests
+      </div>
+      <div id="sent-requests" class="fr-list-area">
+        <div class="fr-loading"><svg class="fr-spinner" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-dim)" stroke-width="2" stroke-dasharray="28 8"/></svg>Loading…</div>
       </div>
     </div>`;
 
@@ -2462,7 +2635,30 @@ class UI {
   }
 
   async _loadFriendsData() {
-    // ── Pending Requests
+    // ── Sent Requests
+    const sentContainer = document.getElementById('sent-requests');
+    if (sentContainer) {
+      try {
+        const sent = await online.getSentFriendRequests();
+        if (!sent || sent.length === 0) {
+          sentContainer.innerHTML = `<div class="fr-empty"><svg viewBox="0 0 32 32" width="24" height="24" opacity="0.3"><path d="M4 16 L28 16 M20 8 L28 16 L20 24" stroke="currentColor" stroke-width="1.5" fill="none"/></svg> No pending outbound requests</div>`;
+        } else {
+          sentContainer.innerHTML = sent.map(r => `
+            <div class="fr-req-card" id="sreq-${r.id}">
+              ${this._playerAvatarSvg(r.toName||'?', 38)}
+              <div class="fr-req-info">
+                <div class="fr-req-name">${this.escHtml(r.toName||'Unknown')}</div>
+                <div class="fr-req-sub" style="color:var(--accent)">Request pending…</div>
+              </div>
+              <button class="btn fr-decline-btn" onclick="online.cancelFriendRequest('${r.id}').then(()=>{document.getElementById('sreq-${r.id}')?.remove();})">
+                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+                Cancel
+              </button>
+            </div>`).join('');
+        }
+      } catch(e) { if(sentContainer) sentContainer.innerHTML = '<div class="fr-empty">Could not load sent requests.</div>'; }
+    }
+    // ── Incoming Requests
     const reqContainer = document.getElementById('friend-requests');
     if (reqContainer) {
       try {

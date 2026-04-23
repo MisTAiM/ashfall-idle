@@ -869,6 +869,66 @@ class OnlineManager {
     } catch(e) { this.emit('notification',{type:'danger',text:'Withdraw failed: '+e.message}); }
   }
 
+  async depositGuildItem(itemId, qty) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    try {
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const doc = await ref.get();
+      const data = doc.data() || {};
+      const items = data.itemBank || [];
+      const existing = items.find(i=>i.id===itemId);
+      if (existing) existing.qty += qty;
+      else items.push({id:itemId, qty, depositedBy:this.displayName});
+      await ref.update({ itemBank: items });
+      this.emit('notification',{type:'success',text:`Deposited ${qty}x item to guild bank.`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Deposit failed: '+e.message}); throw e; }
+  }
+
+  async withdrawGuildItem(itemId, qty) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
+    const myIdx = rankOrder.indexOf(game.state.guild.role||'Recruit');
+    const wIdx = rankOrder.indexOf(game.state.guild.withdrawRank||'Captain');
+    if (myIdx > wIdx) { this.emit('notification',{type:'warn',text:`Need ${game.state.guild.withdrawRank||'Captain'} rank to withdraw items.`}); return; }
+    try {
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const doc = await ref.get();
+      const data = doc.data() || {};
+      const items = data.itemBank || [];
+      const existing = items.find(i=>i.id===itemId);
+      if (!existing || existing.qty < qty) { this.emit('notification',{type:'warn',text:'Not enough in guild bank.'}); return; }
+      existing.qty -= qty;
+      const updated = items.filter(i=>i.qty>0);
+      await ref.update({ itemBank: updated });
+      this.emit('notification',{type:'success',text:`Withdrew ${qty}x item from guild bank.`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Withdraw failed: '+e.message}); throw e; }
+  }
+
+  async getGuildItems() {
+    if (!this.isOnline || !this.user || !game.state.guild) return [];
+    try {
+      const doc = await this.firestore.collection('guilds').doc(game.state.guild.id).get();
+      return doc.exists ? (doc.data().itemBank || []) : [];
+    } catch(e) { return []; }
+  }
+
+  async updateGuildSettings(settings) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    if (game.state.guild.role !== 'Leader') { this.emit('notification',{type:'warn',text:'Only Leaders can change guild settings.'}); return; }
+    try {
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      await ref.update({
+        name: settings.name,
+        tag: settings.tag,
+        description: settings.description||'',
+        emblem: settings.emblem||'⚔',
+        depositRank: settings.depositRank||'Member',
+        withdrawRank: settings.withdrawRank||'Captain',
+      });
+      this.emit('notification',{type:'success',text:'Guild settings updated!'});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Update failed: '+e.message}); throw e; }
+  }
+
   async setMemberRank(memberUid, newRank) {
     if (!this.isOnline || !this.user || !game.state.guild) return;
     const myRank = game.state.guild.role;
@@ -945,7 +1005,6 @@ class OnlineManager {
   async getFriendRequests() {
     if (!this.isOnline || !this.user) return [];
     try {
-      // Read from flat collection where to == my uid
       const snap = await this.firestore.collection('friend_requests')
         .where('to','==',this.user.uid)
         .where('status','==','pending')
@@ -954,6 +1013,27 @@ class OnlineManager {
       snap.forEach(doc => requests.push({ id:doc.id, ...doc.data() }));
       return requests;
     } catch(e) { console.error('Get friend requests error:', e); return []; }
+  }
+
+  async getSentFriendRequests() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const snap = await this.firestore.collection('friend_requests')
+        .where('from','==',this.user.uid)
+        .where('status','==','pending')
+        .limit(20).get();
+      const requests = [];
+      snap.forEach(doc => requests.push({ id:doc.id, ...doc.data() }));
+      return requests;
+    } catch(e) { console.error('Get sent requests error:', e); return []; }
+  }
+
+  async cancelFriendRequest(requestId) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      await this.firestore.collection('friend_requests').doc(requestId).update({ status:'cancelled' });
+      this.emit('notification',{type:'info',text:'Friend request cancelled.'});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Cancel failed: '+e.message}); }
   }
 
   async acceptFriendRequest(requestId, fromUid, fromName) {
