@@ -258,6 +258,7 @@ class UI {
     else if (pageId === 'settings_page') this.renderSettingsPage(main);
     else if (pageId === 'npcs') this.renderNPCsPage(main);
     else if (pageId === 'quests') this.renderQuestsPage(main);
+    else if (pageId === 'admin') this.renderAdminPanel(main);
     else if (pageId === 'storyline') this.renderStorylinePage(main);
     else if (pageId === 'factions') this.renderFactionsPage(main);
     else if (pageId === 'alignment') this.renderAlignmentPage(main);
@@ -861,6 +862,43 @@ class UI {
       }
       html += '</div>';
     }
+    // ── LOADOUT SWAP PANEL ──
+    if (c.active) {
+      html += `<div class="loadout-swap-panel">
+        <div class="lsp-title">
+          <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="1.8"><path d="M3 7 L17 7 M13 3 L17 7 L13 11"/><path d="M17 13 L3 13 M7 9 L3 13 L7 17"/></svg>
+          Quick Loadout Swap
+        </div>
+        <div class="lsp-slots">`;
+      const savedLoadouts = s.savedLoadouts || [];
+      const currentGear = JSON.stringify(s.equipment||{});
+      for (let li = 0; li < 4; li++) {
+        const sl = savedLoadouts[li];
+        const isEquipped = sl && JSON.stringify(sl.gear||{}) === currentGear;
+        if (sl) {
+          const mainSlot = sl.gear?.weapon || sl.gear?.body || null;
+          const mainItem = mainSlot ? GAME_DATA.items[mainSlot] : null;
+          html += `<div class="lsp-slot lsp-saved ${isEquipped?'lsp-active':''}">
+            <div class="lsp-slot-name">${this.escHtml(sl.name||'Loadout '+(li+1))}</div>
+            <div class="lsp-slot-main">${mainItem?.name||'Mixed gear'}</div>
+            <div class="lsp-slot-btns">
+              <button class="btn btn-xs" onclick="ui.swapLoadout(${li})" ${isEquipped?'disabled':''}>
+                ${isEquipped?'Active':'Swap'}
+              </button>
+              <button class="btn btn-xs" title="Save current gear here" onclick="ui.saveLoadout(${li})">Save</button>
+              <button class="btn btn-xs btn-danger" onclick="ui.deleteLoadout(${li})">✕</button>
+            </div>
+          </div>`;
+        } else {
+          html += `<div class="lsp-slot lsp-empty">
+            <div class="lsp-empty-label">Empty Slot ${li+1}</div>
+            <button class="btn btn-xs" onclick="ui.saveLoadout(${li})">Save Current</button>
+          </div>`;
+        }
+      }
+      html += `</div></div>`;
+    }
+
     html += '</div>';
     el.innerHTML = html;
     } catch(err) {
@@ -1068,9 +1106,26 @@ class UI {
 
   renderBankPage(el) {
     const s = this.engine.state;
-    const entries = Object.entries(s.bank).filter(([,q])=>q>0).sort((a,b)=>a[0].localeCompare(b[0]));
+    const _sortMode = this._bankSort || 'name';
+    const entries = Object.entries(s.bank).filter(([,q])=>q>0).sort((a,b)=>{
+      const ia = GAME_DATA.items[a[0]], ib = GAME_DATA.items[b[0]];
+      if (_sortMode==='name') return (ia?.name||a[0]).localeCompare(ib?.name||b[0]);
+      if (_sortMode==='qty-desc') return b[1]-a[1];
+      if (_sortMode==='qty-asc') return a[1]-b[1];
+      if (_sortMode==='value') return ((ib?.sellPrice||0)*b[1])-((ia?.sellPrice||0)*a[1]);
+      if (_sortMode==='type') return ((ia?.type||'z')+(ia?.subtype||'')).localeCompare((ib?.type||'z')+(ib?.subtype||''));
+      if (_sortMode==='level') return ((ib?.levelReq?.attack||ib?.levelReq?.smithing||0))-((ia?.levelReq?.attack||ia?.levelReq?.smithing||0));
+      if (_sortMode==='recent') return (b[1]-a[1]); // fallback
+      return 0;
+    });
     let html = this.header('Bank','bank',`${entries.length} unique items stored.`,null);
     html += `<div class="bank-gold" id="bank-gold">${icon('coin',20)} <span id="bank-gold-val">${this.fmt(s.gold)}</span> Gold</div>`;
+
+    // Sort controls
+    html += `<div class="bank-sort-bar">
+      <span class="bsb-label">Sort:</span>
+      ${[['name','A-Z'],['qty-desc','Most'],['qty-asc','Least'],['value','Value'],['type','Type'],['level','Level']].map(([id,lbl])=>`<button class="bsb-btn ${_sortMode===id?'active':''}" onclick="ui._bankSort='${id}';ui.renderPage('bank')">${lbl}</button>`).join('')}
+    </div>`;
 
     // Bank tabs
     const tab = this._bankTab || 'all';
@@ -1539,44 +1594,101 @@ class UI {
   // ── QUESTS PAGE ───────────────────────────────────────
   renderQuestsPage(el) {
     const s = this.engine.state;
-    let html = this.header('Quests','scroll',`${s.quests.active.length} active &mdash; ${s.quests.completed.length} completed`,null);
-    if (s.quests.active.length === 0) {
-      html += '<div class="bank-empty">No active quests. Visit NPCs to find quests.</div>';
-    } else {
-      html += '<h2 class="section-title">Active Quests</h2><div class="actions-grid">';
+    const completed = new Set(s.quests.completed);
+    const active = new Set(s.quests.active);
+
+    // Group quests by NPC/chain
+    const chains = {};
+    for (const q of GAME_DATA.quests) {
+      const npc = q.npc || 'other';
+      if (!chains[npc]) chains[npc] = [];
+      chains[npc].push(q);
+    }
+
+    let html = this.header('Quests','scroll',`${s.quests.active.length} active &mdash; ${s.quests.completed.length} / ${GAME_DATA.quests.length} completed`,null);
+
+    // Active quests at top
+    if (s.quests.active.length > 0) {
+      html += '<h2 class="section-title" style="color:var(--accent)">Active Quests</h2><div class="actions-grid">';
       for (const qId of s.quests.active) {
         const q = GAME_DATA.quests.find(x=>x.id===qId); if (!q) continue;
         const npc = GAME_DATA.npcs.find(n=>n.id===q.npc);
         const prog = s.quests.progress[qId] || [];
-        html += `<div class="action-card quest-card">
+        const rewardStr = [
+          q.rewards.gold ? `<span class="sr-chip sr-gold">+${this.fmt(q.rewards.gold)}g</span>` : '',
+          ...(q.rewards.xp ? Object.entries(q.rewards.xp).map(([k,v])=>`<span class="sr-chip">+${this.fmt(v)} ${k}</span>`) : []),
+          ...(q.rewards.items ? q.rewards.items.map(i=>`<span class="sr-chip sr-item">${i.qty}x ${GAME_DATA.items[i.item]?.name||i.item}</span>`) : []),
+        ].join('');
+        html += `<div class="action-card quest-card quest-active-card">
+          ${q.art ? `<div class="quest-art">${q.art}</div>` : ''}
           <div class="ac-header"><span class="ac-name">${q.name}</span><span class="ac-level">${npc?.name||''}</span></div>
           <p class="area-desc">${q.desc}</p>
           <div class="quest-objectives">
             ${q.objectives.map((obj, i) => {
               const done = prog[i] || 0;
-              const pct = Math.min(100, done / obj.qty * 100);
+              const total = obj.qty || obj.level || obj.amount || 1;
+              const pct = Math.min(100, done / total * 100);
               let label = '';
-              if (obj.type === 'kill') label = `Kill ${GAME_DATA.monsters[obj.monster]?.name||obj.monster}: ${done}/${obj.qty}`;
-              else if (obj.type === 'gather') label = `Gather ${GAME_DATA.items[obj.item]?.name||obj.item}: ${done}/${obj.qty}`;
-              else if (obj.type === 'craft') label = `Craft ${GAME_DATA.items[obj.item]?.name||obj.item}: ${done}/${obj.qty}`;
-              else if (obj.type === 'thieve') label = `Pickpocket: ${done}/${obj.qty}`;
-              else if (obj.type === 'gold') label = `Hold ${this.fmt(obj.qty)} gold: ${this.fmt(Math.min(s.gold,obj.qty))}/${this.fmt(obj.qty)}`;
+              if (obj.type==='kill') label=`Kill ${GAME_DATA.monsters[obj.monster]?.name||obj.monster}: ${done}/${total}`;
+              else if (obj.type==='gather') label=`Gather ${GAME_DATA.items[obj.item]?.name||obj.item}: ${done}/${total}`;
+              else if (obj.type==='craft') label=`Craft/Cook ${GAME_DATA.items[obj.item]?.name||obj.item}: ${done}/${total}`;
+              else if (obj.type==='thieve') label=`Pickpocket: ${done}/${total}`;
+              else if (obj.type==='gold') label=`Hold ${this.fmt(total)} gold: ${this.fmt(Math.min(s.gold,total))}/${this.fmt(total)}`;
+              else if (obj.type==='skill') label=`${GAME_DATA.skills[obj.skill]?.name||obj.skill} Lv ${obj.level}: ${s.skills[obj.skill]?.level||1}/${obj.level}`;
+              else if (obj.type==='dungeon') label=`Complete dungeon: ${done}/${total}`;
               return `<div class="qo-row"><div class="qo-label">${label}</div><div class="sh-xp-bar"><div class="sh-xp-fill" style="width:${pct}%"></div></div></div>`;
             }).join('')}
           </div>
-          <div class="quest-rewards">
-            Rewards: ${q.rewards.gold?`${q.rewards.gold} gold`:''}${q.rewards.items?', '+q.rewards.items.map(i=>GAME_DATA.items[i.item]?.name).join(', '):''}
-          </div>
-          <button class="btn btn-xs btn-danger" onclick="game.abandonQuest('${qId}')">Abandon</button>
+          <div class="quest-rewards-row">${rewardStr}</div>
+          <button class="btn btn-xs btn-danger" style="margin-top:6px" onclick="game.abandonQuest('${qId}')">Abandon</button>
         </div>`;
       }
       html += '</div>';
     }
-    if (s.quests.completed.length > 0) {
-      html += '<h2 class="section-title">Completed</h2><div class="stats-grid">';
-      for (const qId of s.quests.completed) {
-        const q = GAME_DATA.quests.find(x=>x.id===qId); if (!q) continue;
-        html += `<div class="stat-card"><div class="stat-label">${q.name}</div><div class="stat-value" style="font-size:11px">Completed</div></div>`;
+
+    // All quest chains
+    html += '<h2 class="section-title">All Quests</h2>';
+    for (const [npcId, quests] of Object.entries(chains)) {
+      const npc = GAME_DATA.npcs.find(n=>n.id===npcId);
+      html += `<div class="quest-chain-block">
+        <div class="qcb-header">${npc?.name||'Other'} <span class="qcb-sub">${npc?.title||''}</span></div>`;
+      for (const q of quests) {
+        const isDone = completed.has(q.id);
+        const isActive = active.has(q.id);
+        // Check all requirements
+        const reqQuestsDone = (q.reqQuests||[]).every(rid=>completed.has(rid));
+        const reqLevelsMet = Object.entries(q.reqLevels||{}).every(([sk,lv])=>(s.skills[sk]?.level||1)>=lv);
+        const locked = !reqQuestsDone || !reqLevelsMet;
+
+        let lockReason = '';
+        if (!reqQuestsDone) {
+          const missing = (q.reqQuests||[]).filter(rid=>!completed.has(rid)).map(rid=>GAME_DATA.quests.find(x=>x.id===rid)?.name||rid);
+          lockReason += `Requires: ${missing.join(', ')}. `;
+        }
+        if (!reqLevelsMet) {
+          const missingLvls = Object.entries(q.reqLevels||{}).filter(([sk,lv])=>(s.skills[sk]?.level||1)<lv).map(([sk,lv])=>`${GAME_DATA.skills[sk]?.name||sk} ${lv}`);
+          lockReason += `Need: ${missingLvls.join(', ')}`;
+        }
+
+        const rewardStr = [
+          q.rewards.gold ? `<span class="sr-chip sr-gold">+${this.fmt(q.rewards.gold)}g</span>` : '',
+          ...(q.rewards.xp ? Object.entries(q.rewards.xp).map(([k,v])=>`<span class="sr-chip">+${this.fmt(v)} ${k}</span>`) : []),
+          ...(q.rewards.items ? q.rewards.items.map(i=>`<span class="sr-chip sr-item">${i.qty}x ${GAME_DATA.items[i.item]?.name||i.item}</span>`) : []),
+        ].join('');
+
+        html += `<div class="quest-row ${isDone?'qr-done':''} ${isActive?'qr-active':''} ${locked&&!isDone&&!isActive?'qr-locked':''}">
+          <div class="qr-art">${q.art||'<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="#2a2a30"/><text x="24" y="29" text-anchor="middle" fill="#c9873e" font-size="22">?</text></svg>'}</div>
+          <div class="qr-body">
+            <div class="qr-title">${isDone?'✓ ':isActive?'▶ ':''}${q.name}</div>
+            <div class="qr-desc">${q.desc}</div>
+            ${locked && !isDone && !isActive ? `<div class="qr-lock">${lockReason}</div>` : ''}
+            ${q.reqLevels && Object.keys(q.reqLevels).length ? `<div class="qr-reqs">${Object.entries(q.reqLevels).map(([sk,lv])=>{const have=(s.skills[sk]?.level||1);return `<span class="qr-req ${have>=lv?'qr-req-ok':'qr-req-fail'}">${GAME_DATA.skills[sk]?.name||sk} ${lv}</span>`;}).join('')}</div>` : ''}
+            <div class="quest-rewards-row">${rewardStr}</div>
+          </div>
+          <div class="qr-actions">
+            ${isDone ? '<span class="qr-badge-done">Done</span>' : isActive ? '<span class="qr-badge-active">Active</span>' : locked ? '<span class="qr-badge-locked">Locked</span>' : `<button class="btn btn-xs" onclick="game.startQuest('${q.id}');ui.renderPage('quests')">Start</button>`}
+          </div>
+        </div>`;
       }
       html += '</div>';
     }
@@ -3132,6 +3244,310 @@ class UI {
       default:
         this.toast({type:'warn', text:'Unknown command. Type /help'});
     }
+  }
+
+  renderAdminPanel(el) {
+    const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(typeof online !== 'undefined' ? online.user?.uid : null);
+    if (!isAdmin) { el.innerHTML = '<div class="bank-empty">Access denied.</div>'; return; }
+    const s = this.engine.state;
+
+    let html = `<div style="background:linear-gradient(135deg,#1a0808,#2a1010);border:1px solid #c44040;border-radius:8px;padding:14px;margin-bottom:14px">
+      <div style="font-family:Cinzel,serif;font-size:18px;color:#c44040;margin-bottom:4px">⚡ ADMIN CONTROL PANEL</div>
+      <div style="font-size:12px;color:#a06060">Owner: Morpheus | UID: ndLiweJRdGbaqWIbPgIj0Izigez2</div>
+    </div>`;
+
+    // ── WIDGET GRID ──
+    html += '<div class="admin-grid">';
+
+    // Widget 1: Give Item
+    html += `<div class="admin-widget">
+      <div class="aw-title">Give Item</div>
+      <select id="aw-item-id" class="rank-select" style="width:100%;margin-bottom:6px">
+        ${Object.values(GAME_DATA.items||{}).sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${i.id}">${i.name}</option>`).join('')}
+      </select>
+      <div style="display:flex;gap:6px">
+        <input type="number" id="aw-item-qty" class="qty-input" value="1" min="1" style="width:70px">
+        <button class="btn btn-sm" style="flex:1" onclick="ui._adminGiveItem()">Give</button>
+      </div>
+    </div>`;
+
+    // Widget 2: Set XP
+    html += `<div class="admin-widget">
+      <div class="aw-title">Grant XP</div>
+      <select id="aw-xp-skill" class="rank-select" style="width:100%;margin-bottom:6px">
+        ${Object.keys(s.skills).map(sk=>`<option value="${sk}">${GAME_DATA.skills[sk]?.name||sk} (Lv${s.skills[sk].level})</option>`).join('')}
+      </select>
+      <div style="display:flex;gap:6px">
+        <input type="number" id="aw-xp-amount" class="qty-input" value="10000" min="1" style="width:80px">
+        <button class="btn btn-sm" style="flex:1" onclick="ui._adminGiveXP()">Grant</button>
+      </div>
+      <button class="btn btn-sm btn-danger" style="width:100%;margin-top:6px" onclick="ui._adminMaxAll()">Max All Skills (99)</button>
+    </div>`;
+
+    // Widget 3: Gold + Resources
+    html += `<div class="admin-widget">
+      <div class="aw-title">Gold &amp; Resources</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input type="number" id="aw-gold" class="qty-input" value="100000" style="width:90px">
+        <button class="btn btn-sm" style="flex:1" onclick="ui._adminGiveGold()">Add Gold</button>
+      </div>
+      <button class="btn btn-sm" style="width:100%;margin-bottom:4px" onclick="ui._adminFullHeal()">Full HP + Prayer</button>
+      <button class="btn btn-sm" style="width:100%" onclick="ui._adminGiveResources()">Give Starter Resources</button>
+    </div>`;
+
+    // Widget 4: Broadcast
+    html += `<div class="admin-widget">
+      <div class="aw-title">Broadcast</div>
+      <textarea id="aw-broadcast" style="width:100%;height:60px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:6px;resize:none;font-size:13px" placeholder="Message to all players..."></textarea>
+      <button class="btn btn-sm" style="width:100%;margin-top:6px" onclick="ui._adminBroadcast()">Send System Message</button>
+    </div>`;
+
+    // Widget 5: Player Management
+    html += `<div class="admin-widget">
+      <div class="aw-title">Player Lookup</div>
+      <input type="text" id="aw-player-search" class="chat-input" placeholder="Search player name..." oninput="ui._adminSearchPlayer(this.value)">
+      <div id="aw-player-results" style="margin-top:6px;font-size:12px"></div>
+    </div>`;
+
+    // Widget 6: Game State
+    html += `<div class="admin-widget">
+      <div class="aw-title">Game State</div>
+      <div style="font-size:11px;line-height:1.8;color:var(--text-dim)">
+        <div>Gold: <strong style="color:var(--accent)">${this.fmt(s.gold)}</strong></div>
+        <div>Combat Lv: <strong>${this.engine.getCombatLevel()}</strong></div>
+        <div>Total Lv: <strong>${this.engine.getTotalLevel()}</strong></div>
+        <div>Kills: <strong>${this.fmt(s.stats?.monstersKilled||0)}</strong></div>
+        <div>Quests Done: <strong>${s.quests.completed.length}</strong></div>
+        <div>Bank Items: <strong>${Object.keys(s.bank).length}</strong></div>
+        <div>Guild: <strong>${s.guild?.name||'None'}</strong></div>
+        <div>Alignment: <strong>${s.alignment}</strong></div>
+      </div>
+      <button class="btn btn-sm btn-danger" style="width:100%;margin-top:8px" onclick="if(confirm('RESET ALL GAME DATA?')){localStorage.removeItem('ashfall_save');location.reload()}">RESET SAVE ⚠</button>
+    </div>`;
+
+    // Widget 7: Quest Control
+    html += `<div class="admin-widget">
+      <div class="aw-title">Quest Control</div>
+      <select id="aw-quest-id" class="rank-select" style="width:100%;margin-bottom:6px">
+        ${GAME_DATA.quests.map(q=>`<option value="${q.id}">${q.name}</option>`).join('')}
+      </select>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-xs" onclick="ui._adminStartQuest()">Start</button>
+        <button class="btn btn-xs" onclick="ui._adminCompleteQuest()">Complete</button>
+        <button class="btn btn-xs btn-danger" onclick="ui._adminRemoveQuest()">Remove</button>
+        <button class="btn btn-xs" onclick="ui._adminCompleteAllQuests()">Complete All</button>
+      </div>
+    </div>`;
+
+    // Widget 8: Firestore Rules Reminder
+    html += `<div class="admin-widget admin-widget-wide">
+      <div class="aw-title">Firestore Rules Status</div>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.7">
+        Rules file: <code style="font-size:11px">firestore.rules</code> in repo<br>
+        Deploy: Firebase Console → Firestore → Rules → Paste → Publish<br>
+        <div id="aw-firestore-status" style="margin-top:6px">Checking...</div>
+      </div>
+      <button class="btn btn-sm" style="margin-top:6px" onclick="ui._adminCheckFirestore()">Test Connection</button>
+    </div>`;
+
+    // Widget 9: System Chat Log
+    html += `<div class="admin-widget admin-widget-wide">
+      <div class="aw-title">Chat Commands</div>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.8">
+        Type in global chat:<br>
+        <code>/give [itemId] [qty]</code> — Give yourself items<br>
+        <code>/xp [skill] [amount]</code> — Grant XP<br>
+        <code>/gold [amount]</code> — Add gold<br>
+        <code>/heal</code> — Full HP + prayer<br>
+        <code>/maxall</code> — All skills to 99<br>
+        <code>/announce [msg]</code> — System broadcast<br>
+        <code>/stats</code> — Show your stats<br>
+        <code>/clear</code> — Clear chat<br>
+      </div>
+    </div>`;
+
+    html += '</div>';
+
+    // Live bank editor
+    html += `<div class="admin-widget" style="margin-top:12px">
+      <div class="aw-title">Live Bank Editor (search &amp; add)</div>
+      <input type="text" id="aw-bank-search" class="chat-input" placeholder="Search items to give..." oninput="ui._adminBankSearch(this.value)">
+      <div id="aw-bank-results" style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px"></div>
+    </div>`;
+
+    el.innerHTML = html;
+    setTimeout(()=>ui._adminCheckFirestore(), 500);
+  }
+
+  _adminGiveItem() {
+    const id = document.getElementById('aw-item-id')?.value;
+    const qty = parseInt(document.getElementById('aw-item-qty')?.value)||1;
+    if (!id || !GAME_DATA.items[id]) { this.toast({type:'warn',text:'Invalid item'}); return; }
+    game.addItem(id, qty);
+    this.toast({type:'success',text:`Given ${qty}x ${GAME_DATA.items[id].name}`});
+  }
+
+  _adminGiveXP() {
+    const sk = document.getElementById('aw-xp-skill')?.value;
+    const amt = parseInt(document.getElementById('aw-xp-amount')?.value)||1000;
+    if (!sk || !game.state.skills[sk]) { this.toast({type:'warn',text:'Invalid skill'}); return; }
+    game.addXp(sk, amt);
+    this.toast({type:'success',text:`+${this.fmt(amt)} ${sk} XP`});
+    this.renderPage('admin');
+  }
+
+  _adminMaxAll() {
+    for (const sk of Object.keys(game.state.skills)) {
+      game.state.skills[sk].level = 99;
+      game.state.skills[sk].xp = 13034431;
+    }
+    this.toast({type:'success',text:'All skills set to 99'});
+    this.renderSidebar();
+    this.renderPage('admin');
+  }
+
+  _adminGiveGold() {
+    const amt = parseInt(document.getElementById('aw-gold')?.value)||0;
+    game.state.gold += amt;
+    this.toast({type:'success',text:`+${this.fmt(amt)} gold`});
+    this.renderPage('admin');
+  }
+
+  _adminFullHeal() {
+    game.state.combat.playerHp = game.getMaxHp();
+    game.state.prayerPoints = 99;
+    this.toast({type:'success',text:'Full HP + Prayer restored'});
+  }
+
+  _adminGiveResources() {
+    const resources = ['oak_log','iron_ore','coal_ore','copper_ore','raw_shrimp','raw_trout','bronze_bar','iron_bar','rune_essence'];
+    for (const r of resources) game.addItem(r, 100);
+    this.toast({type:'success',text:'Given 100x common resources'});
+  }
+
+  _adminBroadcast() {
+    const msg = document.getElementById('aw-broadcast')?.value?.trim();
+    if (!msg) return;
+    if (typeof online !== 'undefined') online.sendSystemMessage('[ADMIN] ' + msg);
+    this.toast({type:'success',text:'Broadcast sent'});
+  }
+
+  async _adminSearchPlayer(query) {
+    const container = document.getElementById('aw-player-results');
+    if (!container || !query || query.length < 2) { if(container) container.innerHTML=''; return; }
+    if (typeof online === 'undefined' || !online.isOnline) { container.innerHTML='<span style="color:#c44040">Not connected</span>'; return; }
+    try {
+      const results = await online.searchPlayers(query);
+      container.innerHTML = results.slice(0,5).map(p=>`<div style="padding:4px 0;border-bottom:1px solid var(--border)">
+        <strong>${this.escHtml(p.name)}</strong> Cb${p.combatLevel||0} Total${p.totalLevel||0}
+        <button class="btn btn-xs" style="margin-left:6px" onclick="online.sendSystemMessage('[ADMIN] Message to ${this.escHtml(p.name)}')">Msg</button>
+      </div>`).join('') || '<span style="color:var(--text-dim)">No results</span>';
+    } catch(e) { container.innerHTML = '<span style="color:#c44040">Error: '+e.message+'</span>'; }
+  }
+
+  async _adminCheckFirestore() {
+    const el = document.getElementById('aw-firestore-status');
+    if (!el) return;
+    if (typeof online === 'undefined' || !online.firestore) { el.innerHTML='<span style="color:#c44040">Firestore not initialized</span>'; return; }
+    try {
+      await online.firestore.collection('players').limit(1).get();
+      el.innerHTML = '<span style="color:#3a9e5c">✓ Firestore connected and responding</span>';
+    } catch(e) {
+      el.innerHTML = `<span style="color:#c44040">✗ Error: ${e.message}</span>`;
+    }
+  }
+
+  _adminBankSearch(query) {
+    const container = document.getElementById('aw-bank-results');
+    if (!container) return;
+    if (!query || query.length < 2) { container.innerHTML = ''; return; }
+    const matches = Object.values(GAME_DATA.items||{}).filter(i=>i.name.toLowerCase().includes(query.toLowerCase())).slice(0,12);
+    container.innerHTML = matches.map(i=>`<div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="flex:1;font-size:13px">${this.escHtml(i.name)}</span>
+      <span style="font-size:11px;color:var(--text-dim)">Have: ${game.state.bank[i.id]||0}</span>
+      <input type="number" id="aw-b-${i.id}" class="qty-input" value="1" min="1" style="width:55px">
+      <button class="btn btn-xs" onclick="game.addItem('${i.id}',parseInt(document.getElementById('aw-b-${i.id}').value)||1);ui._adminBankSearch(document.getElementById('aw-bank-search').value)">Give</button>
+    </div>`).join('');
+  }
+
+  _adminStartQuest() {
+    const id = document.getElementById('aw-quest-id')?.value;
+    if (!id) return;
+    if (!game.state.quests.active.includes(id)) {
+      game.state.quests.active.push(id);
+      game.state.quests.progress[id] = [];
+      this.toast({type:'success',text:`Started quest: ${GAME_DATA.quests.find(q=>q.id===id)?.name||id}`});
+    } else { this.toast({type:'warn',text:'Quest already active'}); }
+  }
+
+  _adminCompleteQuest() {
+    const id = document.getElementById('aw-quest-id')?.value;
+    if (!id) return;
+    game.state.quests.active = game.state.quests.active.filter(q=>q!==id);
+    if (!game.state.quests.completed.includes(id)) game.state.quests.completed.push(id);
+    this.toast({type:'success',text:`Completed: ${GAME_DATA.quests.find(q=>q.id===id)?.name||id}`});
+    this.renderPage('admin');
+  }
+
+  _adminRemoveQuest() {
+    const id = document.getElementById('aw-quest-id')?.value;
+    game.state.quests.active = game.state.quests.active.filter(q=>q!==id);
+    game.state.quests.completed = game.state.quests.completed.filter(q=>q!==id);
+    delete game.state.quests.progress[id];
+    this.toast({type:'info',text:'Quest removed'});
+    this.renderPage('admin');
+  }
+
+  _adminCompleteAllQuests() {
+    if (!confirm('Complete ALL quests?')) return;
+    for (const q of GAME_DATA.quests) {
+      if (!game.state.quests.completed.includes(q.id)) game.state.quests.completed.push(q.id);
+    }
+    game.state.quests.active = [];
+    this.toast({type:'success',text:`All ${GAME_DATA.quests.length} quests completed`});
+    this.renderPage('admin');
+  }
+
+  saveLoadout(slotIndex) {
+    const s = this.engine.state;
+    if (!s.savedLoadouts) s.savedLoadouts = [];
+    const name = prompt(`Name this loadout (slot ${slotIndex+1}):`, s.savedLoadouts[slotIndex]?.name || `Loadout ${slotIndex+1}`);
+    if (!name) return;
+    s.savedLoadouts[slotIndex] = { name: name.trim().slice(0,20), gear: JSON.parse(JSON.stringify(s.equipment||{})), food: JSON.parse(JSON.stringify(s.foodBag||[])), potions: JSON.parse(JSON.stringify(s.potionBelt||[])) };
+    this.toast({type:'success',text:`Saved "${name}" to slot ${slotIndex+1}`});
+    this.renderPage('combat');
+  }
+
+  swapLoadout(slotIndex) {
+    const s = this.engine.state;
+    const sl = s.savedLoadouts?.[slotIndex];
+    if (!sl) { this.toast({type:'warn',text:'No loadout saved in that slot.'}); return; }
+    // Unequip current gear back to bank
+    for (const [slot, itemId] of Object.entries(s.equipment||{})) {
+      if (itemId) { s.bank[itemId] = (s.bank[itemId]||0)+1; }
+    }
+    s.equipment = {};
+    // Equip saved gear
+    for (const [slot, itemId] of Object.entries(sl.gear||{})) {
+      if (itemId && s.bank[itemId] > 0) {
+        s.equipment[slot] = itemId;
+        s.bank[itemId]--;
+        if (s.bank[itemId] <= 0) delete s.bank[itemId];
+      } else if (itemId) {
+        this.toast({type:'warn',text:`Missing ${GAME_DATA.items[itemId]?.name||itemId} for loadout`});
+      }
+    }
+    this.toast({type:'success',text:`Swapped to "${sl.name}"`});
+    this.renderPage('combat');
+  }
+
+  deleteLoadout(slotIndex) {
+    const s = this.engine.state;
+    if (!s.savedLoadouts?.[slotIndex]) return;
+    const name = s.savedLoadouts[slotIndex].name;
+    s.savedLoadouts[slotIndex] = null;
+    this.toast({type:'info',text:`Deleted loadout "${name}"`});
+    this.renderPage('combat');
   }
 
   escHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
