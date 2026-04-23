@@ -814,6 +814,7 @@ class GameEngine {
     const lootBonus = GAME_DATA.alignments[this.state.alignment]?.bonus?.lootQty || 0;
     const petLootBonus = this.getPetBonus('lootQty');
     const drops = monster.drops || monster.rewards || [];
+    const _lootBag = []; // Track drops for loot bag display
     for (const drop of drops) {
       // Improved drop formula: base chance * (1 + loot bonuses) * luck scaling
       let ch = drop.chance * (1 + (lootBonus + petLootBonus) / 100);
@@ -834,6 +835,7 @@ class GameEngine {
         this.addItem(drop.item, qty);
         const _dItem = GAME_DATA.items[drop.item];
         const _dRarity = _dItem?.rarity || 'common';
+        _lootBag.push({item:drop.item, qty, rarity:_dRarity});
         const _dRarityName = GAME_DATA.rarities?.[_dRarity]?.name || '';
         if (_dRarity === 'mythic' || _dRarity === 'legendary') {
           this.emit('notification', { type:'achievement', text:`${_dRarityName} DROP: ${_dItem?.name}!` });
@@ -863,6 +865,7 @@ class GameEngine {
             if (GAME_DATA.items[entry.item]) {
               const qty = entry.qty || 1;
               this.addItem(entry.item, qty);
+              _lootBag.push({item:entry.item, qty, rarity:GAME_DATA.items[entry.item]?.rarity||'common'});
               const _it = GAME_DATA.items[entry.item];
               if (_it.rarity === 'rare' || _it.rarity === 'epic' || _it.rarity === 'legendary') {
                 this.emit('notification', { type:'rare', text:`Drop table: ${_it.name} x${qty}!` });
@@ -902,6 +905,12 @@ class GameEngine {
         this.emit('notification', { type:'success', text:`Defeated ${boss.name}! Respawns in ${boss.respawn/60} min.` });
         this.stopCombat(); return;
       }
+    }
+
+    // Emit loot bag for UI display
+    if (_lootBag.length > 0) {
+      this.state._lastLootBag = _lootBag;
+      this.emit('lootDrop', { bag:_lootBag, monster:monster?.name || mId });
     }
 
     if (this.state.combat.dungeon) {

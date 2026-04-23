@@ -123,6 +123,7 @@ class UI {
     this.engine.on('combatStart', () => { this.currentPage = 'combat'; this.renderTrainingBar(); this.renderSidebar(); this.renderPage('combat'); });
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatHit', (d) => this.showHitSplat(d));
+    this.engine.on('lootDrop', (d) => this.showLootBag(d));
     this.engine.on('xpGain', (d) => this.showXpGain(d));
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (this.currentPage === 'equipment' || this.currentPage === 'bank') this.renderPage(this.currentPage); });
@@ -360,7 +361,9 @@ class UI {
         if (action.loot) {
           outputHtml = `<div class="recipe-output">${action.loot.map(l=>{const i=GAME_DATA.items[l.item]; return `${(i?.name||l.item)}${l.qty>1?' x'+l.qty:''} <small data-item-qty="${l.item}">(${s.bank[l.item]||0})</small>`;}).join(', ')}</div>`;
         }
+        const artSvg = action._art && GAME_DATA.actionArt?.[action._art] ? `<div class="ac-art">${GAME_DATA.actionArt[action._art]}</div>` : '';
         html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('${sId}','${action.id}')"`}>
+          ${artSvg}
           <div class="ac-header"><span class="ac-name">${action.name}</span><span class="ac-level">Lv ${action.level}</span></div>
           ${action.altarName ? `<div class="altar-info"><span class="altar-name">${action.altarName}</span>${action.altarDesc ? `<span class="altar-desc">${action.altarDesc}</span>`:''}</div>` : ''}
           ${inputHtml}${outputHtml}
@@ -760,10 +763,16 @@ class UI {
           <div class="area-monsters-v2">`;
         for (const mId of area.monsters) {
           const m = GAME_DATA.monsters[mId];
+          const topDrops = (m.drops||[]).filter(d=>d.chance<1.0).slice(0,3).map(d=>{
+            const it=GAME_DATA.items[d.item]; return `<span class="md-drop">${it?.name||d.item} <small>${(d.chance*100).toFixed(0)}%</small></span>`;
+          }).join('');
+          const rollCount = (m.rollTables||[]).length;
           html += `<button class="monster-btn-v2" ${locked?'disabled':''} onclick="game.startCombat('${area.id}','${mId}')">
             ${GAME_DATA.monsterArt?.[mId] ? `<span class="mb-art">${GAME_DATA.monsterArt[mId]}</span>` : ''}
             <span class="mb-name">${m.name}</span>
             <span class="mb-info">Lv${m.combatLevel} | ${m.hp}hp | ${m.style}</span>
+            ${topDrops ? `<div class="mb-drops">${topDrops}</div>` : ''}
+            ${rollCount > 0 ? `<span class="mb-tables">${rollCount} drop tables</span>` : ''}
           </button>`;
         }
         html += '</div>';
@@ -2525,26 +2534,39 @@ class UI {
   // ── CHAT PAGE ──────────────────────────────────────────
   renderChatPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Global Chat','scroll','Talk to other survivors. Admins have special commands.',null);
+    let html = '';
 
     if (!isOnline) {
+      html = this.header('Global Chat','scroll','Talk to other survivors.',null);
       html += '<div class="bank-empty">Sign in to use chat.</div>';
       el.innerHTML = html; return;
     }
 
     const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(online.user?.uid);
+    const cb = this.engine.getCombatLevel();
 
-    html += `<div class="chat-container-v2">
-      <div class="chat-header">
-        <span class="ch-title">Global Chat</span>
-        <span class="ch-online">${online.displayName} [Cb${game.getCombatLevel()}]</span>
+    html += `<div class="gchat-container">
+      <div class="gchat-header">
+        <div class="gchat-title">
+          <svg viewBox="0 0 20 20" width="18" height="18" style="vertical-align:middle;margin-right:6px"><circle cx="10" cy="10" r="8" fill="none" stroke="var(--accent)" stroke-width="1.5"/><circle cx="10" cy="10" r="3" fill="var(--accent)"/><path d="M10 2 V4 M10 16 V18 M2 10 H4 M16 10 H18" stroke="var(--accent)" stroke-width="1" opacity="0.5"/></svg>
+          Global Chat
+        </div>
+        <div class="gchat-user">
+          <span class="gchat-dot"></span>
+          <span class="gchat-uname">${online.displayName}</span>
+          <span class="gchat-ulevel">Cb${cb}</span>
+        </div>
       </div>
-      <div id="chat-messages" class="chat-messages-v2"></div>
-      <div class="chat-input-bar-v2">
-        <input type="text" id="chat-input" class="chat-input-v2" placeholder="${isAdmin?'Type /help for admin commands...':'Type a message...'}" maxlength="300" onkeydown="if(event.key==='Enter')ui.sendChat()">
-        <button class="btn btn-sm" onclick="ui.sendChat()">Send</button>
+      <div id="chat-messages" class="gchat-messages"></div>
+      <div class="gchat-input-area">
+        ${isAdmin ? '<div class="gchat-admin-bar"><span class="gchat-admin-tag">ADMIN</span> /give /xp /announce /clear /mute /broadcast</div>' : ''}
+        <div class="gchat-input-row">
+          <input type="text" id="chat-input" class="gchat-input" placeholder="${isAdmin?'Admin commands: /help':'Say something...'}" maxlength="300" onkeydown="if(event.key==='Enter')ui.sendChat()" autocomplete="off">
+          <button class="gchat-send" onclick="ui.sendChat()">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M2 21L23 12 2 3 2 10 17 12 2 14z" fill="var(--accent)"/></svg>
+          </button>
+        </div>
       </div>
-      ${isAdmin ? '<div class="chat-admin-hint">Admin: /give /xp /announce /clear /mute /stats /broadcast</div>' : ''}
     </div>`;
     el.innerHTML = html;
 
@@ -2557,14 +2579,19 @@ class UI {
         const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
         const isSys = m.system;
         if (isSys) {
-          return `<div class="chat-msg chat-system"><span class="chat-sys-text">${this.escHtml(m.text)}</span><span class="chat-time">${time}</span></div>`;
+          return `<div class="gchat-sys"><span class="gchat-sys-icon">&#9733;</span> ${this.escHtml(m.text)} <span class="gchat-time">${time}</span></div>`;
         }
-        return `<div class="chat-msg ${isMe?'chat-mine':''} ${isAdminMsg?'chat-admin-msg':''}">
-          <span class="chat-time">${time}</span>
-          ${isAdminMsg?'<span class="chat-badge">ADMIN</span>':''}
-          <span class="chat-name" style="${isMe?'color:var(--accent)':isAdminMsg?'color:#d4a83a':''}">${this.escHtml(m.name)}</span>
-          <span class="chat-level">[${m.totalLevel||'?'}]</span>
-          <span class="chat-text">${this.escHtml(m.text)}</span>
+        return `<div class="gchat-msg ${isMe?'gchat-mine':''} ${isAdminMsg?'gchat-admin':''}">
+          <div class="gchat-avatar">${m.name?m.name[0].toUpperCase():'?'}</div>
+          <div class="gchat-body">
+            <div class="gchat-meta">
+              ${isAdminMsg?'<span class="gchat-badge">ADMIN</span>':''}
+              <span class="gchat-name ${isMe?'gchat-name-me':''}">${this.escHtml(m.name)}</span>
+              <span class="gchat-lvl">[${m.totalLevel||'?'}]</span>
+              <span class="gchat-time">${time}</span>
+            </div>
+            <div class="gchat-text">${this.escHtml(m.text)}</div>
+          </div>
         </div>`;
       }).join('');
       container.scrollTop = container.scrollHeight;
@@ -2937,6 +2964,24 @@ class UI {
     setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(100%)'; t.style.transition='all 0.3s'; setTimeout(()=>t.remove(), 300); }, duration);
     // Keep max 5 notifications
     while (c.children.length > 5) c.removeChild(c.firstChild);
+  }
+
+  showLootBag(d) {
+    const existing = document.getElementById('loot-bag');
+    if (existing) existing.remove();
+    const arena = document.querySelector('.combat-arena') || document.querySelector('.combat-page');
+    if (!arena || !d.bag || d.bag.length === 0) return;
+    const bag = document.createElement('div');
+    bag.id = 'loot-bag';
+    bag.className = 'loot-bag';
+    bag.innerHTML = `<div class="loot-bag-title">${icon('coin',12)} Loot from ${d.monster}</div>
+      <div class="loot-bag-items">${d.bag.map(l => {
+        const it = GAME_DATA.items[l.item];
+        const rarClass = l.rarity === 'legendary' || l.rarity === 'mythic' ? 'loot-item-legendary' : l.rarity === 'epic' ? 'loot-item-epic' : l.rarity === 'rare' ? 'loot-item-rare' : '';
+        return `<div class="loot-item ${rarClass}"><span class="loot-item-name">${it?.name||l.item}</span><span class="loot-item-qty">x${l.qty}</span></div>`;
+      }).join('')}</div>`;
+    arena.appendChild(bag);
+    setTimeout(() => { if (bag.parentNode) bag.remove(); }, 5000);
   }
 
   showHitSplat(d) {
