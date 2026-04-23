@@ -1940,3 +1940,145 @@ GAME_DATA.combatAreas.forEach(area => {
 });
 
 console.log('[Ashfall] Multi-mob encounters:', GAME_DATA.multiMobEncounters.length);
+
+// ── ADDITIONAL QUESTS: Crafting, Skilling & Exploration chains ──────────────
+GAME_DATA.quests.push(
+
+  // ── Zara (Herbalist) quest chain ─────────────────────────────────────────
+  {id:'zara_1',npc:'zara',name:'Picking Season',
+   desc:'Gather 30 ashbloom herbs for a restorative tincture.',
+   objectives:[{type:'gather',item:'ashbloom',qty:30}],
+   rewards:{gold:200,xp:{foraging:400,herblore:200}},prereq:null},
+  {id:'zara_2',npc:'zara',name:'The Poisoner\'s Cure',
+   desc:'Brew 5 antidote potions to treat sick villagers.',
+   objectives:[{type:'craft',item:'antidote_potion',qty:5}],
+   rewards:{gold:350,xp:{herblore:600}},prereq:'zara_1'},
+  {id:'zara_3',npc:'zara',name:'Rare Components',
+   desc:'Collect 20 voidblooms from the deep forest.',
+   objectives:[{type:'gather',item:'voidbloom',qty:20}],
+   rewards:{gold:700,xp:{foraging:800,herblore:500}},prereq:'zara_2'},
+  {id:'zara_4',npc:'zara',name:'Master Herbalist',
+   desc:'Reach Herblore level 40.',
+   objectives:[{type:'skill_level',skill:'herblore',level:40}],
+   rewards:{gold:2000,xp:{herblore:3000},items:[{item:'herb_pouch',qty:1}]},prereq:'zara_3'},
+
+  // ── Brennan (Blacksmith) quest chain ─────────────────────────────────────
+  {id:'bren_1',npc:'garrick',name:'Steel Ambitions',
+   desc:'Smelt 10 steel bars at the foundry.',
+   objectives:[{type:'craft',item:'steel_bar',qty:10}],
+   rewards:{gold:300,xp:{smithing:400}},prereq:null},
+  {id:'bren_2',npc:'garrick',name:'The Armourer\'s Touch',
+   desc:'Smith a full set of iron armour (helm, body, legs).',
+   objectives:[{type:'craft',item:'iron_full_helm',qty:1},{type:'craft',item:'iron_platebody',qty:1},{type:'craft',item:'iron_platelegs',qty:1}],
+   rewards:{gold:600,xp:{smithing:800}},prereq:'bren_1'},
+  {id:'bren_3',npc:'garrick',name:'The Mithril Trial',
+   desc:'Smith 5 mithril bars and a mithril sword.',
+   objectives:[{type:'craft',item:'mithril_bar',qty:5},{type:'craft',item:'mithril_sword',qty:1}],
+   rewards:{gold:1500,xp:{smithing:2000}},prereq:'bren_2'},
+  {id:'bren_4',npc:'garrick',name:'Master of the Forge',
+   desc:'Reach Smithing level 60.',
+   objectives:[{type:'skill_level',skill:'smithing',level:60}],
+   rewards:{gold:5000,xp:{smithing:5000},items:[{item:'smithing_gloves',qty:1}]},prereq:'bren_3'},
+
+  // ── Captain Rena (Sailor) quest chain — Fishing ───────────────────────────
+  {id:'rena_1',npc:'rena',name:'First Catch',
+   desc:'Fish 20 shrimp from the coastal waters.',
+   objectives:[{type:'gather',item:'shrimp',qty:20}],
+   rewards:{gold:80,xp:{fishing:200}},prereq:null},
+  {id:'rena_2',npc:'rena',name:'Deep Sea Provisions',
+   desc:'Catch 10 swordfish for the ship\'s galley.',
+   objectives:[{type:'gather',item:'swordfish',qty:10}],
+   rewards:{gold:300,xp:{fishing:600}},prereq:'rena_1'},
+  {id:'rena_3',npc:'rena',name:'Shark Hunt',
+   desc:'Reel in 5 sharks from the deep waters.',
+   objectives:[{type:'gather',item:'shark',qty:5}],
+   rewards:{gold:800,xp:{fishing:1500}},prereq:'rena_2'},
+  {id:'rena_4',npc:'rena',name:'Master Angler',
+   desc:'Reach Fishing level 76.',
+   objectives:[{type:'skill_level',skill:'fishing',level:76}],
+   rewards:{gold:4000,xp:{fishing:4000},items:[{item:'dragon_harpoon',qty:1}]},prereq:'rena_3'},
+
+  // ── Scout Mira (Explorer) quest chain ─────────────────────────────────────
+  {id:'mira_1',npc:'mira',name:'Into the Wild',
+   desc:'Survive 5 wilderness encounters.',
+   objectives:[{type:'kill',monster:'bandit',qty:5}],
+   rewards:{gold:200,xp:{hitpoints:400,defence:200}},prereq:null},
+  {id:'mira_2',npc:'mira',name:'Dungeon Delver',
+   desc:'Complete the Goblin Warren dungeon.',
+   objectives:[{type:'dungeon',dungeon:'goblin_warren',qty:1}],
+   rewards:{gold:500,xp:{attack:600,strength:600}},prereq:'mira_1'},
+  {id:'mira_3',npc:'mira',name:'Dragon Country',
+   desc:'Survive the Dragon\'s Lair dungeon.',
+   objectives:[{type:'dungeon',dungeon:'dragon_lair',qty:1}],
+   rewards:{gold:2000,xp:{attack:2500,defence:1500}},prereq:'mira_2'},
+  {id:'mira_4',npc:'mira',name:'Apex Predator',
+   desc:'Kill one of every world boss.',
+   objectives:[{type:'kill',monster:'ash_titan',qty:1},{type:'kill',monster:'void_emperor',qty:1}],
+   rewards:{gold:10000,xp:{attack:8000,strength:8000,defence:8000},items:[{item:'explorer_ring',qty:1}]},prereq:'mira_3'},
+
+  // ── Sage Aldric (Runecrafting) quest chain ────────────────────────────────
+  {id:'aldric_1',npc:'ilyana',name:'Rune Basics',
+   desc:'Craft 50 mind runes at the altar.',
+   objectives:[{type:'craft',item:'mind_rune',qty:50}],
+   rewards:{gold:150,xp:{runecrafting:300}},prereq:null},
+  {id:'aldric_2',npc:'ilyana',name:'Water Forms',
+   desc:'Craft 100 water runes.',
+   objectives:[{type:'craft',item:'water_rune',qty:100}],
+   rewards:{gold:400,xp:{runecrafting:700}},prereq:'aldric_1'},
+  {id:'aldric_3',npc:'ilyana',name:'The Death Altar',
+   desc:'Craft 50 death runes.',
+   objectives:[{type:'craft',item:'death_rune',qty:50}],
+   rewards:{gold:1200,xp:{runecrafting:2000}},prereq:'aldric_2'},
+  {id:'aldric_4',npc:'ilyana',name:'Runemaster',
+   desc:'Reach Runecrafting level 44.',
+   objectives:[{type:'skill_level',skill:'runecrafting',level:44}],
+   rewards:{gold:3000,xp:{runecrafting:4000,magic:2000},items:[{item:'wrath_rune',qty:20}]},prereq:'aldric_3'},
+
+);
+
+// ── NEW NPCs for the above chains ─────────────────────────────────────────
+GAME_DATA.npcs.push(
+  {id:'zara',   name:'Zara',      faction:null, title:'Herbalist',   desc:'A wise woman who knows every plant in the forest.',   location:'Forest Edge'},
+  {id:'rena',   name:'Captain Rena', faction:null, title:'Sea Captain', desc:'A grizzled captain who knows the coast like her own hand.', location:'Harbour'},
+  {id:'mira',   name:'Scout Mira', faction:null, title:'Scout',       desc:'A daring explorer who maps dangerous territories.',    location:'Outpost'},
+);
+
+console.log('[Ashfall] v6.0 quests loaded:', GAME_DATA.quests.length, 'total quests');
+
+// ── ADDITIONAL QUESTS: Crafting, Skilling and Exploration chains ─────────────
+GAME_DATA.quests.push(
+  {id:'zara_1',npc:'zara',name:'Picking Season',desc:'Gather 30 ashbloom herbs.',objectives:[{type:'gather',item:'ashbloom',qty:30}],rewards:{gold:200,xp:{foraging:400,herblore:200}},prereq:null},
+  {id:'zara_2',npc:'zara',name:"The Poisoner's Cure",desc:'Brew 5 antidote potions.',objectives:[{type:'craft',item:'antidote_potion',qty:5}],rewards:{gold:350,xp:{herblore:600}},prereq:'zara_1'},
+  {id:'zara_3',npc:'zara',name:'Rare Components',desc:'Collect 20 voidblooms.',objectives:[{type:'gather',item:'voidbloom',qty:20}],rewards:{gold:700,xp:{foraging:800,herblore:500}},prereq:'zara_2'},
+  {id:'zara_4',npc:'zara',name:'Master Herbalist',desc:'Reach Herblore level 40.',objectives:[{type:'skill_level',skill:'herblore',level:40}],rewards:{gold:2000,xp:{herblore:3000},items:[{item:'herb_pouch',qty:1}]},prereq:'zara_3'},
+
+  {id:'bren_1',npc:'garrick',name:'Steel Ambitions',desc:'Smelt 10 steel bars.',objectives:[{type:'craft',item:'steel_bar',qty:10}],rewards:{gold:300,xp:{smithing:400}},prereq:null},
+  {id:'bren_2',npc:'garrick',name:"The Armourer's Touch",desc:'Smith an iron full helm, platebody, and platelegs.',objectives:[{type:'craft',item:'iron_full_helm',qty:1},{type:'craft',item:'iron_platebody',qty:1},{type:'craft',item:'iron_platelegs',qty:1}],rewards:{gold:600,xp:{smithing:800}},prereq:'bren_1'},
+  {id:'bren_3',npc:'garrick',name:'The Mithril Trial',desc:'Smelt 5 mithril bars.',objectives:[{type:'craft',item:'mithril_bar',qty:5}],rewards:{gold:1500,xp:{smithing:2000}},prereq:'bren_2'},
+  {id:'bren_4',npc:'garrick',name:'Master of the Forge',desc:'Reach Smithing level 60.',objectives:[{type:'skill_level',skill:'smithing',level:60}],rewards:{gold:5000,xp:{smithing:5000},items:[{item:'smithing_gloves',qty:1}]},prereq:'bren_3'},
+
+  {id:'rena_1',npc:'rena',name:'First Catch',desc:'Fish 20 shrimp.',objectives:[{type:'gather',item:'shrimp',qty:20}],rewards:{gold:80,xp:{fishing:200}},prereq:null},
+  {id:'rena_2',npc:'rena',name:'Deep Sea Provisions',desc:'Catch 10 swordfish.',objectives:[{type:'gather',item:'swordfish',qty:10}],rewards:{gold:300,xp:{fishing:600}},prereq:'rena_1'},
+  {id:'rena_3',npc:'rena',name:'Shark Hunt',desc:'Reel in 5 sharks.',objectives:[{type:'gather',item:'shark',qty:5}],rewards:{gold:800,xp:{fishing:1500}},prereq:'rena_2'},
+  {id:'rena_4',npc:'rena',name:'Master Angler',desc:'Reach Fishing level 76.',objectives:[{type:'skill_level',skill:'fishing',level:76}],rewards:{gold:4000,xp:{fishing:4000},items:[{item:'dragon_harpoon',qty:1}]},prereq:'rena_3'},
+
+  {id:'mira_1',npc:'mira',name:'Into the Wild',desc:'Kill 5 bandits in the wilderness.',objectives:[{type:'kill',monster:'bandit',qty:5}],rewards:{gold:200,xp:{hitpoints:400,defence:200}},prereq:null},
+  {id:'mira_2',npc:'mira',name:'Dungeon Delver',desc:'Complete the Goblin Warren dungeon.',objectives:[{type:'dungeon',dungeon:'goblin_warren',qty:1}],rewards:{gold:500,xp:{attack:600,strength:600}},prereq:'mira_1'},
+  {id:'mira_3',npc:'mira',name:'Dragon Country',desc:"Complete the Dragon's Lair dungeon.",objectives:[{type:'dungeon',dungeon:'dragon_lair',qty:1}],rewards:{gold:2000,xp:{attack:2500,defence:1500}},prereq:'mira_2'},
+  {id:'mira_4',npc:'mira',name:'Apex Predator',desc:'Slay the Ash Titan world boss.',objectives:[{type:'kill',monster:'ash_titan',qty:1}],rewards:{gold:10000,xp:{attack:8000,strength:8000,defence:8000},items:[{item:'explorer_ring',qty:1}]},prereq:'mira_3'},
+
+  {id:'aldric_1',npc:'ilyana',name:'Rune Basics',desc:'Craft 50 mind runes.',objectives:[{type:'craft',item:'mind_rune',qty:50}],rewards:{gold:150,xp:{runecrafting:300}},prereq:null},
+  {id:'aldric_2',npc:'ilyana',name:'Water Forms',desc:'Craft 100 water runes.',objectives:[{type:'craft',item:'water_rune',qty:100}],rewards:{gold:400,xp:{runecrafting:700}},prereq:'aldric_1'},
+  {id:'aldric_3',npc:'ilyana',name:'The Death Altar',desc:'Craft 50 death runes.',objectives:[{type:'craft',item:'death_rune',qty:50}],rewards:{gold:1200,xp:{runecrafting:2000}},prereq:'aldric_2'},
+  {id:'aldric_4',npc:'ilyana',name:'Runemaster',desc:'Reach Runecrafting level 44.',objectives:[{type:'skill_level',skill:'runecrafting',level:44}],rewards:{gold:3000,xp:{runecrafting:4000,magic:2000},items:[{item:'wrath_rune',qty:20}]},prereq:'aldric_3'}
+);
+
+// ── New NPCs ────────────────────────────────────────────────────────────────
+if (!GAME_DATA.npcs.find(n=>n.id==='zara'))
+  GAME_DATA.npcs.push({id:'zara',name:'Zara',faction:null,title:'Herbalist',desc:'A wise woman who knows every plant in the forest.',location:'Forest Edge'});
+if (!GAME_DATA.npcs.find(n=>n.id==='rena'))
+  GAME_DATA.npcs.push({id:'rena',name:'Captain Rena',faction:null,title:'Sea Captain',desc:'A grizzled captain who knows the coast like her own hand.',location:'Harbour'});
+if (!GAME_DATA.npcs.find(n=>n.id==='mira'))
+  GAME_DATA.npcs.push({id:'mira',name:'Scout Mira',faction:null,title:'Scout',desc:'A daring explorer who maps dangerous territories.',location:'Outpost'});
+
+console.log('[Ashfall] v6.0: Quests now total', GAME_DATA.quests.length, '| NPCs:', GAME_DATA.npcs.length);

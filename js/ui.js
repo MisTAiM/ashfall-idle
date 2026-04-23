@@ -124,6 +124,7 @@ class UI {
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatHit', (d) => this.showHitSplat(d));
     this.engine.on('lootDrop', (d) => this.showLootBag(d));
+    this.engine.on('sessionLootComplete', (d) => this.showSessionLootSummary(d));
     this.engine.on('xpGain', (d) => this.showXpGain(d));
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (this.currentPage === 'equipment' || this.currentPage === 'bank') this.renderPage(this.currentPage); });
@@ -649,15 +650,59 @@ class UI {
       const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
       const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
 
-      // Player avatar
+      // Player avatar — inline SVG so it always renders
       const _prof = s.profile || {};
-      const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
-      const _playerAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&size=64`;
+      const _playerName = typeof online !== 'undefined' && online.displayName ? online.displayName : 'You';
+      const _cbLv = this.engine.getCombatLevel();
+      const _armorColor = _cbLv >= 80 ? '#c9873e' : _cbLv >= 50 ? '#6a9ed4' : _cbLv >= 30 ? '#7a9a7a' : '#8a7a6a';
+      const _capeColor  = _cbLv >= 80 ? '#d4a83a' : _cbLv >= 50 ? '#4a70c4' : '#5a6a5a';
+      const _playerSvg = `<svg viewBox="0 0 64 80" width="64" height="80" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="helm_g" cx="50%" cy="40%"><stop offset="0%" stop-color="${_armorColor}"/><stop offset="100%" stop-color="#3a2a1a"/></radialGradient>
+          <radialGradient id="body_g" cx="50%" cy="30%"><stop offset="0%" stop-color="${_armorColor}"/><stop offset="100%" stop-color="#2a1a0a"/></radialGradient>
+        </defs>
+        <!-- Cape -->
+        <path d="M20 28 Q10 50 12 72 Q18 68 22 56 Q24 68 26 72" fill="${_capeColor}" opacity="0.85"/>
+        <!-- Body/chest plate -->
+        <rect x="20" y="30" width="24" height="28" rx="3" fill="url(#body_g)"/>
+        <!-- Chest detail lines -->
+        <line x1="32" y1="32" x2="32" y2="56" stroke="${_armorColor}" stroke-width="0.8" opacity="0.5"/>
+        <ellipse cx="32" cy="40" rx="6" ry="4" fill="none" stroke="${_armorColor}" stroke-width="0.8" opacity="0.4"/>
+        <!-- Pauldrons -->
+        <ellipse cx="20" cy="32" rx="6" ry="4" fill="url(#helm_g)"/>
+        <ellipse cx="44" cy="32" rx="6" ry="4" fill="url(#helm_g)"/>
+        <!-- Helmet -->
+        <rect x="22" y="10" width="20" height="18" rx="4" fill="url(#helm_g)"/>
+        <rect x="22" y="16" width="20" height="4" fill="#1a1a2a" opacity="0.7"/>
+        <!-- Visor glow eyes -->
+        <circle cx="27" cy="18" r="2.5" fill="#d4a83a" opacity="0.9"/>
+        <circle cx="37" cy="18" r="2.5" fill="#d4a83a" opacity="0.9"/>
+        <circle cx="27" cy="18" r="1" fill="#fff" opacity="0.8"/>
+        <circle cx="37" cy="18" r="1" fill="#fff" opacity="0.8"/>
+        <!-- Sword arm -->
+        <rect x="44" y="30" width="6" height="18" rx="2" fill="url(#helm_g)"/>
+        <rect x="46" y="18" width="3" height="22" rx="1" fill="#d4d8e4"/>
+        <rect x="43" y="30" width="9" height="2" rx="1" fill="${_armorColor}"/>
+        <!-- Shield arm -->
+        <rect x="14" y="30" width="6" height="16" rx="2" fill="url(#helm_g)"/>
+        <ellipse cx="14" cy="40" rx="6" ry="9" fill="${_armorColor}" opacity="0.9"/>
+        <ellipse cx="14" cy="40" rx="4" ry="6" fill="none" stroke="${_capeColor}" stroke-width="1.2"/>
+        <!-- Legs -->
+        <rect x="22" y="56" width="9" height="18" rx="2" fill="#3a3a4a"/>
+        <rect x="33" y="56" width="9" height="18" rx="2" fill="#3a3a4a"/>
+        <!-- Boots -->
+        <rect x="20" y="70" width="12" height="6" rx="2" fill="#2a2a1a"/>
+        <rect x="32" y="70" width="12" height="6" rx="2" fill="#2a2a1a"/>
+        <!-- Belt -->
+        <rect x="20" y="54" width="24" height="4" rx="1" fill="${_capeColor}" opacity="0.8"/>
+        <!-- Helm crest -->
+        <path d="M28 10 Q32 2 36 10" fill="${_capeColor}" stroke="${_armorColor}" stroke-width="0.5"/>
+      </svg>`;
 
       html += `<div class="combat-arena-v2 combat-arena">
         <div class="ca-side ca-player player-side">
-          <div class="ca-avatar"><img src="${_playerAvatar}" alt="You" width="64" height="64" class="player-combat-avatar"></div>
-          <div class="ca-name">${typeof online!=='undefined'&&online.displayName?online.displayName:'You'}</div>
+          <div class="ca-avatar">${_playerSvg}</div>
+          <div class="ca-name">${_playerName}</div>
           <div class="ca-level">Combat Lv ${this.engine.getCombatLevel()}</div>
           <div class="ca-hp-container">
             <div class="ca-hp-bar"><div class="ca-hp-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
@@ -2235,59 +2280,169 @@ class UI {
   }
 
   // ── ACCOUNT PAGE ────────────────────────────────────────
+  _playerAvatarSvg(name, size=40, combatLevel=0) {
+    // Generate a unique but consistent color from name
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    const hue = Math.abs(hash) % 360;
+    const initial = (name[0] || '?').toUpperCase();
+    const clvl = combatLevel || 0;
+    const frameColor = clvl >= 100 ? '#d4a83a' : clvl >= 70 ? '#8a5ec4' : clvl >= 40 ? '#4a90d4' : '#5a7a5a';
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="flex-shrink:0">
+      <defs>
+        <radialGradient id="avbg_${Math.abs(hash)%9999}" cx="50%" cy="40%">
+          <stop offset="0%" stop-color="hsl(${hue},40%,28%)"/>
+          <stop offset="100%" stop-color="hsl(${hue},30%,16%)"/>
+        </radialGradient>
+      </defs>
+      <circle cx="${size/2}" cy="${size/2}" r="${size/2-1}" fill="url(#avbg_${Math.abs(hash)%9999})" stroke="${frameColor}" stroke-width="1.5"/>
+      <circle cx="${size/2}" cy="${size*0.38}" r="${size*0.22}" fill="hsl(${hue},25%,55%)" opacity="0.9"/>
+      <ellipse cx="${size/2}" cy="${size*0.85}" rx="${size*0.3}" ry="${size*0.22}" fill="hsl(${hue},25%,45%)" opacity="0.8"/>
+      <text x="${size/2}" y="${size*0.46}" text-anchor="middle" fill="white" font-size="${size*0.32}" font-weight="bold" font-family="serif" opacity="0.95">${initial}</text>
+    </svg>`;
+  }
+
   renderFriendsPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Friends','npc','Manage your friends list. Send requests, chat privately.',null);
+    let html = this.header('Friends','npc','Connect with other adventurers across Ashfall.',null);
     if (!isOnline || !online.user || online.user.isAnonymous) {
-      html += '<div class="bank-empty">Create an account to use friends.</div>';
+      html += `<div class="fr-login-prompt">
+        <svg viewBox="0 0 64 64" width="56" height="56" style="opacity:0.4">
+          <circle cx="32" cy="24" r="12" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M10 56 Q10 40 32 40 Q54 40 54 56" fill="none" stroke="currentColor" stroke-width="2"/>
+          <line x1="44" y1="12" x2="56" y2="12" stroke="#d4a83a" stroke-width="2"/>
+          <line x1="50" y1="6" x2="50" y2="18" stroke="#d4a83a" stroke-width="2"/>
+        </svg>
+        <div class="fr-login-text">Create an account to connect with friends</div>
+        <button class="btn" onclick="ui.renderPage('account')">Create Account</button>
+      </div>`;
       el.innerHTML = html; return;
     }
-    // Send request with search
-    html += `<div class="settings-section">
-      <h3>Find Players</h3>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="friend-search" class="chat-input-v2" placeholder="Search player name..." style="flex:1" oninput="ui._searchPlayers(this.value)">
+
+    // ── Find Players panel
+    html += `<div class="fr-search-panel">
+      <div class="fr-search-header">
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="1.8">
+          <circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/>
+        </svg>
+        <span>Find Players</span>
       </div>
-      <div id="player-search-results" style="margin-top:8px"></div>
+      <div class="fr-search-row">
+        <input type="text" id="friend-search" class="fr-search-input" placeholder="Enter player name to search…" autocomplete="off" oninput="ui._searchPlayers(this.value)">
+        <button class="btn fr-search-btn" onclick="ui._searchPlayers(document.getElementById('friend-search').value)">
+          Search
+        </button>
+      </div>
+      <div id="player-search-results"></div>
     </div>`;
-    // Pending requests
-    html += '<h2 class="section-title">Pending Requests</h2><div id="friend-requests"><div class="bank-empty">Loading...</div></div>';
-    // Friends list
-    html += '<h2 class="section-title">Your Friends</h2><div id="friends-list"><div class="bank-empty">Loading...</div></div>';
+
+    // ── Pending Requests panel
+    html += `<div class="fr-section">
+      <div class="fr-section-title">
+        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="var(--accent)" stroke-width="1.8">
+          <path d="M10 2 L10 18 M2 10 L18 10" stroke-linecap="round"/>
+        </svg>
+        Incoming Requests
+        <span id="fr-req-badge" class="fr-badge" style="display:none"></span>
+      </div>
+      <div id="friend-requests" class="fr-list-area">
+        <div class="fr-loading">
+          <svg class="fr-spinner" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-dim)" stroke-width="2" stroke-dasharray="28 8"/></svg>
+          Loading…
+        </div>
+      </div>
+    </div>`;
+
+    // ── Friends List panel
+    html += `<div class="fr-section">
+      <div class="fr-section-title">
+        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="var(--accent)" stroke-width="1.8">
+          <circle cx="7" cy="8" r="4"/><path d="M1 18 Q1 13 7 13 Q13 13 13 18"/>
+          <circle cx="15" cy="8" r="3"/><path d="M13 18 Q13 13 17 13 Q20 13 20 16"/>
+        </svg>
+        Your Friends
+      </div>
+      <div id="friends-list" class="fr-list-area">
+        <div class="fr-loading">
+          <svg class="fr-spinner" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-dim)" stroke-width="2" stroke-dasharray="28 8"/></svg>
+          Loading…
+        </div>
+      </div>
+    </div>`;
+
     el.innerHTML = html;
     this._loadFriendsData();
   }
 
   async _loadFriendsData() {
-    // Load pending requests
+    // ── Pending Requests
     const reqContainer = document.getElementById('friend-requests');
     if (reqContainer) {
-      const requests = await online.getFriendRequests();
-      if (requests.length === 0) {
-        reqContainer.innerHTML = '<div class="bank-empty">No pending requests.</div>';
-      } else {
-        reqContainer.innerHTML = requests.map(r => `<div class="bz-row">
-          <span class="bz-item">${this.escHtml(r.fromName)}</span>
-          <span><button class="btn btn-xs" onclick="online.acceptFriendRequest('${r.id}','${r.from}','${this.escHtml(r.fromName)}').then(()=>ui.renderPage('friends'))">Accept</button>
-          <button class="btn btn-xs btn-danger" onclick="online.rejectFriendRequest('${r.id}').then(()=>ui.renderPage('friends'))">Reject</button></span>
-        </div>`).join('');
-      }
+      try {
+        const requests = await online.getFriendRequests();
+        const badge = document.getElementById('fr-req-badge');
+        if (badge) { badge.textContent = requests.length; badge.style.display = requests.length ? 'inline' : 'none'; }
+        if (requests.length === 0) {
+          reqContainer.innerHTML = `<div class="fr-empty">
+            <svg viewBox="0 0 32 32" width="28" height="28" opacity="0.3"><circle cx="16" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 28 Q4 20 16 20 Q28 20 28 28" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            No pending requests
+          </div>`;
+        } else {
+          reqContainer.innerHTML = requests.map(r => `
+            <div class="fr-req-card" id="freq-${r.id}">
+              ${this._playerAvatarSvg(r.fromName||'?', 42)}
+              <div class="fr-req-info">
+                <div class="fr-req-name">${this.escHtml(r.fromName || 'Unknown')}</div>
+                <div class="fr-req-sub">Wants to be your friend</div>
+              </div>
+              <div class="fr-req-actions">
+                <button class="btn fr-accept-btn" onclick="online.acceptFriendRequest('${r.id}','${r.from}','${this.escHtml(r.fromName||'')}').then(()=>{ document.getElementById('freq-${r.id}')?.remove(); ui._loadFriendsData(); })">
+                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,8 6,12 14,4"/></svg>
+                  Accept
+                </button>
+                <button class="btn fr-decline-btn" onclick="online.rejectFriendRequest('${r.id}').then(()=>document.getElementById('freq-${r.id}')?.remove())">
+                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+                  Decline
+                </button>
+              </div>
+            </div>`).join('');
+        }
+      } catch(e) { reqContainer.innerHTML = '<div class="fr-empty">Could not load requests.</div>'; }
     }
-    // Load friends
+
+    // ── Friends List
     const listContainer = document.getElementById('friends-list');
     if (listContainer) {
-      const friends = await online.getFriends();
-      if (friends.length === 0) {
-        listContainer.innerHTML = '<div class="bank-empty">No friends yet. Search for players above.</div>';
-      } else {
-        listContainer.innerHTML = '<div class="friends-grid">' + friends.map(f => `<div class="friend-card">
-          <span class="fc-name">${this.escHtml(f.name)}</span>
-          <div class="fc-btns">
-            <button class="btn btn-xs" onclick="ui.openDM('${f.uid}','${this.escHtml(f.name)}')">Message</button>
-            <button class="btn btn-xs btn-danger" onclick="online.removeFriend('${f.uid}').then(()=>ui.renderPage('friends'))">Remove</button>
-          </div>
-        </div>`).join('') + '</div>';
-      }
+      try {
+        const friends = await online.getFriends();
+        if (friends.length === 0) {
+          listContainer.innerHTML = `<div class="fr-empty">
+            <svg viewBox="0 0 32 32" width="28" height="28" opacity="0.3"><circle cx="11" cy="11" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2 26 Q2 19 11 19 Q20 19 20 26" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="24" y1="8" x2="30" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="27" y1="5" x2="27" y2="11" stroke="currentColor" stroke-width="1.5"/></svg>
+            No friends yet — search for players above!
+          </div>`;
+        } else {
+          listContainer.innerHTML = `<div class="fr-friends-grid">${friends.map(f => `
+            <div class="fr-friend-card">
+              <div class="fr-friend-avatar">${this._playerAvatarSvg(f.name||'?', 46, f.combatLevel||0)}</div>
+              <div class="fr-friend-body">
+                <div class="fr-friend-name">${this.escHtml(f.name||'Unknown')}</div>
+                <div class="fr-friend-meta">
+                  ${f.combatLevel ? `<span class="fr-stat fr-stat-cb">⚔ ${f.combatLevel}</span>` : ''}
+                  ${f.totalLevel  ? `<span class="fr-stat fr-stat-tot">★ ${f.totalLevel}</span>` : ''}
+                </div>
+              </div>
+              <div class="fr-friend-actions">
+                <button class="btn fr-msg-btn" title="Message" onclick="ui.openDM('${f.uid}','${this.escHtml(f.name||'')}')">
+                  <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="3" width="16" height="11" rx="2"/><polyline points="1,3 9,10 17,3"/></svg>
+                  Msg
+                </button>
+                <button class="btn fr-remove-btn" title="Remove friend" onclick="if(confirm('Remove ${this.escHtml(f.name||'this player')} from friends?'))online.removeFriend('${f.uid}').then(()=>ui.renderPage('friends'))">
+                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+                </button>
+              </div>
+            </div>`).join('')}</div>`;
+        }
+      } catch(e) { listContainer.innerHTML = '<div class="fr-empty">Could not load friends list.</div>'; }
     }
   }
 
@@ -2295,23 +2450,38 @@ class UI {
     const container = document.getElementById('player-search-results');
     if (!container) return;
     if (!query || query.length < 2) { container.innerHTML = ''; return; }
-    // Debounce
     clearTimeout(this._searchTimeout);
     this._searchTimeout = setTimeout(async () => {
-      container.innerHTML = '<div class="bank-empty">Searching...</div>';
-      const results = await online.searchPlayers(query);
-      if (results.length === 0) {
-        container.innerHTML = '<div class="bank-empty">No players found.</div>';
-      } else {
-        container.innerHTML = '<div class="friends-grid">' + results.map(p => `<div class="friend-card">
-          <span class="fc-name">${this.escHtml(p.name)} <small style="color:var(--text-dim)">Cb${p.combatLevel} | Total ${p.totalLevel}</small></span>
-          <div class="fc-btns">
-            <button class="btn btn-xs" onclick="online.sendFriendRequest('${this.escHtml(p.name)}').then(()=>ui.renderPage('friends'))">Add Friend</button>
-            <button class="btn btn-xs" onclick="ui.openDM('${p.uid}','${this.escHtml(p.name)}')">Message</button>
-          </div>
-        </div>`).join('') + '</div>';
-      }
-    }, 400);
+      container.innerHTML = `<div class="fr-loading"><svg class="fr-spinner" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent-dim)" stroke-width="2" stroke-dasharray="28 8"/></svg> Searching…</div>`;
+      try {
+        const results = await online.searchPlayers(query);
+        if (results.length === 0) {
+          container.innerHTML = `<div class="fr-empty">No players found matching <strong>${this.escHtml(query)}</strong></div>`;
+        } else {
+          container.innerHTML = `<div class="fr-search-results">${results.map(p => `
+            <div class="fr-result-card">
+              ${this._playerAvatarSvg(p.name||'?', 40, p.combatLevel||0)}
+              <div class="fr-result-info">
+                <div class="fr-result-name">${this.escHtml(p.name||'Unknown')}</div>
+                <div class="fr-result-meta">
+                  ${p.combatLevel ? `<span class="fr-stat fr-stat-cb">⚔ Cb${p.combatLevel}</span>` : ''}
+                  ${p.totalLevel  ? `<span class="fr-stat fr-stat-tot">★ ${p.totalLevel}</span>` : ''}
+                </div>
+              </div>
+              <div class="fr-result-actions">
+                <button class="btn fr-add-btn" onclick="online.sendFriendRequest('${this.escHtml(p.name||'')}').then(r=>{ this.textContent='Sent!'; this.disabled=true; }).catch(e=>this.textContent='Error')">
+                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+                  Add
+                </button>
+                <button class="btn fr-msg-btn" onclick="ui.openDM('${p.uid}','${this.escHtml(p.name||'')}')">
+                  <svg viewBox="0 0 18 18" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="3" width="16" height="11" rx="2"/><polyline points="1,3 9,10 17,3"/></svg>
+                  Msg
+                </button>
+              </div>
+            </div>`).join('')}</div>`;
+        }
+      } catch(e) { container.innerHTML = '<div class="fr-empty">Search failed. Try again.</div>'; }
+    }, 350);
   }
 
   openDM(uid, name) {
@@ -2964,6 +3134,61 @@ class UI {
     setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(100%)'; t.style.transition='all 0.3s'; setTimeout(()=>t.remove(), 300); }, duration);
     // Keep max 5 notifications
     while (c.children.length > 5) c.removeChild(c.firstChild);
+  }
+
+  showSessionLootSummary(d) {
+    // Remove any existing summary
+    const existing = document.getElementById('session-loot-summary');
+    if (existing) existing.remove();
+    if (!d.items || d.items.length === 0) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'session-loot-summary';
+    overlay.className = 'session-loot-overlay';
+
+    const rarityColor = { common:'var(--text)', uncommon:'#5aab5a', rare:'#4a90d4', epic:'#8a5ec4', legendary:'#d4a83a', mythic:'#e26af0' };
+
+    const totalGold = d.items.filter(i => i.item === 'gold').reduce((a,b) => a + b.qty, 0);
+
+    overlay.innerHTML = `
+      <div class="sls-panel">
+        <div class="sls-header">
+          <div class="sls-header-icon">
+            <svg viewBox="0 0 48 48" width="36" height="36">
+              <rect x="8" y="14" width="32" height="26" rx="3" fill="rgba(201,135,62,0.15)" stroke="#c9873e" stroke-width="1.5"/>
+              <path d="M16 14 Q16 8 24 8 Q32 8 32 14" fill="none" stroke="#c9873e" stroke-width="1.5"/>
+              <ellipse cx="24" cy="27" rx="5" ry="5" fill="none" stroke="#d4a83a" stroke-width="1.5"/>
+              <line x1="24" y1="22" x2="24" y2="20" stroke="#d4a83a" stroke-width="1.5"/>
+              <line x1="24" y1="32" x2="24" y2="34" stroke="#d4a83a" stroke-width="1.5"/>
+              <line x1="19" y1="27" x2="17" y2="27" stroke="#d4a83a" stroke-width="1.5"/>
+              <line x1="29" y1="27" x2="31" y2="27" stroke="#d4a83a" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="sls-header-text">
+            <div class="sls-title">Session Loot</div>
+            <div class="sls-subtitle">${this.escHtml(d.reason)} · ${d.kills} kill${d.kills !== 1 ? 's' : ''}</div>
+          </div>
+          <button class="sls-close" onclick="document.getElementById('session-loot-summary').remove()">✕</button>
+        </div>
+        <div class="sls-items">
+          ${d.items.length === 0 ? '<div class="sls-empty">No loot collected.</div>' :
+            d.items.sort((a,b) => {
+              const order = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5};
+              return (order[a.rarity]??5) - (order[b.rarity]??5);
+            }).map(item => `
+              <div class="sls-item sls-item-${item.rarity}">
+                <div class="sls-item-dot" style="background:${rarityColor[item.rarity]||'var(--text)'}"></div>
+                <span class="sls-item-name">${this.escHtml(item.name)}</span>
+                <span class="sls-item-qty">×${item.qty.toLocaleString()}</span>
+              </div>`
+            ).join('')}
+        </div>
+        ${totalGold > 0 ? `<div class="sls-gold-row"><svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6" fill="#d4a83a" opacity="0.8"/><text x="8" y="11.5" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">G</text></svg> ${totalGold.toLocaleString()} gold total</div>` : ''}
+        <button class="btn btn-sm sls-dismiss" onclick="document.getElementById('session-loot-summary').remove()">Dismiss</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    // Auto-dismiss after 30 seconds
+    setTimeout(() => { const el = document.getElementById('session-loot-summary'); if (el) el.remove(); }, 30000);
   }
 
   showLootBag(d) {

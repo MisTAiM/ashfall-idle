@@ -444,10 +444,18 @@ class GameEngine {
     c.playerHp = this.getMaxHp();
     c.playerAttackTimer = 0; c.monsterAttackTimer = 0;
     c.statusEffects = { player:{}, monster:{} };
+    // Reset session loot accumulator for this combat session
+    this.state._sessionLoot = {};
+    this.state._sessionMonsters = 0;
   }
 
   stopCombat() {
     const c = this.state.combat;
+    // Emit session loot summary if we have kills (and haven't already emitted it via flee/dungeon/tele)
+    if (!this._sessionLootEmitted && (this.state._sessionMonsters || 0) > 0) {
+      this._emitSessionLoot('Left Combat');
+    }
+    this._sessionLootEmitted = false;
     c.active = false; c.area = null; c.monster = null; c.dungeon = null; c.worldBoss = null;
     c._isWilderness = false; c._pvpTriggered = false; c._isDuel = false; c._teleBlocked = 0;
     c._multiMob = false; c._requiresPrayer = false; c._pvpRealPlayer = null;
@@ -911,6 +919,14 @@ class GameEngine {
     if (_lootBag.length > 0) {
       this.state._lastLootBag = _lootBag;
       this.emit('lootDrop', { bag:_lootBag, monster:monster?.name || mId });
+      // Accumulate into session loot totals
+      if (!this.state._sessionLoot) this.state._sessionLoot = {};
+      for (const l of _lootBag) {
+        this.state._sessionLoot[l.item] = (this.state._sessionLoot[l.item] || 0) + l.qty;
+      }
+      this.state._sessionMonsters = (this.state._sessionMonsters || 0) + 1;
+    } else {
+      this.state._sessionMonsters = (this.state._sessionMonsters || 0) + 1;
     }
 
     if (this.state.combat.dungeon) {
@@ -926,6 +942,8 @@ class GameEngine {
         }
         this.emit('notification', { type:'success', text:`Completed ${d.name}!` });
         this.trackQuestProgress('dungeon', { dungeon:d.id });
+        // Emit session loot summary before stopping
+        this._emitSessionLoot('Dungeon Complete: ' + d.name);
         this.stopCombat(); return;
       } else {
         const nextId = d.waves[this.state.combat.dungeonWave];
@@ -1012,6 +1030,7 @@ class GameEngine {
     const fleeChance = Math.min(0.80, 0.40 + this.state.skills.defence.level * 0.003 + (this.state.skills.hitpoints.level * 0.002));
     if (Math.random() < fleeChance) {
       this.emit('notification',{type:'success',text:'You escaped!'});
+      this._emitSessionLoot('Fled Combat');
       this.stopCombat();
     } else {
       this.emit('notification',{type:'warn',text:`Failed to flee! (${(fleeChance*100).toFixed(0)}% chance)`});
@@ -1019,6 +1038,22 @@ class GameEngine {
   }
 
   // TeleHome spell
+  _emitSessionLoot(reason) {
+    this._sessionLootEmitted = true;
+    const loot = this.state._sessionLoot || {};
+    const kills = this.state._sessionMonsters || 0;
+    const items = Object.entries(loot).map(([item, qty]) => ({
+      item, qty,
+      name: GAME_DATA.items[item]?.name || item,
+      rarity: GAME_DATA.items[item]?.rarity || 'common'
+    })).filter(x => x.qty > 0);
+    if (kills > 0) {
+      this.emit('sessionLootComplete', { reason, kills, items });
+    }
+    this.state._sessionLoot = {};
+    this.state._sessionMonsters = 0;
+  }
+
   castTeleHome() {
     const c = this.state.combat;
     if (!c.active) return;
@@ -1031,6 +1066,7 @@ class GameEngine {
     this.state.bank.fire_rune -= 3;
     this.state.bank.air_rune -= 5;
     this.emit('notification',{type:'success',text:'TeleHome! You vanish in a flash of light.'});
+    this._emitSessionLoot('TeleHome');
     this.stopCombat();
   }
 
