@@ -5159,3 +5159,11 @@ html, body {
 .ag-step code { background:var(--bg-hover); padding:1px 5px; border-radius:3px; font-family:var(--font-mono); font-size:11px; color:var(--accent); }
 
 @media(max-width:600px) { .aw-wide { grid-column:span 1; } }
+
+/* ── ADMIN DROP TABLE EDITOR ────────────────────────────── */
+.admin-mon-list { max-height:400px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; }
+.adm-row { padding:6px 10px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .1s; display:flex; align-items:center; justify-content:space-between; }
+.adm-row:hover { background:var(--bg-hover); }
+.adm-row.adm-active { background:rgba(201,135,62,.12); color:var(--accent); font-weight:600; border-left:2px solid var(--accent); }
+.drop-edit-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:6px 0; border-bottom:1px solid var(--border); }
+.drop-edit-row:last-child { border-bottom:none; }

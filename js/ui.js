@@ -3263,7 +3263,7 @@ class UI {
     const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(typeof online !== 'undefined' ? online.user?.uid : null);
     if (!isAdmin) { el.innerHTML = '<div class="bank-empty">⛔ Access Denied — Admin Only</div>'; return; }
     const s = this.engine.state;
-    const tab = this._adminTab || 'overview';
+    const tab = this._adminTabId || 'overview';
 
     let html = `<div class="admin-header-bar">
       <div class="ahb-title">⚡ Ashfall Admin Panel</div>
@@ -3272,18 +3272,19 @@ class UI {
 
     // Tab bar
     const tabs = [
-      {id:'overview', label:'Overview'},
-      {id:'player',   label:'Player'},
-      {id:'content',  label:'Content'},
-      {id:'skills',   label:'Skills / XP'},
-      {id:'items',    label:'Items'},
-      {id:'quests',   label:'Quests'},
-      {id:'svg',      label:'SVG Editor'},
-      {id:'rates',    label:'XP Rates'},
-      {id:'network',  label:'Network'},
-      {id:'db',       label:'Database'},
+      {id:'overview',    label:'Overview'},
+      {id:'player',      label:'Player'},
+      {id:'content',     label:'Content'},
+      {id:'skills',      label:'Skills / XP'},
+      {id:'items',       label:'Items'},
+      {id:'quests',      label:'Quests'},
+      {id:'drops',       label:'Drop Tables'},
+      {id:'svg',         label:'SVG Editor'},
+      {id:'rates',       label:'XP Rates'},
+      {id:'network',     label:'Network'},
+      {id:'db',          label:'Database'},
     ];
-    html += `<div class="admin-tabs">${tabs.map(t=>`<button class="admin-tab ${tab===t.id?'active':''}" onclick="ui._adminTab('${t.id}')">${t.label}</button>`).join('')}</div>`;
+    html += `<div class="admin-tabs">${tabs.map(t=>`<button class="admin-tab ${tab===t.id?'active':''}" onclick="ui._switchAdminTab('${t.id}')">${t.label}</button>`).join('')}</div>`;
 
     html += `<div class="admin-body">`;
 
@@ -3628,12 +3629,142 @@ class UI {
       </div>`;
     }
 
+    // ── DROP TABLES TAB ──────────────────────────────────────────
+    else if (tab === 'drops') {
+      const monsters = Object.values(GAME_DATA.monsters||{}).sort((a,b)=>a.name.localeCompare(b.name));
+      const selMon = this._adminDropMon || monsters[0]?.id || '';
+      const mon = GAME_DATA.monsters[selMon];
+      html += `<div class="admin-grid">
+        <div class="aw">
+          <div class="aw-t">Select Monster</div>
+          <input type="text" id="aw-drop-search" class="chat-input" placeholder="Filter monsters..." oninput="ui._adminFilterDropMons(this.value)" style="margin-bottom:8px">
+          <div id="aw-drop-mon-list" class="admin-mon-list">
+            ${monsters.map(m=>`<div class="adm-row ${selMon===m.id?'adm-active':''}" onclick="ui._adminSelectDropMon('${m.id}')">${m.name} <span style="color:var(--text-dim);font-size:11px">Lv${m.combatLevel}</span></div>`).join('')}
+          </div>
+        </div>
+        <div class="aw aw-wide" id="aw-drop-editor">
+          ${mon ? `<div class="aw-t">Drop Table: ${mon.name} (Lv${mon.combatLevel})</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Edit drops directly. Changes apply this session only — to make permanent, edit <code>js/data.js</code>.</div>
+          <div id="aw-drop-rows">
+            ${(mon.drops||[]).map((d,i)=>`
+            <div class="drop-edit-row" id="drop-row-${i}">
+              <select class="rank-select" id="drop-item-${i}" style="flex:2;min-width:120px">
+                ${Object.values(GAME_DATA.items||{}).sort((a,b)=>a.name.localeCompare(b.name)).map(it=>`<option value="${it.id}" ${d.item===it.id?'selected':''}>${it.name}</option>`).join('')}
+              </select>
+              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+                <label style="font-size:11px;color:var(--text-dim)">Qty</label>
+                <input type="number" class="qty-input" id="drop-qty-${i}" value="${d.qty||1}" min="1" style="width:55px">
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+                <label style="font-size:11px;color:var(--text-dim)">Chance</label>
+                <input type="number" class="qty-input" id="drop-chance-${i}" value="${((d.chance||1)*100).toFixed(1)}" min="0.01" max="100" step="0.1" style="width:65px">
+                <span style="font-size:11px;color:var(--text-dim)">%</span>
+              </div>
+              <button class="btn btn-xs btn-danger" onclick="ui._adminRemoveDrop('${selMon}',${i})">✕</button>
+            </div>`).join('')}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn btn-sm" onclick="ui._adminSaveDrops('${selMon}')">💾 Save Changes</button>
+            <button class="btn btn-sm" onclick="ui._adminAddDrop('${selMon}')">+ Add Drop</button>
+            <button class="btn btn-sm" onclick="ui._adminTestDrops('${selMon}')">🎲 Simulate 100 Kills</button>
+          </div>
+          <div id="aw-drop-sim" style="margin-top:10px;font-size:12px"></div>
+          <div class="aw-t" style="margin-top:16px">Export for data.js</div>
+          <textarea id="aw-drop-export" class="admin-textarea" style="font-family:var(--font-mono);font-size:11px;height:120px" readonly
+            placeholder="Click 'Save Changes' then this will show the copy-pasteable drop array"></textarea>` : '<div class="fr-empty">Select a monster</div>'}
+        </div>
+      </div>`;
+    }
+
     html += `</div>`;
     el.innerHTML = html;
     setTimeout(()=>{ui._adminCheckConnections();}, 300);
   }
 
-  _adminTab(t) { this._adminTab = t; this.renderPage('admin'); }
+  _switchAdminTab(t) { this._adminTabId = t; this.renderPage('admin'); }
+
+  _adminSelectDropMon(id) {
+    this._adminDropMon = id;
+    this._adminTabId = 'drops';
+    this.renderPage('admin');
+  }
+
+  _adminFilterDropMons(query) {
+    const list = document.getElementById('aw-drop-mon-list');
+    if (!list) return;
+    const q = query.toLowerCase();
+    list.querySelectorAll('.adm-row').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  _adminSaveDrops(monId) {
+    const mon = GAME_DATA.monsters[monId];
+    if (!mon) return;
+    const rows = document.querySelectorAll('.drop-edit-row');
+    const newDrops = [];
+    rows.forEach((row, i) => {
+      const item   = document.getElementById('drop-item-'+i)?.value;
+      const qty    = parseInt(document.getElementById('drop-qty-'+i)?.value)||1;
+      const chance = parseFloat(document.getElementById('drop-chance-'+i)?.value)||100;
+      if (item) newDrops.push({ item, qty, chance: parseFloat((chance/100).toFixed(4)) });
+    });
+    mon.drops = newDrops;
+    // Show export
+    const exportEl = document.getElementById('aw-drop-export');
+    if (exportEl) {
+      const _expLines = newDrops.map(d=>'{item:"'+d.item+'",qty:'+d.qty+',chance:'+d.chance+'}');
+      exportEl.value = 'drops:[\n' + _expLines.join(',\n') + '\n]';
+    }
+    this.toast({type:'success', text:`Saved ${newDrops.length} drops for ${mon.name} (session only)`});
+  }
+
+  _adminAddDrop(monId) {
+    const mon = GAME_DATA.monsters[monId];
+    if (!mon) return;
+    mon.drops = mon.drops || [];
+    mon.drops.push({ item:'coins', qty:1, chance:1.0 });
+    this.renderPage('admin');
+  }
+
+  _adminRemoveDrop(monId, idx) {
+    const mon = GAME_DATA.monsters[monId];
+    if (!mon) return;
+    mon.drops.splice(idx, 1);
+    this.renderPage('admin');
+  }
+
+  _adminTestDrops(monId) {
+    const mon = GAME_DATA.monsters[monId];
+    if (!mon) return;
+    // First save current state
+    this._adminSaveDrops(monId);
+    // Simulate 100 kills
+    const totals = {};
+    for (let kill = 0; kill < 100; kill++) {
+      for (const drop of (mon.drops||[])) {
+        if (Math.random() < (drop.chance||0)) {
+          totals[drop.item] = (totals[drop.item]||0) + (drop.qty||1);
+        }
+      }
+    }
+    const simEl = document.getElementById('aw-drop-sim');
+    if (!simEl) return;
+    const sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+    if (sorted.length === 0) {
+      simEl.innerHTML = '<div style="color:var(--text-dim)">No drops in 100 kills — check chance values</div>';
+    } else {
+      simEl.innerHTML = `<div class="aw-t">Simulation: 100 kills</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          ${sorted.map(([item,qty])=>{
+            const it = GAME_DATA.items?.[item];
+            return `<div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12px">
+              ${this.escHtml(it?.name||item)}: <strong>${qty}</strong>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+  }
 
   _adminSetXPMult(v) {
     window._adminXpMult = parseInt(v)||1;
