@@ -4948,3 +4948,62 @@ html, body {
   flex-shrink: 0;
 }
 .slayer-combat-bar span b { color: var(--accent-glow); font-weight: 700; }
+
+/* ── LANDING PAGE REDESIGN v2 ──────────────────────────── */
+.landing-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 18px 0 14px;
+  flex-wrap: wrap;
+  gap: 4px 0;
+}
+.lsr-item { display: flex; flex-direction: column; align-items: center; padding: 4px 20px; }
+.lsr-num { font-family: 'Cinzel', serif; font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+.lsr-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+.lsr-div { width: 1px; height: 36px; background: rgba(201,135,62,0.25); flex-shrink: 0; }
+.landing-pillars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 0;
+}
+.lp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border: 1px solid rgba(201,135,62,0.3);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: rgba(201,135,62,0.05);
+}
+.lpp-icon { font-size: 14px; }
+.landing-contact-bar {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border: 1px solid rgba(201,135,62,0.2);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.2);
+}
+.lcb-label { font-size: 12px; color: var(--text-dim); }
+.lcb-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: rgba(88,101,242,0.15);
+  border: 1px solid rgba(88,101,242,0.4);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a0aaff;
+  letter-spacing: 0.02em;
+}
