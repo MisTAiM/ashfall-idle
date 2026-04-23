@@ -937,7 +937,8 @@ class OnlineManager {
       this.emit('notification',{type:'success',text:`Friend request sent to ${exact.name}!`});
     } catch(e) {
       console.error('Friend request error:', e);
-      this.emit('notification',{type:'danger',text:'Friend request failed: ' + e.message});
+      const _msg = e.code==='permission-denied' ? 'Firestore rules not deployed. Firebase Console → Firestore → Rules → Publish.' : 'Friend request failed: '+e.message;
+      this.emit('notification',{type:'danger',text:_msg});
     }
   }
 
