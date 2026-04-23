@@ -5,41 +5,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg-deep: #0a0b0f;
-  --bg-main: #0f1117;
-  --bg-card: #161822;
-  --bg-card-hover: #1c1f2e;
-  --bg-elevated: #1e2133;
-  --bg-input: #12141e;
+  /* ── VOLCANIC BLACK PALETTE — matched to logo ───────────── */
+  --bg-deep:        #040302;   /* near-pure black (logo BG)     */
+  --bg-main:        #0b0906;   /* very dark volcanic char        */
+  --bg-card:        #131009;   /* dark warm charcoal             */
+  --bg-card-hover:  #1a1510;   /* slightly lighter               */
+  --bg-elevated:    #201a12;   /* raised stone surface           */
+  --bg-input:       #0e0b07;   /* input field black              */
 
-  --border: #252840;
-  --border-light: #2e3252;
+  --border:         #2c2418;   /* dark warm stone border         */
+  --border-light:   #3e3224;   /* medium stone border            */
 
-  --text: #c8cad4;
-  --text-dim: #7a7e94;
-  --text-bright: #e8eaf2;
+  /* ── TEXT — warm stone tones like logo lettering ────────── */
+  --text:           #c2b49c;   /* warm stone off-white           */
+  --text-dim:       #7a6a56;   /* dimmed warm stone              */
+  --text-bright:    #e4d4bc;   /* brightest text                 */
 
-  --accent: #c9873e;
-  --accent-glow: #d4993f;
-  --accent-dim: #8a5e2a;
-  --accent-bg: rgba(201,135,62,0.08);
+  /* ── ACCENT — ember orange/amber from logo fire ─────────── */
+  --accent:         #c9873e;   /* main ember orange              */
+  --accent-glow:    #e0993a;   /* bright ember glow              */
+  --accent-dim:     #7a5022;   /* dim ember                      */
+  --accent-bg:      rgba(201,135,62,0.07);
 
-  --red: #c44040;
-  --red-dim: #7a2828;
-  --green: #3a9e5c;
-  --green-dim: #245e38;
-  --blue: #4a7ec4;
-  --blue-dim: #2a4e7a;
-  --purple: #8a5ec4;
-  --yellow: #c4a83a;
+  /* ── STATUS COLORS ──────────────────────────────────────── */
+  --red:            #c44040;
+  --red-dim:        #7a2828;
+  --green:          #3a8a4a;
+  --green-dim:      #1e4a28;
+  --blue:           #4a7ec4;
+  --blue-dim:       #2a4e7a;
+  --purple:         #8a5ec4;
+  --yellow:         #c4a83a;
 
-  --hp-player: #3a9e5c;
-  --hp-monster: #c44040;
+  --hp-player:      #3a8a4a;
+  --hp-monster:     #c44040;
 
   --sidebar-w: 240px;
-  --header-h: 0px;
+  --header-h:  0px;
 
-  --radius: 6px;
+  --radius:    6px;
   --radius-lg: 10px;
 }
 
@@ -4042,11 +4046,13 @@ html, body {
   50% { transform: translateY(-6px); }
 }
 .sidebar-logo-img {
-  width: 160px;
+  width: 172px;
   height: auto;
   display: block;
   margin: 0 auto;
-  filter: drop-shadow(0 0 8px rgba(201,135,62,0.2));
+  /* Logo has black background — mix-blend-mode makes it seamless on black bg */
+  mix-blend-mode: lighten;
+  filter: drop-shadow(0 0 12px rgba(201,135,62,0.35)) drop-shadow(0 0 24px rgba(180,70,10,0.15));
 }
 .landing-stats {
   display: flex;

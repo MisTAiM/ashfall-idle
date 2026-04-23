@@ -2139,10 +2139,15 @@ class GameEngine {
     const m = GAME_DATA.monsters[monsterId];
     if (m) {
       let slayerXp = Math.floor(m.hp * 0.10);
-      // Slayer ring bonus
       if (this.state.equipment.ring === 'slayer_ring') slayerXp = Math.floor(slayerXp * 1.05);
       this.addXp('slayer', slayerXp);
     }
+    // Emit live progress update so UI bar refreshes without full re-render
+    this.emit('slayerProgress', {
+      killed: this.state.slayerTask.killed,
+      amount: this.state.slayerTask.amount,
+      monster: monsterId
+    });
     if (this.state.slayerTask.killed >= this.state.slayerTask.amount) {
       this.completeSlayerTask();
     }

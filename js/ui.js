@@ -126,6 +126,8 @@ class UI {
     this.engine.on('lootDrop', (d) => this.showLootBag(d));
     this.engine.on('sessionLootComplete', (d) => this.showSessionLootSummary(d));
     this.engine.on('xpGain', (d) => this.showXpGain(d));
+    this.engine.on('slayerProgress', (d) => this._updateSlayerBar(d));
+    this.engine.on('slayerChanged', () => { if (this.currentPage === 'slayer') this.renderPage('slayer'); });
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (this.currentPage === 'equipment' || this.currentPage === 'bank') this.renderPage(this.currentPage); });
     this.engine.on('farmingChanged', () => { if (this.currentPage === 'farming') this.renderPage(this.currentPage); });
@@ -3189,6 +3191,21 @@ class UI {
     document.body.appendChild(overlay);
     // Auto-dismiss after 30 seconds
     setTimeout(() => { const el = document.getElementById('session-loot-summary'); if (el) el.remove(); }, 30000);
+  }
+
+  _updateSlayerBar(d) {
+    // Update the in-combat slayer progress bar without re-rendering the whole page
+    const bar  = document.querySelector('.slayer-combat-bar .cxp-fill');
+    const text = document.querySelector('.slayer-combat-bar span');
+    if (bar && text) {
+      const pct = Math.min(100, (d.killed / d.amount) * 100);
+      bar.style.width = pct + '%';
+      const icon_part = text.innerHTML.split('Slayer:')[0];
+      text.innerHTML = icon_part + `Slayer: ${d.killed}/${d.amount}`;
+    }
+    // Also update the kill count badge in the center of the arena
+    const kills = document.getElementById('kill-count');
+    if (kills) kills.textContent = this.engine.state.stats.monstersKilled || 0;
   }
 
   showLootBag(d) {
