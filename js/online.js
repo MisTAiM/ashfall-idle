@@ -758,9 +758,10 @@ class OnlineManager {
     try {
       const ref = await this.firestore.collection('guilds').add({
         name, tag, leader: this.user.uid, leaderName: this.displayName,
-        members: [{ uid:this.user.uid, name:this.displayName, role:'Leader', joined:Date.now() }],
+        members: [{ uid:this.user.uid, name:this.displayName, rank:'Leader', joined:Date.now() }],
+        ranks: ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'],
         created: firebase.firestore.FieldValue.serverTimestamp(),
-        memberCount: 1,
+        memberCount: 1, bank: 0,
       });
       game.state.guild = { id:ref.id, name, tag, role:'Leader' };
       this.emit('notification',{type:'success',text:`Guild "${name}" [${tag}] created!`});
@@ -776,9 +777,10 @@ class OnlineManager {
       const doc = snap.docs[0];
       const data = doc.data();
       if (data.members.length >= 50) { this.emit('notification',{type:'warn',text:'Guild is full (50 max).'}); return false; }
-      data.members.push({ uid:this.user.uid, name:this.displayName, role:'Member', joined:Date.now() });
+      if (data.members.some(m => m.uid === this.user.uid)) { this.emit('notification',{type:'warn',text:'Already in this guild.'}); return false; }
+      data.members.push({ uid:this.user.uid, name:this.displayName, rank:'Recruit', joined:Date.now() });
       await doc.ref.update({ members:data.members, memberCount:data.members.length });
-      game.state.guild = { id:doc.id, name:data.name, tag:data.tag, role:'Member' };
+      game.state.guild = { id:doc.id, name:data.name, tag:data.tag, role:'Recruit' };
       this.emit('notification',{type:'success',text:`Joined guild "${data.name}"!`});
       return true;
     } catch(e) { this.emit('notification',{type:'danger',text:'Join error: '+e.message}); return false; }
@@ -803,7 +805,10 @@ class OnlineManager {
 
   async kickMember(memberUid) {
     if (!this.isOnline || !this.user || !game.state.guild) return;
-    if (game.state.guild.role !== 'Leader') { this.emit('notification',{type:'warn',text:'Only the guild leader can kick members.'}); return; }
+    const myRank = game.state.guild.role;
+    const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
+    const myIdx = rankOrder.indexOf(myRank);
+    if (myIdx > 2) { this.emit('notification',{type:'warn',text:'Only Leader, General, or Captain can kick members.'}); return; }
     try {
       const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
       const doc = await ref.get();
@@ -811,6 +816,8 @@ class OnlineManager {
       const data = doc.data();
       const member = data.members.find(m => m.uid === memberUid);
       if (!member) { this.emit('notification',{type:'warn',text:'Member not found.'}); return; }
+      const theirIdx = rankOrder.indexOf(member.rank || 'Recruit');
+      if (theirIdx <= myIdx) { this.emit('notification',{type:'warn',text:'Cannot kick someone of equal or higher rank.'}); return; }
       data.members = data.members.filter(m => m.uid !== memberUid);
       await ref.update({ members:data.members, memberCount:data.members.length });
       this.emit('notification',{type:'success',text:`Kicked ${member.name} from the guild.`});
@@ -846,7 +853,8 @@ class OnlineManager {
 
   async withdrawGuildGold(amount) {
     if (!this.isOnline || !this.user || !game.state.guild) return;
-    if (game.state.guild.role !== 'Leader') { this.emit('notification',{type:'warn',text:'Only the leader can withdraw.'}); return; }
+    const myRank = game.state.guild.role;
+    if (myRank !== 'Leader' && myRank !== 'General') { this.emit('notification',{type:'warn',text:'Only Leader and Generals can withdraw.'}); return; }
     try {
       const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
       const doc = await ref.get();
@@ -856,6 +864,30 @@ class OnlineManager {
       game.state.gold += amount;
       this.emit('notification',{type:'success',text:`Withdrew ${amount}g from guild bank.`});
     } catch(e) { this.emit('notification',{type:'danger',text:'Withdraw failed: '+e.message}); }
+  }
+
+  async setMemberRank(memberUid, newRank) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    const myRank = game.state.guild.role;
+    const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
+    const myIdx = rankOrder.indexOf(myRank);
+    const targetIdx = rankOrder.indexOf(newRank);
+    // Can only set ranks below your own
+    if (myIdx < 0 || targetIdx <= myIdx) { this.emit('notification',{type:'warn',text:'Cannot set a rank equal to or above your own.'}); return; }
+    try {
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const doc = await ref.get();
+      if (!doc.exists) return;
+      const data = doc.data();
+      const member = data.members.find(m => m.uid === memberUid);
+      if (!member) { this.emit('notification',{type:'warn',text:'Member not found.'}); return; }
+      // Can't change someone of equal or higher rank
+      const theirIdx = rankOrder.indexOf(member.rank || 'Recruit');
+      if (theirIdx <= myIdx && myRank !== 'Leader') { this.emit('notification',{type:'warn',text:'Cannot change rank of someone at or above your rank.'}); return; }
+      member.rank = newRank;
+      await ref.update({ members:data.members });
+      this.emit('notification',{type:'success',text:`${member.name} is now ${newRank}.`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Rank change failed: '+e.message}); }
   }
 
   // Search for players by partial name

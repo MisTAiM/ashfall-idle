@@ -4067,3 +4067,27 @@ html, body {
   transition: all 0.2s;
 }
 .discord-link:hover { background: rgba(114,137,218,0.1); border-color: #7289da; }
+
+/* ── GUILD RANKS ──────────────────────────────────────── */
+.guild-rank {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.06);
+  margin-right: 6px;
+}
+.rank-select {
+  background: var(--bg-deep);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 6px;
+  font-family: 'Cinzel', serif;
+  cursor: pointer;
+}
+.rank-select:hover { border-color: var(--accent-dim); }

@@ -2109,13 +2109,14 @@ class UI {
         </div>
       </div>`;
       // Guild Bank
+      const canWithdraw = s.guild.role === 'Leader' || s.guild.role === 'General';
       html += `<div class="settings-section">
         <h3>Guild Bank</h3>
         <div id="guild-bank-display"><div class="bank-empty">Loading...</div></div>
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
           <input type="number" id="guild-gold" class="qty-input" min="1" value="100" style="width:100px">
           <button class="btn btn-sm" onclick="online.depositGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>ui._loadGuildData())">Deposit Gold</button>
-          ${s.guild.role==='Leader'?'<button class="btn btn-sm" onclick="online.withdrawGuildGold(parseInt(document.getElementById(\'guild-gold\').value)||0).then(()=>ui._loadGuildData())">Withdraw</button>':''}
+          ${canWithdraw?'<button class="btn btn-sm" onclick="online.withdrawGuildGold(parseInt(document.getElementById(\'guild-gold\').value)||0).then(()=>ui._loadGuildData())">Withdraw</button>':''}
         </div>
       </div>`;
       // Member list
@@ -2166,17 +2167,42 @@ class UI {
     const membersEl = document.getElementById('guild-members');
     if (membersEl) {
       const members = await online.getGuildMembers();
-      const isLeader = game.state.guild?.role === 'Leader';
+      const myRank = game.state.guild?.role || 'Recruit';
+      const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
+      const myIdx = rankOrder.indexOf(myRank);
+      const canManage = myIdx <= 2; // Leader, General, Captain can kick
+      const canRank = myIdx <= 1; // Leader, General can change ranks
       if (members.length === 0) {
         membersEl.innerHTML = '<div class="bank-empty">No members found.</div>';
       } else {
-        membersEl.innerHTML = '<div class="friends-grid">' + members.map(m => `<div class="friend-card">
-          <span class="fc-name">${this.escHtml(m.name)} <small style="color:var(--text-dim)">(${m.role})</small></span>
-          <div class="fc-btns">
-            <button class="btn btn-xs" onclick="ui.openDM('${m.uid}','${this.escHtml(m.name)}')">Message</button>
-            ${isLeader && m.uid !== online.user?.uid ? `<button class="btn btn-xs btn-danger" onclick="online.kickMember('${m.uid}').then(()=>ui._loadGuildData())">Kick</button>` : ''}
-          </div>
-        </div>`).join('') + '</div>';
+        const rankColors = {Leader:'#c9873e',General:'#c44040',Captain:'#4a7ec4',Lieutenant:'#8a5ec4',Sergeant:'#3a9e5c',Member:'#c8cad4',Recruit:'#7a7e94'};
+        membersEl.innerHTML = '<div class="friends-grid">' + members.map(m => {
+          const rank = m.rank || m.role || 'Recruit';
+          const theirIdx = rankOrder.indexOf(rank);
+          const isMe = m.uid === online.user?.uid;
+          const canKickThis = canManage && !isMe && theirIdx > myIdx;
+          const canRankThis = canRank && !isMe && theirIdx > myIdx;
+          let rankSelect = '';
+          if (canRankThis) {
+            rankSelect = `<select class="rank-select" onchange="online.setMemberRank('${m.uid}',this.value).then(()=>ui._loadGuildData())">`;
+            for (const r of rankOrder) {
+              if (rankOrder.indexOf(r) <= myIdx) continue; // Can't set equal or above own rank
+              rankSelect += `<option value="${r}" ${r===rank?'selected':''}>${r}</option>`;
+            }
+            rankSelect += '</select>';
+          }
+          return `<div class="friend-card">
+            <span class="fc-name">
+              <span class="guild-rank" style="color:${rankColors[rank]||'#7a7e94'}">${rank}</span>
+              ${this.escHtml(m.name)} ${isMe?'<small>(You)</small>':''}
+            </span>
+            <div class="fc-btns">
+              ${rankSelect}
+              ${!isMe?`<button class="btn btn-xs" onclick="ui.openDM('${m.uid}','${this.escHtml(m.name)}')">Msg</button>`:''}
+              ${canKickThis?`<button class="btn btn-xs btn-danger" onclick="online.kickMember('${m.uid}').then(()=>ui._loadGuildData())">Kick</button>`:''}
+            </div>
+          </div>`;
+        }).join('') + '</div>';
       }
     }
   }
