@@ -1776,26 +1776,28 @@ class UI {
   }
 
   renderWikiPage(el) {
-    let html = this.header('Wiki','book','Complete encyclopedia of Ashfall Idle.',null);
-    html += '<p style="margin-bottom:16px">For the full standalone wiki, visit <a href="wiki.html" style="color:var(--accent)">wiki.html</a>.</p>';
-    html += '<h2 class="section-title">Skills (' + Object.keys(GAME_DATA.skills).length + ')</h2><div class="wiki-section">';
-    for (const sk of Object.values(GAME_DATA.skills)) html += `<div class="wiki-entry"><strong>${sk.name}</strong> <em>(${sk.type})</em> &mdash; ${sk.desc}</div>`;
-    html += '</div>';
-    html += '<h2 class="section-title">Monsters</h2><div class="wiki-section">';
-    for (const m of Object.values(GAME_DATA.monsters)) html += `<div class="wiki-entry"><strong>${m.name}</strong> (Cb Lv ${m.combatLevel}) &mdash; HP: ${m.hp}, Max Hit: ${m.maxHit}, Style: ${m.style}.</div>`;
-    html += '</div>';
-    html += '<h2 class="section-title">Game Mechanics</h2><div class="wiki-section">';
-    html += `<div class="wiki-entry"><strong>Single-Skill Training</strong> &mdash; Only ONE skill can be active at a time. Starting a new action stops the previous one. Watch the persistent training bar at the top to always know what you\'re doing.</div>`;
-    html += `<div class="wiki-entry"><strong>Mastery</strong> &mdash; Each action has its own mastery level. Higher mastery reduces action time and failure rates.</div>`;
-    html += `<div class="wiki-entry"><strong>Offline Progression</strong> &mdash; Active skill continues for up to 24 hours. Combat does not run offline.</div>`;
-    html += `<div class="wiki-entry"><strong>Alignment</strong> &mdash; Your actions shift your moral axis (Good/Evil, Lawful/Chaotic). Each of 9 alignments grants unique bonuses.</div>`;
-    html += `<div class="wiki-entry"><strong>Factions</strong> &mdash; Earn reputation with factions for tier-based perks and exclusive items.</div>`;
-    html += `<div class="wiki-entry"><strong>Status Effects</strong> &mdash; Burn (multiplicative DoT), Poison (explodes at 7 stacks), Freeze (3x damage on next hit), Bleed (DoT from crits).</div>`;
-    html += `<div class="wiki-entry"><strong>Abilities</strong> &mdash; Equip up to 4 active abilities (unlocked via Tactics) for tactical combat.</div>`;
+    let html = this.header('Wiki','book','Game encyclopedia. For the full standalone wiki visit wiki.html.',null);
+    html += `<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <a href="wiki.html" target="_blank" class="btn">📖 Open Full Wiki</a>
+    </div>`;
+    // Quick reference cards
+    html += '<div class="actions-grid">';
+    const topics = [
+      {title:'Skills (28 total)',text:'Gathering: Woodcutting, Mining, Fishing, Foraging, Hunting. Artisan: Smithing, Cooking, Herblore, Fletching, Crafting, Enchanting, Farming, Thieving. Combat: Attack, Strength, Defence, HP, Ranged, Magic, Prayer, Slayer, Necromancy, Summoning, Tactics, Trading, Leadership, Diplomacy.'},
+      {title:'Combat System',text:'Tick-based auto-combat. Three styles: Melee (swords/axes), Ranged (bows+arrows), Magic (spells+runes). Combat level = 0.25×(Def+HP+Prayer/2) + 0.325×max(Atk+Str, Rng×2, Mge×2).'},
+      {title:'Gear Tiers (T1–T8)',text:'Bronze (F2P) → Iron (Att10) → Steel (Att20) → Mithril (Att40) → Adamant (Att55) → Obsidian (Att70) → Runite (Att75) → Ashsteel (Att80). Smith most tiers yourself with Mining + Smithing.'},
+      {title:'Quests (107)',text:'14 NPC chains with level requirements and prerequisites. Complete earlier quests to unlock later ones. Green badge = req met, red = not yet. Storyline quests change your alignment.'},
+      {title:'Dungeons (20)',text:'Multi-wave fights ending in a boss. Cannot flee once started. Reward table drops guaranteed loot + rare items. Best sources of high-tier drops and unique equipment.'},
+      {title:'Alignment (9 types)',text:'Good/Evil (moral axis) and Lawful/Chaotic (order axis). Shifts based on what you kill and quest choices. Affects stat bonuses and NPC interactions. True Neutral is the default.'},
+      {title:'Online Features',text:'Cloud saves (60s), global chat, player guilds with item banks and rank permissions, PvP arena, bounty board, bazaar player market, leaderboards, friend lists with private messaging.'},
+      {title:'Offline Progress',text:'Up to 24 hours of offline skill training calculated on return. Combat pauses offline. Make sure you have enough resources queued before logging off.'},
+    ];
+    for (const t of topics) {
+      html += `<div class="action-card"><div class="ac-header"><span class="ac-name">${t.title}</span></div><p class="area-desc" style="font-size:12px;line-height:1.6">${t.text}</p></div>`;
+    }
     html += '</div>';
     el.innerHTML = html;
   }
-
   renderStatsPage(el) {
     const s = this.engine.state;
     let html = this.header('Statistics','stats','Your lifetime statistics and records.',null);
@@ -3261,402 +3263,288 @@ class UI {
 
   renderAdminPanel(el) {
     const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(typeof online !== 'undefined' ? online.user?.uid : null);
-    if (!isAdmin) { el.innerHTML = '<div class="bank-empty">⛔ Access Denied — Admin Only</div>'; return; }
+    if (!isAdmin) { el.innerHTML = '<div class="bank-empty">⛔ Access Denied</div>'; return; }
     const s = this.engine.state;
-    const tab = this._adminTabId || 'overview';
+
+    const tabs = [
+      {id:'overview',   label:'Overview'},
+      {id:'player_mgr', label:'Player Mgmt'},
+      {id:'give_player',label:'Give to Player'},
+      {id:'skills',     label:'Skills / XP'},
+      {id:'items',      label:'Items'},
+      {id:'drops',      label:'Drop Tables'},
+      {id:'quests',     label:'Quests'},
+      {id:'settings',   label:'Game Settings'},
+      {id:'svg',        label:'SVG Editor'},
+      {id:'db',         label:'Data & Deploy'},
+    ];
 
     let html = `<div class="admin-header-bar">
-      <div class="ahb-title">⚡ Ashfall Admin Panel</div>
-      <div class="ahb-sub">Morpheus · UID: ndLiweJRdGbaqWIbPgIj0Izigez2 · <span id="ahb-time">${new Date().toLocaleTimeString()}</span></div>
+      <div class="ahb-title">⚡ Admin Panel</div>
+      <div class="ahb-sub">Morpheus · ${new Date().toLocaleString()} · Build v9.6</div>
+    </div>
+    <div class="admin-tabs" id="admin-tab-bar">
+      ${tabs.map((t,i)=>`<button class="admin-tab ${i===0?'active':''}" onclick="ui._adminShowTab('${t.id}',this)">${t.label}</button>`).join('')}
     </div>`;
 
-    // Tab bar
-    const tabs = [
-      {id:'overview',    label:'Overview'},
-      {id:'player',      label:'Player'},
-      {id:'content',     label:'Content'},
-      {id:'skills',      label:'Skills / XP'},
-      {id:'items',       label:'Items'},
-      {id:'quests',      label:'Quests'},
-      {id:'drops',       label:'Drop Tables'},
-      {id:'svg',         label:'SVG Editor'},
-      {id:'rates',       label:'XP Rates'},
-      {id:'network',     label:'Network'},
-      {id:'db',          label:'Database'},
-    ];
-    html += `<div class="admin-tabs">${tabs.map(t=>`<button class="admin-tab ${tab===t.id?'active':''}" onclick="ui._switchAdminTab('${t.id}')">${t.label}</button>`).join('')}</div>`;
-
-    html += `<div class="admin-body">`;
-
-    // ── OVERVIEW TAB ──────────────────────────────────────────────
-    if (tab === 'overview') {
-      const totalLv = this.engine.getTotalLevel(), cbLv = this.engine.getCombatLevel();
-      html += `<div class="admin-grid">
+    // ── OVERVIEW ──────────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-overview">
+      <div class="admin-grid">
         <div class="aw">
-          <div class="aw-t">Live Game State</div>
+          <div class="aw-t">Game State</div>
           <table class="admin-table">
-            <tr><td>Gold</td><td class="atv gold">${this.fmt(s.gold)}</td></tr>
-            <tr><td>Combat Level</td><td class="atv">${cbLv}</td></tr>
-            <tr><td>Total Level</td><td class="atv">${totalLv}</td></tr>
-            <tr><td>Monsters Killed</td><td class="atv">${this.fmt(s.stats?.monstersKilled||0)}</td></tr>
-            <tr><td>Dungeons Done</td><td class="atv">${s.stats?.dungeonsCompleted||0}</td></tr>
-            <tr><td>Quests Complete</td><td class="atv">${s.quests.completed.length} / ${GAME_DATA.quests.length}</td></tr>
-            <tr><td>Active Quests</td><td class="atv">${s.quests.active.length}</td></tr>
-            <tr><td>Bank Slots Used</td><td class="atv">${Object.keys(s.bank).length}</td></tr>
+            <tr><td>Gold</td><td class="atv" style="color:#d4a83a">${this.fmt(s.gold)}</td></tr>
+            <tr><td>Combat Level</td><td class="atv">${this.engine.getCombatLevel()}</td></tr>
+            <tr><td>Total Level</td><td class="atv">${this.engine.getTotalLevel()}</td></tr>
+            <tr><td>Kills</td><td class="atv">${this.fmt(s.stats?.monstersKilled||0)}</td></tr>
+            <tr><td>Quests Done</td><td class="atv">${s.quests.completed.length}/${GAME_DATA.quests.length}</td></tr>
+            <tr><td>Dungeons</td><td class="atv">${s.stats?.dungeonsCompleted||0}</td></tr>
+            <tr><td>Bank Slots</td><td class="atv">${Object.keys(s.bank).length}</td></tr>
             <tr><td>Guild</td><td class="atv">${s.guild?.name||'None'}</td></tr>
             <tr><td>Alignment</td><td class="atv">${s.alignment}</td></tr>
-            <tr><td>Save Slot</td><td class="atv">${s.saveSlot||0}</td></tr>
           </table>
         </div>
         <div class="aw">
           <div class="aw-t">Quick Actions</div>
           <div class="aw-btns">
-            <button class="btn" onclick="ui._adminFullHeal()">⚕ Full HP + Prayer</button>
-            <button class="btn" onclick="ui._adminMaxAll()">★ Max All Skills (99)</button>
-            <button class="btn" onclick="ui._adminGiveResources()">📦 Give Starter Pack</button>
-            <button class="btn" onclick="ui._adminClearBank()">🗑 Clear Bank</button>
-            <button class="btn" onclick="ui._adminUnlockAll()">🔓 Unlock All Areas</button>
-            <button class="btn" onclick="game.state.gold+=1000000;ui.toast({type:'success',text:'+1M gold'})">💰 +1M Gold</button>
+            <button class="btn" onclick="game.state.combat.playerHp=game.getMaxHp();game.state.prayerPoints=99;game.state.specEnergy=100;ui.toast({type:'success',text:'Full restore!'})">⚕ Full HP + Prayer + Special</button>
+            <button class="btn" onclick="Object.keys(game.state.skills).forEach(sk=>{game.state.skills[sk].level=99;game.state.skills[sk].xp=13034431});ui.renderSidebar();ui.toast({type:'success',text:'All skills→99'})">★ Max All Skills to 99</button>
+            <button class="btn" onclick="game.state.gold+=1000000;ui.toast({type:'success',text:'+1M gold'})">💰 Add 1,000,000 Gold</button>
+            <button class="btn" onclick="game.state.gold+=10000000;ui.toast({type:'success',text:'+10M gold'})">💰 Add 10,000,000 Gold</button>
+            <button class="btn" onclick="ui._adminGiveResources()">📦 Give Starter Resource Pack</button>
+            <button class="btn" onclick="ui._adminUnlockAll()">🔓 Unlock All Areas (Max Combat)</button>
             <button class="btn" onclick="ui._adminCompleteAllQuests()">✅ Complete All Quests</button>
-            <button class="btn btn-danger" onclick="if(confirm('RESET ALL DATA?')){localStorage.removeItem('ashfall_save');location.reload()}">⚠ RESET SAVE</button>
+            <button class="btn" onclick="ui._adminClearBank()">🗑 Clear Bank</button>
+            <button class="btn btn-danger" onclick="if(confirm('RESET ALL SAVE DATA?')){localStorage.clear();location.reload()}">⚠ HARD RESET SAVE</button>
           </div>
         </div>
         <div class="aw">
-          <div class="aw-t">Broadcast</div>
-          <textarea id="aw-broadcast" class="admin-textarea" placeholder="Message to all players..."></textarea>
-          <button class="btn" style="width:100%;margin-top:6px" onclick="ui._adminBroadcast()">📢 Send System Message</button>
+          <div class="aw-t">Broadcast to All Players</div>
+          <textarea id="aw-broadcast" class="admin-textarea" placeholder="Message shown in global chat..."></textarea>
+          <button class="btn" style="width:100%;margin-top:6px" onclick="ui._adminBroadcast()">📢 Send System Broadcast</button>
         </div>
         <div class="aw">
           <div class="aw-t">Connection Status</div>
-          <div id="aw-firestore-status" class="admin-status">Checking...</div>
-          <div id="aw-rtdb-status" class="admin-status" style="margin-top:6px">Checking RTDB...</div>
-          <button class="btn" style="width:100%;margin-top:8px" onclick="ui._adminCheckConnections()">↻ Test Connections</button>
+          <div id="aw-con-fs" class="admin-status">Checking Firestore...</div>
+          <div id="aw-con-rt" class="admin-status" style="margin-top:4px">Checking RTDB...</div>
+          <button class="btn" style="width:100%;margin-top:8px" onclick="ui._adminCheckConnections()">↻ Test Now</button>
+          <div style="margin-top:8px;font-size:12px;color:var(--text-dim)">
+            ${typeof online !== 'undefined' && online.isOnline ? '<span style="color:#3a9e5c">● Online</span>' : '<span style="color:#c44040">● Offline</span>'}
+            ${typeof online !== 'undefined' && online.user ? ' · UID: '+online.user.uid.slice(0,12)+'...' : ''}
+          </div>
         </div>
-      </div>`;
-    }
+      </div>
+    </div>`;
 
-    // ── PLAYER TAB ────────────────────────────────────────────────
-    else if (tab === 'player') {
-      html += `<div class="admin-grid">
+    // ── PLAYER MANAGEMENT ─────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-player_mgr" style="display:none">
+      <div class="admin-grid">
         <div class="aw aw-wide">
-          <div class="aw-t">Player Lookup</div>
+          <div class="aw-t">Search Players in Firestore</div>
           <input type="text" id="aw-player-search" class="chat-input" placeholder="Search by display name..." oninput="ui._adminSearchPlayer(this.value)">
-          <div id="aw-player-results" style="margin-top:8px"></div>
+          <div id="aw-player-results" style="margin-top:10px"></div>
         </div>
         <div class="aw">
-          <div class="aw-t">Set Display Name</div>
+          <div class="aw-t">Set Your Display Name</div>
           <input type="text" id="aw-set-name" class="chat-input" value="${typeof online !== 'undefined' ? (online.displayName||'') : ''}" placeholder="New display name">
-          <button class="btn" style="width:100%;margin-top:6px" onclick="ui._adminSetName()">Set Name</button>
+          <button class="btn" style="width:100%;margin-top:6px" onclick="ui._adminSetName()">Set Name + Sync</button>
         </div>
         <div class="aw">
-          <div class="aw-t">Set Alignment</div>
+          <div class="aw-t">Change Alignment</div>
           <select id="aw-align" class="rank-select" style="width:100%;margin-bottom:6px">
             ${Object.keys(GAME_DATA.alignments||{}).map(a=>`<option value="${a}" ${s.alignment===a?'selected':''}>${GAME_DATA.alignments[a].name}</option>`).join('')}
           </select>
-          <button class="btn" style="width:100%" onclick="game.state.alignment=document.getElementById('aw-align').value;ui.toast({type:'success',text:'Alignment set'});ui.renderPage('admin')">Apply</button>
+          <button class="btn" style="width:100%" onclick="game.state.alignment=document.getElementById('aw-align').value;ui.toast({type:'success',text:'Alignment set'})">Apply Alignment</button>
         </div>
         <div class="aw">
-          <div class="aw-t">Combat Stats</div>
-          <div style="font-size:12px;line-height:2">
-            HP: ${s.combat?.playerHp||0} / ${this.engine.getMaxHp()}<br>
-            Prayer: ${s.prayerPoints||0} / 99<br>
-            Special Energy: ${s.specEnergy||0}%<br>
-            Slayer Task: ${s.slayerTask?.monster||'None'} (${s.slayerTask?.remaining||0} left)
+          <div class="aw-t">Raw State Inspector</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">Type any path: <code>skills.attack.level</code>, <code>gold</code>, <code>guild.name</code></div>
+          <input type="text" id="aw-state-path" class="chat-input" placeholder="e.g. skills.woodcutting.level" oninput="ui._adminInspectState(this.value)">
+          <div id="aw-state-result" style="margin-top:8px;font-size:12px;font-family:var(--font-mono);background:var(--bg-hover);padding:8px;border-radius:4px;min-height:36px;word-break:break-all;color:var(--accent)"></div>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Export / Import Save</div>
+          <button class="btn" style="width:100%;margin-bottom:6px" onclick="ui._adminExportSave()">📥 Export Save as JSON</button>
+          <input type="file" id="aw-import-file" accept=".json" style="font-size:12px;margin-bottom:6px;width:100%">
+          <button class="btn btn-danger" style="width:100%" onclick="ui._adminImportSave()">📤 Import JSON Save</button>
+        </div>
+      </div>
+    </div>`;
+
+    // ── GIVE TO PLAYER ────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-give_player" style="display:none">
+      <div class="admin-grid">
+        <div class="aw aw-wide">
+          <div class="aw-t">Give Items / Gold / XP to Any Player</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;background:rgba(201,135,62,.08);padding:10px;border-radius:6px;border-left:2px solid var(--accent)">
+            This sends items/gold/XP as an inbox message to another player. They receive it on next login.<br>
+            The player must be registered (not anonymous) and have played recently.
           </div>
-          <button class="btn" style="width:100%;margin-top:6px" onclick="ui._adminFullHeal()">Full Restore</button>
+          <div class="admin-grid" style="margin-top:0">
+            <div class="aw">
+              <div class="aw-t">Find Target Player</div>
+              <input type="text" id="aw-give-search" class="chat-input" placeholder="Search player name..." oninput="ui._adminGivePlayerSearch(this.value)">
+              <div id="aw-give-results" style="margin-top:8px;font-size:12px"></div>
+              <div id="aw-give-target" style="margin-top:8px;padding:8px;background:var(--bg-hover);border-radius:6px;font-size:12px;min-height:36px"></div>
+            </div>
+            <div class="aw">
+              <div class="aw-t">What to Give</div>
+              <div style="margin-bottom:8px">
+                <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Gold Amount</label>
+                <input type="number" id="aw-give-gold" class="qty-input" value="0" min="0" style="width:120px">
+              </div>
+              <div style="margin-bottom:8px">
+                <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Item</label>
+                <select id="aw-give-item" class="rank-select" style="width:100%">
+                  <option value="">-- No item --</option>
+                  ${Object.values(GAME_DATA.items||{}).sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${i.id}">${i.name}</option>`).join('')}
+                </select>
+                <input type="number" id="aw-give-item-qty" class="qty-input" value="1" min="1" style="width:80px;margin-top:4px">
+              </div>
+              <div style="margin-bottom:8px">
+                <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Message (optional)</label>
+                <input type="text" id="aw-give-msg" class="chat-input" placeholder="Custom message..." maxlength="100">
+              </div>
+              <button class="btn btn-sm" style="width:100%" onclick="ui._adminSendGift()">🎁 Send Gift</button>
+            </div>
+          </div>
         </div>
-      </div>`;
-    }
+        <div class="aw aw-wide">
+          <div class="aw-t">Global Game Settings (Affects All Players Next Login)</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">These settings are stored in Firestore and loaded by all players on next session.</div>
+          <div class="admin-grid" style="margin-top:0;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
+            <div>
+              <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Global XP Multiplier</label>
+              <input type="number" id="gs-xp-mult" class="qty-input" value="1" min="0.1" max="100" step="0.1" style="width:80px">
+              <span style="font-size:12px;color:var(--text-dim)">×</span>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Global Drop Rate Multiplier</label>
+              <input type="number" id="gs-drop-mult" class="qty-input" value="1" min="0.1" max="100" step="0.1" style="width:80px">
+              <span style="font-size:12px;color:var(--text-dim)">×</span>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Server Message of the Day</label>
+              <input type="text" id="gs-motd" class="chat-input" placeholder="Shown in global chat on login...">
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Maintenance Mode</label>
+              <select id="gs-maintenance" class="rank-select">
+                <option value="0">Off — Normal</option>
+                <option value="1">On — Show warning</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-sm" style="margin-top:12px" onclick="ui._adminSaveGlobalSettings()">💾 Save Global Settings to Firestore</button>
+          <div id="gs-status" style="margin-top:8px;font-size:12px;color:var(--text-dim)"></div>
+        </div>
+      </div>
+    </div>`;
 
-    // ── CONTENT TAB ───────────────────────────────────────────────
-    else if (tab === 'content') {
-      html += `<div class="admin-grid">
-        <div class="aw">
-          <div class="aw-t">Content Counts</div>
-          <table class="admin-table">
-            <tr><td>Items</td><td class="atv">${Object.keys(GAME_DATA.items||{}).length}</td></tr>
-            <tr><td>Monsters</td><td class="atv">${Object.keys(GAME_DATA.monsters||{}).length}</td></tr>
-            <tr><td>Combat Areas</td><td class="atv">${(GAME_DATA.combatAreas||[]).length}</td></tr>
-            <tr><td>Dungeons</td><td class="atv">${(GAME_DATA.dungeons||[]).length}</td></tr>
-            <tr><td>World Bosses</td><td class="atv">${(GAME_DATA.worldBosses||[]).length}</td></tr>
-            <tr><td>Quests</td><td class="atv">${(GAME_DATA.quests||[]).length}</td></tr>
-            <tr><td>Storylines</td><td class="atv">${(GAME_DATA.storylines||[]).length}</td></tr>
-            <tr><td>NPCs</td><td class="atv">${(GAME_DATA.npcs||[]).length}</td></tr>
-            <tr><td>Recipes</td><td class="atv">${Object.values(GAME_DATA.recipes||{}).flat().length}</td></tr>
-            <tr><td>Shop Items</td><td class="atv">${(GAME_DATA.shopItems||[]).length}</td></tr>
-            <tr><td>Achievements</td><td class="atv">${(GAME_DATA.achievements||[]).length}</td></tr>
-            <tr><td>Prayers</td><td class="atv">${(GAME_DATA.prayers||[]).length}</td></tr>
-            <tr><td>Pets</td><td class="atv">${(GAME_DATA.pets||[]).length}</td></tr>
-          </table>
-        </div>
-        <div class="aw">
-          <div class="aw-t">Monster Lookup</div>
-          <input type="text" id="aw-mon-search" class="chat-input" placeholder="Search monster..." oninput="ui._adminMonsterSearch(this.value)">
-          <div id="aw-mon-results" style="margin-top:8px;font-size:12px"></div>
-        </div>
-        <div class="aw">
-          <div class="aw-t">Item Lookup</div>
-          <input type="text" id="aw-item-lookup" class="chat-input" placeholder="Search item..." oninput="ui._adminItemLookup(this.value)">
-          <div id="aw-item-lookup-results" style="margin-top:8px;font-size:12px"></div>
-        </div>
-      </div>`;
-    }
-
-    // ── SKILLS / XP TAB ───────────────────────────────────────────
-    else if (tab === 'skills') {
-      html += `<div class="admin-grid">
+    // ── SKILLS / XP ───────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-skills" style="display:none">
+      <div class="admin-grid">
         <div class="aw aw-wide">
           <div class="aw-t">All Skills — Live Edit</div>
           <div class="admin-skills-grid">
-            ${Object.keys(s.skills).map(sk => {
-              const data = GAME_DATA.skills[sk];
-              return `<div class="ask-row">
-                <span class="ask-name">${data?.name||sk}</span>
-                <span class="ask-lv" style="color:var(--accent)">Lv ${s.skills[sk].level}</span>
-                <button class="btn btn-xs" onclick="game.state.skills['${sk}'].level=Math.min(99,(game.state.skills['${sk}'].level||1)+1);game.state.skills['${sk}'].xp=GAME_DATA.xpTable[game.state.skills['${sk}'].level]||0;ui.renderPage('admin')">+1</button>
-                <button class="btn btn-xs" onclick="game.state.skills['${sk}'].level=Math.min(99,(game.state.skills['${sk}'].level||1)+5);game.state.skills['${sk}'].xp=GAME_DATA.xpTable[game.state.skills['${sk}'].level]||0;ui.renderPage('admin')">+5</button>
-                <button class="btn btn-xs" onclick="game.state.skills['${sk}'].level=99;game.state.skills['${sk}'].xp=13034431;ui.renderPage('admin')">→99</button>
-              </div>`;
-            }).join('')}
+            ${Object.keys(s.skills).map(sk=>{const d=GAME_DATA.skills[sk];return `<div class="ask-row">
+              <span class="ask-name">${d?.name||sk}</span>
+              <span class="ask-lv">${s.skills[sk].level}</span>
+              <button class="btn btn-xs" onclick="game.state.skills['${sk}'].level=Math.min(99,(game.state.skills['${sk}'].level)+1);game.state.skills['${sk}'].xp=GAME_DATA.xpTable[game.state.skills['${sk}'].level]||0;document.querySelector('#ap-skills .ask-row [data-sk=${sk}]').textContent=game.state.skills['${sk}'].level">+1</button>
+              <button class="btn btn-xs" onclick="const lv=Math.min(99,(game.state.skills['${sk}'].level)+5);game.state.skills['${sk}'].level=lv;game.state.skills['${sk}'].xp=GAME_DATA.xpTable[lv]||0;ui.toast({type:'success',text:'${d?.name||sk} → Lv'+lv})">+5</button>
+              <button class="btn btn-xs" onclick="game.state.skills['${sk}'].level=99;game.state.skills['${sk}'].xp=13034431;ui.toast({type:'success',text:'${d?.name||sk} → 99'})">→99</button>
+            </div>`;}).join('')}
           </div>
-          <div style="margin-top:10px;display:flex;gap:8px">
-            <button class="btn btn-sm" onclick="Object.keys(game.state.skills).forEach(sk=>{game.state.skills[sk].level=99;game.state.skills[sk].xp=13034431});ui.renderPage('admin')">Max All → 99</button>
-            <button class="btn btn-sm" onclick="ui._adminGrantXPAll()">Grant Custom XP to All</button>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn btn-sm" onclick="Object.keys(game.state.skills).forEach(sk=>{game.state.skills[sk].level=99;game.state.skills[sk].xp=13034431});ui.renderSidebar();ui.toast({type:'success',text:'All → 99'})">Max All → 99</button>
+            <button class="btn btn-sm" onclick="ui._adminGrantXPAll()">Grant Custom XP to All Skills</button>
           </div>
         </div>
         <div class="aw">
-          <div class="aw-t">Grant XP to Skill</div>
+          <div class="aw-t">Grant XP to Specific Skill</div>
           <select id="aw-xp-skill" class="rank-select" style="width:100%;margin-bottom:8px">
             ${Object.keys(s.skills).map(sk=>`<option value="${sk}">${GAME_DATA.skills[sk]?.name||sk} (Lv${s.skills[sk].level})</option>`).join('')}
           </select>
-          <div style="display:flex;gap:6px;margin-bottom:6px">
+          <div style="display:flex;gap:6px;margin-bottom:10px">
             <input type="number" id="aw-xp-amount" class="qty-input" value="10000" style="width:90px">
             <button class="btn btn-sm" style="flex:1" onclick="ui._adminGiveXP()">Grant XP</button>
           </div>
-          <div class="aw-t" style="margin-top:10px">Quick Grant</div>
-          ${[1000,5000,10000,50000,100000,500000].map(v=>`<button class="btn btn-xs" style="margin:2px" onclick="const sk=document.getElementById('aw-xp-skill')?.value;if(sk){game.addXp(sk,${v});ui.toast({type:'success',text:'+${this.fmt(v)} XP'})}">+${this.fmt(v)}</button>`).join('')}
-        </div>
-      </div>`;
-    }
-
-    // ── ITEMS TAB ─────────────────────────────────────────────────
-    else if (tab === 'items') {
-      html += `<div class="admin-grid">
-        <div class="aw aw-wide">
-          <div class="aw-t">Bank Search — Give Any Item</div>
-          <input type="text" id="aw-bank-search" class="chat-input" placeholder="Type item name to search..." oninput="ui._adminBankSearch(this.value)" autofocus>
-          <div id="aw-bank-results" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${[1000,5000,10000,50000,100000,500000,1000000].map(v=>`<button class="btn btn-xs" onclick="const sk=document.getElementById('aw-xp-skill')?.value;if(sk){game.addXp(sk,${v});ui.toast({type:'success',text:'+${this.fmt(v)} XP'})}">+${this.fmt(v)}</button>`).join('')}
+          </div>
         </div>
         <div class="aw">
-          <div class="aw-t">Give Specific Item</div>
+          <div class="aw-t">XP Rate Multiplier (This Session)</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <input type="range" id="xp-mult-range" min="1" max="50" value="${window._adminXpMult||1}" oninput="ui._adminSetXPMult(this.value)" style="flex:1">
+            <span id="xp-mult-val" style="font-size:20px;font-weight:700;color:var(--accent);min-width:40px">${window._adminXpMult||1}x</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${[1,2,5,10,25,50].map(v=>`<button class="btn btn-sm" onclick="ui._adminSetXPMult(${v})">×${v}</button>`).join('')}
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--text-dim)">Resets on page reload. To permanently change rates, edit the <code>xp</code> field for each action in <code>js/data.js</code>.</div>
+        </div>
+      </div>
+    </div>`;
+
+    // ── ITEMS ─────────────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-items" style="display:none">
+      <div class="admin-grid">
+        <div class="aw aw-wide">
+          <div class="aw-t">Search + Give Any Item (${Object.keys(GAME_DATA.items||{}).length} items)</div>
+          <input type="text" id="aw-bank-search" class="chat-input" placeholder="Type item name..." oninput="ui._adminBankSearch(this.value)" autocomplete="off">
+          <div id="aw-bank-results" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
+            <div style="font-size:12px;color:var(--text-dim);grid-column:1/-1">Type 2+ characters to search all items...</div>
+          </div>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Give from Dropdown</div>
           <select id="aw-item-id" class="rank-select" style="width:100%;margin-bottom:6px">
             ${Object.values(GAME_DATA.items||{}).sort((a,b)=>a.name.localeCompare(b.name)).map(i=>`<option value="${i.id}">${i.name}</option>`).join('')}
           </select>
           <div style="display:flex;gap:6px">
             <input type="number" id="aw-item-qty" class="qty-input" value="1" min="1" style="width:70px">
-            <button class="btn btn-sm" style="flex:1" onclick="ui._adminGiveItem()">Give</button>
+            <button class="btn btn-sm" style="flex:1" onclick="ui._adminGiveItem()">Give to Self</button>
           </div>
         </div>
         <div class="aw">
-          <div class="aw-t">Add Gold</div>
+          <div class="aw-t">Add Gold to Self</div>
           <div style="display:flex;gap:6px;margin-bottom:8px">
-            <input type="number" id="aw-gold" class="qty-input" value="100000" style="width:100px">
+            <input type="number" id="aw-gold" class="qty-input" value="100000" style="width:110px">
             <button class="btn btn-sm" style="flex:1" onclick="ui._adminGiveGold()">Add Gold</button>
           </div>
-          ${[1000,10000,100000,1000000].map(v=>`<button class="btn btn-xs" style="margin:2px" onclick="game.state.gold+=${v};ui.toast({type:'success',text:'+${this.fmt(v)}g'})">+${this.fmt(v)}g</button>`).join('')}
+          ${[1000,10000,100000,1000000,10000000].map(v=>`<button class="btn btn-xs" style="margin:2px" onclick="game.state.gold+=${v};ui.toast({type:'success',text:'+${this.fmt(v)}g'})">+${this.fmt(v)}g</button>`).join('')}
         </div>
-      </div>`;
-    }
+      </div>
+    </div>`;
 
-    // ── QUESTS TAB ────────────────────────────────────────────────
-    else if (tab === 'quests') {
-      html += `<div class="admin-grid">
-        <div class="aw">
-          <div class="aw-t">Quest Control</div>
-          <select id="aw-quest-id" class="rank-select" style="width:100%;margin-bottom:8px">
-            ${GAME_DATA.quests.map(q=>`<option value="${q.id}" ${s.quests.completed.includes(q.id)?'style="color:#3a9e5c"':s.quests.active.includes(q.id)?'style="color:var(--accent)"':''}>${s.quests.completed.includes(q.id)?'✓ ':s.quests.active.includes(q.id)?'▶ ':''}${q.name}</option>`).join('')}
-          </select>
-          <div style="display:flex;gap:4px;flex-wrap:wrap">
-            <button class="btn btn-sm" onclick="ui._adminStartQuest()">▶ Start</button>
-            <button class="btn btn-sm" onclick="ui._adminCompleteQuest()">✓ Complete</button>
-            <button class="btn btn-sm btn-danger" onclick="ui._adminRemoveQuest()">✕ Remove</button>
-          </div>
-          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn btn-sm" onclick="ui._adminCompleteAllQuests()">✓ Complete ALL Quests</button>
-            <button class="btn btn-sm btn-danger" onclick="if(confirm('Reset ALL quests?')){game.state.quests={active:[],completed:[],progress:{}};ui.renderPage('admin')}">Reset All</button>
-          </div>
-        </div>
-        <div class="aw">
-          <div class="aw-t">Quest Progress</div>
-          <table class="admin-table">
-            <tr><td>Active</td><td class="atv">${s.quests.active.length}</td></tr>
-            <tr><td>Completed</td><td class="atv">${s.quests.completed.length}</td></tr>
-            <tr><td>Total Quests</td><td class="atv">${GAME_DATA.quests.length}</td></tr>
-            <tr><td>% Done</td><td class="atv">${Math.round(s.quests.completed.length/GAME_DATA.quests.length*100)}%</td></tr>
-          </table>
-          <div class="aw-t" style="margin-top:10px">Active Quests</div>
-          ${s.quests.active.map(qId=>{const q=GAME_DATA.quests.find(x=>x.id===qId);return `<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">${q?.name||qId} <button class="btn btn-xs" onclick="game.state.quests.active=game.state.quests.active.filter(x=>x!=='${qId}');if(!game.state.quests.completed.includes('${qId}'))game.state.quests.completed.push('${qId}');ui.renderPage('admin')">Complete</button></div>`;}).join('')||'<div style="font-size:12px;color:var(--text-dim)">None active</div>'}
-        </div>
-      </div>`;
-    }
-
-    // ── SVG EDITOR TAB ────────────────────────────────────────────
-    else if (tab === 'svg') {
-      html += `<div class="admin-grid">
-        <div class="aw aw-wide">
-          <div class="aw-t">SVG Preview Tool — Paste SVG code and preview it live</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div>
-              <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Paste SVG code here:</div>
-              <textarea id="svg-editor-input" class="admin-textarea" style="height:200px;font-family:var(--font-mono);font-size:12px" oninput="ui._adminPreviewSVG()" placeholder='&lt;svg viewBox="0 0 48 48"&gt;...&lt;/svg&gt;'></textarea>
-              <button class="btn btn-sm" style="width:100%;margin-top:6px" onclick="ui._adminCopySVG()">📋 Copy SVG</button>
-            </div>
-            <div>
-              <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Preview (48x48, 96x96, 192x192):</div>
-              <div id="svg-preview-area" style="display:flex;align-items:flex-start;gap:16px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;min-height:200px;flex-wrap:wrap">
-                <div id="svg-p-48" style="width:48px;height:48px"></div>
-                <div id="svg-p-96" style="width:96px;height:96px"></div>
-                <div id="svg-p-192" style="width:192px;height:192px"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="aw aw-wide">
-          <div class="aw-t">How to Update SVG Art</div>
-          <div class="admin-guide">
-            <div class="ag-step"><span class="ag-num">1</span><div><strong>Skill Action Art</strong> — Edit <code>js/sprites-skills.js</code>. Find the key (e.g. <code>chop_oak</code>) and replace the SVG string. Use viewBox="0 0 48 48". After editing, push to GitHub and Vercel redeploys automatically.</div></div>
-            <div class="ag-step"><span class="ag-num">2</span><div><strong>Monster Art</strong> — In <code>js/data.js</code>, find <code>GAME_DATA.monsterArt</code> and update <code>art.monster_id</code>. 80x80 viewBox works best.</div></div>
-            <div class="ag-step"><span class="ag-num">3</span><div><strong>Quest Art</strong> — Each quest definition has an <code>art</code> property. Set it to an SVG string. 48x48 viewBox.</div></div>
-            <div class="ag-step"><span class="ag-num">4</span><div><strong>Test here</strong> — Paste your SVG in the editor above to preview at different sizes before adding to code.</div></div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    // ── XP RATES TAB ──────────────────────────────────────────────
-    else if (tab === 'rates') {
-      html += `<div class="admin-grid">
-        <div class="aw aw-wide">
-          <div class="aw-t">XP Rate Multiplier (session only — resets on reload)</div>
-          <div style="margin-bottom:12px;font-size:12px;color:var(--text-dim)">
-            This changes how much XP each action gives for YOUR current session.<br>
-            To make permanent changes, edit the <code>xp</code> field in <code>js/data.js</code> for each action.
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-            <span style="font-size:13px">XP Multiplier:</span>
-            <input type="range" id="xp-mult-range" min="1" max="50" value="${window._adminXpMult||1}" oninput="ui._adminSetXPMult(this.value)">
-            <span id="xp-mult-val" style="font-size:16px;font-weight:600;color:var(--accent)">${window._adminXpMult||1}x</span>
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            ${[1,2,5,10,25,50].map(v=>`<button class="btn btn-sm ${(window._adminXpMult||1)==v?'active':''}" onclick="ui._adminSetXPMult(${v})">×${v}</button>`).join('')}
-          </div>
-        </div>
-        <div class="aw aw-wide">
-          <div class="aw-t">How to Permanently Change XP Rates</div>
-          <div class="admin-guide">
-            <div class="ag-step"><span class="ag-num">1</span><div><strong>Gathering actions</strong> — In <code>js/data.js</code>, find <code>gatheringActions</code>. Each action has an <code>xp</code> field. Change the number.</div></div>
-            <div class="ag-step"><span class="ag-num">2</span><div><strong>Recipes (smithing, cooking, etc)</strong> — Find <code>recipes</code> in <code>js/data.js</code>. Each recipe has an <code>xp</code> field. Update it.</div></div>
-            <div class="ag-step"><span class="ag-num">3</span><div><strong>Combat XP</strong> — Monster objects have <code>xp:{attack:N, strength:N, hitpoints:N}</code>. Edit these values.</div></div>
-            <div class="ag-step"><span class="ag-num">4</span><div><strong>Commit to GitHub</strong> — All changes go to <code>MisTAiM/ashfall-idle</code>. Vercel auto-deploys on push. Use the GitHub web editor or push from git.</div></div>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    // ── NETWORK TAB ───────────────────────────────────────────────
-    else if (tab === 'network') {
-      html += `<div class="admin-grid">
-        <div class="aw">
-          <div class="aw-t">Connection Status</div>
-          <div id="aw-firestore-status" class="admin-status">Checking Firestore...</div>
-          <div id="aw-rtdb-status" class="admin-status" style="margin-top:6px">Checking RTDB...</div>
-          <button class="btn" style="width:100%;margin-top:8px" onclick="ui._adminCheckConnections()">↻ Re-test</button>
-        </div>
-        <div class="aw">
-          <div class="aw-t">Firestore Rules</div>
-          <div style="font-size:12px;color:var(--text-dim);line-height:1.8">
-            File: <code>firestore.rules</code><br>
-            Deploy: Firebase Console → Firestore → Rules → Paste → Publish<br>
-            Required collections:<br>
-            <code>friend_requests, friends, players, saves, guilds, messages, inbox, bazaar, pvp_queue, leaderboard, bounties</code>
-          </div>
-          <button class="btn" style="width:100%;margin-top:8px" onclick="window.open('https://console.firebase.google.com/project/ashfall-idle/firestore/rules')">Open Firebase Console</button>
-        </div>
-        <div class="aw">
-          <div class="aw-t">Online Players</div>
-          <div id="aw-online-count" style="font-size:12px;color:var(--text-dim)">Loading...</div>
-          <button class="btn" style="width:100%;margin-top:8px" onclick="ui._adminLoadOnlinePlayers()">↻ Load</button>
-          <div id="aw-online-list" style="margin-top:8px;font-size:12px"></div>
-        </div>
-        <div class="aw">
-          <div class="aw-t">Broadcast Message</div>
-          <textarea id="aw-broadcast" class="admin-textarea" placeholder="Message to all players..."></textarea>
-          <button class="btn" style="width:100%;margin-top:6px" onclick="ui._adminBroadcast()">📢 Broadcast</button>
-          <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">Appears in global chat as system message</div>
-        </div>
-      </div>`;
-    }
-
-    // ── DATABASE TAB ──────────────────────────────────────────────
-    else if (tab === 'db') {
-      html += `<div class="admin-grid">
-        <div class="aw aw-wide">
-          <div class="aw-t">GitHub Repo</div>
-          <div style="font-size:12px;color:var(--text-dim);line-height:1.8;margin-bottom:8px">
-            Repo: <code>MisTAiM/ashfall-idle</code><br>
-            All game files are in <code>/js/</code> and <code>/css/</code><br>
-            Vercel auto-deploys on every push to <code>main</code> branch
-          </div>
-          <button class="btn" onclick="window.open('https://github.com/MisTAiM/ashfall-idle')">Open GitHub Repo</button>
-          <button class="btn" style="margin-left:6px" onclick="window.open('https://vercel.com/mistaims-projects/ashfall-idle')">Open Vercel</button>
-        </div>
-        <div class="aw">
-          <div class="aw-t">Export Save</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Download your game save as JSON</div>
-          <button class="btn" style="width:100%" onclick="ui._adminExportSave()">📥 Export Save JSON</button>
-        </div>
-        <div class="aw">
-          <div class="aw-t">Import Save</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Load a previously exported save</div>
-          <input type="file" id="aw-import-file" accept=".json" style="font-size:12px;margin-bottom:6px">
-          <button class="btn btn-danger" style="width:100%" onclick="ui._adminImportSave()">📤 Import Save</button>
-        </div>
-        <div class="aw aw-wide">
-          <div class="aw-t">Raw State Inspector</div>
-          <input type="text" id="aw-state-path" class="chat-input" placeholder="e.g. skills.attack.level or gold" oninput="ui._adminInspectState(this.value)">
-          <div id="aw-state-result" style="margin-top:8px;font-size:12px;font-family:var(--font-mono);background:var(--bg-hover);padding:8px;border-radius:4px;min-height:40px;word-break:break-all"></div>
-        </div>
-      </div>`;
-    }
-
-    // ── DROP TABLES TAB ──────────────────────────────────────────
-    else if (tab === 'drops') {
-      const monsters = Object.values(GAME_DATA.monsters||{}).sort((a,b)=>a.name.localeCompare(b.name));
-      const selMon = this._adminDropMon || monsters[0]?.id || '';
-      const mon = GAME_DATA.monsters[selMon];
-      html += `<div class="admin-grid">
-        <div class="aw">
+    // ── DROP TABLES ───────────────────────────────────────────────
+    const monsters = Object.values(GAME_DATA.monsters||{}).sort((a,b)=>a.combatLevel-b.combatLevel);
+    const selMon = this._adminDropMon || monsters[0]?.id || '';
+    const mon = GAME_DATA.monsters[selMon];
+    html += `<div class="admin-panel" id="ap-drops" style="display:none">
+      <div class="admin-grid">
+        <div class="aw" style="max-height:600px;overflow-y:auto">
           <div class="aw-t">Select Monster</div>
-          <input type="text" id="aw-drop-search" class="chat-input" placeholder="Filter monsters..." oninput="ui._adminFilterDropMons(this.value)" style="margin-bottom:8px">
+          <input type="text" class="chat-input" placeholder="Filter..." oninput="ui._adminFilterDropMons(this.value)" style="margin-bottom:8px">
           <div id="aw-drop-mon-list" class="admin-mon-list">
             ${monsters.map(m=>`<div class="adm-row ${selMon===m.id?'adm-active':''}" onclick="ui._adminSelectDropMon('${m.id}')">${m.name} <span style="color:var(--text-dim);font-size:11px">Lv${m.combatLevel}</span></div>`).join('')}
           </div>
         </div>
         <div class="aw aw-wide" id="aw-drop-editor">
-          ${mon ? `<div class="aw-t">Drop Table: ${mon.name} (Lv${mon.combatLevel})</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Edit drops directly. Changes apply this session only — to make permanent, edit <code>js/data.js</code>.</div>
-          <div id="aw-drop-rows">
-            ${(mon.drops||[]).map((d,i)=>`
-            <div class="drop-edit-row" id="drop-row-${i}">
-              <select class="rank-select" id="drop-item-${i}" style="flex:2;min-width:120px">
+          ${mon ? `<div class="aw-t">Drop Table: ${mon.name} (Lv${mon.combatLevel} | HP: ${mon.hp})</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Edit live. <strong>Save Changes</strong> updates this session. To make permanent: copy the export below into <code>js/data.js</code> under the monster's <code>drops</code> field.</div>
+          <div id="aw-drop-rows" class="admin-drop-rows">
+            ${(mon.drops||[]).map((d,i)=>`<div class="drop-edit-row" id="drop-row-${i}">
+              <select class="rank-select drop-item-sel" id="drop-item-${i}" style="flex:2;min-width:130px">
                 ${Object.values(GAME_DATA.items||{}).sort((a,b)=>a.name.localeCompare(b.name)).map(it=>`<option value="${it.id}" ${d.item===it.id?'selected':''}>${it.name}</option>`).join('')}
               </select>
-              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-                <label style="font-size:11px;color:var(--text-dim)">Qty</label>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-size:11px;color:var(--text-dim)">Qty</span>
                 <input type="number" class="qty-input" id="drop-qty-${i}" value="${d.qty||1}" min="1" style="width:55px">
               </div>
-              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-                <label style="font-size:11px;color:var(--text-dim)">Chance</label>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-size:11px;color:var(--text-dim)">Chance</span>
                 <input type="number" class="qty-input" id="drop-chance-${i}" value="${((d.chance||1)*100).toFixed(1)}" min="0.01" max="100" step="0.1" style="width:65px">
                 <span style="font-size:11px;color:var(--text-dim)">%</span>
               </div>
@@ -3664,106 +3552,320 @@ class UI {
             </div>`).join('')}
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-            <button class="btn btn-sm" onclick="ui._adminSaveDrops('${selMon}')">💾 Save Changes</button>
-            <button class="btn btn-sm" onclick="ui._adminAddDrop('${selMon}')">+ Add Drop</button>
-            <button class="btn btn-sm" onclick="ui._adminTestDrops('${selMon}')">🎲 Simulate 100 Kills</button>
+            <button class="btn btn-sm" onclick="ui._adminSaveDrops('${selMon}')">💾 Save to Session</button>
+            <button class="btn btn-sm" onclick="ui._adminAddDrop('${selMon}')">+ Add Drop Row</button>
+            <button class="btn btn-sm" onclick="ui._adminTestDrops('${selMon}')">🎲 Simulate 1000 Kills</button>
           </div>
-          <div id="aw-drop-sim" style="margin-top:10px;font-size:12px"></div>
-          <div class="aw-t" style="margin-top:16px">Export for data.js</div>
-          <textarea id="aw-drop-export" class="admin-textarea" style="font-family:var(--font-mono);font-size:11px;height:120px" readonly
-            placeholder="Click 'Save Changes' then this will show the copy-pasteable drop array"></textarea>` : '<div class="fr-empty">Select a monster</div>'}
+          <div id="aw-drop-sim" style="margin-top:8px;font-size:12px;color:var(--accent)"></div>
+          <div class="aw-t" style="margin-top:14px">Copy-Paste for data.js</div>
+          <textarea id="aw-drop-export" class="admin-textarea" style="font-family:var(--font-mono);font-size:11px;height:120px" readonly placeholder="Click Save to generate..."></textarea>
+          ` : '<div class="fr-empty" style="padding:20px">← Select a monster to edit its drops</div>'}
         </div>
-      </div>`;
-    }
+      </div>
+    </div>`;
 
-    html += `</div>`;
+    // ── QUESTS ────────────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-quests" style="display:none">
+      <div class="admin-grid">
+        <div class="aw">
+          <div class="aw-t">Quest Control</div>
+          <input type="text" id="aw-quest-filter" class="chat-input" placeholder="Filter quests..." oninput="ui._adminFilterQuests(this.value)" style="margin-bottom:8px">
+          <div id="aw-quest-list" style="max-height:400px;overflow-y:auto">
+            ${GAME_DATA.quests.map(q=>`<div class="adq-row ${s.quests.completed.includes(q.id)?'adq-done':s.quests.active.includes(q.id)?'adq-active':''}">
+              <span style="font-size:12px;flex:1">${s.quests.completed.includes(q.id)?'✓ ':s.quests.active.includes(q.id)?'▶ ':''}${q.name}</span>
+              <div style="display:flex;gap:3px">
+                <button class="btn btn-xs" onclick="if(!game.state.quests.active.includes('${q.id}')){game.state.quests.active.push('${q.id}');game.state.quests.progress['${q.id}']=[]};ui.toast({type:'info',text:'Started'})">▶</button>
+                <button class="btn btn-xs" onclick="game.state.quests.active=game.state.quests.active.filter(x=>x!=='${q.id}');if(!game.state.quests.completed.includes('${q.id}'))game.state.quests.completed.push('${q.id}');ui.toast({type:'success',text:'Done!'})">✓</button>
+                <button class="btn btn-xs btn-danger" onclick="game.state.quests.active=game.state.quests.active.filter(x=>x!=='${q.id}');game.state.quests.completed=game.state.quests.completed.filter(x=>x!=='${q.id}');delete game.state.quests.progress['${q.id}'];ui.toast({type:'info',text:'Removed'})">✕</button>
+              </div>
+            </div>`).join('')}
+          </div>
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn btn-sm" onclick="for(const q of GAME_DATA.quests){if(!game.state.quests.completed.includes(q.id))game.state.quests.completed.push(q.id)};game.state.quests.active=[];ui.toast({type:'success',text:'All done!'})">✅ Complete All</button>
+            <button class="btn btn-sm btn-danger" onclick="if(confirm('Reset all quests?')){game.state.quests={active:[],completed:[],progress:{}};ui.toast({type:'info',text:'Reset!'})}">Reset All</button>
+          </div>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Quest Stats</div>
+          <table class="admin-table">
+            <tr><td>Active</td><td class="atv">${s.quests.active.length}</td></tr>
+            <tr><td>Completed</td><td class="atv">${s.quests.completed.length}</td></tr>
+            <tr><td>Total</td><td class="atv">${GAME_DATA.quests.length}</td></tr>
+            <tr><td>Progress</td><td class="atv">${Math.round(s.quests.completed.length/Math.max(1,GAME_DATA.quests.length)*100)}%</td></tr>
+          </table>
+          <div class="aw-t" style="margin-top:10px">Active</div>
+          ${s.quests.active.map(id=>{const q=GAME_DATA.quests.find(x=>x.id===id);return `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;display:flex;gap:6px;align-items:center"><span style="flex:1">${q?.name||id}</span><button class="btn btn-xs" onclick="game.state.quests.active=game.state.quests.active.filter(x=>x!=='${id}');if(!game.state.quests.completed.includes('${id}'))game.state.quests.completed.push('${id}');ui.toast({type:'success',text:'Done'})">✓</button></div>`;}).join('')||'<div style="font-size:12px;color:var(--text-dim)">None active</div>'}
+        </div>
+      </div>
+    </div>`;
+
+    // ── GAME SETTINGS ─────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-settings" style="display:none">
+      <div class="admin-grid">
+        <div class="aw aw-wide">
+          <div class="aw-t">How to Change Anything Permanently</div>
+          <div class="admin-guide">
+            <div class="ag-step"><span class="ag-num">1</span><div><strong>XP rates</strong> — In <code>js/data.js</code>, find <code>gatheringActions</code> or <code>recipes</code>. Every action/recipe has an <code>xp</code> field. Change the number. For monsters, find their entry and change <code>xp:{attack:N, strength:N}</code>.</div></div>
+            <div class="ag-step"><span class="ag-num">2</span><div><strong>Drop tables</strong> — Use the Drop Tables tab above to edit visually and get the copy-paste code, then paste it into <code>js/data.js</code> in the monster's <code>drops</code> array.</div></div>
+            <div class="ag-step"><span class="ag-num">3</span><div><strong>SVG art</strong> — See SVG Editor tab. Paste your SVG, preview it, then copy to <code>js/sprites-skills.js</code> (skill actions) or <code>js/data.js</code> in <code>GAME_DATA.monsterArt</code>.</div></div>
+            <div class="ag-step"><span class="ag-num">4</span><div><strong>Item prices / stats</strong> — In <code>js/data.js</code>, find the item by ID. Change <code>sellPrice</code>, <code>stats</code>, or <code>levelReq</code> fields.</div></div>
+            <div class="ag-step"><span class="ag-num">5</span><div><strong>Deploying changes</strong> — Commit to GitHub (<code>MisTAiM/ashfall-idle</code>) and Vercel auto-deploys to <a href="https://ashfall-idle.vercel.app" target="_blank" style="color:var(--accent)">ashfall-idle.vercel.app</a> within ~90 seconds.</div></div>
+            <div class="ag-step"><span class="ag-num">6</span><div><strong>Firestore rules</strong> — Deploy <code>firestore.rules</code> via <a href="https://console.firebase.google.com/project/ashfall-idle/firestore/rules" target="_blank" style="color:var(--accent)">Firebase Console → Firestore → Rules → Publish</a>.</div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+            <button class="btn" onclick="window.open('https://github.com/MisTAiM/ashfall-idle')">Open GitHub Repo</button>
+            <button class="btn" onclick="window.open('https://vercel.com/mistaims-projects/ashfall-idle')">Open Vercel Dashboard</button>
+            <button class="btn" onclick="window.open('https://console.firebase.google.com/project/ashfall-idle')">Open Firebase Console</button>
+          </div>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Content Counts</div>
+          <table class="admin-table">
+            ${[
+              ['Items', Object.keys(GAME_DATA.items||{}).length],
+              ['Monsters', Object.keys(GAME_DATA.monsters||{}).length],
+              ['Combat Areas', (GAME_DATA.combatAreas||[]).length],
+              ['Dungeons', (GAME_DATA.dungeons||[]).length],
+              ['World Bosses', (GAME_DATA.worldBosses||[]).length],
+              ['Quests', (GAME_DATA.quests||[]).length],
+              ['Storylines', (GAME_DATA.storylines||[]).length],
+              ['NPCs', (GAME_DATA.npcs||[]).length],
+              ['Recipes', Object.values(GAME_DATA.recipes||{}).flat().length],
+              ['Achievements', (GAME_DATA.achievements||[]).length],
+              ['Shop Items', (GAME_DATA.shopItems||[]).length],
+              ['Prayers', (GAME_DATA.prayers||[]).length],
+              ['Pets', (GAME_DATA.pets||[]).length],
+            ].map(([k,v])=>`<tr><td>${k}</td><td class="atv">${v}</td></tr>`).join('')}
+          </table>
+        </div>
+      </div>
+    </div>`;
+
+    // ── SVG EDITOR ────────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-svg" style="display:none">
+      <div class="admin-grid">
+        <div class="aw aw-wide">
+          <div class="aw-t">Live SVG Preview — Paste code, see it instantly</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <textarea id="svg-editor-input" class="admin-textarea" style="height:220px;font-family:var(--font-mono);font-size:12px" oninput="ui._adminPreviewSVG()" placeholder='&lt;svg viewBox="0 0 48 48"&gt;
+  &lt;circle cx="24" cy="24" r="20" fill="#c9873e"/&gt;
+&lt;/svg&gt;'></textarea>
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <button class="btn btn-sm" style="flex:1" onclick="ui._adminCopySVG()">📋 Copy SVG</button>
+                <button class="btn btn-sm" onclick="document.getElementById('svg-editor-input').value='';ui._adminPreviewSVG()">Clear</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Preview at 48×48 · 96×96 · 192×192:</div>
+              <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;min-height:200px">
+                <div><div style="font-size:10px;color:var(--text-dim);text-align:center;margin-bottom:4px">48px</div><div id="svg-p-48" style="width:48px;height:48px;border:1px solid var(--border);border-radius:4px"></div></div>
+                <div><div style="font-size:10px;color:var(--text-dim);text-align:center;margin-bottom:4px">96px</div><div id="svg-p-96" style="width:96px;height:96px;border:1px solid var(--border);border-radius:4px"></div></div>
+                <div><div style="font-size:10px;color:var(--text-dim);text-align:center;margin-bottom:4px">192px</div><div id="svg-p-192" style="width:192px;height:192px;border:1px solid var(--border);border-radius:4px"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="aw aw-wide">
+          <div class="aw-t">Where to Put Your SVG</div>
+          <div class="admin-guide">
+            <div class="ag-step"><span class="ag-num">A</span><div><strong>Skill Action Art</strong> (woodcutting, mining, etc) → <code>js/sprites-skills.js</code><br>Find the key like <code>chop_oak:</code> and replace the backtick-string SVG. Keep viewBox="0 0 48 48".</div></div>
+            <div class="ag-step"><span class="ag-num">B</span><div><strong>Monster Art</strong> → <code>js/data.js</code>, find <code>GAME_DATA.monsterArt</code>, set <code>art.monster_id = \`&lt;svg...&gt;\`</code>. Use viewBox="0 0 80 80".</div></div>
+            <div class="ag-step"><span class="ag-num">C</span><div><strong>Quest Art</strong> → Each quest object in <code>js/data.js</code> has an <code>art</code> property. Set it to your SVG string. Use viewBox="0 0 48 48".</div></div>
+            <div class="ag-step"><span class="ag-num">D</span><div><strong>Item Sprites</strong> → <code>js/sprites.js</code>. These use a different system (palette+template). Each item has a <code>sprite</code> field matching a template key.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    // ── DATA & DEPLOY ─────────────────────────────────────────────
+    html += `<div class="admin-panel" id="ap-db" style="display:none">
+      <div class="admin-grid">
+        <div class="aw">
+          <div class="aw-t">Save Management</div>
+          <button class="btn" style="width:100%;margin-bottom:6px" onclick="ui._adminExportSave()">📥 Export Save as JSON</button>
+          <input type="file" id="aw-import-file" accept=".json" style="font-size:12px;margin-bottom:6px;width:100%">
+          <button class="btn btn-danger" style="width:100%;margin-bottom:6px" onclick="ui._adminImportSave()">📤 Import JSON Save</button>
+          <button class="btn btn-danger" style="width:100%" onclick="if(confirm('RESET ALL?')){localStorage.clear();location.reload()}">⚠ Hard Reset Everything</button>
+        </div>
+        <div class="aw">
+          <div class="aw-t">Quick Links</div>
+          <div class="aw-btns">
+            <button class="btn" onclick="window.open('https://github.com/MisTAiM/ashfall-idle')">GitHub: MisTAiM/ashfall-idle</button>
+            <button class="btn" onclick="window.open('https://vercel.com/mistaims-projects/ashfall-idle')">Vercel Dashboard</button>
+            <button class="btn" onclick="window.open('https://console.firebase.google.com/project/ashfall-idle')">Firebase Console</button>
+            <button class="btn" onclick="window.open('https://console.firebase.google.com/project/ashfall-idle/firestore/rules')">Firestore Rules</button>
+            <button class="btn" onclick="window.open('https://console.firebase.google.com/project/ashfall-idle/authentication/users')">Auth Users</button>
+          </div>
+        </div>
+        <div class="aw aw-wide">
+          <div class="aw-t">Raw State Inspector</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Type any path to inspect live game state. Examples: <code>gold</code> · <code>skills.attack.level</code> · <code>guild.name</code> · <code>combat.playerHp</code></div>
+          <input type="text" id="aw-state-path2" class="chat-input" placeholder="Enter path..." oninput="ui._adminInspectState2(this.value)">
+          <pre id="aw-state-result2" style="margin-top:8px;font-size:12px;font-family:var(--font-mono);background:var(--bg-hover);padding:10px;border-radius:4px;min-height:60px;word-break:break-all;color:var(--accent);white-space:pre-wrap;max-height:300px;overflow-y:auto"></pre>
+        </div>
+      </div>
+    </div>`;
+
     el.innerHTML = html;
-    setTimeout(()=>{ui._adminCheckConnections();}, 300);
+    setTimeout(()=>ui._adminCheckConnections(), 200);
   }
 
-  _switchAdminTab(t) { this._adminTabId = t; this.renderPage('admin'); }
+  _adminShowTab(tabId, btn) {
+    document.querySelectorAll('.admin-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+    const panel = document.getElementById('ap-' + tabId);
+    if (panel) panel.style.display = 'block';
+    if (btn) btn.classList.add('active');
+    this._adminDropMon = this._adminDropMon;
+  }
 
   _adminSelectDropMon(id) {
     this._adminDropMon = id;
-    this._adminTabId = 'drops';
     this.renderPage('admin');
+    // After re-render, switch to drops tab
+    setTimeout(()=>{
+      const panel = document.getElementById('ap-drops');
+      if (panel) panel.style.display = 'block';
+      document.querySelectorAll('.admin-panel').forEach(p=>{ if(p.id!=='ap-drops') p.style.display='none'; });
+      document.querySelectorAll('.admin-tab').forEach(b=>{ b.classList.toggle('active', b.textContent.trim()==='Drop Tables'); });
+    }, 50);
   }
 
   _adminFilterDropMons(query) {
-    const list = document.getElementById('aw-drop-mon-list');
-    if (!list) return;
-    const q = query.toLowerCase();
-    list.querySelectorAll('.adm-row').forEach(row => {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    document.querySelectorAll('#aw-drop-mon-list .adm-row').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
     });
+  }
+
+  _adminFilterQuests(query) {
+    document.querySelectorAll('#aw-quest-list .adq-row').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
+    });
+  }
+
+  async _adminSendGift() {
+    const targetUid = this._adminGiftTarget;
+    if (!targetUid) { this.toast({type:'warn',text:'Select a target player first'}); return; }
+    const gold = parseInt(document.getElementById('aw-give-gold')?.value)||0;
+    const itemId = document.getElementById('aw-give-item')?.value;
+    const qty = parseInt(document.getElementById('aw-give-item-qty')?.value)||1;
+    const msg = document.getElementById('aw-give-msg')?.value?.trim()||'Gift from Admin';
+    if (!gold && !itemId) { this.toast({type:'warn',text:'Choose something to give'}); return; }
+    try {
+      const payload = { to: targetUid, from: online.user?.uid, fromName:'Admin (Morpheus)', type:'gift', gold, itemId: itemId||null, qty: itemId?qty:0, message: msg, read: false, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+      await online.firestore.collection('inbox').add(payload);
+      this.toast({type:'success', text:`Gift sent! ${gold>0?gold+'g':''} ${itemId?qty+'x '+GAME_DATA.items[itemId]?.name:''}`});
+    } catch(e) { this.toast({type:'danger',text:'Send failed: '+e.message}); }
+  }
+
+  async _adminGivePlayerSearch(query) {
+    const container = document.getElementById('aw-give-results');
+    const targetDiv = document.getElementById('aw-give-target');
+    if (!container || !query || query.length < 2) { if(container) container.innerHTML=''; return; }
+    if (!online?.isOnline) { container.innerHTML='<span style="color:#c44040">Not connected</span>'; return; }
+    try {
+      const results = await online.searchPlayers(query);
+      container.innerHTML = results.slice(0,6).map(p=>`<div style="padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;font-size:12px">
+        <span style="flex:1"><strong>${this.escHtml(p.name)}</strong> Cb${p.combatLevel||0}</span>
+        <button class="btn btn-xs" onclick="ui._adminSetGiftTarget('${p.uid}','${this.escHtml(p.name)}')">Select</button>
+      </div>`).join('') || '<span style="color:var(--text-dim)">No results</span>';
+    } catch(e) { container.innerHTML='<span style="color:#c44040">Error</span>'; }
+  }
+
+  _adminSetGiftTarget(uid, name) {
+    this._adminGiftTarget = uid;
+    const el = document.getElementById('aw-give-target');
+    if (el) el.innerHTML = `<span style="color:var(--accent)">✓ Target: <strong>${this.escHtml(name)}</strong></span> <span style="color:var(--text-dim);font-size:11px">${uid.slice(0,12)}...</span>`;
+  }
+
+  async _adminSaveGlobalSettings() {
+    const statusEl = document.getElementById('gs-status');
+    if (!online?.isOnline) { if(statusEl) statusEl.textContent='Not connected'; return; }
+    const settings = {
+      xpMult: parseFloat(document.getElementById('gs-xp-mult')?.value)||1,
+      dropMult: parseFloat(document.getElementById('gs-drop-mult')?.value)||1,
+      motd: document.getElementById('gs-motd')?.value?.trim()||'',
+      maintenance: parseInt(document.getElementById('gs-maintenance')?.value)||0,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: 'Morpheus',
+    };
+    try {
+      await online.firestore.collection('server_settings').doc('global').set(settings);
+      if (statusEl) statusEl.innerHTML = '<span style="color:#3a9e5c">✓ Saved to Firestore! Players will see on next login.</span>';
+      this.toast({type:'success', text:'Global settings saved!'});
+    } catch(e) {
+      if (statusEl) statusEl.innerHTML = `<span style="color:#c44040">✗ Error: ${e.message}</span>`;
+      this.toast({type:'danger', text:'Save failed: '+e.message});
+    }
+  }
+
+  _adminInspectState2(path) {
+    const el = document.getElementById('aw-state-result2');
+    if (!el) return;
+    if (!path) { el.textContent = ''; return; }
+    try {
+      const parts = path.split('.');
+      let val = game.state;
+      for (const p of parts) val = val?.[p];
+      el.textContent = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+    } catch(e) { el.textContent = 'Error: '+e.message; }
   }
 
   _adminSaveDrops(monId) {
-    const mon = GAME_DATA.monsters[monId];
-    if (!mon) return;
-    const rows = document.querySelectorAll('.drop-edit-row');
+    const mon = GAME_DATA.monsters[monId]; if(!mon) return;
+    const rows = document.querySelectorAll('#aw-drop-rows .drop-edit-row');
     const newDrops = [];
     rows.forEach((row, i) => {
-      const item   = document.getElementById('drop-item-'+i)?.value;
-      const qty    = parseInt(document.getElementById('drop-qty-'+i)?.value)||1;
+      const item = document.getElementById('drop-item-'+i)?.value;
+      const qty = parseInt(document.getElementById('drop-qty-'+i)?.value)||1;
       const chance = parseFloat(document.getElementById('drop-chance-'+i)?.value)||100;
-      if (item) newDrops.push({ item, qty, chance: parseFloat((chance/100).toFixed(4)) });
+      if (item) newDrops.push({item, qty, chance: chance/100});
     });
     mon.drops = newDrops;
-    // Show export
     const exportEl = document.getElementById('aw-drop-export');
-    if (exportEl) {
-      const _expLines = newDrops.map(d=>'{item:"'+d.item+'",qty:'+d.qty+',chance:'+d.chance+'}');
-      exportEl.value = 'drops:[\n' + _expLines.join(',\n') + '\n]';
-    }
-    this.toast({type:'success', text:`Saved ${newDrops.length} drops for ${mon.name} (session only)`});
+    if (exportEl) exportEl.value = JSON.stringify(newDrops, null, 2);
+    const simEl = document.getElementById('aw-drop-sim');
+    if (simEl) simEl.textContent = `✓ Saved ${newDrops.length} drops to ${mon.name} (session only)`;
+    this.toast({type:'success', text:`Drop table updated for ${mon.name}`});
   }
 
   _adminAddDrop(monId) {
-    const mon = GAME_DATA.monsters[monId];
-    if (!mon) return;
-    mon.drops = mon.drops || [];
-    mon.drops.push({ item:'coins', qty:1, chance:1.0 });
-    this.renderPage('admin');
+    const container = document.getElementById('aw-drop-rows');
+    if (!container) return;
+    const mon = GAME_DATA.monsters[monId]; if(!mon) return;
+    if (!mon.drops) mon.drops = [];
+    const i = mon.drops.length;
+    mon.drops.push({item:'coins', qty:1, chance:1});
+    const div = document.createElement('div');
+    div.className = 'drop-edit-row';
+    div.id = 'drop-row-'+i;
+    div.innerHTML = `<select class="rank-select drop-item-sel" id="drop-item-${i}" style="flex:2;min-width:130px">
+      ${Object.values(GAME_DATA.items||{}).sort((a,b)=>a.name.localeCompare(b.name)).map(it=>`<option value="${it.id}">${it.name}</option>`).join('')}
+    </select>
+    <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--text-dim)">Qty</span><input type="number" class="qty-input" id="drop-qty-${i}" value="1" min="1" style="width:55px"></div>
+    <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--text-dim)">Chance</span><input type="number" class="qty-input" id="drop-chance-${i}" value="100" min="0.01" max="100" step="0.1" style="width:65px"><span style="font-size:11px;color:var(--text-dim)">%</span></div>
+    <button class="btn btn-xs btn-danger" onclick="this.closest('.drop-edit-row').remove()">✕</button>`;
+    container.appendChild(div);
   }
 
   _adminRemoveDrop(monId, idx) {
-    const mon = GAME_DATA.monsters[monId];
-    if (!mon) return;
-    mon.drops.splice(idx, 1);
-    this.renderPage('admin');
+    document.getElementById('drop-row-'+idx)?.remove();
   }
 
   _adminTestDrops(monId) {
-    const mon = GAME_DATA.monsters[monId];
-    if (!mon) return;
-    // First save current state
-    this._adminSaveDrops(monId);
-    // Simulate 100 kills
-    const totals = {};
-    for (let kill = 0; kill < 100; kill++) {
-      for (const drop of (mon.drops||[])) {
-        if (Math.random() < (drop.chance||0)) {
-          totals[drop.item] = (totals[drop.item]||0) + (drop.qty||1);
+    const mon = GAME_DATA.monsters[monId]; if(!mon) return;
+    const drops = mon.drops||[];
+    const counts = {};
+    for (let k=0; k<1000; k++) {
+      for (const d of drops) {
+        if (Math.random() < d.chance) {
+          counts[d.item] = (counts[d.item]||0)+1;
         }
       }
     }
-    const simEl = document.getElementById('aw-drop-sim');
-    if (!simEl) return;
-    const sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
-    if (sorted.length === 0) {
-      simEl.innerHTML = '<div style="color:var(--text-dim)">No drops in 100 kills — check chance values</div>';
-    } else {
-      simEl.innerHTML = `<div class="aw-t">Simulation: 100 kills</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-          ${sorted.map(([item,qty])=>{
-            const it = GAME_DATA.items?.[item];
-            return `<div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12px">
-              ${this.escHtml(it?.name||item)}: <strong>${qty}</strong>
-            </div>`;
-          }).join('')}
-        </div>`;
-    }
+    const el = document.getElementById('aw-drop-sim');
+    if (el) el.textContent = '1000 kill sim: ' + Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`${GAME_DATA.items[id]?.name||id}: ${n}`).join(', ');
   }
 
   _adminSetXPMult(v) {
@@ -3773,156 +3875,39 @@ class UI {
     const range = document.getElementById('xp-mult-range');
     if (range) range.value = window._adminXpMult;
     this.engine._xpMult = window._adminXpMult;
-    this.toast({type:'success', text:`XP rate set to ×${window._adminXpMult} (session only)`});
+    this.toast({type:'success', text:`XP rate ×${window._adminXpMult}`});
   }
 
   _adminPreviewSVG() {
-    const svg = document.getElementById('svg-editor-input')?.value;
-    if (!svg) return;
+    const svg = document.getElementById('svg-editor-input')?.value||'';
     ['svg-p-48','svg-p-96','svg-p-192'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.innerHTML = svg;
-      const s = el?.querySelector('svg');
-      if (s) { s.setAttribute('width','100%'); s.setAttribute('height','100%'); }
+      if (!el) return;
+      el.innerHTML = svg;
+      const s = el.querySelector('svg');
+      if (s) { s.style.width='100%'; s.style.height='100%'; }
     });
   }
 
   _adminCopySVG() {
     const svg = document.getElementById('svg-editor-input')?.value;
-    if (!svg) return;
-    navigator.clipboard?.writeText(svg).then(()=>this.toast({type:'success',text:'SVG copied!'}));
-  }
-
-  _adminMonsterSearch(q) {
-    const el = document.getElementById('aw-mon-results');
-    if (!el || !q || q.length < 2) { if(el) el.innerHTML=''; return; }
-    const matches = Object.values(GAME_DATA.monsters||{}).filter(m=>m.name.toLowerCase().includes(q.toLowerCase())).slice(0,8);
-    el.innerHTML = matches.map(m=>`<div style="padding:4px 0;border-bottom:1px solid var(--border)">
-      <strong>${m.name}</strong> — Lv${m.combatLevel} | ${m.hp}hp | ${m.style}<br>
-      <span style="color:var(--text-dim);font-size:11px">Drops: ${(m.drops||[]).map(d=>d.item).join(', ')}</span>
-    </div>`).join('') || '<span style="color:var(--text-dim)">No matches</span>';
-  }
-
-  _adminItemLookup(q) {
-    const el = document.getElementById('aw-item-lookup-results');
-    if (!el || !q || q.length < 2) { if(el) el.innerHTML=''; return; }
-    const matches = Object.values(GAME_DATA.items||{}).filter(i=>i.name.toLowerCase().includes(q.toLowerCase())).slice(0,8);
-    el.innerHTML = matches.map(i=>`<div style="padding:4px 0;border-bottom:1px solid var(--border)">
-      <strong>${i.name}</strong> <span style="color:var(--text-dim)">[${i.id}]</span><br>
-      <span style="font-size:11px;color:var(--text-dim)">${i.type||''}${i.subtype?'/'+i.subtype:''} | ${i.sellPrice||0}g | Have: ${game.state.bank[i.id]||0}</span>
-      <button class="btn btn-xs" style="margin-left:6px" onclick="game.addItem('${i.id}',1);ui.toast({type:'success',text:'Given 1x ${i.name}'})">Give 1</button>
-    </div>`).join('') || '<span style="color:var(--text-dim)">No matches</span>';
-  }
-
-  _adminGrantXPAll() {
-    const amt = parseInt(prompt('XP amount to grant to ALL skills:','5000'))||0;
-    if (!amt) return;
-    for (const sk of Object.keys(game.state.skills)) game.addXp(sk, amt);
-    this.toast({type:'success', text:`Granted +${this.fmt(amt)} XP to all skills`});
-    this.renderPage('admin');
-  }
-
-  _adminClearBank() {
-    if (!confirm('Clear your entire bank? This cannot be undone.')) return;
-    game.state.bank = {};
-    this.toast({type:'success', text:'Bank cleared'});
-  }
-
-  _adminUnlockAll() {
-    // Give max combat level effect by maxing combat stats
-    ['attack','strength','defence','ranged','magic','prayer','hitpoints'].forEach(sk => {
-      game.state.skills[sk].level = 99;
-      game.state.skills[sk].xp = 13034431;
-    });
-    this.toast({type:'success', text:'All combat skills maxed — all areas unlocked'});
-    this.renderSidebar();
-  }
-
-  _adminSetName() {
-    const name = document.getElementById('aw-set-name')?.value?.trim();
-    if (!name || !online) return;
-    online.displayName = name;
-    localStorage.setItem('ashfall_displayName', name);
-    online.syncProfile();
-    this.toast({type:'success', text:`Display name set to "${name}"`});
-    this.renderSidebar();
-  }
-
-  _adminExportSave() {
-    const data = JSON.stringify(game.state, null, 2);
-    const blob = new Blob([data], {type:'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `ashfall_save_${Date.now()}.json`;
-    a.click();
-    this.toast({type:'success', text:'Save exported!'});
-  }
-
-  _adminImportSave() {
-    const file = document.getElementById('aw-import-file')?.files[0];
-    if (!file) { this.toast({type:'warn',text:'Select a file first'}); return; }
-    if (!confirm('Import this save? Your current save will be overwritten.')) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const data = JSON.parse(e.target.result);
-        game.state = game.migrateSave(data);
-        game.saveLocal();
-        this.toast({type:'success', text:'Save imported! Reloading...'});
-        setTimeout(()=>location.reload(), 1000);
-      } catch(err) { this.toast({type:'danger', text:'Import failed: '+err.message}); }
-    };
-    reader.readAsText(file);
-  }
-
-  _adminInspectState(path) {
-    const el = document.getElementById('aw-state-result');
-    if (!el) return;
-    if (!path) { el.textContent = ''; return; }
-    try {
-      const parts = path.split('.');
-      let val = game.state;
-      for (const p of parts) val = val?.[p];
-      el.textContent = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
-      el.style.color = 'var(--accent)';
-    } catch(e) { el.textContent = 'Error: '+e.message; el.style.color = '#c44040'; }
-  }
-
-  async _adminLoadOnlinePlayers() {
-    const listEl = document.getElementById('aw-online-list');
-    const countEl = document.getElementById('aw-online-count');
-    if (!listEl || !online?.isOnline) { if(listEl) listEl.innerHTML='<span style="color:#c44040">Not connected</span>'; return; }
-    try {
-      const snap = await online.firestore.collection('players').limit(50).get();
-      const players = [];
-      snap.forEach(doc => players.push({id:doc.id,...doc.data()}));
-      if (countEl) countEl.textContent = `${players.length} players in database`;
-      listEl.innerHTML = players.map(p=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">${p.name||p.id} — Cb${p.combatLevel||0} Total${p.totalLevel||0}</div>`).join('') || 'No players found';
-    } catch(e) { if(listEl) listEl.innerHTML = '<span style="color:#c44040">Error: '+e.message+'</span>'; }
+    if (svg) navigator.clipboard?.writeText(svg).then(()=>this.toast({type:'success',text:'Copied!'}));
   }
 
   async _adminCheckConnections() {
-    const fsEl = document.getElementById('aw-firestore-status');
-    const rtEl = document.getElementById('aw-rtdb-status');
+    const fsEl = document.getElementById('aw-con-fs') || document.getElementById('aw-firestore-status');
+    const rtEl = document.getElementById('aw-con-rt') || document.getElementById('aw-rtdb-status');
     if (fsEl) {
-      if (!online?.firestore) { fsEl.innerHTML = '<span class="admin-bad">✗ Firestore not initialized</span>'; }
-      else {
-        try {
-          await online.firestore.collection('players').limit(1).get();
-          fsEl.innerHTML = '<span class="admin-good">✓ Firestore connected</span>';
-        } catch(e) { fsEl.innerHTML = `<span class="admin-bad">✗ Firestore error: ${e.message}</span>`; }
-      }
+      if (!online?.firestore) fsEl.innerHTML = '<span class="admin-bad">✗ Firestore not init</span>';
+      else { try { await online.firestore.collection('players').limit(1).get(); fsEl.innerHTML='<span class="admin-good">✓ Firestore OK</span>'; } catch(e) { fsEl.innerHTML=`<span class="admin-bad">✗ ${e.message}</span>`; } }
     }
-    if (rtEl) {
-      if (!online?.database) { rtEl.innerHTML = '<span class="admin-bad">✗ RTDB not initialized</span>'; }
-      else { rtEl.innerHTML = '<span class="admin-good">✓ Realtime DB connected</span>'; }
-    }
+    if (rtEl) { rtEl.innerHTML = online?.database ? '<span class="admin-good">✓ RTDB connected</span>' : '<span class="admin-bad">✗ RTDB not init</span>'; }
   }
 
   _adminGiveItem() {
     const id = document.getElementById('aw-item-id')?.value;
     const qty = parseInt(document.getElementById('aw-item-qty')?.value)||1;
-    if (!id || !GAME_DATA.items[id]) { this.toast({type:'warn',text:'Invalid item'}); return; }
+    if (!id || !GAME_DATA.items[id]) return;
     game.addItem(id, qty);
     this.toast({type:'success',text:`Given ${qty}x ${GAME_DATA.items[id].name}`});
   }
@@ -3930,40 +3915,37 @@ class UI {
   _adminGiveXP() {
     const sk = document.getElementById('aw-xp-skill')?.value;
     const amt = parseInt(document.getElementById('aw-xp-amount')?.value)||1000;
-    if (!sk || !game.state.skills[sk]) { this.toast({type:'warn',text:'Invalid skill'}); return; }
+    if (!sk || !game.state.skills[sk]) return;
     game.addXp(sk, amt);
     this.toast({type:'success',text:`+${this.fmt(amt)} ${sk} XP`});
-    this.renderPage('admin');
   }
 
   _adminMaxAll() {
     for (const sk of Object.keys(game.state.skills)) { game.state.skills[sk].level=99; game.state.skills[sk].xp=13034431; }
-    this.toast({type:'success',text:'All skills → 99'});
-    this.renderSidebar(); this.renderPage('admin');
+    this.toast({type:'success',text:'All → 99'}); this.renderSidebar();
   }
 
   _adminGiveGold() {
     const amt = parseInt(document.getElementById('aw-gold')?.value)||0;
     game.state.gold += amt;
     this.toast({type:'success',text:`+${this.fmt(amt)} gold`});
-    this.renderPage('admin');
   }
 
   _adminFullHeal() {
     game.state.combat.playerHp = game.getMaxHp();
     game.state.prayerPoints = 99;
     game.state.specEnergy = 100;
-    this.toast({type:'success',text:'Full HP + Prayer + Special restored'});
+    this.toast({type:'success',text:'Full restore!'});
   }
 
   _adminGiveResources() {
-    const pack = {oak_log:200,iron_ore:100,coal_ore:100,copper_ore:100,raw_shrimp:100,raw_trout:50,bronze_bar:50,iron_bar:50,steel_bar:30,rune_essence:200,fire_rune:100,coins:10000};
+    const pack = {oak_log:500,iron_ore:200,coal_ore:200,copper_ore:200,raw_shrimp:200,raw_trout:100,raw_salmon:100,bronze_bar:100,iron_bar:100,steel_bar:50,rune_essence:500,fire_rune:200,water_rune:200,earth_rune:200,air_rune:200};
     for (const [id,qty] of Object.entries(pack)) game.addItem(id,qty);
-    this.toast({type:'success',text:'Starter resource pack given!'});
+    this.toast({type:'success',text:'Starter pack given!'});
   }
 
   _adminBroadcast() {
-    const msg = document.getElementById('aw-broadcast')?.value?.trim();
+    const msg = (document.getElementById('aw-broadcast'))?.value?.trim();
     if (!msg) { this.toast({type:'warn',text:'Enter a message'}); return; }
     if (typeof online !== 'undefined') online.sendSystemMessage('[ADMIN] ' + msg);
     this.toast({type:'success',text:'Broadcast sent'});
@@ -3972,70 +3954,81 @@ class UI {
   async _adminSearchPlayer(query) {
     const container = document.getElementById('aw-player-results');
     if (!container || !query || query.length < 2) { if(container) container.innerHTML=''; return; }
-    if (!online?.isOnline) { container.innerHTML='<span style="color:#c44040">Not connected</span>'; return; }
+    if (!online?.isOnline) { container.innerHTML='<span style="color:#c44040">Offline</span>'; return; }
     try {
       const results = await online.searchPlayers(query);
-      container.innerHTML = results.slice(0,8).map(p=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-        <div style="flex:1"><strong style="font-size:13px">${this.escHtml(p.name)}</strong> <span style="color:var(--text-dim);font-size:11px">Cb${p.combatLevel||0} · Total${p.totalLevel||0}</span></div>
-        <button class="btn btn-xs" onclick="online.sendSystemMessage('[ADMIN] Direct message to ${this.escHtml(p.name)}: ')">DM</button>
+      container.innerHTML = results.slice(0,8).map(p=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center">
+        <div style="flex:1;font-size:13px"><strong>${this.escHtml(p.name)}</strong> — Cb${p.combatLevel||0} Total${p.totalLevel||0}</div>
+        <span style="font-size:10px;color:var(--text-dim)">${p.uid?.slice(0,10)}...</span>
       </div>`).join('') || '<span style="color:var(--text-dim)">No results</span>';
-    } catch(e) { container.innerHTML = '<span style="color:#c44040">Error: '+e.message+'</span>'; }
+    } catch(e) { container.innerHTML='<span style="color:#c44040">Error: '+e.message+'</span>'; }
   }
 
-  _adminBankSearch(query) {
-    const container = document.getElementById('aw-bank-results');
-    if (!container) return;
-    if (!query || query.length < 2) { container.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Type 2+ chars to search all '+Object.keys(GAME_DATA.items||{}).length+' items...</div>'; return; }
-    const matches = Object.values(GAME_DATA.items||{}).filter(i=>i.name.toLowerCase().includes(query.toLowerCase())).slice(0,16);
-    container.innerHTML = matches.map(i=>`<div class="admin-bank-item">
-      <div class="abi-name">${this.escHtml(i.name)}</div>
-      <div class="abi-meta">${i.type||''} · ${i.sellPrice||0}g · Have: ${game.state.bank[i.id]||0}</div>
-      <div class="abi-controls">
-        <input type="number" id="aw-b-${i.id}" class="qty-input" value="1" min="1" style="width:55px">
-        <button class="btn btn-xs" onclick="game.addItem('${i.id}',parseInt(document.getElementById('aw-b-${i.id}').value)||1);ui.toast({type:'success',text:'Given ${i.name}'})">Give</button>
-        <button class="btn btn-xs" onclick="game.addItem('${i.id}',100);ui.toast({type:'success',text:'+100 ${i.name}'})">+100</button>
-      </div>
-    </div>`).join('') || '<span style="color:var(--text-dim)">No matches</span>';
+  _adminSetName() {
+    const name = document.getElementById('aw-set-name')?.value?.trim();
+    if (!name || !online) return;
+    online.displayName = name;
+    localStorage.setItem('ashfall_displayName', name);
+    online.syncProfile?.();
+    this.toast({type:'success',text:`Name set to "${name}"`});
+    this.renderSidebar();
   }
 
-  _adminStartQuest() {
-    const id = document.getElementById('aw-quest-id')?.value;
-    if (!id) return;
-    if (!game.state.quests.active.includes(id)) {
-      game.state.quests.active.push(id);
-      game.state.quests.progress[id] = [];
-      this.toast({type:'success',text:`Started: ${GAME_DATA.quests.find(q=>q.id===id)?.name||id}`});
-    } else { this.toast({type:'warn',text:'Already active'}); }
-    this.renderPage('admin');
+  _adminExportSave() {
+    const blob = new Blob([JSON.stringify(game.state, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `ashfall_save_${Date.now()}.json`; a.click();
+    this.toast({type:'success',text:'Save exported!'});
   }
 
-  _adminCompleteQuest() {
-    const id = document.getElementById('aw-quest-id')?.value;
-    if (!id) return;
-    game.state.quests.active = game.state.quests.active.filter(q=>q!==id);
-    if (!game.state.quests.completed.includes(id)) game.state.quests.completed.push(id);
-    this.toast({type:'success',text:`Completed: ${GAME_DATA.quests.find(q=>q.id===id)?.name||id}`});
-    this.renderPage('admin');
+  _adminImportSave() {
+    const file = document.getElementById('aw-import-file')?.files[0];
+    if (!file) { this.toast({type:'warn',text:'Select a file first'}); return; }
+    if (!confirm('Import? Current save will be replaced.')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        game.state = game.migrateSave(JSON.parse(e.target.result));
+        game.saveLocal();
+        this.toast({type:'success',text:'Imported! Reloading...'}); 
+        setTimeout(()=>location.reload(), 800);
+      } catch(err) { this.toast({type:'danger',text:'Import failed: '+err.message}); }
+    };
+    reader.readAsText(file);
   }
 
-  _adminRemoveQuest() {
-    const id = document.getElementById('aw-quest-id')?.value;
-    if (!id) return;
-    game.state.quests.active = game.state.quests.active.filter(q=>q!==id);
-    game.state.quests.completed = game.state.quests.completed.filter(q=>q!==id);
-    delete game.state.quests.progress[id];
-    this.toast({type:'info',text:'Quest removed'});
-    this.renderPage('admin');
+  _adminInspectState(path) {
+    const el = document.getElementById('aw-state-result');
+    if (!el || !path) { if(el) el.textContent=''; return; }
+    try {
+      let val = game.state;
+      for (const p of path.split('.')) val = val?.[p];
+      el.textContent = typeof val==='object' ? JSON.stringify(val,null,2) : String(val);
+    } catch(e) { el.textContent='Error: '+e.message; }
+  }
+
+  _adminGrantXPAll() {
+    const amt = parseInt(prompt('XP to grant to ALL skills:','5000'))||0;
+    if (!amt) return;
+    for (const sk of Object.keys(game.state.skills)) game.addXp(sk, amt);
+    this.toast({type:'success',text:`+${this.fmt(amt)} XP to all skills`});
+  }
+
+  _adminClearBank() {
+    if (!confirm('Clear entire bank?')) return;
+    game.state.bank = {}; this.toast({type:'success',text:'Bank cleared'});
+  }
+
+  _adminUnlockAll() {
+    ['attack','strength','defence','ranged','magic','prayer','hitpoints'].forEach(sk=>{game.state.skills[sk].level=99;game.state.skills[sk].xp=13034431});
+    this.toast({type:'success',text:'Combat maxed — all areas unlocked'});
+    this.renderSidebar();
   }
 
   _adminCompleteAllQuests() {
-    if (!confirm('Complete ALL quests?')) return;
-    for (const q of GAME_DATA.quests) {
-      if (!game.state.quests.completed.includes(q.id)) game.state.quests.completed.push(q.id);
-    }
+    for (const q of GAME_DATA.quests) { if(!game.state.quests.completed.includes(q.id)) game.state.quests.completed.push(q.id); }
     game.state.quests.active = [];
     this.toast({type:'success',text:`All ${GAME_DATA.quests.length} quests completed`});
-    this.renderPage('admin');
   }
   saveLoadout(slotIndex) {
     const s = this.engine.state;

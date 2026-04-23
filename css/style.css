@@ -5167,3 +5167,15 @@ html, body {
 .adm-row.adm-active { background:rgba(201,135,62,.12); color:var(--accent); font-weight:600; border-left:2px solid var(--accent); }
 .drop-edit-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:6px 0; border-bottom:1px solid var(--border); }
 .drop-edit-row:last-child { border-bottom:none; }
+
+/* ── ADMIN PANEL v3 (JS tabs, no re-render) ─────────────── */
+.admin-panel { animation: fadeIn .18s ease; }
+.adm-row { padding:5px 8px; border-radius:4px; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:6px; transition:background .1s; }
+.adm-row:hover { background:var(--bg-hover); }
+.adm-row.adm-active { background:rgba(201,135,62,.12); color:var(--accent); font-weight:600; }
+.admin-mon-list { font-size:12px; }
+.admin-drop-rows { display:flex; flex-direction:column; gap:6px; }
+.drop-edit-row { display:flex; align-items:center; gap:8px; padding:6px; background:var(--bg-hover); border-radius:6px; flex-wrap:wrap; }
+.adq-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); }
+.adq-done { opacity:.5; }
+.adq-active { color:var(--accent); }

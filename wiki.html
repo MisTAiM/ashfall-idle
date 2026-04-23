@@ -3,255 +3,439 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ashfall Idle Wiki - Complete Game Encyclopedia</title>
-  <meta name="description" content="Complete wiki and encyclopedia for Ashfall Idle. All skills, items, monsters, dungeons, recipes, and game mechanics documented.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%96</text></svg>">
+  <title>Ashfall Idle Wiki — Complete Game Encyclopedia</title>
+  <meta name="description" content="Complete wiki for Ashfall Idle. All skills, monsters, items, dungeons, quests, and mechanics documented.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#0a0b0f;--bg2:#0f1117;--bg3:#161822;--border:#252840;--text:#c8cad4;--dim:#7a7e94;--bright:#e8eaf2;--accent:#c9873e;--green:#3a9e5c;--blue:#4a7ec4;--purple:#8a5ec4;--red:#c44040;--yellow:#c4a83a}
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{background:var(--bg);color:var(--text);font-family:'Crimson Text',Georgia,serif;font-size:15px;line-height:1.7}
-    .wiki-wrap{max-width:960px;margin:0 auto;padding:32px 24px 60px}
-    .wiki-nav{position:sticky;top:0;background:var(--bg);padding:12px 0 16px;border-bottom:1px solid var(--border);z-index:10;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-    .wiki-logo{font-family:'Cinzel',serif;font-size:22px;color:var(--accent);letter-spacing:3px}
-    .wiki-logo span{font-size:14px;color:var(--dim);letter-spacing:1px;margin-left:8px}
-    .wiki-nav a{font-family:'Cinzel',serif;font-size:12px;color:var(--dim);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s}
-    .wiki-nav a:hover{color:var(--accent);border-color:var(--accent)}
-    .back-link{font-size:14px;color:var(--accent);text-decoration:none;display:inline-block;margin-bottom:20px}
-    h1{font-family:'Cinzel',serif;font-size:28px;color:var(--accent);margin:32px 0 8px;padding-top:16px;border-top:1px solid var(--border)}
-    h1:first-of-type{border-top:none;margin-top:16px}
-    h2{font-family:'Cinzel',serif;font-size:18px;color:var(--bright);margin:20px 0 8px}
-    h3{font-family:'Cinzel',serif;font-size:15px;color:var(--blue);margin:14px 0 6px}
-    p{margin-bottom:10px}
-    table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:14px}
-    th{font-family:'Cinzel',serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);background:var(--bg2)}
-    td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
-    tr:hover td{background:rgba(201,135,62,0.03)}
-    .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace}
-    .tag-gather{background:rgba(58,158,92,0.1);color:var(--green)}
-    .tag-artisan{background:rgba(74,126,196,0.1);color:var(--blue)}
-    .tag-combat{background:rgba(196,64,64,0.1);color:var(--red)}
-    .tag-support{background:rgba(138,94,196,0.1);color:var(--purple)}
-    .highlight{color:var(--accent)}
-    .mono{font-family:'JetBrains Mono',monospace;font-size:13px}
-    .mech-box{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:16px;margin:12px 0}
-    .mech-box h3{margin-top:0;color:var(--accent)}
-    @media(max-width:600px){.wiki-wrap{padding:16px 12px 40px}table{font-size:12px}th,td{padding:5px 6px}}
+    :root { --bg:#08090d; --bg2:#0d0f15; --bg3:#13151e; --border:#1e2030; --text:#c4c6d4; --dim:#5a5e74; --bright:#e8eaf4; --accent:#c9873e; --green:#3a9e5c; --blue:#4a80c8; --purple:#8a5ec8; --red:#c44444; --gold:#d4a83a; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Crimson Text',Georgia,serif; font-size:16px; line-height:1.75; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    code { font-family:'JetBrains Mono',monospace; font-size:13px; background:var(--bg3); padding:1px 6px; border-radius:3px; color:#a0c0e8; }
+
+    /* Nav */
+    .wiki-nav { position:sticky; top:0; background:rgba(8,9,13,.96); backdrop-filter:blur(6px); border-bottom:1px solid var(--border); z-index:50; padding:0 32px; display:flex; align-items:center; gap:0; height:52px; }
+    .wn-logo { font-family:'Cinzel',serif; font-size:16px; color:var(--accent); letter-spacing:3px; font-weight:700; margin-right:32px; white-space:nowrap; }
+    .wn-links { display:flex; gap:2px; overflow-x:auto; flex:1; }
+    .wn-link { padding:6px 14px; font-family:'Cinzel',serif; font-size:11px; letter-spacing:1px; color:var(--dim); border-radius:4px; cursor:pointer; white-space:nowrap; transition:all .15s; }
+    .wn-link:hover, .wn-link.active { color:var(--accent); background:rgba(201,135,62,.08); }
+    .wn-back { margin-left:auto; color:var(--dim); font-size:12px; font-family:'Cinzel',serif; white-space:nowrap; }
+    .wn-back:hover { color:var(--accent); }
+
+    /* Layout */
+    .wiki-wrap { max-width:960px; margin:0 auto; padding:40px 24px 80px; }
+
+    /* Section */
+    .wiki-section { display:none; }
+    .wiki-section.active { display:block; }
+
+    /* Headings */
+    h1 { font-family:'Cinzel',serif; font-size:28px; color:var(--accent); margin:0 0 8px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+    h2 { font-family:'Cinzel',serif; font-size:18px; color:var(--bright); margin:28px 0 10px; }
+    h3 { font-family:'Cinzel',serif; font-size:15px; color:var(--blue); margin:18px 0 6px; }
+    p { margin-bottom:12px; }
+    .intro { font-size:15px; color:var(--dim); margin-bottom:24px; }
+
+    /* Tables */
+    table { width:100%; border-collapse:collapse; margin:12px 0 24px; font-size:14px; }
+    th { font-family:'Cinzel',serif; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--dim); text-align:left; padding:8px 12px; border-bottom:2px solid var(--border); background:var(--bg2); }
+    td { padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+    tr:hover td { background:rgba(201,135,62,.02); }
+    .num { text-align:right; font-family:'JetBrains Mono',monospace; font-size:13px; }
+    .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:3px; font-family:'JetBrains Mono',monospace; font-weight:500; }
+    .tag-g { background:rgba(58,158,92,.15); color:#4acc74; }
+    .tag-b { background:rgba(74,128,200,.15); color:#6ab0ff; }
+    .tag-p { background:rgba(138,94,200,.15); color:#b080ff; }
+    .tag-r { background:rgba(196,68,68,.15); color:#ff7070; }
+    .tag-a { background:rgba(201,135,62,.15); color:#d4a060; }
+    .tag-d { background:rgba(30,32,48,.8); color:var(--dim); border:1px solid var(--border); }
+
+    /* Cards */
+    .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin:16px 0 28px; }
+    .card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:16px; }
+    .card-title { font-family:'Cinzel',serif; font-size:13px; color:var(--accent); margin-bottom:8px; }
+    .card-body { font-size:13px; color:var(--dim); line-height:1.6; }
+    .card-stat { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; border-bottom:1px solid var(--border); }
+    .card-stat:last-child { border-bottom:none; }
+    .card-stat-k { color:var(--dim); }
+    .card-stat-v { color:var(--accent); font-family:'JetBrains Mono',monospace; }
+
+    /* Skill table */
+    .skill-icon { width:28px; height:28px; vertical-align:middle; margin-right:8px; }
+
+    /* Monster tier */
+    .tier-label { font-family:'Cinzel',serif; font-size:13px; color:var(--gold); background:rgba(212,168,58,.1); border-left:3px solid var(--gold); padding:6px 12px; margin:20px 0 10px; border-radius:0 4px 4px 0; }
+
+    /* Tip boxes */
+    .tip { background:rgba(201,135,62,.07); border-left:3px solid var(--accent); padding:10px 14px; border-radius:0 6px 6px 0; margin:16px 0; font-size:14px; }
+    .tip strong { color:var(--accent); }
+    .warn { background:rgba(196,68,68,.07); border-left:3px solid var(--red); padding:10px 14px; border-radius:0 6px 6px 0; margin:16px 0; font-size:14px; }
+    .note { background:rgba(74,128,200,.07); border-left:3px solid var(--blue); padding:10px 14px; border-radius:0 6px 6px 0; margin:16px 0; font-size:14px; }
+
+    /* XP table */
+    .xp-milestones { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:6px; margin:12px 0; }
+    .xp-ml { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:8px 10px; font-size:12px; text-align:center; }
+    .xp-ml-lv { font-family:'Cinzel',serif; color:var(--accent); font-size:16px; }
+    .xp-ml-xp { color:var(--dim); font-family:'JetBrains Mono',monospace; font-size:11px; }
+
+    /* Search */
+    .wiki-search { width:100%; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:10px 14px; color:var(--text); font-size:15px; margin-bottom:20px; font-family:inherit; }
+    .wiki-search:focus { outline:none; border-color:var(--accent); }
+
+    @media(max-width:600px) { .wiki-wrap{padding:20px 16px 60px} th,td{padding:6px 8px} .wn-back{display:none} }
   </style>
 </head>
 <body>
+
+<nav class="wiki-nav">
+  <div class="wn-logo">ASHFALL WIKI</div>
+  <div class="wn-links">
+    <div class="wn-link active" onclick="showSection('overview',this)">Overview</div>
+    <div class="wn-link" onclick="showSection('skills',this)">Skills</div>
+    <div class="wn-link" onclick="showSection('combat',this)">Combat</div>
+    <div class="wn-link" onclick="showSection('monsters',this)">Monsters</div>
+    <div class="wn-link" onclick="showSection('dungeons',this)">Dungeons</div>
+    <div class="wn-link" onclick="showSection('items',this)">Items</div>
+    <div class="wn-link" onclick="showSection('quests',this)">Quests</div>
+    <div class="wn-link" onclick="showSection('mechanics',this)">Mechanics</div>
+    <div class="wn-link" onclick="showSection('online',this)">Online</div>
+    <div class="wn-link" onclick="showSection('changelog',this)">Changelog</div>
+  </div>
+  <a href="/" class="wn-back">← Play Game</a>
+</nav>
+
 <div class="wiki-wrap">
-  <nav class="wiki-nav">
-    <div class="wiki-logo">ASHFALL <span>WIKI</span></div>
-    <a href="#skills">Skills</a><a href="#items">Items</a><a href="#monsters">Monsters</a><a href="#dungeons">Dungeons</a><a href="#mechanics">Mechanics</a><a href="#formulas">Formulas</a><a href="./">Play Game</a>
-  </nav>
 
-  <a class="back-link" href="./">&larr; Back to Game</a>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h1 id="overview">Ashfall Idle Overview</h1>
-  <p>Ashfall Idle is a dark fantasy idle RPG where you train 18 skills, fight over 15 unique monsters across 8 combat areas, conquer 7 dungeons, craft hundreds of items, and build your character from a humble adventurer into a legend. The game features full offline progression, a mastery system, farming, thieving, and deep interconnected skill chains.</p>
-
-  <div class="mech-box">
-    <h3>Quick Start Guide</h3>
-    <p>1. Start with <span class="highlight">Woodcutting</span>, <span class="highlight">Mining</span>, or <span class="highlight">Fishing</span> to gather raw materials.</p>
-    <p>2. Use <span class="highlight">Smithing</span> to forge weapons and armor. Use <span class="highlight">Cooking</span> to prepare food for combat healing.</p>
-    <p>3. Equip your gear from the <span class="highlight">Bank</span>, then head to <span class="highlight">Combat</span> to fight monsters.</p>
-    <p>4. Defeat monsters to earn XP, gold, and rare loot. Progress to harder areas and dungeons.</p>
-    <p>5. Use <span class="highlight">Farming</span> alongside other activities for passive resource generation.</p>
-    <p>6. Train all skills and complete achievements to master the world of Ashfall.</p>
+  <!-- OVERVIEW -->
+  <div id="sec-overview" class="wiki-section active">
+    <h1>Ashfall Idle</h1>
+    <p class="intro">A dark fantasy idle RPG built for the browser. Free to play, no downloads, cloud saves. Train 28 skills, fight 77+ monsters, conquer 20 dungeons, and connect with other players in real time.</p>
+    <div class="card-grid">
+      <div class="card"><div class="card-title">Skills</div><div class="card-stat"><span class="card-stat-k">Total skills</span><span class="card-stat-v">28</span></div><div class="card-stat"><span class="card-stat-k">Max level</span><span class="card-stat-v">99</span></div><div class="card-stat"><span class="card-stat-k">XP to 99</span><span class="card-stat-v">13,034,431</span></div></div>
+      <div class="card"><div class="card-title">Combat</div><div class="card-stat"><span class="card-stat-k">Monsters</span><span class="card-stat-v">77+</span></div><div class="card-stat"><span class="card-stat-k">Combat areas</span><span class="card-stat-v">29</span></div><div class="card-stat"><span class="card-stat-k">Dungeons</span><span class="card-stat-v">20</span></div></div>
+      <div class="card"><div class="card-title">Content</div><div class="card-stat"><span class="card-stat-k">Quests</span><span class="card-stat-v">107</span></div><div class="card-stat"><span class="card-stat-k">Items</span><span class="card-stat-v">580+</span></div><div class="card-stat"><span class="card-stat-k">Recipes</span><span class="card-stat-v">400+</span></div></div>
+      <div class="card"><div class="card-title">Online</div><div class="card-stat"><span class="card-stat-k">Global chat</span><span class="card-stat-v">Live</span></div><div class="card-stat"><span class="card-stat-k">Guilds</span><span class="card-stat-v">Yes</span></div><div class="card-stat"><span class="card-stat-k">PvP</span><span class="card-stat-v">Arena</span></div></div>
+    </div>
+    <h2>Getting Started</h2>
+    <div class="tip"><strong>New player?</strong> Start with Woodcutting and Mining. Sell resources to build gold. Complete Pete's quest chain for early XP and gear.</div>
+    <table>
+      <tr><th>Priority</th><th>Action</th><th>Why</th></tr>
+      <tr><td>1</td><td>Train Woodcutting to 15+</td><td>Sell logs for starting gold</td></tr>
+      <tr><td>2</td><td>Train Mining to 15+</td><td>Unlock iron ore income</td></tr>
+      <tr><td>3</td><td>Start Pete's quest chain</td><td>Free gear + XP rewards</td></tr>
+      <tr><td>4</td><td>Train Attack + Strength to 20</td><td>Unlock better combat areas</td></tr>
+      <tr><td>5</td><td>Create an account</td><td>Enables cloud saves, chat, friends</td></tr>
+      <tr><td>6</td><td>Train Smithing to 30</td><td>Smith your own gear, save gold</td></tr>
+    </table>
+    <h2>Core Loop</h2>
+    <p>Train skills to gather resources → craft gear → fight stronger monsters → get better drops → train higher skills. Quests unlock special items and large XP rewards. Dungeons give the best drops. Guilds unlock shared banking and bonuses.</p>
+    <h2>Saving Your Progress</h2>
+    <p>The game auto-saves locally every 30 seconds. Create an account (Account page) to enable cloud saves that sync across all your devices. Cloud saves are automatic every 60 seconds when signed in.</p>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h1 id="skills">Skills</h1>
-  <p>Ashfall Idle features 18 skills divided into four categories. Each skill can reach a maximum level of 99.</p>
-
-  <h2>Gathering Skills</h2>
-  <table>
-    <tr><th>Skill</th><th>Description</th><th>Key Resources</th></tr>
-    <tr><td><span class="highlight">Woodcutting</span></td><td>Chop trees for logs. 6 tree types from Oak (Lv 1) to Ashwood (Lv 75).</td><td>Logs for Fletching, Firemaking</td></tr>
-    <tr><td><span class="highlight">Mining</span></td><td>Mine rocks for ores and gems. 7 ore types plus Rune Essence. Random gem drops.</td><td>Ores for Smithing, Gems for Crafting</td></tr>
-    <tr><td><span class="highlight">Fishing</span></td><td>Catch fish for cooking. 7 fish types from Shrimp (Lv 1) to Leviathan (Lv 80).</td><td>Raw fish for Cooking</td></tr>
-    <tr><td><span class="highlight">Foraging</span></td><td>Gather herbs and plants. 5 herb types from Silverleaf (Lv 1) to Ashblossom (Lv 75).</td><td>Herbs for Alchemy</td></tr>
-  </table>
-
-  <h2>Artisan Skills</h2>
-  <table>
-    <tr><th>Skill</th><th>Description</th><th>Inputs</th></tr>
-    <tr><td><span class="highlight">Cooking</span></td><td>Cook raw food into edible meals. Chance to burn decreases with mastery.</td><td>Raw fish &rarr; Cooked food</td></tr>
-    <tr><td><span class="highlight">Smithing</span></td><td>Smelt ores into bars, forge weapons, armor, and shields.</td><td>Ores + Coal &rarr; Bars &rarr; Equipment</td></tr>
-    <tr><td><span class="highlight">Fletching</span></td><td>Craft bows and arrows from logs and bars.</td><td>Logs + Bars &rarr; Bows, Arrows</td></tr>
-    <tr><td><span class="highlight">Crafting</span></td><td>Create jewelry, leather gear, and accessories from gems and bars.</td><td>Gems + Bars &rarr; Rings, Amulets</td></tr>
-    <tr><td><span class="highlight">Alchemy</span></td><td>Brew potions from herbs. Healing, strength, defence, accuracy, and haste potions.</td><td>Herbs &rarr; Potions</td></tr>
-    <tr><td><span class="highlight">Enchanting</span></td><td>Imbue equipment with magical properties. (Coming soon)</td><td>Scrolls + Runes</td></tr>
-  </table>
-
-  <h2>Combat Skills</h2>
-  <table>
-    <tr><th>Skill</th><th>Effect</th><th>Training Method</th></tr>
-    <tr><td><span class="highlight">Attack</span></td><td>Melee accuracy</td><td>Melee combat (40% of monster XP)</td></tr>
-    <tr><td><span class="highlight">Strength</span></td><td>Melee max hit damage</td><td>Melee combat (40% of monster XP)</td></tr>
-    <tr><td><span class="highlight">Defence</span></td><td>Evasion / damage reduction effectiveness</td><td>All combat (20% of monster XP)</td></tr>
-    <tr><td><span class="highlight">Hitpoints</span></td><td>Maximum health (10 HP per level + 10)</td><td>All combat (33% of monster XP)</td></tr>
-    <tr><td><span class="highlight">Ranged</span></td><td>Ranged accuracy and damage</td><td>Ranged combat (80% of monster XP)</td></tr>
-    <tr><td><span class="highlight">Magic</span></td><td>Spell accuracy and damage bonus</td><td>Magic combat (80% of monster XP)</td></tr>
-  </table>
-
-  <h2>Support Skills</h2>
-  <table>
-    <tr><th>Skill</th><th>Description</th></tr>
-    <tr><td><span class="highlight">Farming</span></td><td>Plant seeds in plots. Crops grow in real time alongside other activities. 3 farm plots. 40% chance to recover seed on harvest.</td></tr>
-    <tr><td><span class="highlight">Thieving</span></td><td>Pickpocket NPCs for gold, seeds, and rare items. Risk of being stunned (reduced by mastery).</td></tr>
-  </table>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h1 id="items">Items</h1>
-
-  <h2>Equipment Tiers</h2>
-  <table>
-    <tr><th>Tier</th><th>Material</th><th>Level Req</th><th>Key Stats (Sword)</th></tr>
-    <tr><td>1</td><td>Bronze</td><td>1</td><td>Atk +5, Str +4</td></tr>
-    <tr><td>2</td><td>Iron</td><td>10</td><td>Atk +12, Str +10</td></tr>
-    <tr><td>3</td><td>Steel</td><td>20</td><td>Atk +22, Str +18</td></tr>
-    <tr><td>4</td><td>Mithril</td><td>30</td><td>Atk +35, Str +28</td></tr>
-    <tr><td>5</td><td>Adamant</td><td>40</td><td>Atk +50, Str +42</td></tr>
-    <tr><td>6</td><td>Obsidian</td><td>50</td><td>Atk +72, Str +60</td></tr>
-    <tr><td>7</td><td>Dragon / Ashfire</td><td>55-60</td><td>Atk +85-95, Str +70-80</td></tr>
-  </table>
-
-  <h2>Food Healing Values</h2>
-  <table>
-    <tr><th>Food</th><th>Heals</th><th>Cooking Level</th></tr>
-    <tr><td>Shrimp</td><td>20</td><td>1</td></tr>
-    <tr><td>Trout</td><td>50</td><td>10</td></tr>
-    <tr><td>Salmon</td><td>90</td><td>25</td></tr>
-    <tr><td>Lobster</td><td>160</td><td>35</td></tr>
-    <tr><td>Swordfish</td><td>250</td><td>50</td></tr>
-    <tr><td>Anglerfish</td><td>400</td><td>65</td></tr>
-    <tr><td>Leviathan Steak</td><td>650</td><td>80</td></tr>
-  </table>
-
-  <h2>Potions</h2>
-  <table>
-    <tr><th>Potion</th><th>Effect</th><th>Alchemy Level</th></tr>
-    <tr><td>Healing I / II / III</td><td>Restore 100 / 300 / 600 HP</td><td>1 / 25 / 50</td></tr>
-    <tr><td>Strength</td><td>+10 Strength for 120s</td><td>15</td></tr>
-    <tr><td>Defence</td><td>+10 Defence for 120s</td><td>20</td></tr>
-    <tr><td>Accuracy</td><td>+15% Accuracy for 120s</td><td>35</td></tr>
-    <tr><td>Haste</td><td>+20% Attack Speed for 60s</td><td>55</td></tr>
-  </table>
-
-  <h2>Unique Items</h2>
-  <table>
-    <tr><th>Item</th><th>Source</th><th>Stats</th></tr>
-    <tr><td><span class="highlight">Ashfire Blade</span></td><td>Ashfall Titan (0.5%)</td><td>Atk +95, Str +80, Speed 1.8s</td></tr>
-    <tr><td><span class="highlight">Dragon Scimitar</span></td><td>Dragon (1%)</td><td>Atk +85, Str +70, Speed 2.0s</td></tr>
-    <tr><td><span class="highlight">Elder Staff</span></td><td>Void Walker (0.5%)</td><td>Magic +70, Speed 2.0s</td></tr>
-    <tr><td><span class="highlight">Ancient Ring</span></td><td>Void Abyss (2%)</td><td>All offensive +8</td></tr>
-    <tr><td><span class="highlight">Ashfall Amulet</span></td><td>Ashfall Titan (0.2%)</td><td>Atk +12, Str +10, DR +5</td></tr>
-    <tr><td><span class="highlight">Void Cape</span></td><td>Dark Sanctum (3%)</td><td>Def +10, DR +3, Magic +15</td></tr>
-  </table>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h1 id="monsters">Monsters</h1>
-  <table>
-    <tr><th>Monster</th><th>Cb Lv</th><th>HP</th><th>Max Hit</th><th>Style</th><th>Notable Drops</th></tr>
-    <tr><td>Chicken</td><td>1</td><td>25</td><td>3</td><td>Melee</td><td>Feather, Bones</td></tr>
-    <tr><td>Giant Rat</td><td>3</td><td>40</td><td>5</td><td>Melee</td><td>Leather</td></tr>
-    <tr><td>Goblin</td><td>5</td><td>60</td><td>8</td><td>Melee</td><td>Bronze Sword/Shield</td></tr>
-    <tr><td>Skeleton</td><td>10</td><td>100</td><td>12</td><td>Melee</td><td>Iron Sword</td></tr>
-    <tr><td>Bandit</td><td>15</td><td>150</td><td>18</td><td>Melee</td><td>Iron Plate/Helm</td></tr>
-    <tr><td>Dire Wolf</td><td>20</td><td>200</td><td>22</td><td>Melee</td><td>Leather x2</td></tr>
-    <tr><td>Troll</td><td>28</td><td>350</td><td>30</td><td>Melee</td><td>Big Bones, Steel Plate</td></tr>
-    <tr><td>Dark Mage</td><td>32</td><td>280</td><td>35</td><td>Magic</td><td>Chaos Runes, Mystic Staff</td></tr>
-    <tr><td>Shadow Archer</td><td>35</td><td>320</td><td>32</td><td>Ranged</td><td>Steel Arrows, Maple Shortbow</td></tr>
-    <tr><td>Ogre</td><td>40</td><td>500</td><td>40</td><td>Melee</td><td>Big Bones, Mithril Ore</td></tr>
-    <tr><td>Wyvern</td><td>50</td><td>700</td><td>55</td><td>Ranged</td><td>Adamant Ore, Yew Longbow</td></tr>
-    <tr><td>Demon</td><td>60</td><td>900</td><td>70</td><td>Magic</td><td>Death Runes, Void Staff</td></tr>
-    <tr><td>Dragon</td><td>75</td><td>1500</td><td>90</td><td>Melee</td><td>Dragon Bones, Dragon Scimitar</td></tr>
-    <tr><td>Void Walker</td><td>85</td><td>2000</td><td>110</td><td>Magic</td><td>Dragon Bones, Elder Staff</td></tr>
-    <tr><td>Ashfall Titan</td><td>99</td><td>5000</td><td>150</td><td>Melee</td><td>Ashfire Blade, Ashfall Amulet</td></tr>
-  </table>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h1 id="dungeons">Dungeons</h1>
-  <table>
-    <tr><th>Dungeon</th><th>Cb Lv</th><th>Waves</th><th>Unique Rewards</th></tr>
-    <tr><td>Goblin Den</td><td>5</td><td>5</td><td>Iron Sword, Iron Shield</td></tr>
-    <tr><td>Bandit Fortress</td><td>20</td><td>6</td><td>Steel Sword, Steel Plate</td></tr>
-    <tr><td>Troll Stronghold</td><td>30</td><td>5</td><td>Mithril Sword, Mithril Plate</td></tr>
-    <tr><td>Dark Sanctum</td><td>45</td><td>6</td><td>Void Staff, Death Runes, Void Cape</td></tr>
-    <tr><td>Dragon Peak</td><td>60</td><td>6</td><td>Obsidian Blade/Plate, Dragon Scimitar</td></tr>
-    <tr><td>The Void Abyss</td><td>75</td><td>6</td><td>Elder Staff, Ancient Ring</td></tr>
-    <tr><td>Ashfall Sanctum</td><td>90</td><td>3</td><td>Ashfire Blade, Ashfall Amulet</td></tr>
-  </table>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h1 id="mechanics">Game Mechanics</h1>
-
-  <div class="mech-box">
-    <h3>Mastery System</h3>
-    <p>Every action in a non-combat skill has an individual mastery level (max 99). As mastery increases:</p>
-    <p>&bull; Action time decreases by 0.5% per mastery level</p>
-    <p>&bull; Cooking burn chance decreases by 0.5% per mastery level</p>
-    <p>&bull; Thieving stun chance decreases by 0.3% per mastery level</p>
-    <p>Mastery XP is earned at 50% of the base action XP rate.</p>
+  <!-- SKILLS -->
+  <div id="sec-skills" class="wiki-section">
+    <h1>Skills</h1>
+    <p class="intro">28 skills across four categories. Every skill levels from 1 to 99. Higher levels unlock faster actions, better resources, and new content.</p>
+    <div class="note">XP required for level 99 is <strong>13,034,431</strong>. The XP curve follows the RuneScape formula: each level requires roughly 10% more XP than the previous.</div>
+    <h2>XP Milestones</h2>
+    <div class="xp-milestones">
+      <div class="xp-ml"><div class="xp-ml-lv">10</div><div class="xp-ml-xp">1,154</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">20</div><div class="xp-ml-xp">4,470</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">30</div><div class="xp-ml-xp">13,363</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">40</div><div class="xp-ml-xp">37,224</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">50</div><div class="xp-ml-xp">101,333</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">60</div><div class="xp-ml-xp">273,742</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">70</div><div class="xp-ml-xp">737,627</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">80</div><div class="xp-ml-xp">1,986,068</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">90</div><div class="xp-ml-xp">5,346,332</div></div>
+      <div class="xp-ml"><div class="xp-ml-lv">99</div><div class="xp-ml-xp">13,034,431</div></div>
+    </div>
+    <h2>Gathering Skills</h2>
+    <table>
+      <tr><th>Skill</th><th>What You Gather</th><th>Key Levels</th></tr>
+      <tr><td><strong>Woodcutting</strong></td><td>Logs (Oak→Ashwood). Used in Fletching, Firemaking, Farming.</td><td>Lv1 Oak · Lv30 Maple · Lv60 Yew · Lv85 Ashwood</td></tr>
+      <tr><td><strong>Mining</strong></td><td>Ores and gems. Fuel for Smithing.</td><td>Lv1 Copper · Lv30 Coal · Lv55 Mithril · Lv85 Runite</td></tr>
+      <tr><td><strong>Fishing</strong></td><td>Raw fish cooked into food for combat healing.</td><td>Lv1 Shrimp · Lv35 Lobster · Lv60 Anglerfish · Lv85 Leviathan</td></tr>
+      <tr><td><strong>Foraging</strong></td><td>Herbs, mushrooms, crops. Used in Herblore.</td><td>Lv1 Silver · Lv30 Blood · Lv60 Moon · Lv80 Void</td></tr>
+      <tr><td><strong>Hunting</strong></td><td>Animal hides, bones, and rare drops.</td><td>Lv1 Rabbit · Lv30 Wolf · Lv50 Bear · Lv75 Dragon</td></tr>
+    </table>
+    <h2>Artisan Skills</h2>
+    <table>
+      <tr><th>Skill</th><th>What You Make</th><th>Key Levels</th></tr>
+      <tr><td><strong>Smithing</strong></td><td>Smelt ores → bars. Smith bars → weapons and armor.</td><td>Lv1 Bronze · Lv30 Steel · Lv55 Mithril · Lv80 Ashsteel</td></tr>
+      <tr><td><strong>Cooking</strong></td><td>Raw fish/meat → food that heals HP in combat.</td><td>Higher level = more HP healed, lower burn chance</td></tr>
+      <tr><td><strong>Herblore</strong></td><td>Herbs + secondaries → potions. Each potion gives a combat boost.</td><td>Lv10 Attack pot · Lv38 Magic · Lv65 Super restore · Lv90 Antifire</td></tr>
+      <tr><td><strong>Fletching</strong></td><td>Logs → bows. Feathers + metal → arrows.</td><td>Lv1 Bronze arrows · Lv40 Maple bow · Lv85 Ashsteel bow</td></tr>
+      <tr><td><strong>Crafting</strong></td><td>Leather armor, jewelry (rings/amulets), magical robes.</td><td>Lv1 Leather · Lv40 Studded · Lv70 Dragon · Lv80 Mystic</td></tr>
+      <tr><td><strong>Enchanting</strong></td><td>Imbue equipment with magical properties using runes.</td><td>Higher level = stronger enchantments</td></tr>
+      <tr><td><strong>Farming</strong></td><td>Plant seeds → harvest crops used in Herblore and Cooking.</td><td>Seeds planted in patches, grow over time</td></tr>
+      <tr><td><strong>Thieving</strong></td><td>Pickpocket NPCs and steal from stalls for gold and items.</td><td>Lv1 Man · Lv40 Guard · Lv75 Noble · Lv90 King</td></tr>
+    </table>
+    <h2>Combat Skills</h2>
+    <table>
+      <tr><th>Skill</th><th>Effect</th></tr>
+      <tr><td><strong>Attack</strong></td><td>Accuracy with melee weapons. Required to wield higher tier weapons.</td></tr>
+      <tr><td><strong>Strength</strong></td><td>Maximum melee damage. Each level adds damage potential.</td></tr>
+      <tr><td><strong>Defence</strong></td><td>Reduces damage taken. Required to wear higher tier armor.</td></tr>
+      <tr><td><strong>Hitpoints</strong></td><td>Maximum HP. Gained from combat automatically. Base 10, max 99.</td></tr>
+      <tr><td><strong>Ranged</strong></td><td>Accuracy and damage with bows and crossbows.</td></tr>
+      <tr><td><strong>Magic</strong></td><td>Accuracy and damage with spells. Required for Runecrafting and Herblore.</td></tr>
+      <tr><td><strong>Prayer</strong></td><td>Activate prayers that boost combat stats. Drained during combat, recharged by burying bones.</td></tr>
+      <tr><td><strong>Slayer</strong></td><td>Receive tasks to kill specific monsters for bonus XP and unique drops.</td></tr>
+      <tr><td><strong>Necromancy</strong></td><td>Raise undead, cast forbidden spells. Unlocks the Dark Path storyline.</td></tr>
+    </table>
   </div>
 
-  <div class="mech-box">
-    <h3>Combat System</h3>
-    <p><strong>Three combat styles:</strong> Melee (Attack + Strength), Ranged, and Magic. Your weapon determines your style.</p>
-    <p><strong>Accuracy:</strong> Based on your offensive level and equipment bonus vs the monster's evasion.</p>
-    <p><strong>Damage:</strong> Random between 1 and your max hit when an attack lands.</p>
-    <p><strong>Food:</strong> Equip food from your bank. Auto-Eat triggers at 40% HP. Maximum 28 food stacked.</p>
-    <p><strong>XP Distribution:</strong> Melee splits 40/40/20 (Atk/Str/Def). Ranged/Magic gives 80/20 (main/Def). All combat gives 33% to Hitpoints.</p>
+  <!-- COMBAT -->
+  <div id="sec-combat" class="wiki-section">
+    <h1>Combat</h1>
+    <p class="intro">Ashfall Idle uses a tick-based combat system. You attack once per tick automatically. Combat level determines which areas and monsters you can access.</p>
+    <h2>Combat Level Formula</h2>
+    <div class="tip">Combat Level = 0.25 × (Defence + Hitpoints + Prayer/2) + 0.325 × max(Attack+Strength, Ranged×2, Magic×2)</div>
+    <h2>Combat Styles</h2>
+    <table>
+      <tr><th>Style</th><th>Weapon Type</th><th>Best Against</th></tr>
+      <tr><td><span class="tag tag-r">Melee</span></td><td>Swords, axes, maces, daggers</td><td>Magic-using monsters</td></tr>
+      <tr><td><span class="tag tag-b">Ranged</span></td><td>Bows, crossbows + arrows</td><td>Melee-heavy monsters</td></tr>
+      <tr><td><span class="tag tag-p">Magic</span></td><td>Staves + runes</td><td>Ranged-focused monsters</td></tr>
+    </table>
+    <h2>Equipment Slots</h2>
+    <p>Head · Neck · Body · Legs · Hands · Feet · Ring · Back (cape) · Weapon · Shield · Ammo</p>
+    <h2>Prayers</h2>
+    <p>21 prayers split into Melee, Ranged, Magic, and Protection categories. Active prayers drain Prayer Points. Refill by burying bones — higher-tier bones restore more points. Dragon bones are the most efficient.</p>
+    <h2>Abilities & Special Attacks</h2>
+    <p>Unlock combat abilities as you level. Special attacks charge a bar and deal massive burst damage. Use the potion belt (4 slots) for quick access to boosts during combat.</p>
+    <h2>Loadout Swap</h2>
+    <p>Save up to 4 named gear loadouts in the combat screen. Swap between them instantly mid-fight. Your old gear returns to your bank automatically.</p>
+    <h2>Food & Auto-Eat</h2>
+    <p>Stock the Food Bag before combat. Enable Auto-Eat to automatically eat when HP drops below 40%. Higher-tier food heals more HP.</p>
+    <table>
+      <tr><th>Food</th><th>Heals</th><th>Requirement</th></tr>
+      <tr><td>Shrimp</td><td class="num">3</td><td>None</td></tr>
+      <tr><td>Trout</td><td class="num">7</td><td>Cooking 15</td></tr>
+      <tr><td>Lobster</td><td class="num">12</td><td>Cooking 40</td></tr>
+      <tr><td>Swordfish</td><td class="num">18</td><td>Cooking 45</td></tr>
+      <tr><td>Anglerfish</td><td class="num">22</td><td>Cooking 65</td></tr>
+      <tr><td>Leviathan Fillet</td><td class="num">30</td><td>Cooking 90</td></tr>
+    </table>
   </div>
 
-  <div class="mech-box">
-    <h3>Offline Progression</h3>
-    <p>When you close the game, your active skill continues training for up to 24 hours. Upon returning, all XP and items are calculated and awarded. Combat does not run offline. Farming timers run in real time.</p>
+  <!-- MONSTERS -->
+  <div id="sec-monsters" class="wiki-section">
+    <h1>Monsters</h1>
+    <p class="intro">77+ monsters across 29 combat areas and 20 dungeons. Each has unique drops, XP rates, and combat stats. Monster combat level indicates difficulty.</p>
+    <div class="tip"><strong>Slayer tip:</strong> Monsters assigned as Slayer tasks give +15% drop rate bonus while on task. Equip the Slayer helm for an additional +10%.</div>
+    <div class="tier-label">▸ Starter Tier (Combat 1–15)</div>
+    <table>
+      <tr><th>Monster</th><th>Cb Lv</th><th>HP</th><th>Style</th><th>Notable Drops</th></tr>
+      <tr><td>Chicken</td><td class="num">1</td><td class="num">5</td><td><span class="tag tag-r">Melee</span></td><td>Feathers, raw chicken</td></tr>
+      <tr><td>Rat</td><td class="num">2</td><td class="num">12</td><td><span class="tag tag-r">Melee</span></td><td>Bones, coins</td></tr>
+      <tr><td>Goblin</td><td class="num">5</td><td class="num">28</td><td><span class="tag tag-r">Melee</span></td><td>Bronze items, coins</td></tr>
+      <tr><td>River Snake</td><td class="num">6</td><td class="num">40</td><td><span class="tag tag-r">Melee</span></td><td>Snake skin, raw shrimp</td></tr>
+      <tr><td>Giant Spider</td><td class="num">8</td><td class="num">55</td><td><span class="tag tag-r">Melee</span></td><td>Spider leg, venom gland</td></tr>
+      <tr><td>Skeleton</td><td class="num">10</td><td class="num">65</td><td><span class="tag tag-r">Melee</span></td><td>Bones, iron items</td></tr>
+      <tr><td>Forest Troll</td><td class="num">12</td><td class="num">90</td><td><span class="tag tag-r">Melee</span></td><td>Troll hide, iron ore</td></tr>
+    </table>
+    <div class="tier-label">▸ Midgame Tier (Combat 16–40)</div>
+    <table>
+      <tr><th>Monster</th><th>Cb Lv</th><th>HP</th><th>Style</th><th>Notable Drops</th></tr>
+      <tr><td>Wolf</td><td class="num">18</td><td class="num">100</td><td><span class="tag tag-r">Melee</span></td><td>Wolf bones, pelt</td></tr>
+      <tr><td>Shadow Wolf</td><td class="num">22</td><td class="num">120</td><td><span class="tag tag-r">Melee</span></td><td>Shadow pelt (rare)</td></tr>
+      <tr><td>Dark Archer</td><td class="num">24</td><td class="num">130</td><td><span class="tag tag-b">Ranged</span></td><td>Iron arrows (x10), bow string</td></tr>
+      <tr><td>Swamp Witch</td><td class="num">30</td><td class="num">150</td><td><span class="tag tag-p">Magic</span></td><td>Eye of newt, death runes, magic potion</td></tr>
+      <tr><td>Cave Troll</td><td class="num">28</td><td class="num">180</td><td><span class="tag tag-r">Melee</span></td><td>Troll bones, coal ore, steel bar</td></tr>
+      <tr><td>Iron Golem</td><td class="num">35</td><td class="num">220</td><td><span class="tag tag-r">Melee</span></td><td>Iron bars (x2), <span class="tag tag-a">Golem Core 5%</span></td></tr>
+      <tr><td>Bandit</td><td class="num">36</td><td class="num">200</td><td><span class="tag tag-r">Melee</span></td><td>Coins, steel items</td></tr>
+    </table>
+    <div class="tier-label">▸ Advanced Tier (Combat 41–65)</div>
+    <table>
+      <tr><th>Monster</th><th>Cb Lv</th><th>HP</th><th>Style</th><th>Notable Drops</th></tr>
+      <tr><td>Venomspitter</td><td class="num">45</td><td class="num">280</td><td><span class="tag tag-b">Ranged</span></td><td>Venom sac, adamant ore, ranging potion</td></tr>
+      <tr><td>Cursed Knight</td><td class="num">50</td><td class="num">320</td><td><span class="tag tag-r">Melee</span></td><td>Cursed bones, steel sword, mithril bar</td></tr>
+      <tr><td>Frost Giant</td><td class="num">55</td><td class="num">380</td><td><span class="tag tag-r">Melee</span></td><td>Frost core, adamant bar, <span class="tag tag-a">Mithril sword 6%</span></td></tr>
+      <tr><td>Soul Reaper</td><td class="num">58</td><td class="num">350</td><td><span class="tag tag-p">Magic</span></td><td>Soul runes (x5), death runes, <span class="tag tag-a">Spirit shield 3%</span></td></tr>
+      <tr><td>Dragon</td><td class="num">60</td><td class="num">420</td><td><span class="tag tag-r">Melee</span></td><td>Dragon bones, dragon items</td></tr>
+    </table>
+    <div class="tier-label">▸ Endgame Tier (Combat 66–85)</div>
+    <table>
+      <tr><th>Monster</th><th>Cb Lv</th><th>HP</th><th>Style</th><th>Notable Drops</th></tr>
+      <tr><td>Abyssal Demon</td><td class="num">70</td><td class="num">450</td><td><span class="tag tag-r">Melee</span></td><td><span class="tag tag-p">Abyssal Whip 0.8%</span>, runite bar, wrath runes</td></tr>
+      <tr><td>Lava Titan</td><td class="num">75</td><td class="num">520</td><td><span class="tag tag-r">Melee</span></td><td>Lava core, obsidian bar, <span class="tag tag-p">Fire Cape 1%</span></td></tr>
+      <tr><td>Void Stalker</td><td class="num">78</td><td class="num">480</td><td><span class="tag tag-p">Magic</span></td><td><span class="tag tag-a">Void Sigil 5%</span>, soul runes</td></tr>
+    </table>
+    <div class="tier-label">▸ Elite Tier (Combat 86+)</div>
+    <table>
+      <tr><th>Monster</th><th>Cb Lv</th><th>HP</th><th>Style</th><th>Notable Drops</th></tr>
+      <tr><td>Elder Dragon</td><td class="num">88</td><td class="num">700</td><td><span class="tag tag-r">Melee</span></td><td><span class="tag tag-p">Draconic Visage 0.2%</span>, elder dragon bone</td></tr>
+      <tr><td>Bone Colossus</td><td class="num">92</td><td class="num">800</td><td><span class="tag tag-r">Melee</span></td><td>Colossus shard, <span class="tag tag-p">Berserker Ring 0.5%</span></td></tr>
+      <tr><td>Shadow Lord</td><td class="num">97</td><td class="num">900</td><td><span class="tag tag-p">Magic</span></td><td><span class="tag tag-p">Shadow Shield 0.4%</span>, shadow orb</td></tr>
+      <tr><td>Ashfall Titan</td><td class="num">120</td><td class="num">5000</td><td><span class="tag tag-r">Melee</span></td><td>Celestial essence, ashsteel bars, unique items</td></tr>
+    </table>
   </div>
 
-  <div class="mech-box">
-    <h3>Mining Gem Drops</h3>
-    <p>While mining, there is a chance to find gems. The chance increases with higher-tier rocks (1% for Copper/Tin up to 5% for Obsidian). Gem rarity: Topaz (40%) > Sapphire (25%) > Ruby (15%) > Emerald (10%) > Diamond (8%) > Onyx (2%).</p>
+  <!-- DUNGEONS -->
+  <div id="sec-dungeons" class="wiki-section">
+    <h1>Dungeons</h1>
+    <p class="intro">20 multi-wave dungeons. Each has a boss in the final wave. Completing a dungeon gives guaranteed drops from the reward table plus a chance at rare items.</p>
+    <div class="warn">You cannot flee from a dungeon once started. Make sure your food and gear are ready before entering.</div>
+    <table>
+      <tr><th>Dungeon</th><th>Req Cb</th><th>Waves</th><th>Best Rewards</th></tr>
+      <tr><td><strong>Goblin Warren</strong></td><td class="num">5</td><td class="num">4</td><td>Coins, bronze gear</td></tr>
+      <tr><td><strong>Haunted Crypt</strong></td><td class="num">10</td><td class="num">5</td><td>Big bones, prayer XP</td></tr>
+      <tr><td><strong>Spider Queen Lair</strong></td><td class="num">15</td><td class="num">6</td><td>Venom gland ×5, mithril ore</td></tr>
+      <tr><td><strong>Goblin Fortress</strong></td><td class="num">20</td><td class="num">5</td><td>Steel gear, coins</td></tr>
+      <tr><td><strong>Troll Fortress</strong></td><td class="num">30</td><td class="num">6</td><td>Golem core, steel bars</td></tr>
+      <tr><td><strong>Dragon Lair</strong></td><td class="num">40</td><td class="num">6</td><td>Dragon bones, dragon items</td></tr>
+      <tr><td><strong>Goblin Caves</strong></td><td class="num">45</td><td class="num">6</td><td>Adamant ore, coins</td></tr>
+      <tr><td><strong>Frozen Citadel</strong></td><td class="num">52</td><td class="num">6</td><td>Frost core, mithril bars ×3</td></tr>
+      <tr><td><strong>Ashen Depths</strong></td><td class="num">60</td><td class="num">7</td><td>Ashsteel bars, wrath runes</td></tr>
+      <tr><td><strong>Hollow Citadel</strong></td><td class="num">65</td><td class="num">7</td><td>Mithril+ gear</td></tr>
+      <tr><td><strong>Void Sanctum</strong></td><td class="num">70</td><td class="num">6</td><td><span class="tag tag-a">Spirit Shield 1.5%</span>, soul runes ×20</td></tr>
+      <tr><td><strong>Goblin Warren II</strong></td><td class="num">72</td><td class="num">7</td><td>Adamant gear</td></tr>
+      <tr><td><strong>Ashsteel Foundry</strong></td><td class="num">85</td><td class="num">7</td><td>Ashsteel bars ×5, berserker ring</td></tr>
+      <tr><td><strong>Shadow Fortress</strong></td><td class="num">85</td><td class="num">6</td><td><span class="tag tag-p">Shadow Shield 0.8%</span>, wrath runes ×25</td></tr>
+      <tr><td><strong>Corrupted Dungeon</strong></td><td class="num">88</td><td class="num">7</td><td>Runite items, ashsteel</td></tr>
+      <tr><td><strong>Elder Dragon Vault</strong></td><td class="num">90</td><td class="num">6</td><td><span class="tag tag-p">Draconic Visage 0.3%</span>, fire cape 1.5%</td></tr>
+    </table>
+    <div class="tip"><strong>Dungeon strategy:</strong> Bring enough food for all waves. Swordfish or better recommended for Lv50+ dungeons. Stock the potion belt with Super Restore.</div>
   </div>
 
-  <div class="mech-box">
-    <h3>Equipment Slots</h3>
-    <p>11 equipment slots: Weapon, Shield, Head, Body, Legs, Boots, Gloves, Ring, Amulet, Cape, Ammo. Each piece contributes stats that stack additively. Damage Reduction is a flat percentage applied after the hit calculation.</p>
+  <!-- ITEMS -->
+  <div id="sec-items" class="wiki-section">
+    <h1>Items</h1>
+    <p class="intro">580+ unique items. Use the Bank search or sort by type to find what you need in-game.</p>
+    <h2>Gear Tiers</h2>
+    <table>
+      <tr><th>Tier</th><th>Metal</th><th>Attack Req</th><th>Defence Req</th><th>How to Get</th></tr>
+      <tr><td><span class="tag tag-d">T1</span> Bronze</td><td>Bronze bars</td><td class="num">1</td><td class="num">1</td><td>Smith (Smithing 1)</td></tr>
+      <tr><td><span class="tag tag-d">T2</span> Iron</td><td>Iron bars</td><td class="num">10</td><td class="num">10</td><td>Smith (Smithing 15)</td></tr>
+      <tr><td><span class="tag tag-d">T3</span> Steel</td><td>Steel bars</td><td class="num">20</td><td class="num">20</td><td>Smith (Smithing 30)</td></tr>
+      <tr><td><span class="tag tag-b">T4</span> Mithril</td><td>Mithril bars</td><td class="num">40</td><td class="num">40</td><td>Smith (Smithing 50)</td></tr>
+      <tr><td><span class="tag tag-g">T5</span> Adamant</td><td>Adamant bars</td><td class="num">55</td><td class="num">55</td><td>Smith (Smithing 65)</td></tr>
+      <tr><td><span class="tag tag-p">T6</span> Obsidian</td><td>Obsidian bars</td><td class="num">70</td><td class="num">70</td><td>Smith (Smithing 75)</td></tr>
+      <tr><td><span class="tag tag-r">T7</span> Runite</td><td>Runite bars</td><td class="num">75</td><td class="num">75</td><td>Drop / Bazaar</td></tr>
+      <tr><td><span class="tag tag-a">T8</span> Ashsteel</td><td>Ashsteel bars</td><td class="num">80</td><td class="num">80</td><td>Smith (Smithing 80)</td></tr>
+    </table>
+    <h2>Rare & Unique Items</h2>
+    <table>
+      <tr><th>Item</th><th>Source</th><th>Drop Rate</th><th>Effect</th></tr>
+      <tr><td>Abyssal Whip</td><td>Abyssal Demon (Lv70)</td><td class="num">0.8%</td><td>+75 attack, +60 strength</td></tr>
+      <tr><td>Fire Cape</td><td>Lava Titan / Elder Dragon Vault</td><td class="num">1%</td><td>+18 defence, +4 strength</td></tr>
+      <tr><td>Berserker Ring</td><td>Bone Colossus / Ashsteel Foundry</td><td class="num">0.5%</td><td>+8 strength bonus</td></tr>
+      <tr><td>Spirit Shield</td><td>Soul Reaper / Void Sanctum</td><td class="num">1.5%</td><td>+30 defence, +8 prayer</td></tr>
+      <tr><td>Shadow Shield</td><td>Shadow Lord / Shadow Fortress</td><td class="num">0.4%</td><td>+40 defence, +15 magic</td></tr>
+      <tr><td>Draconic Visage</td><td>Elder Dragon / Elder Dragon Vault</td><td class="num">0.2%</td><td>Craft into dragonfire shield</td></tr>
+    </table>
+    <h2>Rarity System</h2>
+    <div class="card-grid">
+      <div class="card"><div class="card-title" style="color:#888">Common</div><div class="card-body">Basic resources, food, standard gear. Drop from most monsters.</div></div>
+      <div class="card"><div class="card-title" style="color:#4a80c8">Rare</div><div class="card-body">Special weapons, armors. Highlighted blue in bank. Notable drops.</div></div>
+      <div class="card"><div class="card-title" style="color:#8a5ec8">Epic</div><div class="card-body">Best-in-slot or near-BiS items. Highlighted purple. Under 1% drop rate.</div></div>
+      <div class="card"><div class="card-title" style="color:#d4a83a">Legendary</div><div class="card-body">Unique items from world bosses or questline rewards. Gold highlight.</div></div>
+    </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h1 id="formulas">Formulas & Math</h1>
-
-  <div class="mech-box">
-    <h3>XP Table</h3>
-    <p>Level progression follows the formula: <span class="mono">XP[n] = XP[n-1] + floor((n + 300 * 2^(n/7)) / 4)</span></p>
-    <p>Level 10 = ~1,154 XP | Level 25 = ~8,740 XP | Level 50 = ~101,333 XP | Level 75 = ~1,210,421 XP | Level 99 = ~13,034,431 XP</p>
+  <!-- QUESTS -->
+  <div id="sec-quests" class="wiki-section">
+    <h1>Quests</h1>
+    <p class="intro">107 quests across 14 NPC chains. Quests have level requirements and prerequisites — you must complete earlier quests in a chain before unlocking later ones.</p>
+    <div class="note">The Quest page in-game shows all quests grouped by NPC. <span style="color:#3a9e5c">Green badges</span> = requirement met. <span style="color:#c44040">Red badges</span> = not yet met.</div>
+    <h2>NPC Quest Chains</h2>
+    <table>
+      <tr><th>NPC</th><th>Chain Length</th><th>Skill Requirements</th><th>Final Reward</th></tr>
+      <tr><td><strong>Old Pete</strong></td><td class="num">4</td><td>None → Attack 5</td><td>Gear + XP</td></tr>
+      <tr><td><strong>Commander Elara</strong></td><td class="num">4</td><td>Attack 10 → Attack 50, Defence 40</td><td>Silver Champion Sword + rep</td></tr>
+      <tr><td><strong>Garrick</strong></td><td class="num">7</td><td>Mining 15 → Smithing 80</td><td>Master Smithing Hammer</td></tr>
+      <tr><td><strong>Krolgar</strong></td><td class="num">4</td><td>None → Strength 40</td><td>Bloodfang Cleaver</td></tr>
+      <tr><td><strong>Archivist Ilyana</strong></td><td class="num">4</td><td>Magic 1 → Magic 70+</td><td>Voidseer Staff</td></tr>
+      <tr><td><strong>Zara (Herbalist)</strong></td><td class="num">4</td><td>Foraging 10 → Herblore 65</td><td>Master Herbalist Cape</td></tr>
+      <tr><td><strong>Captain Rena</strong></td><td class="num">4</td><td>Fishing 10 → Fishing 85</td><td>Master Fisher Rod</td></tr>
+      <tr><td><strong>Scout Mira</strong></td><td class="num">4</td><td>Combat 25 → Attack 85, Slayer 75</td><td>Apex Hunter Amulet</td></tr>
+      <tr><td><strong>Aldric (Archivist)</strong></td><td class="num">4</td><td>Runecrafting 1 → RC 75, Magic 70</td><td>Runemaster Hat</td></tr>
+    </table>
+    <h2>Storyline Quests</h2>
+    <table>
+      <tr><th>Chain</th><th>Chapters</th><th>Requirement</th><th>Alignment</th></tr>
+      <tr><td>The Ashfall Prophecy</td><td class="num">4</td><td>Combat progression</td><td><span class="tag tag-g">Good</span></td></tr>
+      <tr><td>The Dark Path</td><td class="num">2</td><td>Evil choices</td><td><span class="tag tag-r">Evil</span></td></tr>
+      <tr><td>The Shadow Rising</td><td class="num">3</td><td>Attack 40, Magic 30</td><td><span class="tag tag-g">Good</span></td></tr>
+    </table>
   </div>
 
-  <div class="mech-box">
-    <h3>Combat Formulas</h3>
-    <p><strong>Melee Accuracy:</strong> <span class="mono">(Attack Level + 8) * (Attack Bonus + 64)</span></p>
-    <p><strong>Melee Max Hit:</strong> <span class="mono">floor(0.5 + Strength Level * (Strength Bonus + 64) / 640)</span></p>
-    <p><strong>Evasion:</strong> <span class="mono">(Defence Level + 8) * (Defence Bonus + 64)</span></p>
-    <p><strong>Hit Chance:</strong> <span class="mono">clamp(Accuracy / (Accuracy + Evasion), 0.05, 0.95)</span></p>
-    <p><strong>Damage Reduction:</strong> <span class="mono">Damage = max(1, floor(RawDamage * (100 - DR%) / 100))</span></p>
-    <p><strong>Max HP:</strong> <span class="mono">Hitpoints Level * 10 + 10</span></p>
-    <p><strong>Combat Level:</strong> <span class="mono">floor(0.25 * (Def + HP)) + max(0.325 * (Atk + Str), 0.325 * Rng * 1.5, 0.325 * Mag * 1.5)</span></p>
+  <!-- MECHANICS -->
+  <div id="sec-mechanics" class="wiki-section">
+    <h1>Game Mechanics</h1>
+    <h2>Offline Progression</h2>
+    <p>The game calculates offline gains when you return. Skills continue training, gathering resources and XP. Combat does not run offline. The offline cap is 24 hours.</p>
+    <h2>Alignment System</h2>
+    <p>Two axes: <strong>Moral</strong> (Good ↔ Evil) and <strong>Order</strong> (Lawful ↔ Chaotic). Your alignment shifts based on your actions:</p>
+    <table>
+      <tr><th>Action</th><th>Moral Shift</th><th>Order Shift</th></tr>
+      <tr><td>Kill evil monster</td><td>+1 Good</td><td>—</td></tr>
+      <tr><td>Kill innocent creature</td><td>+2 Evil</td><td>+1 Chaotic</td></tr>
+      <tr><td>Kill neutral creature</td><td>—</td><td>+1 Chaotic</td></tr>
+      <tr><td>Quest: moral choice</td><td>±3–25</td><td>±3–15</td></tr>
+    </table>
+    <h2>Reputation</h2>
+    <p>Each faction (Silver Order, Ashen Guild, Bloodfang Clan, Veiled Circle) has its own reputation track. Higher rep unlocks exclusive shop items and quest access.</p>
+    <h2>Slayer System</h2>
+    <p>A Slayer Master assigns tasks to kill a specific number of a certain monster. Completing tasks grants Slayer XP. While on task: +15% drop rate, eligible for unique slayer drops.</p>
+    <h2>Mastery</h2>
+    <p>Each action within a skill has a Mastery level (0–99). Higher mastery increases efficiency: faster actions, better resource yields, or higher XP per action.</p>
+    <h2>Pets</h2>
+    <p>18 pets available. Each gives a passive bonus when active (e.g. +5% woodcutting speed, +1% drop rate). Found as rare drops from skills or combat.</p>
   </div>
 
-  <div class="mech-box">
-    <h3>Smithing Recipe Chain</h3>
-    <p>Bronze Bar = 1 Copper + 1 Tin | Iron Bar = 1 Iron Ore | Steel Bar = 1 Iron + 2 Coal</p>
-    <p>Mithril Bar = 1 Mithril Ore + 4 Coal | Adamant Bar = 1 Adamant Ore + 6 Coal | Obsidian Bar = 1 Obsidian Ore + 8 Coal</p>
-    <p>Weapons require 2-4 bars depending on tier. Platebodies require 3-5 bars. Shields require 2-3 bars.</p>
+  <!-- ONLINE -->
+  <div id="sec-online" class="wiki-section">
+    <h1>Online Features</h1>
+    <p class="intro">Ashfall Idle uses Firebase for real-time multiplayer. All social features require creating an account (free).</p>
+    <h2>Accounts</h2>
+    <p>Anonymous players can chat and play locally but cannot use cloud saves, friend lists, or guilds. Create a free account via email or Google Sign-In to unlock all online features. Progress is saved to the cloud every 60 seconds.</p>
+    <h2>Global Chat</h2>
+    <p>Real-time chat visible to all online players. Messages show player name, level tag, and timestamp. System messages (server announcements) appear in amber.</p>
+    <h2>Guilds</h2>
+    <p>Create a guild for 1,000 gold. Guilds have 7 ranks: Recruit → Member → Sergeant → Lieutenant → Captain → General → Leader. The Leader can configure rank permissions, deposit/withdraw item bank rules, emblem, and description. The gold bank and item bank are shared between all members based on rank permissions.</p>
+    <h2>Friends System</h2>
+    <p>Send friend requests by searching for any player's name. Incoming requests appear in the Friends page. Accepted friends can send private messages. Both sent and received requests show as pending until accepted.</p>
+    <h2>PvP Arena</h2>
+    <p>Challenge other players to 1v1 combat. Your gear and stats are used in the fight simulation. Winners gain rating; losers lose rating. Bounties can be placed on specific players.</p>
+    <h2>Bazaar (Player Market)</h2>
+    <p>List items for sale at your set price. Other players can buy instantly. Gold from sales is held until you collect it from the Bazaar page.</p>
   </div>
 
-  <div style="text-align:center;padding:40px 0;color:var(--dim);font-family:'Cinzel',serif;font-size:13px">
-    Ashfall Idle Wiki v1.0 &mdash; <a href="./" style="color:var(--accent);text-decoration:none">Play the Game</a>
+  <!-- CHANGELOG -->
+  <div id="sec-changelog" class="wiki-section">
+    <h1>Changelog</h1>
+    <table>
+      <tr><th>Version</th><th>Date</th><th>Highlights</th></tr>
+      <tr><td><strong>v9.6</strong></td><td>Apr 2026</td><td>Admin panel rebuild (10 tabs, JS switching), give-to-player system, global game settings via Firestore, index page redesign, wiki overhaul</td></tr>
+      <tr><td><strong>v9.5</strong></td><td>Apr 2026</td><td>18 new monsters (spider→shadow lord), 6 dungeons, 8 combat areas, Shadow Rising storyline, new items (abyssal whip, fire cape, berserker ring)</td></tr>
+      <tr><td><strong>v9.4</strong></td><td>Apr 2026</td><td>Quest level requirements, 16 new quests, combat loadout swap (4 slots), bank sort (6 modes)</td></tr>
+      <tr><td><strong>v9.3</strong></td><td>Apr 2026</td><td>DiceBear combat avatar, guild item bank, guild settings panel, outbound friend requests</td></tr>
+      <tr><td><strong>v9.2</strong></td><td>Apr 2026</td><td>Restored hand-crafted SVG art, fixed rendering pipeline bug</td></tr>
+      <tr><td><strong>v9.1</strong></td><td>Apr 2026</td><td>240 game-icons.net SVGs (replaced), 11 missing smithing SVGs added</td></tr>
+      <tr><td><strong>v9.0</strong></td><td>Apr 2026</td><td>Landing page redesign, SVG pipeline fix, contact updated</td></tr>
+      <tr><td><strong>v8.9</strong></td><td>Apr 2026</td><td>Skill action art, chat redesign, loot bag system, monster drop preview</td></tr>
+      <tr><td><strong>v8.6</strong></td><td>Apr 2026</td><td>Custom logo, guild management, player search, dungeon wave fix</td></tr>
+      <tr><td><strong>v6.2</strong></td><td>Mar 2026</td><td>Slayer counter live update, prayer book overhaul, real-time friend requests, online players page</td></tr>
+    </table>
   </div>
+
 </div>
+
+<script>
+  function showSection(id, btn) {
+    document.querySelectorAll('.wiki-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.wn-link').forEach(b => b.classList.remove('active'));
+    const sec = document.getElementById('sec-'+id);
+    if (sec) sec.classList.add('active');
+    if (btn) btn.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
 </body>
 </html>
