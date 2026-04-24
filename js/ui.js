@@ -5132,8 +5132,10 @@ This will overwrite your current local progress.`)) {
   }
 }
 
+// Game is initialized by enterGame() on the landing page.
+// Set up the UI instance on DOMContentLoaded but DON'T call game.init() yet —
+// that happens when the player clicks Play and enterGame() runs.
 window.addEventListener('DOMContentLoaded', () => {
   window.ui = new UI(game);
-  game.init();
-  ui.init();
+  // game.init() and ui.init() are called by enterGame() in index.html
 });

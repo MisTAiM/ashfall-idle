@@ -4,289 +4,358 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ashfall Idle — Dark Fantasy Idle RPG</title>
-  <meta name="description" content="Ashfall Idle — a dark fantasy idle RPG. Train 28 skills, fight 77+ monsters, conquer 20 dungeons, craft 400+ items, and forge your legend in a world buried beneath endless ash.">
+  <meta name="description" content="A dark fantasy idle RPG. Train 28 skills, fight 77+ monsters, conquer 20 dungeons, craft 580+ items, and forge your legend.">
   <meta property="og:title" content="Ashfall Idle — Dark Fantasy Idle RPG">
-  <meta property="og:description" content="Train 28 skills, fight monsters, craft gear, join guilds, and conquer dungeons. Free to play in your browser.">
-  <meta property="og:image" content="logo.png">
+  <meta property="og:description" content="Free browser idle RPG. Train skills, fight monsters, join guilds, PvP arena, global chat.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://ashfall-idle.vercel.app">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x2694;</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <style>
-    /* Landing-specific styles */
-    .land { min-height:100vh; background:#080a0e; display:flex; flex-direction:column; font-family:'Crimson Text',Georgia,serif; overflow-x:hidden; }
-    /* Nav */
-    .land-nav { display:flex; align-items:center; justify-content:space-between; padding:18px 40px; border-bottom:1px solid rgba(201,135,62,.15); position:sticky; top:0; background:rgba(8,10,14,.95); backdrop-filter:blur(8px); z-index:100; }
-    .land-nav-logo { font-family:'Cinzel',serif; font-size:16px; color:#c9873e; letter-spacing:3px; font-weight:700; }
-    .land-nav-links { display:flex; gap:24px; align-items:center; }
-    .land-nav-links a { color:#7a7e94; text-decoration:none; font-size:14px; transition:color .15s; font-family:'Cinzel',serif; font-size:12px; letter-spacing:1px; }
-    .land-nav-links a:hover { color:#c9873e; }
-    .land-nav-play { background:#c9873e; color:#0a0800 !important; padding:8px 20px; border-radius:4px; font-weight:700 !important; }
-    .land-nav-play:hover { background:#e09a4a !important; color:#0a0800 !important; }
-    /* Hero */
-    .land-hero { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 24px 40px; text-align:center; position:relative; }
-    .land-hero::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,135,62,.06) 0%, transparent 70%); pointer-events:none; }
-    .land-logo-wrap { margin-bottom:28px; }
-    .land-logo-img { width:320px; max-width:85vw; height:auto; filter:drop-shadow(0 0 40px rgba(201,135,62,.25)); }
-    .land-tagline { font-size:18px; color:#7a7e94; letter-spacing:2px; font-family:'Cinzel',serif; margin-bottom:32px; text-transform:uppercase; }
-    /* Stat strip */
-    .land-stats { display:flex; gap:0; margin:0 auto 36px; border:1px solid rgba(201,135,62,.2); border-radius:6px; overflow:hidden; max-width:680px; width:100%; }
-    .ls-item { flex:1; padding:14px 8px; text-align:center; border-right:1px solid rgba(201,135,62,.15); }
-    .ls-item:last-child { border-right:none; }
-    .ls-num { display:block; font-family:'Cinzel',serif; font-size:22px; font-weight:700; color:#c9873e; line-height:1.1; }
-    .ls-lbl { display:block; font-size:10px; color:#4a4e64; letter-spacing:1.5px; text-transform:uppercase; margin-top:3px; font-family:'Cinzel',serif; }
-    /* CTA button */
-    .land-cta { display:inline-flex; flex-direction:column; align-items:center; background:linear-gradient(135deg,#c9873e,#a0621e); color:#0a0800; border:none; border-radius:6px; padding:16px 48px; cursor:pointer; text-decoration:none; transition:transform .15s, box-shadow .15s; margin-bottom:20px; }
-    .land-cta:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(201,135,62,.3); }
-    .land-cta-main { font-family:'Cinzel',serif; font-size:18px; font-weight:700; letter-spacing:2px; }
-    .land-cta-sub { font-size:12px; opacity:.7; margin-top:3px; letter-spacing:1px; }
-    /* Feature pills */
-    .land-pills { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:48px; max-width:640px; }
-    .land-pill { border:1px solid rgba(201,135,62,.25); border-radius:20px; padding:5px 14px; font-size:12px; color:#7a7e94; font-family:'Cinzel',serif; letter-spacing:.5px; }
-    /* Feature grid */
-    .land-features { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; max-width:900px; width:100%; margin:0 auto 60px; padding:0 24px; }
-    .land-feat { background:rgba(255,255,255,.02); border:1px solid rgba(201,135,62,.12); border-radius:8px; padding:24px 20px; text-align:left; }
-    .lf-icon { font-size:28px; margin-bottom:12px; display:block; }
-    .lf-title { font-family:'Cinzel',serif; font-size:14px; color:#c9873e; margin-bottom:8px; letter-spacing:1px; }
-    .lf-desc { font-size:14px; color:#5a5e74; line-height:1.6; }
-    /* Screenshots/preview */
-    .land-preview { max-width:900px; width:100%; margin:0 auto 60px; padding:0 24px; }
-    .land-preview-title { font-family:'Cinzel',serif; font-size:20px; color:#c9873e; text-align:center; margin-bottom:24px; letter-spacing:2px; }
-    .land-preview-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
-    .lp-card { background:rgba(255,255,255,.02); border:1px solid rgba(201,135,62,.12); border-radius:8px; padding:20px; }
-    .lp-card-title { font-family:'Cinzel',serif; font-size:13px; color:#c9873e; margin-bottom:10px; }
-    .lp-card-list { list-style:none; }
-    .lp-card-list li { font-size:13px; color:#5a5e74; padding:3px 0; border-bottom:1px solid rgba(255,255,255,.04); }
-    .lp-card-list li::before { content:'▸ '; color:#4a3820; }
-    /* Contact */
-    .land-contact { border-top:1px solid rgba(201,135,62,.1); padding:32px 24px; text-align:center; background:rgba(0,0,0,.2); }
-    .land-contact p { font-size:13px; color:#4a4e64; margin-bottom:12px; font-family:'Cinzel',serif; letter-spacing:1px; }
-    .land-discord-chip { display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(88,101,242,.4); background:rgba(88,101,242,.08); border-radius:6px; padding:8px 18px; color:#a0aaff; font-size:14px; font-weight:600; text-decoration:none; }
-    .land-discord-chip:hover { background:rgba(88,101,242,.15); }
-    /* Footer */
-    .land-footer { padding:20px 40px; border-top:1px solid rgba(255,255,255,.04); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
-    .land-footer-l { font-size:12px; color:#2a2e44; font-family:'Cinzel',serif; }
-    .land-footer-r { display:flex; gap:16px; }
-    .land-footer-r a { font-size:12px; color:#2a2e44; text-decoration:none; font-family:'Cinzel',serif; }
-    .land-footer-r a:hover { color:#c9873e; }
-    /* Ember particles */
-    .land-embers { position:fixed; inset:0; pointer-events:none; z-index:0; }
-    .ember { position:absolute; bottom:-10px; border-radius:50%; background:#c9873e; animation:rise linear infinite; }
-    @keyframes rise { 0%{transform:translateY(0) scale(1);opacity:.6} 100%{transform:translateY(-100vh) scale(.3);opacity:0} }
-    @media(max-width:600px) {
-      .land-nav { padding:14px 20px; }
-      .land-nav-links { gap:12px; }
-      .land-stats { flex-wrap:wrap; }
-      .ls-item { min-width:33%; }
-      .land-footer { justify-content:center; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    a{text-decoration:none;color:inherit}
+    body{margin:0;padding:0;background:#06040a;}
+
+    /* ─── LANDING ───────────────────────────────────── */
+    #landing{
+      min-height:100vh;background:#06040a;
+      font-family:'Crimson Text',Georgia,serif;color:#c2b49c;
+      overflow-x:hidden;
     }
+    /* Navbar */
+    .ln{
+      position:sticky;top:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 40px;height:56px;
+      background:rgba(6,4,10,.96);border-bottom:1px solid rgba(201,135,62,.12);
+      backdrop-filter:blur(8px);
+    }
+    .ln-logo{font-family:'Cinzel',serif;font-size:15px;font-weight:900;color:#c9873e;letter-spacing:4px;}
+    .ln-links{display:flex;align-items:center;gap:6px;}
+    .ln-link{
+      font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;
+      color:#5a5464;padding:6px 14px;border-radius:4px;
+      transition:color .15s,background .15s;cursor:pointer;
+    }
+    .ln-link:hover{color:#c9873e;background:rgba(201,135,62,.07);}
+    .ln-play{background:#c9873e;color:#06040a!important;font-weight:700;letter-spacing:1px;border-radius:4px;padding:7px 18px;transition:background .15s,transform .1s;}
+    .ln-play:hover{background:#dda050;transform:translateY(-1px);}
+    /* Hero */
+    .hero{
+      display:flex;flex-direction:column;align-items:center;
+      padding:64px 24px 48px;text-align:center;position:relative;
+    }
+    .hero::before{
+      content:'';position:absolute;inset:0;pointer-events:none;
+      background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(201,135,62,.07) 0%,transparent 70%);
+    }
+    .hero-logo{width:360px;max-width:88vw;height:auto;filter:drop-shadow(0 0 48px rgba(201,135,62,.2));margin-bottom:16px;}
+    .hero-tag{font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;color:#4a4052;text-transform:uppercase;margin-bottom:32px;}
+    /* Stats */
+    .stats{
+      display:flex;flex-wrap:wrap;justify-content:center;
+      border:1px solid rgba(201,135,62,.15);border-radius:6px;
+      overflow:hidden;margin:0 auto 36px;max-width:700px;width:100%;
+    }
+    .stat{flex:1;min-width:100px;padding:14px 10px;text-align:center;border-right:1px solid rgba(201,135,62,.1);}
+    .stat:last-child{border-right:none;}
+    .stat-n{display:block;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#c9873e;line-height:1.1;}
+    .stat-l{display:block;font-size:10px;color:#3a3040;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;font-family:'Cinzel',serif;}
+    /* CTA */
+    .cta{
+      display:inline-flex;flex-direction:column;align-items:center;
+      background:linear-gradient(135deg,#c9873e,#a0621e);
+      color:#06040a;border-radius:6px;padding:16px 52px;
+      cursor:pointer;border:none;font-family:inherit;
+      transition:transform .15s,box-shadow .15s;margin-bottom:24px;
+    }
+    .cta:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(201,135,62,.25);}
+    .cta-main{font-family:'Cinzel',serif;font-size:18px;font-weight:700;letter-spacing:2px;}
+    .cta-sub{font-size:12px;opacity:.65;margin-top:3px;letter-spacing:1px;}
+    /* Pills */
+    .pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:56px;max-width:600px;}
+    .pill{border:1px solid rgba(201,135,62,.2);border-radius:20px;padding:5px 14px;font-size:11px;color:#5a5464;font-family:'Cinzel',serif;letter-spacing:.5px;}
+    /* Divider */
+    .divider{width:100%;max-width:900px;margin:0 auto 48px;border:none;border-top:1px solid rgba(201,135,62,.08);}
+    /* Features */
+    .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;max-width:900px;width:100%;margin:0 auto 56px;padding:0 24px;}
+    .feat{background:rgba(255,255,255,.02);border:1px solid rgba(201,135,62,.1);border-radius:8px;padding:22px 20px;}
+    .feat-icon{font-size:26px;margin-bottom:12px;display:block;}
+    .feat-title{font-family:'Cinzel',serif;font-size:13px;color:#c9873e;margin-bottom:8px;letter-spacing:1px;}
+    .feat-desc{font-size:14px;color:#4a4454;line-height:1.65;}
+    /* Preview */
+    .preview{max-width:900px;width:100%;margin:0 auto 56px;padding:0 24px;}
+    .preview-title{font-family:'Cinzel',serif;font-size:18px;color:#c9873e;text-align:center;margin-bottom:24px;letter-spacing:2px;}
+    .preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+    .preview-card{background:rgba(255,255,255,.015);border:1px solid rgba(201,135,62,.09);border-radius:8px;padding:18px;}
+    .preview-card-title{font-family:'Cinzel',serif;font-size:12px;color:#c9873e;margin-bottom:10px;letter-spacing:1px;}
+    .preview-card ul{list-style:none;}
+    .preview-card li{font-size:13px;color:#4a4454;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+    .preview-card li::before{content:'&#9656; ';color:#3a2c28;}
+    /* Contact */
+    .contact{border-top:1px solid rgba(201,135,62,.08);padding:36px 24px;text-align:center;background:rgba(0,0,0,.15);}
+    .contact-label{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;color:#3a3040;margin-bottom:16px;}
+    .discord-btn{
+      display:inline-flex;align-items:center;gap:12px;
+      border:1px solid rgba(88,101,242,.4);background:rgba(88,101,242,.08);
+      border-radius:8px;padding:14px 28px;color:#a0aaff;
+      transition:background .15s,border-color .15s;
+    }
+    .discord-btn:hover{background:rgba(88,101,242,.15);border-color:rgba(88,101,242,.6);}
+    .discord-name{display:block;font-size:16px;font-weight:700;color:#c8cdff;}
+    .discord-id{display:block;font-size:11px;color:#6070b0;font-family:monospace;margin-top:2px;}
+    /* Footer */
+    .footer{
+      padding:20px 40px;border-top:1px solid rgba(255,255,255,.04);
+      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+    }
+    .footer-l{font-size:11px;color:#2a2434;font-family:'Cinzel',serif;letter-spacing:.5px;}
+    .footer-r{display:flex;gap:20px;}
+    .footer-r a{font-size:11px;color:#2a2434;font-family:'Cinzel',serif;transition:color .15s;}
+    .footer-r a:hover{color:#c9873e;}
+    /* Embers */
+    .embers{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+    .ember{position:absolute;bottom:-10px;border-radius:50%;background:#c9873e;animation:rise linear infinite;}
+    @keyframes rise{0%{transform:translateY(0) translateX(0) scale(1);opacity:.5}50%{transform:translateY(-50vh) translateX(20px) scale(.7);opacity:.3}100%{transform:translateY(-105vh) translateX(-10px) scale(.2);opacity:0}}
+    @media(max-width:600px){
+      .ln{padding:0 16px;}
+      .ln-link:not(.ln-play){display:none;}
+      .hero{padding:48px 16px 36px;}
+      .hero-logo{width:260px;}
+      .stat{min-width:80px;padding:10px 6px;}
+      .stat-n{font-size:18px;}
+      .footer{justify-content:center;padding:16px;}
+    }
+
+    /* ─── GAME APP (hidden until Play) ─────────────── */
+    #game-app{
+      display:none;
+      position:fixed;inset:0;
+      flex-direction:row;
+      overflow:hidden;
+    }
+    #game-app.active{display:flex;}
   </style>
 </head>
 <body>
 
-  <!-- LANDING PAGE -->
-  <div id="landing" class="land">
-    <div class="land-embers" id="land-embers"></div>
+<!-- LANDING -->
+<div id="landing">
+  <div class="embers" id="embers"></div>
 
-    <!-- Nav -->
-    <nav class="land-nav">
-      <div class="land-nav-logo">ASHFALL</div>
-      <div class="land-nav-links">
-        <a href="wiki.html">Wiki</a>
-        <a href="#features">Features</a>
-        <a href="#" onclick="enterGame()" class="land-nav-play">Play Free</a>
-      </div>
-    </nav>
+  <nav class="ln">
+    <div class="ln-logo">ASHFALL</div>
+    <div class="ln-links">
+      <a href="wiki.html" class="ln-link">Wiki</a>
+      <a href="#features" class="ln-link">Features</a>
+      <a href="#contact" class="ln-link">Contact</a>
+      <a href="#" onclick="enterGame();return false;" class="ln-link ln-play">Play Free</a>
+    </div>
+  </nav>
 
-    <!-- Hero -->
-    <section class="land-hero">
-      <div class="land-logo-wrap">
-        <img src="logo.png" alt="Ashfall Idle" class="land-logo-img">
-      </div>
-      <p class="land-tagline">Dark Fantasy Idle RPG</p>
+  <section class="hero">
+    <img src="logo.png" alt="Ashfall Idle" class="hero-logo"
+      onerror="this.style.display='none';document.getElementById('hl').style.display='block'">
+    <div id="hl" style="display:none;font-family:Cinzel,serif;font-size:52px;font-weight:900;color:#c9873e;letter-spacing:6px;margin-bottom:16px;text-shadow:0 0 60px rgba(201,135,62,.4)">ASHFALL</div>
+    <div class="hero-tag">Dark Fantasy Idle RPG</div>
 
-      <!-- Stat strip -->
-      <div class="land-stats">
-        <div class="ls-item"><span class="ls-num">28</span><span class="ls-lbl">Skills</span></div>
-        <div class="ls-item"><span class="ls-num">77+</span><span class="ls-lbl">Monsters</span></div>
-        <div class="ls-item"><span class="ls-num">580+</span><span class="ls-lbl">Items</span></div>
-        <div class="ls-item"><span class="ls-num">107</span><span class="ls-lbl">Quests</span></div>
-        <div class="ls-item"><span class="ls-num">20</span><span class="ls-lbl">Dungeons</span></div>
-        <div class="ls-item"><span class="ls-num">29</span><span class="ls-lbl">Combat Areas</span></div>
-      </div>
-
-      <a href="#" onclick="enterGame()" class="land-cta">
-        <span class="land-cta-main">ENTER THE ASHFALL</span>
-        <span class="land-cta-sub">Free to play · No download · Cloud saves</span>
-      </a>
-
-      <div class="land-pills">
-        <span class="land-pill">Live Multiplayer</span>
-        <span class="land-pill">Player Guilds</span>
-        <span class="land-pill">PvP Arena</span>
-        <span class="land-pill">Global Chat</span>
-        <span class="land-pill">Bazaar</span>
-        <span class="land-pill">Leaderboards</span>
-        <span class="land-pill">Bounty Board</span>
-        <span class="land-pill">Cross-Device</span>
-      </div>
-    </section>
-
-    <!-- Features -->
-    <section id="features" style="padding:0 0 20px">
-      <div class="land-features">
-        <div class="land-feat">
-          <span class="lf-icon">⚔</span>
-          <div class="lf-title">Deep Combat</div>
-          <div class="lf-desc">Fight 77+ monsters across 29 combat areas. Conquer 20 multi-wave dungeons. Challenge 4 world bosses. Use prayers, abilities, and special attacks.</div>
-        </div>
-        <div class="land-feat">
-          <span class="lf-icon">⚒</span>
-          <div class="lf-title">28 Skills</div>
-          <div class="lf-desc">From Woodcutting and Mining to Necromancy and Summoning. Every skill has dozens of actions, mastery levels, and unlocks unique content.</div>
-        </div>
-        <div class="land-feat">
-          <span class="lf-icon">🗺</span>
-          <div class="lf-title">Rich Quests & Story</div>
-          <div class="lf-desc">107 quests across 14 NPC chains with level requirements and prerequisites. Plus branching storylines with alignment consequences.</div>
-        </div>
-        <div class="land-feat">
-          <span class="lf-icon">🌐</span>
-          <div class="lf-title">Online Multiplayer</div>
-          <div class="lf-desc">Real-time global chat, player guilds with item banks, PvP arena, bounty board, leaderboards, and friend lists. All cloud-synced.</div>
-        </div>
-        <div class="land-feat">
-          <span class="lf-icon">🛡</span>
-          <div class="lf-title">8 Gear Tiers</div>
-          <div class="lf-desc">Bronze through Ashsteel. Smith, craft, and enchant 580+ unique items. Save loadouts and swap gear mid-combat.</div>
-        </div>
-        <div class="land-feat">
-          <span class="lf-icon">🏰</span>
-          <div class="lf-title">Guilds & Factions</div>
-          <div class="lf-desc">Create or join a guild. Rank members, deposit gold and items into the guild bank, set permissions by rank, and customize your guild emblem.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Content preview -->
-    <section class="land-preview">
-      <div class="land-preview-title">WHAT AWAITS</div>
-      <div class="land-preview-grid">
-        <div class="lp-card">
-          <div class="lp-card-title">Skills</div>
-          <ul class="lp-card-list">
-            <li>Woodcutting, Mining, Fishing, Foraging, Hunting</li>
-            <li>Smithing (8 metal tiers), Fletching, Crafting</li>
-            <li>Herblore, Cooking, Farming, Enchanting</li>
-            <li>Magic (6 spellbooks), Prayer (21 prayers)</li>
-            <li>Necromancy, Summoning, Thieving, Slayer</li>
-          </ul>
-        </div>
-        <div class="lp-card">
-          <div class="lp-card-title">Dungeons & Bosses</div>
-          <ul class="lp-card-list">
-            <li>Goblin Warren → Elder Dragon's Vault</li>
-            <li>Spider Queen Lair (Lv 15)</li>
-            <li>Frozen Citadel (Lv 52)</li>
-            <li>Void Sanctum (Lv 70)</li>
-            <li>Shadow Fortress (Lv 85)</li>
-          </ul>
-        </div>
-        <div class="lp-card">
-          <div class="lp-card-title">Quests & Story</div>
-          <ul class="lp-card-list">
-            <li>The Ashfall Prophecy (main story)</li>
-            <li>The Dark Path (evil route)</li>
-            <li>The Shadow Rising (new chapter)</li>
-            <li>14 NPC chains with level requirements</li>
-            <li>9 alignment outcomes</li>
-          </ul>
-        </div>
-        <div class="lp-card">
-          <div class="lp-card-title">Online Features</div>
-          <ul class="lp-card-list">
-            <li>Real-time global chat</li>
-            <li>Player guilds with item bank</li>
-            <li>PvP arena (1v1 combat)</li>
-            <li>Bazaar player marketplace</li>
-            <li>Bounty board & leaderboards</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- Contact -->
-    <div class="land-contact">
-      <p>DISCORD COMMUNITY COMING SOON — CONTACT THE DEVELOPER DIRECTLY</p>
-      <a class="land-discord-chip" href="https://discord.com/users/morpheus" target="_blank">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.053a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-        Morpheus
-      </a>
+    <div class="stats">
+      <div class="stat"><span class="stat-n">28</span><span class="stat-l">Skills</span></div>
+      <div class="stat"><span class="stat-n">77+</span><span class="stat-l">Monsters</span></div>
+      <div class="stat"><span class="stat-n">580+</span><span class="stat-l">Items</span></div>
+      <div class="stat"><span class="stat-n">107</span><span class="stat-l">Quests</span></div>
+      <div class="stat"><span class="stat-n">20</span><span class="stat-l">Dungeons</span></div>
+      <div class="stat"><span class="stat-n">29</span><span class="stat-l">Areas</span></div>
     </div>
 
-    <!-- Footer -->
-    <footer class="land-footer">
-      <div class="land-footer-l">© 2026 Ashfall Idle · Free to Play · No Ads · Cloud Saves</div>
-      <div class="land-footer-r">
-        <a href="wiki.html">Wiki</a>
-        <a href="https://github.com/MisTAiM/ashfall-idle" target="_blank">GitHub</a>
-        <a href="#" onclick="enterGame()">Play</a>
+    <button class="cta" onclick="enterGame()">
+      <span class="cta-main">ENTER THE ASHFALL</span>
+      <span class="cta-sub">Free to play &nbsp;&#xB7;&nbsp; No download &nbsp;&#xB7;&nbsp; Cloud saves</span>
+    </button>
+
+    <div class="pills">
+      <span class="pill">Live Multiplayer</span>
+      <span class="pill">Player Guilds</span>
+      <span class="pill">PvP Arena</span>
+      <span class="pill">Global Chat</span>
+      <span class="pill">Bazaar</span>
+      <span class="pill">Leaderboards</span>
+      <span class="pill">Bounty Board</span>
+      <span class="pill">Cross-Device</span>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <section class="features" id="features">
+    <div class="feat">
+      <span class="feat-icon">&#x2694;</span>
+      <div class="feat-title">Deep Combat</div>
+      <div class="feat-desc">Fight 77+ monsters across 29 areas. Conquer 20 multi-wave dungeons. Prayers, abilities, special attacks, and 4 saved loadouts you can swap mid-fight.</div>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">&#x2692;</span>
+      <div class="feat-title">28 Skills</div>
+      <div class="feat-desc">From Woodcutting and Mining to Necromancy and Summoning. Every skill has dozens of actions, mastery unlocks, and unique rewards at every tier.</div>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">&#x1F4DC;</span>
+      <div class="feat-title">107 Quests</div>
+      <div class="feat-desc">14 NPC chains with level requirements and prerequisites. Three branching storylines with alignment consequences that change your world.</div>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">&#x1F310;</span>
+      <div class="feat-title">Live Multiplayer</div>
+      <div class="feat-desc">Real-time global chat, player guilds with item banks, PvP arena, bounty board, leaderboards, and friend lists. Cloud-synced across devices.</div>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">&#x1F6E1;</span>
+      <div class="feat-title">8 Gear Tiers</div>
+      <div class="feat-desc">Bronze through Ashsteel. Smith, craft, and enchant 580+ items. Hunt rare drops like the Abyssal Whip, Fire Cape, and Draconic Visage.</div>
+    </div>
+    <div class="feat">
+      <span class="feat-icon">&#x1F3F0;</span>
+      <div class="feat-title">Player Guilds</div>
+      <div class="feat-desc">Create or join a guild. Set rank permissions, deposit items into the shared bank, customize your emblem and description in real time.</div>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="preview-title">WHAT AWAITS</div>
+    <div class="preview-grid">
+      <div class="preview-card">
+        <div class="preview-card-title">Skills</div>
+        <ul>
+          <li>Woodcutting, Mining, Fishing</li>
+          <li>Smithing (8 metal tiers)</li>
+          <li>Herblore, Cooking, Farming</li>
+          <li>Magic, Prayer, Necromancy</li>
+          <li>Slayer, Summoning, Thieving</li>
+        </ul>
       </div>
-    </footer>
+      <div class="preview-card">
+        <div class="preview-card-title">Dungeons</div>
+        <ul>
+          <li>Spider Queen Lair (Lv 15)</li>
+          <li>Troll Fortress (Lv 30)</li>
+          <li>Frozen Citadel (Lv 52)</li>
+          <li>Void Sanctum (Lv 70)</li>
+          <li>Elder Dragon Vault (Lv 90)</li>
+        </ul>
+      </div>
+      <div class="preview-card">
+        <div class="preview-card-title">Storylines</div>
+        <ul>
+          <li>The Ashfall Prophecy</li>
+          <li>The Dark Path (evil route)</li>
+          <li>The Shadow Rising</li>
+          <li>9 alignment outcomes</li>
+          <li>14 NPC quest chains</li>
+        </ul>
+      </div>
+      <div class="preview-card">
+        <div class="preview-card-title">Online</div>
+        <ul>
+          <li>Real-time global chat</li>
+          <li>Guild item &amp; gold banks</li>
+          <li>PvP arena (1v1)</li>
+          <li>Player bazaar marketplace</li>
+          <li>Bounty board &amp; leaderboards</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div id="contact" class="contact">
+    <div class="contact-label">DEVELOPER &nbsp;&#xB7;&nbsp; DISCORD</div>
+    <a class="discord-btn" href="https://discord.com/users/348354392178688010" target="_blank" rel="noopener">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#5865f2">
+        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.053a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+      </svg>
+      <div>
+        <span class="discord-name">Morpheus</span>
+        <span class="discord-id">348354392178688010</span>
+      </div>
+    </a>
   </div>
 
-  <!-- GAME -->
-  <div class="app" id="game-app" style="display:none">
-    <nav id="sidebar"></nav>
-    <main id="main-area">
-      <div id="training-bar"></div>
-      <div id="main-content"><div class="page-empty">Loading Ashfall Idle...</div></div>
-    </main>
-  </div>
-  <button id="sidebar-toggle" aria-label="Toggle menu" style="display:none">&#9776;</button>
-  <div id="toast-container"></div>
+  <footer class="footer">
+    <div class="footer-l">&copy; 2026 ASHFALL IDLE &nbsp;&#xB7;&nbsp; FREE TO PLAY &nbsp;&#xB7;&nbsp; NO ADS &nbsp;&#xB7;&nbsp; CLOUD SAVES</div>
+    <div class="footer-r">
+      <a href="wiki.html">Wiki</a>
+      <a href="https://github.com/MisTAiM/ashfall-idle" target="_blank">GitHub</a>
+      <a href="#" onclick="enterGame();return false;">Play</a>
+    </div>
+  </footer>
+</div>
 
-  <script>
-    // Ember particles
-    (function(){
-      const c = document.getElementById('land-embers');
-      if (!c) return;
-      for (let i = 0; i < 22; i++) {
-        const e = document.createElement('div');
-        e.className = 'ember';
-        e.style.cssText = `left:${Math.random()*100}%;animation-duration:${4+Math.random()*6}s;animation-delay:${Math.random()*6}s;width:${2+Math.random()*3}px;height:${2+Math.random()*3}px;opacity:${0.2+Math.random()*0.5}`;
-        c.appendChild(e);
-      }
-    })();
+<!-- GAME (hidden until Play clicked) -->
+<div id="game-app">
+  <nav id="sidebar"></nav>
+  <main id="main-area">
+    <div id="training-bar"></div>
+    <div id="main-content"></div>
+  </main>
+</div>
+<button id="sidebar-toggle" aria-label="Toggle menu" style="display:none">&#9776;</button>
+<div id="toast-container"></div>
 
-    function enterGame() {
-      const l = document.getElementById('landing');
-      l.style.transition = 'opacity .5s';
-      l.style.opacity = '0';
-      setTimeout(() => {
-        l.style.display = 'none';
-        document.getElementById('game-app').style.display = '';
-        document.getElementById('sidebar-toggle').style.display = '';
-      }, 500);
+<script>
+  // Embers
+  (function(){
+    var c=document.getElementById('embers');
+    for(var i=0;i<20;i++){
+      var e=document.createElement('div');e.className='ember';
+      var s=2+Math.random()*3;
+      e.style.cssText='left:'+Math.random()*100+'%;width:'+s+'px;height:'+s+'px;animation-duration:'+(5+Math.random()*7)+'s;animation-delay:'+(Math.random()*8)+'s;opacity:'+(0.2+Math.random()*0.4);
+      c.appendChild(e);
     }
-  </script>
+  })();
 
-  <script src="js/data.js"></script>
-  <script src="js/items-expand.js"></script>
-  <script src="js/items-combat.js"></script>
-  <script src="js/items-world.js"></script>
-  <script src="js/items-mega.js"></script>
-  <script src="js/sprites.js"></script>
-  <script src="js/sprites-skills.js"></script>
-  <script src="js/engine.js"></script>
-  <script src="js/firebase-config.js"></script>
-  <script src="js/online.js"></script>
-  <script src="js/ui.js"></script>
+  function enterGame(){
+    var landing=document.getElementById('landing');
+    var gameEl=document.getElementById('game-app');
+    var toggle=document.getElementById('sidebar-toggle');
+    landing.style.transition='opacity .4s';
+    landing.style.opacity='0';
+    setTimeout(function(){
+      landing.style.display='none';
+      document.body.style.overflow='hidden';
+      gameEl.classList.add('active');
+      toggle.style.display='';
+      // Load game CSS now
+      if(!document.getElementById('game-css')){
+        var lnk=document.createElement('link');
+        lnk.id='game-css';lnk.rel='stylesheet';lnk.href='css/style.css';
+        document.head.appendChild(lnk);
+      }
+      // Init game
+      if(typeof game!=='undefined'&&typeof ui!=='undefined'&&!window._gameInited){
+        window._gameInited=true;
+        game.init();
+        ui.init();
+      }
+    },400);
+  }
+</script>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+<!-- Game scripts -->
+<script src="js/data.js"></script>
+<script src="js/items-expand.js"></script>
+<script src="js/items-combat.js"></script>
+<script src="js/items-world.js"></script>
+<script src="js/items-mega.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/sprites-skills.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/online.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>
