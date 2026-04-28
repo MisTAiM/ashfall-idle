@@ -163,6 +163,9 @@ class GameEngine {
         s.foodBag.push({ id: s.food.equipped, qty: s.food.qty });
       }
     }
+    // Ore Bag system
+    if (!s.oreBag) s.oreBag = { capacity:100, contents:{}, upgrades:[] };
+    if (!s.miningStats) s.miningStats = { luck:0, security:0, danger:0, totalMined:0, eventsTriggered:0 };
     s.version = 2;
     return s;
   }
@@ -294,8 +297,26 @@ class GameEngine {
         return; // skip normal XP add below
       }
       for (const drop of action.loot) {
-        this.addItem(drop.item, drop.qty);
+        const isOre = GAME_DATA.items[drop.item]?.type === 'ore' || GAME_DATA.oreBagConfig?.oreTypes?.includes(drop.item);
+        if (isOre && this.state.oreBag) {
+          // Route to ore bag
+          const ob = this.state.oreBag;
+          const totalInBag = Object.values(ob.contents).reduce((s,e) => s + e.qty, 0);
+          if (totalInBag + drop.qty <= ob.capacity) {
+            if (!ob.contents[drop.item]) ob.contents[drop.item] = {qty:0};
+            ob.contents[drop.item].qty += drop.qty;
+          } else {
+            this.addItem(drop.item, drop.qty); // overflow to bank
+          }
+          this.state.miningStats.totalMined += drop.qty;
+        } else {
+          this.addItem(drop.item, drop.qty);
+        }
         this.trackQuestProgress('gather', { item:drop.item, qty:drop.qty });
+      }
+      // Mining random events
+      if (skillId === 'mining' && GAME_DATA.miningEvents) {
+        this._rollMiningEvent();
       }
       if (action.gemChance && Math.random() < action.gemChance) {
         const gem = this.weightedRandom(['topaz','sapphire','ruby','emerald','diamond','onyx'], [40,25,15,10,8,2]);
@@ -693,6 +714,16 @@ class GameEngine {
     const dL = Math.floor(this.state.skills.defence.level * (1 + this.getPrayerBonus('defenceBonus')/100));
     const dB = this.getStatTotal('defenceBonus');
     const dr = this.getStatTotal('damageReduction');
+
+    // Dodge chance (new)
+    const dodgeChance = GAME_DATA.combatFormulas?.dodgeChance
+      ? GAME_DATA.combatFormulas.dodgeChance(dL, this.getStatTotal('agilityBonus') || 0)
+      : 0;
+    if (Math.random() < dodgeChance) {
+      this.emit('combatHit', { who:'monster', dmg:0, miss:true, dodge:true });
+      return;
+    }
+
     const ev = (dL + 8) * (dB + 64);
     const ac = (monster.combatLevel + 8) * 64;
     const ch = Math.min(0.95, Math.max(0.05, ac / (ac + ev)));
@@ -837,6 +868,16 @@ class GameEngine {
         const _dRarity = _dItem?.rarity || 'common';
         _lootBag.push({item:drop.item, qty, rarity:_dRarity});
         const _dRarityName = GAME_DATA.rarities?.[_dRarity]?.name || '';
+        // Generate weapon affixes on drop
+        if (_dItem?.slot === 'weapon' && typeof generateAffixedWeapon === 'function') {
+          const affixed = generateAffixedWeapon(drop.item);
+          if (affixed) {
+            this.emit('notification', { type:'achievement', text:`Affixed Drop: ${affixed.name}!` });
+            // Store affix data on player's copy
+            if (!this.state._affixedItems) this.state._affixedItems = {};
+            this.state._affixedItems[drop.item] = affixed;
+          }
+        }
         if (_dRarity === 'mythic' || _dRarity === 'legendary') {
           this.emit('notification', { type:'achievement', text:`${_dRarityName} DROP: ${_dItem?.name}!` });
         } else if (_dRarity === 'epic' || drop.chance < 0.03) {
@@ -1169,6 +1210,113 @@ class GameEngine {
 
   getEquippedItem(slot) { return this.state.equipment[slot] ? GAME_DATA.items[this.state.equipment[slot]] : null; }
   getAmmoBonus() { return this.getEquippedItem('ammo')?.rangedBonus || 0; }
+
+  // ── MINING RANDOM EVENTS ────────────────────────────────
+  _rollMiningEvent() {
+    const ms = this.state.miningStats;
+    const mLevel = this.state.skills.mining.level;
+    const sec = ms.security || 0;
+    const danger = ms.danger || 0;
+    const luck = ms.luck || 0;
+
+    const roll = Math.random();
+    const events = GAME_DATA.miningEvents;
+
+    const theftChance = events.theft.baseChance * (1 - sec * 0.01);
+    const monsterChance = events.monsterEncounter.baseChance * (1 + danger * 0.05);
+    const bonusChance = events.bonusFind.baseChance * (1 + luck * 0.03);
+    const gemChance = events.gemFind.baseChance * (1 + luck * 0.02);
+
+    if (roll < theftChance) {
+      // Theft event
+      const ob = this.state.oreBag;
+      const totalOres = Object.values(ob.contents).reduce((s,e) => s + e.qty, 0);
+      if (totalOres > 0) {
+        const lossPct = 0.02 + Math.random() * 0.08;
+        let toLose = Math.max(1, Math.floor(totalOres * lossPct));
+        for (const [oreId, entry] of Object.entries(ob.contents)) {
+          if (toLose <= 0) break;
+          const take = Math.min(entry.qty, toLose);
+          entry.qty -= take;
+          toLose -= take;
+          if (entry.qty <= 0) delete ob.contents[oreId];
+        }
+        ms.eventsTriggered++;
+        this.emit('miningEvent', { type:'theft', art:GAME_DATA.miningEventArt?.theft });
+        this.emit('notification', { type:'danger', text:`A goblin stole some of your ores!` });
+      }
+    } else if (roll < theftChance + monsterChance) {
+      // Monster encounter - auto-fight based on mining level
+      const tiers = Object.keys(events.monsterEncounter.monsters).map(Number).sort((a,b)=>a-b);
+      let tier = tiers[0];
+      for (const t of tiers) { if (mLevel >= t) tier = t; }
+      const mon = events.monsterEncounter.monsters[tier];
+      // Simple auto-resolve: player wins if combat level > monster tier * 1.5
+      const cb = this.getCombatLevel();
+      if (cb >= tier) {
+        this.addXp('mining', mon.xp);
+        this.state.gold += mon.gold;
+        ms.eventsTriggered++;
+        this.emit('miningEvent', { type:'monster', name:mon.name, art:GAME_DATA.miningEventArt?.monsterEncounter });
+        this.emit('notification', { type:'success', text:`Defeated ${mon.name}! +${mon.xp} XP, +${mon.gold}g` });
+      } else {
+        ms.eventsTriggered++;
+        this.emit('notification', { type:'danger', text:`${mon.name} attacks! You flee losing time.` });
+        this.state.actionProgress = -2; // lose 2 seconds
+      }
+    } else if (roll < theftChance + monsterChance + bonusChance) {
+      // Bonus find
+      const mult = 5 + Math.floor(Math.random() * 16);
+      const action = this._findAction('mining', this.state.activeAction);
+      if (action?.loot?.[0]) {
+        const oreId = action.loot[0].item;
+        const bonusQty = action.loot[0].qty * mult;
+        this.addItem(oreId, bonusQty);
+        ms.eventsTriggered++;
+        this.emit('miningEvent', { type:'bonus', art:GAME_DATA.miningEventArt?.bonusFind });
+        this.emit('notification', { type:'achievement', text:`Rich Vein! +${bonusQty} ${GAME_DATA.items[oreId]?.name}!` });
+      }
+    } else if (roll < theftChance + monsterChance + bonusChance + gemChance) {
+      // Gem discovery
+      const gems = events.gemFind.gems;
+      const totalW = gems.reduce((s,g) => s + g.weight, 0);
+      let r = Math.random() * totalW;
+      let gem = gems[0].item;
+      for (const g of gems) { r -= g.weight; if (r <= 0) { gem = g.item; break; } }
+      this.addItem(gem, 1);
+      ms.eventsTriggered++;
+      this.emit('miningEvent', { type:'gem', art:GAME_DATA.miningEventArt?.gemFind });
+      this.emit('notification', { type:'rare', text:`Gem Discovery! Found a ${GAME_DATA.items[gem]?.name}!` });
+    }
+  }
+
+  // ── ORE BAG MANAGEMENT ──────────────────────────────────
+  collectOreBag() {
+    const ob = this.state.oreBag;
+    if (!ob) return;
+    let total = 0;
+    for (const [oreId, entry] of Object.entries(ob.contents)) {
+      if (entry.qty > 0) {
+        this.addItem(oreId, entry.qty);
+        total += entry.qty;
+      }
+    }
+    ob.contents = {};
+    if (total > 0) this.emit('notification', { type:'success', text:`Collected ${total} ores from bag.` });
+  }
+
+  upgradeOreBag(upgradeId) {
+    const item = GAME_DATA.items[upgradeId];
+    if (!item || item.subtype !== 'ore_bag') return;
+    if (this.state.oreBag.upgrades.includes(upgradeId)) { this.emit('notification',{type:'warn',text:'Already purchased.'}); return; }
+    if (!this.state.bank[upgradeId] || this.state.bank[upgradeId] <= 0) { this.emit('notification',{type:'warn',text:'Buy this upgrade from the shop first.'}); return; }
+    this.state.bank[upgradeId]--;
+    this.state.oreBag.upgrades.push(upgradeId);
+    // Apply capacity bonuses
+    const capMatch = item.desc?.match(/\+(\d+) ore bag capacity/);
+    if (capMatch) this.state.oreBag.capacity += parseInt(capMatch[1]);
+    this.emit('notification',{type:'success',text:`Ore bag upgraded! ${item.name}`});
+  }
 
   // Returns percentage speed bonus from equipped tool for a given skill
   getToolSpeedBonus(skillId) {

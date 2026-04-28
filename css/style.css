@@ -4354,3 +4354,66 @@ html, body {
 .loot-item-rare { border-color: rgba(74,144,212,0.4); background: rgba(74,144,212,0.06); }
 .loot-item-epic { border-color: rgba(138,94,196,0.4); background: rgba(138,94,196,0.06); }
 .loot-item-legendary { border-color: rgba(212,168,58,0.4); background: rgba(212,168,58,0.06); }
+
+/* ── ORE BAG ──────────────────────────────────────────── */
+.ore-bag-section {
+  background: rgba(201,135,62,0.04);
+  border: 1px solid rgba(201,135,62,0.15);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: 12px;
+}
+.ob-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ob-title { font-family: 'Cinzel', serif; font-size: 14px; color: var(--accent); }
+.ob-capacity { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); margin-left: auto; }
+.ob-bar {
+  height: 6px; background: var(--bg-deep); border-radius: 3px; overflow: hidden; margin-bottom: 6px;
+}
+.ob-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); border-radius: 3px;
+  transition: width 0.3s; box-shadow: 0 0 4px rgba(201,135,62,0.3);
+}
+.ob-contents { display: flex; flex-wrap: wrap; gap: 4px; }
+.ob-ore {
+  display: flex; align-items: center; gap: 4px; padding: 3px 8px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; font-size: 11px;
+}
+.ob-ore-name { color: var(--text); }
+.ob-ore-qty { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; }
+.ob-empty { font-size: 11px; color: var(--text-dim); font-style: italic; }
+.ob-stats {
+  display: flex; gap: 12px; margin-top: 6px; font-size: 10px; color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── MINING EVENT POPUP ───────────────────────────────── */
+.mining-event {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  background: var(--bg-elevated); border: 2px solid var(--accent);
+  border-radius: 8px; padding: 20px; z-index: 100;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  animation: eventPop 0.3s ease-out;
+  text-align: center; max-width: 300px;
+}
+@keyframes eventPop {
+  0% { transform: translate(-50%,-50%) scale(0.8); opacity: 0; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+}
+.me-art { width: 64px; height: 64px; margin: 0 auto 8px; }
+.me-title { font-family: 'Cinzel', serif; font-size: 16px; color: var(--accent); margin-bottom: 4px; }
+.me-desc { font-size: 12px; color: var(--text); }
+
+/* ── DODGE SPLAT ──────────────────────────────────────── */
+.splat-dodge {
+  background: rgba(96,192,224,0.3);
+  color: #60c0e0;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-style: italic;
+}

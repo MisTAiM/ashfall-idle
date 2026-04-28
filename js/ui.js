@@ -290,7 +290,32 @@ class UI {
     }
     // Decorative divider SVG
     const divider = `<svg class="header-divider" viewBox="0 0 400 8" preserveAspectRatio="none"><path d="M0 4 Q100 0 200 4 Q300 8 400 4" stroke="rgba(201,135,62,0.3)" stroke-width="1" fill="none"/></svg>`;
-    return `<div class="page-header skill-header"><div class="ph-icon">${icon(ic,32)}</div><div class="ph-info"><h1>${title}</h1><p>${desc}</p></div></div>${bar}${divider}`;
+    let oreBagHtml = '';
+    if (sId === 'mining') {
+      const ob = this.engine.state.oreBag || {capacity:100,contents:{}};
+      const totalInBag = Object.values(ob.contents).reduce((s,e) => s + (e.qty||0), 0);
+      oreBagHtml = `<div class="ore-bag-section">
+        <div class="ob-header">
+          <span class="ob-title">${icon('pickaxe',14)} Ore Bag</span>
+          <span class="ob-capacity">${totalInBag} / ${ob.capacity}</span>
+          <button class="btn btn-xs" onclick="game.collectOreBag();ui.renderPage('mining')">Collect All</button>
+        </div>
+        <div class="ob-bar"><div class="ob-fill" style="width:${Math.min(100,totalInBag/ob.capacity*100).toFixed(0)}%"></div></div>
+        <div class="ob-contents">`;
+      for (const [oreId, entry] of Object.entries(ob.contents)) {
+        if (entry.qty <= 0) continue;
+        const ore = GAME_DATA.items[oreId];
+        oreBagHtml += `<div class="ob-ore"><span class="ob-ore-name">${ore?.name||oreId}</span><span class="ob-ore-qty">x${entry.qty}</span></div>`;
+      }
+      if (totalInBag === 0) oreBagHtml += '<div class="ob-empty">Empty - mine ores to fill</div>';
+      oreBagHtml += `</div>
+        <div class="ob-stats">
+          <span>Total Mined: ${this.fmt(this.engine.state.miningStats?.totalMined||0)}</span>
+          <span>Events: ${this.engine.state.miningStats?.eventsTriggered||0}</span>
+        </div>
+      </div>`;
+    }
+    return `<div class="page-header skill-header"><div class="ph-icon">${icon(ic,32)}</div><div class="ph-info"><h1>${title}</h1><p>${desc}</p></div></div>${bar}${oreBagHtml}${divider}`;
   }
 
   renderSkillPage(el, sId, skill) {
@@ -2988,8 +3013,8 @@ class UI {
     const area = d.who === 'player' ? document.getElementById('monster-splats') : document.getElementById('player-splats');
     if (!area) return;
     const splat = document.createElement('div');
-    splat.className = `hit-splat ${d.miss ? 'splat-miss' : d.crit ? 'splat-crit' : d.dmg > 20 ? 'splat-big' : 'splat-hit'}`;
-    splat.textContent = d.miss ? 'Miss' : d.dmg;
+    splat.className = `hit-splat ${d.dodge ? 'splat-dodge' : d.miss ? 'splat-miss' : d.crit ? 'splat-crit' : d.dmg > 20 ? 'splat-big' : 'splat-hit'}`;
+    splat.textContent = d.dodge ? 'Dodge!' : d.miss ? 'Miss' : d.dmg;
     splat.style.left = (20 + Math.random() * 60) + '%';
     area.appendChild(splat);
     setTimeout(() => splat.remove(), 900);
