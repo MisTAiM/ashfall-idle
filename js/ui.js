@@ -777,6 +777,27 @@ class UI {
         }
         html += '</div>';
       }
+
+      // ── SESSION LOOT BAG ──
+      const sl = c._sessionLoot || {};
+      const sk = c._sessionKills || 0;
+      html += `<div class="session-loot-section" id="session-loot">`;
+      if (sk > 0) {
+        html += `<div class="sl-header"><span class="sl-title">${icon('coin',12)} Session Loot</span><span class="sl-kills">${sk} kills</span></div><div class="sl-items">`;
+        if (sl._gold) html += `<div class="sl-item sl-gold"><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(sl._gold.qty)}</span></div>`;
+        const rarOrder = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5};
+        const sorted = Object.entries(sl).filter(([k])=>k!=='_gold').sort((a,b) => (rarOrder[a[1].rarity]||5) - (rarOrder[b[1].rarity]||5));
+        for (const [itemId, data] of sorted) {
+          const it = GAME_DATA.items[itemId];
+          const rarClass = data.rarity === 'legendary' || data.rarity === 'mythic' ? 'sl-legendary' : data.rarity === 'epic' ? 'sl-epic' : data.rarity === 'rare' ? 'sl-rare' : '';
+          html += `<div class="sl-item ${rarClass}"><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
+        }
+        html += '</div>';
+      } else {
+        html += '<div class="sl-empty">Kill monsters to see loot here</div>';
+      }
+      html += '</div>';
+
     } else {
       // ── AREA SELECT ──
       html += '<h2 class="section-title">Combat Areas</h2><div class="area-grid">';
@@ -2992,21 +3013,43 @@ class UI {
   }
 
   showLootBag(d) {
-    const existing = document.getElementById('loot-bag');
+    // Per-kill flash notification
+    const existing = document.getElementById('loot-flash');
     if (existing) existing.remove();
-    const arena = document.querySelector('.combat-arena') || document.querySelector('.combat-page');
-    if (!arena || !d.bag || d.bag.length === 0) return;
-    const bag = document.createElement('div');
-    bag.id = 'loot-bag';
-    bag.className = 'loot-bag';
-    bag.innerHTML = `<div class="loot-bag-title">${icon('coin',12)} Loot from ${d.monster}</div>
-      <div class="loot-bag-items">${d.bag.map(l => {
+    const arena = document.querySelector('.combat-arena');
+    if (arena && d.bag && d.bag.length > 0) {
+      const flash = document.createElement('div');
+      flash.id = 'loot-flash';
+      flash.className = 'loot-flash';
+      flash.innerHTML = d.bag.slice(0,4).map(l => {
         const it = GAME_DATA.items[l.item];
-        const rarClass = l.rarity === 'legendary' || l.rarity === 'mythic' ? 'loot-item-legendary' : l.rarity === 'epic' ? 'loot-item-epic' : l.rarity === 'rare' ? 'loot-item-rare' : '';
-        return `<div class="loot-item ${rarClass}"><span class="loot-item-name">${it?.name||l.item}</span><span class="loot-item-qty">x${l.qty}</span></div>`;
-      }).join('')}</div>`;
-    arena.appendChild(bag);
-    setTimeout(() => { if (bag.parentNode) bag.remove(); }, 5000);
+        return `<span class="lf-item">+${l.qty} ${it?.name||l.item}</span>`;
+      }).join('');
+      arena.appendChild(flash);
+      setTimeout(() => { if (flash.parentNode) flash.remove(); }, 3000);
+    }
+
+    // Update persistent session loot panel
+    const panel = document.getElementById('session-loot');
+    if (panel && d.sessionLoot) {
+      const entries = Object.entries(d.sessionLoot);
+      const kills = d.kills || 0;
+      let html = `<div class="sl-header"><span class="sl-title">${icon('coin',12)} Session Loot</span><span class="sl-kills">${kills} kills</span></div><div class="sl-items">`;
+      // Gold first
+      if (d.sessionLoot._gold) {
+        html += `<div class="sl-item sl-gold"><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(d.sessionLoot._gold.qty)}</span></div>`;
+      }
+      // Items sorted by rarity
+      const rarOrder = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5};
+      const sorted = entries.filter(([k])=>k!=='_gold').sort((a,b) => (rarOrder[a[1].rarity]||5) - (rarOrder[b[1].rarity]||5));
+      for (const [itemId, data] of sorted) {
+        const it = GAME_DATA.items[itemId];
+        const rarClass = data.rarity === 'legendary' || data.rarity === 'mythic' ? 'sl-legendary' : data.rarity === 'epic' ? 'sl-epic' : data.rarity === 'rare' ? 'sl-rare' : '';
+        html += `<div class="sl-item ${rarClass}"><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
+      }
+      html += '</div>';
+      panel.innerHTML = html;
+    }
   }
 
   showHitSplat(d) {

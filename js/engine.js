@@ -432,6 +432,8 @@ class GameEngine {
     if (!monster) { this.emit('notification',{type:'warn',text:`Monster "${monsterId}" not found in game data.`}); return; }
     this._setupCombat(monster, monsterId);
     this.state.combat.area = areaId;
+    this.state.combat._sessionLoot = {};
+    this.state.combat._sessionKills = 0;
     this.emit('combatStart', { area:areaId, monster:monsterId });
   }
 
@@ -835,11 +837,13 @@ class GameEngine {
       }
     }
 
+    let _goldEarned = 0;
     if (monster.gold) {
       let g = this.randInt(monster.gold.min, monster.gold.max);
       const al = GAME_DATA.alignments[this.state.alignment];
       if (al?.bonus?.goldDrop) g = Math.floor(g * (1 + al.bonus.goldDrop/100));
       this.state.gold += g; this.state.stats.goldEarned += g;
+      _goldEarned = g;
     }
 
     const lootBonus = GAME_DATA.alignments[this.state.alignment]?.bonus?.lootQty || 0;
@@ -951,7 +955,22 @@ class GameEngine {
     // Emit loot bag for UI display
     if (_lootBag.length > 0) {
       this.state._lastLootBag = _lootBag;
-      this.emit('lootDrop', { bag:_lootBag, monster:monster?.name || mId });
+      // Cumulative session loot tracker
+      if (!this.state.combat._sessionLoot) this.state.combat._sessionLoot = {};
+      if (!this.state.combat._sessionKills) this.state.combat._sessionKills = 0;
+      this.state.combat._sessionKills++;
+      for (const drop of _lootBag) {
+        if (!this.state.combat._sessionLoot[drop.item]) {
+          this.state.combat._sessionLoot[drop.item] = { qty:0, rarity:drop.rarity };
+        }
+        this.state.combat._sessionLoot[drop.item].qty += drop.qty;
+      }
+      // Add gold to session tracking
+      if (_goldEarned > 0) {
+        if (!this.state.combat._sessionLoot['_gold']) this.state.combat._sessionLoot['_gold'] = {qty:0, rarity:'common'};
+        this.state.combat._sessionLoot['_gold'].qty += _goldEarned;
+      }
+      this.emit('lootDrop', { bag:_lootBag, monster:monster?.name || mId, sessionLoot:this.state.combat._sessionLoot, kills:this.state.combat._sessionKills });
     }
 
     if (this.state.combat.dungeon) {
