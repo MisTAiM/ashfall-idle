@@ -528,8 +528,16 @@ class GameEngine {
   applyStatus(target, type, stacks, duration = 8) {
     const e = target === 'monster' ? this.state.combat.statusEffects.monster : this.state.combat.statusEffects.player;
     if (!e[type]) e[type] = { stacks:0, duration:0, elapsed:0 };
-    e[type].stacks = Math.min((e[type].stacks||0) + stacks, 10);
+    const def = GAME_DATA.statusEffectDefs?.[type];
+    const maxStacks = def?.maxStacks || 10;
+    e[type].stacks = Math.min((e[type].stacks||0) + stacks, maxStacks);
     e[type].duration = Math.max(e[type].duration, duration);
+    // Emit status applied event for UI
+    if (stacks > 0) {
+      const who = target === 'player' ? 'You' : 'Enemy';
+      const name = def?.name || type;
+      this.emit('notification', {type: target==='player'?'danger':'info', text:`${who}: ${name} x${e[type].stacks}!`});
+    }
   }
 
   playerAttack(monster) {
@@ -754,6 +762,32 @@ class GameEngine {
       }
       this.state.combat.playerHp -= dmg;
       this.emit('combatHit', { who:'monster', dmg });
+
+      // Monster special attacks - apply status effects based on monster type
+      const mName = (monster.name || '').toLowerCase();
+      if (mName.includes('dragon') || mName.includes('fire') || mName.includes('ember') || mName.includes('cerberus') || mName.includes('magma') || mName.includes('pyrelord')) {
+        if (Math.random() < 0.25) this.applyStatus('player', 'burn', 1 + Math.floor(monster.combatLevel/30), 5);
+      }
+      if (mName.includes('spider') || mName.includes('scorpion') || mName.includes('venom')) {
+        if (Math.random() < 0.30) this.applyStatus('player', 'poison', 1, 8);
+      }
+      if (mName.includes('ice') || mName.includes('frost') || mName.includes('frozen') || mName.includes('crystal')) {
+        if (Math.random() < 0.20) this.applyStatus('player', 'freeze', 1, 4);
+      }
+      if (mName.includes('wolf') || mName.includes('hellhound') || mName.includes('bloodfang') || mName.includes('beast')) {
+        if (Math.random() < 0.20) {
+          this.applyStatus('player', 'bleed', 1, 3);
+          this.state.combat._lastMonsterHit = dmg;
+        }
+      }
+      if (mName.includes('mage') || mName.includes('wizard') || mName.includes('nechryael') || mName.includes('abyssal') || mName.includes('shadow') || mName.includes('horror')) {
+        if (Math.random() < 0.15) this.applyStatus('player', 'curse', 1, 6);
+      }
+      if (mName.includes('kraken') || mName.includes('hydra') || mName.includes('corporeal')) {
+        if (Math.random() < 0.20) this.applyStatus('player', 'shock', 1, 2);
+      }
+    } else {
+      this.emit('combatHit', { who:'monster', dmg:0, miss:true });
     }
   }
 

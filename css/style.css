@@ -4508,3 +4508,37 @@ html, body {
   50% { transform: scale(1.1); }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* ── MONSTER ATTACK ANIMATIONS ────────────────────────── */
+.atk-fireball { width: 80px; height: 80px; top: 25%; left: 15%; }
+.atk-iceblast { width: 80px; height: 80px; top: 20%; left: 20%; }
+.atk-poison   { width: 70px; height: 70px; top: 15%; left: 18%; }
+.atk-darkbolt { width: 80px; height: 80px; top: 25%; left: 12%; }
+.atk-bite     { width: 60px; height: 60px; top: 30%; left: 22%; }
+.atk-slam     { width: 80px; height: 80px; top: 20%; left: 15%; }
+.atk-volley   { width: 80px; height: 60px; top: 35%; left: 10%; }
+.atk-tentacle { width: 70px; height: 70px; top: 25%; left: 15%; }
+.atk-bonestrike { width: 60px; height: 60px; top: 25%; left: 22%; }
+.atk-swordstrike { width: 70px; height: 70px; top: 20%; left: 18%; }
+
+/* Player status effect display */
+.player-status-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+.pse-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid;
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+.pse-burn   { background: rgba(255,64,0,0.15); border-color: rgba(255,64,0,0.3); color: #ff6030; }
+.pse-poison { background: rgba(74,190,108,0.15); border-color: rgba(74,190,108,0.3); color: #4abe6c; }
+.pse-freeze { background: rgba(96,192,224,0.15); border-color: rgba(96,192,224,0.3); color: #60c0e0; }
+.pse-bleed  { background: rgba(196,112,112,0.15); border-color: rgba(196,112,112,0.3); color: #c47070; }
+.pse-curse  { background: rgba(138,94,196,0.15); border-color: rgba(138,94,196,0.3); color: #b585e0; }
+.pse-shock  { background: rgba(224,224,64,0.15); border-color: rgba(224,224,64,0.3); color: #e0e040; }
