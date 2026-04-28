@@ -689,7 +689,7 @@ class UI {
             <div class="ca-hp-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))} / ${max}</div>
           </div>
           <div class="splat-area" id="player-splats"></div>
-          ${c.statusEffects?.player ? this.renderStatusEffects(c.statusEffects.player) : ''}
+          <div class="player-status-effects" id="player-status-live"></div>
         </div>
         <div class="ca-center">
           <div class="ca-vs-badge">VS</div>
@@ -704,7 +704,7 @@ class UI {
             <div class="ca-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))} / ${mon.hp||0}</div>
           </div>
           <div class="splat-area" id="monster-splats"></div>
-          ${c.statusEffects?.monster ? this.renderStatusEffects(c.statusEffects.monster) : ''}
+          <div class="player-status-effects" id="monster-status-live"></div>
         </div>
       </div>`;
 
@@ -3250,6 +3250,32 @@ class UI {
         const specPct = document.getElementById('spec-pct');
         if (specFill) specFill.style.width = (s.specEnergy||0) + '%';
         if (specPct) specPct.textContent = (s.specEnergy||0) + '%';
+
+        // ── LIVE STATUS EFFECTS ──
+        const playerFx = document.getElementById('player-status-live');
+        if (playerFx) {
+          const pe = s.combat.statusEffects?.player || {};
+          const peEntries = Object.entries(pe).filter(([k,v]) => v.stacks > 0 && v.duration > 0);
+          if (peEntries.length > 0) {
+            playerFx.innerHTML = peEntries.map(([k,fx]) => {
+              const def = GAME_DATA.statusEffectDefs?.[k] || GAME_DATA.statusEffects?.[k];
+              const name = def?.name || k;
+              return `<span class="pse-chip pse-${k}">${name} x${fx.stacks} (${Math.ceil(fx.duration)}s)</span>`;
+            }).join('');
+          } else { playerFx.innerHTML = ''; }
+        }
+        const monsterFx = document.getElementById('monster-status-live');
+        if (monsterFx) {
+          const me = s.combat.statusEffects?.monster || {};
+          const meEntries = Object.entries(me).filter(([k,v]) => v.stacks > 0 && v.duration > 0);
+          if (meEntries.length > 0) {
+            monsterFx.innerHTML = meEntries.map(([k,fx]) => {
+              const def = GAME_DATA.statusEffectDefs?.[k] || GAME_DATA.statusEffects?.[k];
+              const name = def?.name || k;
+              return `<span class="pse-chip pse-${k}">${name} x${fx.stacks} (${Math.ceil(fx.duration)}s)</span>`;
+            }).join('');
+          } else { monsterFx.innerHTML = ''; }
+        }
         // Ability cooldown overlays (real-time)
         for (let i = 0; i < 4; i++) {
           const aid = s.equippedAbilities[i];
@@ -3346,6 +3372,30 @@ class UI {
     for (const cId of ['gold_charm','green_charm','crimson_charm','blue_charm','spirit_shards']) {
       const el = document.getElementById('charm-' + cId);
       if (el) el.textContent = s.bank[cId] || 0;
+    }
+
+    // ── ORE BAG LIVE UPDATE ──
+    const obSection = document.querySelector('.ore-bag-section');
+    if (obSection && s.oreBag) {
+      const ob = s.oreBag;
+      const totalInBag = Object.values(ob.contents).reduce((sum,e) => sum + (e.qty||0), 0);
+      const capEl = obSection.querySelector('.ob-capacity');
+      if (capEl) capEl.textContent = `${totalInBag} / ${ob.capacity}`;
+      const fillEl = obSection.querySelector('.ob-fill');
+      if (fillEl) fillEl.style.width = Math.min(100, totalInBag / ob.capacity * 100).toFixed(0) + '%';
+      const contentsEl = obSection.querySelector('.ob-contents');
+      if (contentsEl) {
+        let html = '';
+        for (const [oreId, entry] of Object.entries(ob.contents)) {
+          if (entry.qty <= 0) continue;
+          const ore = GAME_DATA.items[oreId];
+          html += `<div class="ob-ore"><span class="ob-ore-name">${ore?.name||oreId}</span><span class="ob-ore-qty">x${entry.qty}</span></div>`;
+        }
+        if (!html) html = '<div class="ob-empty">Empty - mine ores to fill</div>';
+        contentsEl.innerHTML = html;
+      }
+      const statsEl = obSection.querySelector('.ob-stats');
+      if (statsEl) statsEl.innerHTML = `<span>Total Mined: ${this.fmt(s.miningStats?.totalMined||0)}</span><span>Events: ${s.miningStats?.eventsTriggered||0}</span>`;
     }
   }
 

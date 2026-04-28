@@ -495,8 +495,15 @@ class GameEngine {
     c.playerAttackTimer += dt;
     if (c.playerAttackTimer >= playerSpeed) { c.playerAttackTimer -= playerSpeed; this.playerAttack(monster); this.drainPrayerPoints(); }
     c.monsterAttackTimer += dt;
-    const monsterSpeed = monster.attackSpeed * 0.7;
-    if (c.monsterAttackTimer >= monsterSpeed) { c.monsterAttackTimer -= monsterSpeed; this.monsterAttack(monster); }
+    let monsterSpeed = monster.attackSpeed * 0.7;
+    // Freeze slows monster attack speed
+    const mFreeze = c.statusEffects?.monster?.freeze;
+    if (mFreeze && mFreeze.stacks > 0) monsterSpeed *= (1 + 0.10 * mFreeze.stacks);
+    // Shock stun on monster
+    const mShock = c.statusEffects?.monster?.shock;
+    let monsterStunned = false;
+    if (mShock && mShock.stacks > 0 && Math.random() < 0.05 * mShock.stacks) monsterStunned = true;
+    if (c.monsterAttackTimer >= monsterSpeed && !monsterStunned) { c.monsterAttackTimer -= monsterSpeed; this.monsterAttack(monster); }
     // Auto-eat AFTER monster attack (critical - eat before death check)
     if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
     if (c.monsterHp <= 0) this.onMonsterDeath(monster, isWB);
@@ -583,6 +590,22 @@ class GameEngine {
       if (buff.stat === 'damageMult') maxHit = Math.floor(maxHit * buff.value);
     }
 
+    // ── WEAPON AFFIX BONUSES ──
+    const weapon = this.getEquippedItem('weapon');
+    const affixData = this.state._affixedItems?.[this.state.equipment?.weapon];
+    let affixFlatDmg = 0, affixDmgBonus = 0, affixCritBonus = 0, affixAtkSpeed = 0, affixLifesteal = 0;
+    if (affixData?.effects) {
+      const fx = affixData.effects;
+      if (fx.flatDmg) affixFlatDmg = fx.flatDmg;
+      if (fx.dmgBonus) affixDmgBonus = fx.dmgBonus;
+      if (fx.critDmgBonus) affixCritBonus = fx.critDmgBonus;
+      if (fx.lifesteal) affixLifesteal = fx.lifesteal;
+      if (fx.bossDmgBonus && (monster.tags?.includes('boss') || this.state.combat.worldBoss)) {
+        maxHit = Math.floor(maxHit * (1 + fx.bossDmgBonus));
+      }
+    }
+    maxHit = Math.floor((maxHit + affixFlatDmg) * (1 + affixDmgBonus));
+
     // Hit chance calculation
     const evasion = monster.evasion?.[style] || 0;
     const defence = (monster.combatLevel + 8) * (evasion + 64);
@@ -593,11 +616,19 @@ class GameEngine {
 
       // Critical hit: 5% base + 1% per 10 levels above monster
       const levelAdv = Math.max(0, this.getCombatLevel() - monster.combatLevel);
-      const critChance = Math.min(0.25, 0.05 + levelAdv * 0.01);
+      const critChance = Math.min(0.30, 0.05 + levelAdv * 0.01);
       let isCrit = false;
       if (Math.random() < critChance) {
-        dmg = Math.floor(dmg * 1.5);
+        const critMult = 1.5 + affixCritBonus;
+        dmg = Math.floor(dmg * critMult);
         isCrit = true;
+      }
+
+      // Radiant buff: +50% next hit
+      const radiant = this.state.combat.statusEffects?.player?.radiant;
+      if (radiant && radiant.stacks > 0) {
+        dmg = Math.floor(dmg * 1.5);
+        delete this.state.combat.statusEffects.player.radiant;
       }
 
       // Freeze bonus (shatter)
@@ -619,6 +650,27 @@ class GameEngine {
           this.state.combat.playerHp = Math.min(this.getMaxHp(), this.state.combat.playerHp + healed);
         }
       }
+
+      // ── WEAPON AFFIX STATUS EFFECTS ──
+      if (affixData?.effects) {
+        const fx = affixData.effects;
+        if (fx.status && Math.random() < (fx.chance || 0.15)) {
+          this.applyStatus('monster', fx.status, fx.stacks || 1, 6);
+        }
+        // Lifesteal from affix
+        if (fx.lifesteal && fx.lifesteal > 0) {
+          const healed = Math.floor(dmg * fx.lifesteal);
+          this.state.combat.playerHp = Math.min(this.getMaxHp(), this.state.combat.playerHp + healed);
+        }
+        // Gold bonus from affix
+        if (fx.goldBonus) {
+          const bonusGold = Math.floor(Math.random() * (monster.gold?.max || 10) * fx.goldBonus);
+          if (bonusGold > 0) { this.state.gold += bonusGold; this.state.stats.goldEarned += bonusGold; }
+        }
+      }
+
+      // Track last hit for bleed calculations
+      this.state.combat._lastPlayerHit = dmg;
 
       this.emit('combatHit', { who:'player', dmg, crit:isCrit });
       // Track highest hit
@@ -722,8 +774,14 @@ class GameEngine {
 
   monsterAttack(monster) {
     const dL = Math.floor(this.state.skills.defence.level * (1 + this.getPrayerBonus('defenceBonus')/100));
-    const dB = this.getStatTotal('defenceBonus');
+    let dB = this.getStatTotal('defenceBonus');
     const dr = this.getStatTotal('damageReduction');
+
+    // Curse reduces defence
+    const curseFx = this.state.combat.statusEffects?.player?.curse;
+    if (curseFx && curseFx.stacks > 0) {
+      dB = Math.floor(dB * (1 - 0.05 * curseFx.stacks));
+    }
 
     // Dodge chance (new)
     const dodgeChance = GAME_DATA.combatFormulas?.dodgeChance
@@ -1246,6 +1304,19 @@ class GameEngine {
     // Global speed boost - 40% faster combat
     speed *= 0.6;
     for (const buff of this.state.combat.activeBuffs) if (buff.stat === 'speedBonus') speed *= (1 - buff.value/100);
+    // Weapon affix speed bonus
+    const affixData = this.state._affixedItems?.[this.state.equipment?.weapon];
+    if (affixData?.effects?.atkSpeedBonus) speed += affixData.effects.atkSpeedBonus;
+    // Freeze debuff slows attack speed
+    const freezeFx = this.state.combat.statusEffects?.player?.freeze;
+    if (freezeFx && freezeFx.stacks > 0) {
+      speed *= (1 + 0.10 * freezeFx.stacks); // 10% slower per stack
+    }
+    // Shock stun check
+    const shockFx = this.state.combat.statusEffects?.player?.shock;
+    if (shockFx && shockFx.stacks > 0 && Math.random() < 0.05 * shockFx.stacks) {
+      return speed * 3; // Stunned - triple attack time this tick
+    }
     return Math.max(0.4, speed);
   }
 
