@@ -1,13 +1,13 @@
 // ============================================================
 // ASHFALL IDLE — ADMIN PANEL
 // Live editing, debug controls, state inspection
-// Admin UID: ndLiweJRdGbaqWIbPgIj0Izigez2
+// Admin access verified via SHA-256 hash check
 // ============================================================
 
 (function() {
 
-function isAdmin() {
-  return typeof ADMIN_UIDS !== 'undefined' && typeof online !== 'undefined' && online.user && ADMIN_UIDS.includes(online.user.uid);
+function _checkAdmin() {
+  return typeof isAdmin === 'function' ? isAdmin() : false;
 }
 
 function applyAdminPanel() {
@@ -31,7 +31,7 @@ function applyAdminPanel() {
   const origRenderSidebar = UI.prototype.renderSidebar;
   UI.prototype.renderSidebar = function() {
     origRenderSidebar.call(this);
-    if (!isAdmin()) return;
+    if (!_checkAdmin()) return;
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
     const nav = sidebar.querySelector('.sidebar-nav');
@@ -50,7 +50,7 @@ function applyAdminPanel() {
 
   // ── ADMIN PANEL RENDER ──────────────────────────────────
   UI.prototype.renderAdminPanel = function(el) {
-    if (!isAdmin()) {
+    if (!_checkAdmin()) {
       el.innerHTML = '<div class="bank-empty">Access denied.</div>';
       return;
     }

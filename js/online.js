@@ -33,6 +33,8 @@ class OnlineManager {
       this.auth.onAuthStateChanged(async (user) => {
         this.user = user;
         if (user) {
+          // Verify admin status (hashed check, async)
+          if (typeof verifyAdmin === 'function') await verifyAdmin(user.uid);
           this.displayName = user.displayName || localStorage.getItem('ashfall_displayName') || ('Survivor_' + user.uid.substring(0, 6));
           this.loadProfile();
           // Auto cloud sync for non-anonymous users

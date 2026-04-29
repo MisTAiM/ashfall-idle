@@ -15,5 +15,26 @@ const FIREBASE_CONFIG = {
 
 const FIREBASE_ENABLED = FIREBASE_CONFIG.apiKey !== "";
 
-// Admin UIDs
-const ADMIN_UIDS = ['ndLiweJRdGbaqWIbPgIj0Izigez2'];
+// Admin check — UID is hashed, never stored in plain text
+const ADMIN_HASHES = ['9460f531720fa1addfb91877a949862bfa0c33fb87836d542c1c2853c40719fb'];
+let _isAdminVerified = false;
+
+async function verifyAdmin(uid) {
+  if (!uid) { _isAdminVerified = false; return false; }
+  try {
+    const encoded = new TextEncoder().encode(uid);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    _isAdminVerified = ADMIN_HASHES.includes(hashHex);
+    return _isAdminVerified;
+  } catch(e) {
+    _isAdminVerified = false;
+    return false;
+  }
+}
+
+function isAdmin() { return _isAdminVerified; }
+
+// Legacy compat — some code checks ADMIN_UIDS directly
+const ADMIN_UIDS = { includes: () => _isAdminVerified };
