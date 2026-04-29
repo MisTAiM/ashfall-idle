@@ -979,9 +979,127 @@ function applyFightCaveMixin() {
   console.log('[Ashfall] Fight Cave system loaded — 7 monsters, 63 waves, 1 cape.');
 }
 
+// ── FIGHT CAVE MONSTER ART (Original SVGs) ─────────────────
+// These are original procedural SVGs matching Ashfall's dark fantasy aesthetic.
+if (!GAME_DATA.monsterArt) GAME_DATA.monsterArt = {};
+
+Object.assign(GAME_DATA.monsterArt, {
+  cinder_bat: `<svg viewBox="0 0 64 64"><path d="M4 28 Q12 16 20 22 L28 18 L32 22 L36 18 L44 22 Q52 16 60 28 Q54 36 44 32 L36 36 L32 40 L28 36 L20 32 Q10 36 4 28Z" fill="#8a3020" stroke="#4a1a10" stroke-width="1"/><circle cx="28" cy="26" r="2" fill="#ff6030"/><circle cx="36" cy="26" r="2" fill="#ff6030"/><circle cx="28" cy="26" r="1" fill="#ffcc00"/><circle cx="36" cy="26" r="1" fill="#ffcc00"/><path d="M30 30 Q32 32 34 30" stroke="#4a1a10" stroke-width="1" fill="none"/><path d="M14 22 Q8 18 6 24" stroke="#6a2018" stroke-width="1.5" fill="none"/><path d="M50 22 Q56 18 58 24" stroke="#6a2018" stroke-width="1.5" fill="none"/><ellipse cx="32" cy="44" rx="3" ry="1.5" fill="rgba(255,80,30,0.3)"/></svg>`,
+
+  magma_blob: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="40" rx="20" ry="16" fill="#c04020"/><ellipse cx="32" cy="38" rx="18" ry="14" fill="#d05830"/><ellipse cx="32" cy="36" rx="14" ry="10" fill="#e07040"/><ellipse cx="28" cy="32" rx="3" ry="3" fill="#ff9050"/><ellipse cx="38" cy="34" rx="2" ry="2" fill="#ff9050"/><ellipse cx="32" cy="28" rx="4" ry="3" fill="#ffb070"/><circle cx="26" cy="32" r="3" fill="#2a0a04"/><circle cx="38" cy="32" r="3" fill="#2a0a04"/><circle cx="26" cy="31" r="1.5" fill="#ff6030"/><circle cx="38" cy="31" r="1.5" fill="#ff6030"/><path d="M30 38 Q32 40 34 38" stroke="#2a0a04" stroke-width="1.5" fill="none"/><path d="M18 42 Q14 38 16 46" stroke="#a03018" stroke-width="2" fill="none"/><path d="M46 42 Q50 38 48 46" stroke="#a03018" stroke-width="2" fill="none"/></svg>`,
+
+  magma_blob_small: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="42" rx="12" ry="10" fill="#c04020"/><ellipse cx="32" cy="40" rx="10" ry="8" fill="#d06040"/><ellipse cx="32" cy="38" rx="6" ry="5" fill="#e08050"/><circle cx="28" cy="38" r="2" fill="#2a0a04"/><circle cx="36" cy="38" r="2" fill="#2a0a04"/><circle cx="28" cy="37.5" r="1" fill="#ff6030"/><circle cx="36" cy="37.5" r="1" fill="#ff6030"/></svg>`,
+
+  obsidian_ranger: `<svg viewBox="0 0 64 64"><rect x="24" y="24" width="16" height="24" rx="2" fill="#3a3040"/><circle cx="32" cy="18" r="8" fill="#6a5a4a"/><rect x="22" y="10" width="20" height="6" rx="1" fill="#2a2030"/><rect x="26" y="6" width="12" height="6" rx="1" fill="#3a3040"/><circle cx="29" cy="17" r="2" fill="#ff4020"/><circle cx="35" cy="17" r="2" fill="#ff4020"/><circle cx="29" cy="17" r="1" fill="#ffcc00"/><circle cx="35" cy="17" r="1" fill="#ffcc00"/><rect x="16" y="26" width="8" height="16" rx="2" fill="#3a3040"/><rect x="40" y="26" width="8" height="16" rx="2" fill="#3a3040"/><path d="M46 30 L58 22 M58 22 L60 20 M58 22 L60 24" stroke="#5a4a3a" stroke-width="2" fill="none"/><line x1="46" y1="32" x2="58" y2="24" stroke="#c0a080" stroke-width="1"/><rect x="26" y="48" width="5" height="8" rx="1" fill="#2a2030"/><rect x="33" y="48" width="5" height="8" rx="1" fill="#2a2030"/><path d="M26 30 L22 30 L22 38 L26 38" stroke="#6a4020" stroke-width="1.5" fill="#4a3020"/></svg>`,
+
+  molten_brute: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="18" fill="#5a3828"/><circle cx="32" cy="20" r="12" fill="#6a4430"/><circle cx="26" cy="18" r="2.5" fill="#ff4020"/><circle cx="38" cy="18" r="2.5" fill="#ff4020"/><circle cx="26" cy="18" r="1.2" fill="#ffcc00"/><circle cx="38" cy="18" r="1.2" fill="#ffcc00"/><path d="M28 24 Q32 27 36 24" stroke="#3a1a10" stroke-width="2" fill="none"/><rect x="10" y="24" width="10" height="22" rx="4" fill="#5a3828"/><rect x="44" y="24" width="10" height="22" rx="4" fill="#5a3828"/><circle cx="15" cy="46" r="4" fill="#5a3828"/><circle cx="49" cy="46" r="4" fill="#5a3828"/><rect x="22" y="52" width="7" height="10" rx="2" fill="#5a3828"/><rect x="35" y="52" width="7" height="10" rx="2" fill="#5a3828"/><path d="M22 34 Q18 30 20 38" stroke="#ff6030" stroke-width="1.5" fill="none" opacity="0.6"/><path d="M42 34 Q46 30 44 38" stroke="#ff6030" stroke-width="1.5" fill="none" opacity="0.6"/><ellipse cx="32" cy="36" rx="6" ry="3" fill="#ff8040" opacity="0.3"/></svg>`,
+
+  volcanic_mage: `<svg viewBox="0 0 64 64"><path d="M20 14 L32 4 L44 14 L44 26 L20 26Z" fill="#4a2030"/><rect x="22" y="26" width="20" height="24" rx="2" fill="#3a1828"/><circle cx="28" cy="18" r="3" fill="#8030ff"/><circle cx="36" cy="18" r="3" fill="#8030ff"/><circle cx="28" cy="18" r="1.5" fill="#cc80ff"/><circle cx="36" cy="18" r="1.5" fill="#cc80ff"/><path d="M30 22 Q32 24 34 22" stroke="#6020a0" stroke-width="1" fill="none"/><rect x="14" y="28" width="8" height="18" rx="2" fill="#3a1828"/><rect x="42" y="28" width="8" height="18" rx="2" fill="#3a1828"/><circle cx="12" cy="34" r="4" fill="#ff4020" opacity="0.7"/><circle cx="12" cy="34" r="2" fill="#ffcc00" opacity="0.7"/><circle cx="52" cy="34" r="4" fill="#ff4020" opacity="0.7"/><circle cx="52" cy="34" r="2" fill="#ffcc00" opacity="0.7"/><rect x="24" y="50" width="6" height="8" rx="1" fill="#2a1020"/><rect x="34" y="50" width="6" height="8" rx="1" fill="#2a1020"/><path d="M20 14 L12 18 M44 14 L52 18" stroke="#5a2838" stroke-width="1.5" fill="none"/></svg>`,
+
+  tztok_jad: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="40" rx="24" ry="18" fill="#8a2010"/><circle cx="32" cy="22" r="14" fill="#a03018"/><polygon points="20,14 16,4 24,10" fill="#6a1a0a"/><polygon points="44,14 48,4 40,10" fill="#6a1a0a"/><circle cx="26" cy="20" r="4" fill="#ff2000"/><circle cx="38" cy="20" r="4" fill="#ff2000"/><circle cx="26" cy="20" r="2" fill="#ffcc00"/><circle cx="38" cy="20" r="2" fill="#ffcc00"/><path d="M28 28 L30 26 L32 28 L34 26 L36 28" stroke="#4a0a04" stroke-width="2" fill="none"/><rect x="6" y="28" width="12" height="20" rx="4" fill="#8a2010"/><rect x="46" y="28" width="12" height="20" rx="4" fill="#8a2010"/><path d="M6 44 Q2 42 4 48" stroke="#6a1a0a" stroke-width="2" fill="none"/><path d="M58 44 Q62 42 60 48" stroke="#6a1a0a" stroke-width="2" fill="none"/><rect x="18" y="54" width="8" height="10" rx="3" fill="#8a2010"/><rect x="38" y="54" width="8" height="10" rx="3" fill="#8a2010"/><path d="M24 36 Q28 34 26 40" stroke="#ff6030" stroke-width="1" fill="none" opacity="0.7"/><path d="M40 36 Q36 34 38 40" stroke="#ff6030" stroke-width="1" fill="none" opacity="0.7"/><ellipse cx="32" cy="38" rx="8" ry="4" fill="#ff4020" opacity="0.25"/><ellipse cx="32" cy="38" rx="4" ry="2" fill="#ffcc00" opacity="0.2"/></svg>`,
+
+  yt_hurkot: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="40" rx="14" ry="12" fill="#7a6050"/><circle cx="32" cy="26" r="10" fill="#8a7060"/><circle cx="28" cy="24" r="2.5" fill="#40c040"/><circle cx="36" cy="24" r="2.5" fill="#40c040"/><circle cx="28" cy="24" r="1.2" fill="#80ff80"/><circle cx="36" cy="24" r="1.2" fill="#80ff80"/><path d="M30 30 Q32 32 34 30" stroke="#4a3020" stroke-width="1.5" fill="none"/><rect x="16" y="30" width="8" height="14" rx="3" fill="#7a6050"/><rect x="40" y="30" width="8" height="14" rx="3" fill="#7a6050"/><circle cx="18" cy="40" r="3" fill="#40c040" opacity="0.5"/><circle cx="46" cy="40" r="3" fill="#40c040" opacity="0.5"/><rect x="24" y="50" width="5" height="8" rx="2" fill="#6a5040"/><rect x="35" y="50" width="5" height="8" rx="2" fill="#6a5040"/></svg>`,
+});
+
+// Fire Cape animated sprite reference for equipment display
+GAME_DATA.monsterArt.fire_cape_item = `<svg viewBox="0 0 64 64"><defs><linearGradient id="fcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff4020"/><stop offset="50%" stop-color="#ff8030"/><stop offset="100%" stop-color="#ffcc40"/></linearGradient></defs><path d="M18 8 L46 8 L50 52 L32 60 L14 52Z" fill="url(#fcg)" stroke="#8a2010" stroke-width="1.5"/><path d="M32 8 L32 60" stroke="#ffcc40" stroke-width="1" opacity="0.5"/><path d="M22 20 Q28 24 26 32 Q24 36 28 40" stroke="#ffee80" stroke-width="1.5" fill="none" opacity="0.6"/><path d="M38 16 Q42 22 38 28 Q36 34 40 38" stroke="#ffee80" stroke-width="1.5" fill="none" opacity="0.6"/><ellipse cx="32" cy="12" rx="4" ry="2" fill="#ffcc40" opacity="0.4"/></svg>`;
+
+
+// ── GLOBAL CHAT ANNOUNCEMENTS ──────────────────────────────
+// Broadcast Fight Cave events to global chat
+
+function fcBroadcast(text) {
+  if (typeof online !== 'undefined' && online.isOnline && online.user) {
+    try {
+      online.sendSystemMessage(text);
+    } catch(e) { console.warn('[FightCave] Broadcast error:', e); }
+  }
+}
+
+function fcGetPlayerName() {
+  if (typeof online !== 'undefined' && online.displayName) return online.displayName;
+  return 'A brave adventurer';
+}
+
+// Patch the Fight Cave methods to add broadcasts + death tracking
+function patchFightCaveBroadcasts() {
+  if (typeof AshfallEngine === 'undefined') {
+    setTimeout(patchFightCaveBroadcasts, 200);
+    return;
+  }
+
+  // Patch startFightCave to broadcast entry
+  const origStart = AshfallEngine.prototype.startFightCave;
+  AshfallEngine.prototype.startFightCave = function() {
+    origStart.call(this);
+    if (this.state.fightCave && this.state.fightCave.active) {
+      const name = fcGetPlayerName();
+      const attempts = this.state.stats.fightCaveAttempts || 1;
+      const deaths = this.state.stats.fightCaveDeaths || 0;
+      let msg = `${name} has entered the Fight Cave! (Attempt #${attempts}`;
+      if (deaths > 0) msg += ` | ${deaths} death${deaths > 1 ? 's' : ''} so far`;
+      msg += ')';
+      fcBroadcast(msg);
+    }
+  };
+
+  // Patch onFightCavePlayerDeath to broadcast death with counter
+  const origDeath = AshfallEngine.prototype.onFightCavePlayerDeath;
+  AshfallEngine.prototype.onFightCavePlayerDeath = function() {
+    const fc = this.state.fightCave;
+    const wave = (fc.currentWave || 0) + 1;
+    const monster = this.state.combat.monster;
+    const wasJad = GAME_DATA.monsters[monster]?.isJad;
+
+    origDeath.call(this);
+
+    const name = fcGetPlayerName();
+    const totalDeaths = this.state.stats.fightCaveDeaths || 1;
+    let msg;
+    if (wasJad) {
+      msg = `${name} was slain by TzTok-Jad on wave 63! (Death #${totalDeaths})`;
+    } else {
+      const monName = GAME_DATA.monsters[monster]?.name || 'unknown';
+      msg = `${name} fell on wave ${wave} to ${monName}. (Death #${totalDeaths})`;
+    }
+    fcBroadcast(msg);
+  };
+
+  // Patch _completeFightCave to broadcast victory
+  const origComplete = AshfallEngine.prototype._completeFightCave;
+  AshfallEngine.prototype._completeFightCave = function() {
+    const fc = this.state.fightCave;
+    const elapsed = Date.now() - (fc.startTime || Date.now());
+    const minutes = Math.floor(elapsed / 60000);
+
+    origComplete.call(this);
+
+    const name = fcGetPlayerName();
+    const completions = this.state.stats.fightCaveCompletions || 1;
+    const deaths = this.state.stats.fightCaveDeaths || 0;
+    let msg = `${name} has conquered the Fight Cave and earned the Fire Cape! (Clear #${completions} | ${minutes}min`;
+    if (deaths > 0) msg += ` | ${deaths} death${deaths > 1 ? 's' : ''} total`;
+    msg += ')';
+    fcBroadcast(msg);
+  };
+
+  // Patch fleeFightCave to broadcast surrender
+  const origFlee = AshfallEngine.prototype.fleeFightCave;
+  AshfallEngine.prototype.fleeFightCave = function() {
+    const fc = this.state.fightCave;
+    const wave = (fc.currentWave || 0) + 1;
+    origFlee.call(this);
+    const name = fcGetPlayerName();
+    fcBroadcast(`${name} surrendered the Fight Cave on wave ${wave}. The Fire Cape remains unclaimed.`);
+  };
+
+  console.log('[Ashfall] Fight Cave broadcasts enabled.');
+}
+
 // Auto-apply when script loads
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', applyFightCaveMixin);
+  document.addEventListener('DOMContentLoaded', () => { applyFightCaveMixin(); patchFightCaveBroadcasts(); });
 } else {
   applyFightCaveMixin();
+  patchFightCaveBroadcasts();
 }

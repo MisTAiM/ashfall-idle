@@ -4721,3 +4721,12 @@ html, body {
   .fc-phase-row { flex-direction:column; gap:2px; }
   .fc-supply-bar { flex-direction:column; }
 }
+
+/* ── FIGHT CAVE MONSTER ART ─────────────────────────────── */
+.fc-mon-art { width:48px; height:48px; margin:0 auto 6px; }
+.fc-mon-art svg { width:48px; height:48px; }
+.fc-combat-art { width:80px; height:80px; margin:0 auto 8px; }
+.fc-combat-art svg { width:80px; height:80px; }
+.fc-jad-display .fc-combat-art { width:120px; height:120px; }
+.fc-jad-display .fc-combat-art svg { width:120px; height:120px; }
+.fc-monster-card { text-align:center; }

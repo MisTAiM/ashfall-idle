@@ -82,6 +82,7 @@ function applyFightCaveUI() {
       if (!m) continue;
       const styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
       html += `<div class="fc-monster-card">
+        <div class="fc-mon-art">${GAME_DATA.monsterArt[mId] || ''}</div>
         <div class="fc-mon-header">
           <span class="fc-mon-name">${m.name}</span>
           <span class="fc-mon-level" style="color:${styleColors[m.style]||'#aaa'}">Lv ${m.combatLevel} (${m.style})</span>
@@ -215,6 +216,7 @@ function applyFightCaveUI() {
       const styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
 
       html += `<div class="fc-monster-display ${isJad ? 'fc-jad-display' : ''}">
+        ${GAME_DATA.monsterArt?.[c.monster] ? `<div class="fc-combat-art">${GAME_DATA.monsterArt[c.monster]}</div>` : ''}
         <div class="fc-mon-current-header">
           <span class="fc-mon-current-name">${monster.name}</span>
           <span class="fc-mon-current-style" style="color:${styleColors[monster.style]}">${monster.style.toUpperCase()}</span>
