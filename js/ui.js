@@ -127,9 +127,9 @@ class UI {
     this.engine.on('lootDrop', (d) => this.showLootBag(d));
     this.engine.on('xpGain', (d) => this.showXpGain(d));
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
-    this.engine.on('equipmentChanged', () => { if (this.currentPage === 'equipment' || this.currentPage === 'bank') this.renderPage(this.currentPage); });
+    this.engine.on('equipmentChanged', () => { if (['equipment','bank','combat'].includes(this.currentPage)) this.renderPage(this.currentPage); });
     this.engine.on('farmingChanged', () => { if (this.currentPage === 'farming') this.renderPage(this.currentPage); });
-    this.engine.on('foodChanged', () => {});
+    this.engine.on('foodChanged', () => { if (this.currentPage === 'combat') this.renderPage('combat'); });
     this.engine.on('questsChanged', () => { if (['quests','npcs'].includes(this.currentPage)) this.renderPage(this.currentPage); });
     this.engine.on('abilitiesChanged', () => { if (this.currentPage === 'abilities') this.renderPage('abilities'); });
     this.engine.on('slayerChanged', () => { if (this.currentPage === 'slayer') this.renderPage('slayer'); });
@@ -615,7 +615,7 @@ class UI {
         const slot = foodBag[i];
         const item = GAME_DATA.items[slot.id];
         if (!item) continue;
-        html += `<div class="fb-slot" title="${item.name}: Heals ${item.heals||0} HP">
+        html += `<div class="fb-slot fb-clickable" onclick="game.eatFoodSlot(${i})" title="Click to eat ${item.name}: Heals ${item.heals||0} HP">
           <span class="fb-name">${item.name}</span>
           <span class="fb-qty" id="fb-qty-${i}">x${slot.qty}</span>
           <span class="fb-heals">+${item.heals||0}hp</span>

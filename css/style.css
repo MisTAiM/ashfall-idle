@@ -3900,6 +3900,9 @@ html, body {
   border-radius: 4px;
   font-size: 12px;
 }
+.fb-clickable { cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.fb-clickable:hover { background: rgba(60,50,40,0.6); border-color: var(--accent); }
+.fb-clickable:active { transform: scale(0.97); }
 .fb-name { flex: 1; color: var(--text); font-family: 'Cinzel', serif; font-size: 11px; }
 .fb-qty { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; font-size: 12px; }
 .fb-heals { font-family: 'JetBrains Mono', monospace; color: #3a9e5c; font-size: 10px; }

@@ -729,7 +729,7 @@ const FightCaveMixin = {
       this.emit('combatHit', { who:'monster', dmg:0, miss:true });
     }
 
-    // Molten Brute healing mechanic
+    // Molten Brute healing mechanic — heals itself AND other alive monsters
     if (monster.healsAllies) {
       const mId = this.state.combat.monster;
       if (!this.state.fightCave.bruteHealCounters[mId]) this.state.fightCave.bruteHealCounters[mId] = 0;
@@ -738,9 +738,32 @@ const FightCaveMixin = {
       if (this.state.fightCave.bruteHealCounters[mId] >= (monster.healInterval || 4)) {
         this.state.fightCave.bruteHealCounters[mId] = 0;
         const healAmt = monster.healAmount || 50;
+        const fc = this.state.fightCave;
+
         // Heal itself
         c.monsterHp = Math.min(monster.hp, c.monsterHp + healAmt);
-        this.emit('notification', {type:'warn', text:`${monster.name} heals itself for ${healAmt} HP!`});
+        fc.waveMonsterHp[fc.currentMonsterIdx] = c.monsterHp;
+
+        // Heal all other alive monsters in the wave that are below 50% HP
+        let alliesHealed = 0;
+        for (let i = 0; i < fc.monsterQueue.length; i++) {
+          if (i === fc.currentMonsterIdx) continue; // skip self (already healed above)
+          if (!fc.waveMonsterAlive[i]) continue;
+          const allyId = fc.monsterQueue[i];
+          const allyData = GAME_DATA.monsters[allyId];
+          if (!allyData) continue;
+          const allyHp = fc.waveMonsterHp[i] || 0;
+          if (allyHp < allyData.hp * 0.5) {
+            fc.waveMonsterHp[i] = Math.min(allyData.hp, allyHp + healAmt);
+            alliesHealed++;
+          }
+        }
+
+        if (alliesHealed > 0) {
+          this.emit('notification', {type:'warn', text:`${monster.name} heals itself and ${alliesHealed} allies for ${healAmt} HP each!`});
+        } else {
+          this.emit('notification', {type:'warn', text:`${monster.name} heals itself for ${healAmt} HP!`});
+        }
       }
     }
   },

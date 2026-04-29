@@ -1668,6 +1668,38 @@ class GameEngine {
     // Sync legacy
     this.state.food.equipped = this.state.foodBag[0]?.id || null;
     this.state.food.qty = this.state.foodBag.reduce((s,f) => s + f.qty, 0);
+    this.emit('foodChanged');
+  }
+
+  // Eat a specific food slot by index (manual selection)
+  eatFoodSlot(slotIdx) {
+    if (!Array.isArray(this.state.foodBag)) return;
+    const slot = this.state.foodBag[slotIdx];
+    if (!slot || slot.qty <= 0) return;
+    const item = GAME_DATA.items[slot.id]; if (!item) return;
+    const max = this.getMaxHp();
+    if (this.state.combat.playerHp >= max) return;
+    if (item.type === 'food') {
+      this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + (item.heals || 0));
+    }
+    if (item.buff) {
+      const existing = this.state.combat.activeBuffs.find(b => b.stat === item.buff.stat);
+      if (existing) { existing.remaining = item.buff.duration || 120; existing.value = Math.max(existing.value, item.buff.value); }
+      else { this.state.combat.activeBuffs.push({ ...item.buff, remaining: item.buff.duration || 120 }); }
+    }
+    if (item.prayerRestore) {
+      this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
+    }
+    if (item.heals && item.type === 'potion') {
+      this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + item.heals);
+    }
+    slot.qty--;
+    this.state.stats.foodEaten = (this.state.stats.foodEaten || 0) + 1;
+    this.emit('notification',{type:'info',text:`Ate ${item.name} (+${item.heals||0} HP)`});
+    this.state.foodBag = this.state.foodBag.filter(f => f.qty > 0);
+    this.state.food.equipped = this.state.foodBag[0]?.id || null;
+    this.state.food.qty = this.state.foodBag.reduce((s,f) => s + f.qty, 0);
+    this.emit('foodChanged');
   }
 
   // ── POTION BELT ────────────────────────────────────────
