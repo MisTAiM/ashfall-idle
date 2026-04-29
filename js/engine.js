@@ -1610,6 +1610,7 @@ class GameEngine {
     this.state.food.equipped = this.state.foodBag[0]?.id || null;
     this.state.food.qty = this.state.foodBag.reduce((s,f) => s + f.qty, 0);
     this.emit('foodChanged');
+    this.emit('bankChanged');
   }
 
   removeFromFoodBag(index) {
@@ -1621,6 +1622,7 @@ class GameEngine {
     this.state.food.equipped = this.state.foodBag[0]?.id || null;
     this.state.food.qty = this.state.foodBag.reduce((s,f) => s + f.qty, 0);
     this.emit('foodChanged');
+    this.emit('bankChanged');
   }
 
   eatFood() {
@@ -1718,6 +1720,7 @@ class GameEngine {
     if (this.state.bank[itemId] <= 0) delete this.state.bank[itemId];
     this.state.potionBelt[slotIdx] = { id:itemId, qty:amt };
     this.emit('notification',{type:'success',text:`${item.name} x${amt} loaded into belt slot ${slotIdx+1}.`});
+    this.emit('bankChanged');
   }
 
   drinkPotionBelt(slotIdx) {
@@ -2317,6 +2320,7 @@ class GameEngine {
     if (boneId === 'big_bones') this.trackQuestProgress('bury_big_bones', { qty });
     if (boneId === 'dragon_bones') this.trackQuestProgress('bury_dragon_bones', { qty });
     this.emit('notification', { type:'info', text:`Buried ${qty}x ${GAME_DATA.items[boneId].name}: +${points} prayer points, +${xp} XP.` });
+    this.emit('bankChanged');
   }
 
   activatePrayer(prayerId) {
