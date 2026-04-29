@@ -438,4 +438,55 @@ function applyAdminPanel() {
 // Apply immediately
 applyAdminPanel();
 
+// ── DIRECT ACCESS ROUTES ──────────────────────────────────
+// #admin hash route — navigate to ashfall-idle.vercel.app/#admin
+window.addEventListener('hashchange', function() {
+  if (location.hash === '#admin' && typeof ui !== 'undefined') {
+    if (typeof isAdmin === 'function' && isAdmin()) {
+      ui.currentPage = 'admin';
+      ui.renderSidebar();
+      ui.renderPage('admin');
+    }
+  }
+});
+
+// Check hash on initial load too
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (location.hash === '#admin' && typeof ui !== 'undefined' && typeof isAdmin === 'function' && isAdmin()) {
+      ui.currentPage = 'admin';
+      ui.renderSidebar();
+      ui.renderPage('admin');
+    }
+  }, 2000); // Wait for auth to complete
+});
+
+// Console command: type openAdmin() in browser console
+window.openAdmin = function() {
+  if (typeof isAdmin === 'function' && isAdmin()) {
+    ui.currentPage = 'admin';
+    ui.renderSidebar();
+    ui.renderPage('admin');
+    console.log('[Admin] Panel opened.');
+  } else {
+    console.warn('[Admin] Access denied — not verified as admin.');
+  }
+};
+
+// Periodic sidebar check — ensures admin entry appears after async auth completes
+(function() {
+  let _admSidebarChecks = 0;
+  const _admSidebarInterval = setInterval(function() {
+    _admSidebarChecks++;
+    if (_admSidebarChecks > 30) { clearInterval(_admSidebarInterval); return; } // Stop after 30s
+    if (typeof isAdmin === 'function' && isAdmin() && typeof ui !== 'undefined') {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar && !sidebar.querySelector('[data-page="admin"]')) {
+        ui.renderSidebar();
+      }
+      clearInterval(_admSidebarInterval);
+    }
+  }, 1000);
+})();
+
 })();

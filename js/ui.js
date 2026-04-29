@@ -2724,7 +2724,7 @@ class UI {
       html += `<div class="alignment-display">
         <div class="al-current">Signed in as <strong>${online.displayName}</strong>${isAdmin?' <span class="admin-badge">OWNER / ADMIN</span>':''}</div>
         <div class="al-desc">Email: ${user.email}</div>
-        <div class="al-points">UID: ${user.uid}</div>
+        <div class="al-points">UID: ${user.uid.substring(0,4)}${'•'.repeat(user.uid.length - 8)}${user.uid.substring(user.uid.length - 4)}</div>
         <div class="shop-btns" style="margin-top:12px">
           <button class="btn btn-sm" onclick="online.saveToCloud()">Save to Cloud</button>
           <button class="btn btn-sm" onclick="ui.cloudLoad()">Load from Cloud</button>

@@ -34,7 +34,13 @@ class OnlineManager {
         this.user = user;
         if (user) {
           // Verify admin status (hashed check, async)
-          if (typeof verifyAdmin === 'function') await verifyAdmin(user.uid);
+          if (typeof verifyAdmin === 'function') {
+            const isAdm = await verifyAdmin(user.uid);
+            // Re-render sidebar immediately so admin entry appears
+            if (isAdm && typeof ui !== 'undefined') {
+              ui.renderSidebar();
+            }
+          }
           this.displayName = user.displayName || localStorage.getItem('ashfall_displayName') || ('Survivor_' + user.uid.substring(0, 6));
           this.loadProfile();
           // Auto cloud sync for non-anonymous users
