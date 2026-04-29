@@ -4542,3 +4542,182 @@ html, body {
 .pse-bleed  { background: rgba(196,112,112,0.15); border-color: rgba(196,112,112,0.3); color: #c47070; }
 .pse-curse  { background: rgba(138,94,196,0.15); border-color: rgba(138,94,196,0.3); color: #b585e0; }
 .pse-shock  { background: rgba(224,224,64,0.15); border-color: rgba(224,224,64,0.3); color: #e0e040; }
+
+/* ============================================================
+   FIGHT CAVE STYLES
+   ============================================================ */
+
+.fight-cave-page { max-width:800px; margin:0 auto; padding:1rem; }
+
+.fc-header { text-align:center; margin-bottom:1.5rem; padding:1.5rem; background:linear-gradient(135deg, rgba(180,60,20,0.15), rgba(60,20,10,0.2)); border:1px solid rgba(180,60,20,0.3); border-radius:8px; }
+.fc-title { font-size:1.8rem; color:#e8a040; margin:0 0 0.5rem 0; font-family:'Cinzel',serif; letter-spacing:2px; }
+.fc-title .icon { vertical-align:middle; margin-right:8px; }
+.fc-subtitle { color:#b0a090; margin:0; font-size:0.95rem; }
+
+.fc-requirements { margin-bottom:1rem; padding:1rem; background:rgba(30,25,20,0.5); border:1px solid rgba(80,70,60,0.3); border-radius:6px; }
+.fc-req-row { padding:4px 0; font-size:0.9rem; }
+.fc-req-met { color:#4abe6c; }
+.fc-req-unmet { color:#e74c3c; }
+
+.fc-reward-card { margin-bottom:1rem; padding:1rem; background:linear-gradient(135deg, rgba(200,100,30,0.1), rgba(180,60,20,0.15)); border:1px solid rgba(200,100,30,0.4); border-radius:6px; text-align:center; }
+.fc-reward-stats { font-size:0.95rem; color:#e8a040; font-weight:bold; margin:0.5rem 0; }
+.fc-reward-desc { color:#b0a090; font-size:0.85rem; margin:0; font-style:italic; }
+
+.fc-phases { margin-bottom:1rem; padding:1rem; background:rgba(30,25,20,0.5); border:1px solid rgba(80,70,60,0.3); border-radius:6px; }
+.fc-phase-row { display:flex; gap:10px; padding:6px 0; border-bottom:1px solid rgba(60,50,40,0.3); align-items:center; flex-wrap:wrap; }
+.fc-phase-row:last-child { border-bottom:none; }
+.fc-phase-waves { font-weight:bold; color:#e8a040; min-width:60px; font-size:0.85rem; }
+.fc-phase-name { color:#d4c4a0; font-weight:bold; min-width:120px; font-size:0.9rem; }
+.fc-phase-tip { color:#908070; font-size:0.82rem; flex:1; }
+
+.fc-bestiary { margin-bottom:1rem; }
+.fc-monster-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:8px; }
+.fc-monster-card { padding:10px; background:rgba(30,25,20,0.6); border:1px solid rgba(80,70,60,0.3); border-radius:6px; }
+.fc-mon-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+.fc-mon-name { font-weight:bold; color:#d4c4a0; font-size:0.9rem; }
+.fc-mon-level { font-size:0.78rem; font-weight:bold; }
+.fc-mon-stats { font-size:0.8rem; color:#908070; margin-bottom:4px; }
+.fc-mon-desc { font-size:0.78rem; color:#807060; margin:0; }
+
+.fc-stats { margin-bottom:1rem; padding:1rem; background:rgba(30,25,20,0.5); border:1px solid rgba(80,70,60,0.3); border-radius:6px; }
+.fc-stat-row { padding:2px 0; font-size:0.9rem; color:#b0a090; }
+
+.fc-warning { margin-bottom:1rem; padding:1rem; background:rgba(180,40,20,0.1); border:1px solid rgba(180,40,20,0.3); border-radius:6px; text-align:center; }
+.fc-warning p { margin:0.3rem 0; font-size:0.85rem; color:#c08060; }
+
+.fc-enter { text-align:center; margin-bottom:2rem; }
+.fc-enter .btn-lg { font-size:1.1rem; padding:12px 32px; font-family:'Cinzel',serif; letter-spacing:1px; }
+
+/* ── ACTIVE FIGHT CAVE ──────────────────────────────────── */
+.fight-cave-active { max-width:800px; margin:0 auto; padding:0.5rem; }
+
+.fc-wave-bar { margin-bottom:0.8rem; }
+.fc-wave-label { font-size:1.1rem; font-weight:bold; color:#e8a040; margin-bottom:4px; font-family:'Cinzel',serif; }
+.fc-progress-track { height:8px; background:rgba(40,35,30,0.8); border-radius:4px; overflow:hidden; border:1px solid rgba(80,70,60,0.3); }
+.fc-progress-fill { height:100%; background:linear-gradient(90deg, #b85c20, #e8a040); transition:width 0.3s; border-radius:4px; }
+
+.fc-phase-indicator { display:flex; gap:8px; align-items:center; margin-bottom:0.6rem; flex-wrap:wrap; }
+.fc-phase-badge { background:rgba(200,100,30,0.2); color:#e8a040; padding:3px 10px; border-radius:4px; font-size:0.8rem; font-weight:bold; border:1px solid rgba(200,100,30,0.3); }
+.fc-phase-advice { color:#908070; font-size:0.8rem; }
+
+.fc-between-waves { text-align:center; padding:2rem; background:rgba(30,25,20,0.6); border:1px solid rgba(80,70,60,0.3); border-radius:8px; }
+.fc-between-waves h2 { color:#4abe6c; margin:0 0 0.5rem 0; }
+.fc-between-tip { color:#e8a040; font-weight:bold; margin:0.5rem 0; }
+.fc-manual-actions { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:0.8rem; }
+
+.fc-player-status { display:flex; gap:12px; margin-bottom:0.6rem; flex-wrap:wrap; align-items:center; }
+.fc-stat-bar { flex:1; min-width:150px; }
+.fc-bar-label { font-size:0.8rem; color:#b0a090; display:block; margin-bottom:2px; }
+.fc-bar-track { height:14px; background:rgba(40,35,30,0.8); border-radius:3px; overflow:hidden; border:1px solid rgba(80,70,60,0.3); position:relative; }
+.fc-bar-fill { height:100%; transition:width 0.2s; border-radius:3px; }
+.fc-hp-fill { background:linear-gradient(90deg, #c04040, #40b040); }
+.fc-pp-fill { background:linear-gradient(90deg, #3060c0, #60c0e0); }
+
+.fc-active-prayers { display:flex; gap:4px; flex-wrap:wrap; }
+.fc-prayer-active { background:rgba(60,180,220,0.15); color:#60c0e0; padding:2px 8px; border-radius:3px; font-size:0.75rem; border:1px solid rgba(60,180,220,0.3); }
+.fc-no-prayer { color:#705040; font-size:0.75rem; font-style:italic; }
+
+.fc-supply-bar { display:flex; gap:12px; margin-bottom:0.6rem; flex-wrap:wrap; padding:6px; background:rgba(30,25,20,0.4); border-radius:4px; }
+.fc-supply-section { display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+.fc-supply-label { color:#908070; font-size:0.78rem; font-weight:bold; }
+.fc-supply-item { background:rgba(60,50,40,0.5); color:#d4c4a0; padding:2px 6px; border-radius:3px; font-size:0.75rem; border:1px solid rgba(80,70,60,0.3); }
+.fc-supply-empty { color:#504030; font-size:0.75rem; }
+.fc-potion-btn { cursor:pointer; }
+.fc-potion-btn:hover { background:rgba(80,70,50,0.6); }
+
+.fc-monster-display { padding:10px; background:rgba(40,30,25,0.6); border:1px solid rgba(100,80,60,0.3); border-radius:6px; margin-bottom:0.6rem; }
+.fc-jad-display { background:linear-gradient(135deg, rgba(180,40,20,0.15), rgba(60,20,10,0.3)); border-color:rgba(180,60,20,0.5); }
+.fc-mon-current-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.fc-mon-current-name { font-weight:bold; color:#d4c4a0; font-size:1rem; }
+.fc-mon-current-style { font-size:0.8rem; font-weight:bold; text-transform:uppercase; }
+.fc-mon-current-level { color:#908070; font-size:0.8rem; }
+.fc-mon-hp-bar { margin-top:4px; }
+.fc-monster-fill { background:linear-gradient(90deg, #c04040, #e06030); }
+
+.fc-wave-queue { margin-bottom:0.6rem; }
+.fc-queue-label { font-size:0.8rem; color:#908070; font-weight:bold; margin-bottom:4px; display:block; }
+.fc-queue-list { display:flex; gap:4px; flex-wrap:wrap; }
+.fc-queue-monster { padding:3px 8px; border-radius:3px; font-size:0.75rem; color:#b0a090; background:rgba(40,35,30,0.5); border:1px solid rgba(80,70,60,0.3); border-left:3px solid; }
+.fc-queue-current { color:#e8a040; font-weight:bold; background:rgba(60,50,40,0.6); }
+
+.fc-prayer-hint { margin-bottom:0.6rem; }
+.fc-hint-danger { background:rgba(200,50,50,0.15); border:1px solid rgba(200,50,50,0.3); color:#e08060; padding:6px 10px; border-radius:4px; font-size:0.85rem; font-weight:bold; text-align:center; animation:fc-pulse 1.5s ease-in-out infinite; }
+.fc-hint-warn { background:rgba(200,150,50,0.15); border:1px solid rgba(200,150,50,0.3); color:#e0b060; padding:6px 10px; border-radius:4px; font-size:0.85rem; font-weight:bold; text-align:center; }
+
+@keyframes fc-pulse {
+  0%, 100% { opacity:1; }
+  50% { opacity:0.7; }
+}
+
+.fc-prayer-toggles { display:flex; gap:6px; align-items:center; margin-bottom:0.6rem; flex-wrap:wrap; }
+.fc-prayer-label { font-size:0.8rem; color:#908070; font-weight:bold; }
+.btn-active-prayer { background:rgba(60,180,220,0.2) !important; border-color:rgba(60,180,220,0.5) !important; color:#60c0e0 !important; }
+
+.fc-flee { text-align:center; margin-top:1rem; padding-top:1rem; border-top:1px solid rgba(60,50,40,0.3); }
+
+/* ── JAD BOSS PANEL ─────────────────────────────────────── */
+.fc-jad-panel { margin-top:0.8rem; }
+
+.fc-jad-telegraph { margin-bottom:0.8rem; }
+
+.fc-jad-charging { padding:12px; background:rgba(40,30,25,0.5); border:1px solid rgba(80,60,40,0.3); border-radius:6px; text-align:center; }
+.fc-jad-charge-label { color:#c09060; font-size:0.9rem; margin-bottom:6px; }
+.fc-jad-charge-track { height:10px; }
+.fc-jad-charge-fill { background:linear-gradient(90deg, #604020, #e08030); }
+
+.fc-jad-telegraph-alert { padding:16px; border:2px solid; border-radius:8px; text-align:center; animation:fc-telegraph-flash 0.4s ease-in-out 3; }
+.fc-jad-telegraph-icon { font-size:2.5rem; margin-bottom:4px; }
+.fc-jad-telegraph-style { font-size:1.4rem; font-weight:bold; font-family:'Cinzel',serif; letter-spacing:3px; }
+.fc-jad-telegraph-desc { font-size:0.85rem; color:#b0a090; margin-top:4px; }
+
+@keyframes fc-telegraph-flash {
+  0%, 100% { opacity:1; }
+  50% { opacity:0.5; }
+}
+
+.fc-jad-input-window { margin-top:8px; text-align:center; }
+.fc-jad-timer-label { font-size:1.1rem; font-weight:bold; color:#e74c3c; margin-bottom:4px; animation:fc-pulse 0.5s ease-in-out infinite; }
+.fc-jad-timer-track { height:8px; }
+.fc-jad-timer-fill { background:linear-gradient(90deg, #e74c3c, #e8a040); }
+
+.fc-jad-prayer-buttons { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+.fc-jad-pray-btn { display:flex; flex-direction:column; align-items:center; padding:12px 18px; border:2px solid rgba(100,80,60,0.4); border-radius:8px; background:rgba(40,35,30,0.7); cursor:pointer; transition:all 0.15s; min-width:100px; color:#d4c4a0; font-size:0.85rem; }
+.fc-jad-pray-btn:hover { transform:scale(1.05); }
+.fc-jad-pray-btn:active { transform:scale(0.95); }
+.fc-pray-icon { font-size:1.8rem; margin-bottom:4px; }
+.fc-pray-text { font-weight:bold; font-size:0.8rem; }
+
+.fc-pray-melee { border-color:rgba(231,76,60,0.4); }
+.fc-pray-melee:hover { background:rgba(231,76,60,0.15); border-color:rgba(231,76,60,0.7); }
+.fc-pray-ranged { border-color:rgba(230,126,34,0.4); }
+.fc-pray-ranged:hover { background:rgba(230,126,34,0.15); border-color:rgba(230,126,34,0.7); }
+.fc-pray-magic { border-color:rgba(52,152,219,0.4); }
+.fc-pray-magic:hover { background:rgba(52,152,219,0.15); border-color:rgba(52,152,219,0.7); }
+
+.fc-jad-resolving { padding:10px; text-align:center; }
+.fc-jad-resolve-text { color:#908070; font-size:0.85rem; }
+
+/* ── JAD HEALERS ────────────────────────────────────────── */
+.fc-jad-healers { margin-top:0.8rem; padding:10px; background:rgba(40,30,25,0.5); border:1px solid rgba(180,60,20,0.3); border-radius:6px; }
+.fc-healer-title { color:#e08060; font-size:0.9rem; margin:0 0 8px 0; }
+.fc-healer-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:6px; }
+.fc-healer-card { padding:8px; border-radius:4px; text-align:center; }
+.fc-healer-healing { background:rgba(200,50,50,0.1); border:1px solid rgba(200,50,50,0.3); }
+.fc-healer-tagged { background:rgba(60,180,100,0.1); border:1px solid rgba(60,180,100,0.3); }
+.fc-healer-label { font-weight:bold; color:#d4c4a0; font-size:0.8rem; }
+.fc-healer-status { font-size:0.7rem; font-weight:bold; margin:2px 0; }
+.fc-healer-healing .fc-healer-status { color:#e74c3c; }
+.fc-healer-tagged .fc-healer-status { color:#4abe6c; }
+.fc-healer-hp-track { height:6px; margin:4px 0; }
+.fc-healer-hp-fill { background:#c04040; }
+.fc-healer-hp { font-size:0.7rem; color:#908070; }
+
+/* ── MOBILE RESPONSIVE ──────────────────────────────────── */
+@media (max-width:600px) {
+  .fc-monster-grid { grid-template-columns:1fr; }
+  .fc-jad-prayer-buttons { flex-direction:row; }
+  .fc-jad-pray-btn { flex:1; min-width:80px; padding:10px 8px; }
+  .fc-healer-grid { grid-template-columns:repeat(2,1fr); }
+  .fc-phase-row { flex-direction:column; gap:2px; }
+  .fc-supply-bar { flex-direction:column; }
+}

@@ -71,6 +71,7 @@ const NAV = [
     {id:'combat',label:'Combat',icon:'combat'},
     {id:'wilderness',label:'Wilderness',icon:'combat'},
     {id:'dungeons',label:'Dungeons',icon:'dungeon'},
+    {id:'fight_cave',label:'Fight Cave',icon:'combat'},
     {id:'world_bosses',label:'World Bosses',icon:'worldboss'},
     {id:'abilities',label:'Abilities',icon:'banner'},
     {id:'prayer',label:'Prayer',icon:'sparkle'},
@@ -238,6 +239,7 @@ class UI {
     else if (pageId === 'combat') this.renderCombatPage(main);
     else if (pageId === 'wilderness') this.renderWildernessPage(main);
     else if (pageId === 'dungeons') this.renderDungeonsPage(main);
+    else if (pageId === 'fight_cave') this.renderFightCavePage(main);
     else if (pageId === 'world_bosses') this.renderWorldBossesPage(main);
     else if (pageId === 'abilities') this.renderAbilitiesPage(main);
     else if (pageId === 'farming') this.renderFarmingPage(main);
