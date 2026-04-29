@@ -1813,6 +1813,7 @@ class GameEngine {
     this.state.stats.goldEarned += gold;
     this.addXp('trading', Math.floor(gold * 0.05));
     this.emit('notification', { type:'info', text:`Sold ${qty}x ${item.name} for ${gold} gold.` });
+    this.emit('bankChanged');
   }
 
   buyItem(idx, qty) {
@@ -1828,6 +1829,7 @@ class GameEngine {
     this.state.stats.goldSpent += total;
     this.addItem(si.item, qty);
     this.emit('notification', { type:'info', text:`Bought ${qty}x ${GAME_DATA.items[si.item].name}.` });
+    this.emit('bankChanged');
   }
 
   // ── FARMING ────────────────────────────────────────────

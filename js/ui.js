@@ -130,6 +130,7 @@ class UI {
     this.engine.on('equipmentChanged', () => { if (['equipment','bank','combat'].includes(this.currentPage)) this.renderPage(this.currentPage); });
     this.engine.on('farmingChanged', () => { if (this.currentPage === 'farming') this.renderPage(this.currentPage); });
     this.engine.on('foodChanged', () => { if (this.currentPage === 'combat') this.renderPage('combat'); });
+    this.engine.on('bankChanged', () => { if (['bank','shop'].includes(this.currentPage)) this.renderPage(this.currentPage); });
     this.engine.on('questsChanged', () => { if (['quests','npcs'].includes(this.currentPage)) this.renderPage(this.currentPage); });
     this.engine.on('abilitiesChanged', () => { if (this.currentPage === 'abilities') this.renderPage('abilities'); });
     this.engine.on('slayerChanged', () => { if (this.currentPage === 'slayer') this.renderPage('slayer'); });
