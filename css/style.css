@@ -4730,3 +4730,18 @@ html, body {
 .fc-jad-display .fc-combat-art { width:120px; height:120px; }
 .fc-jad-display .fc-combat-art svg { width:120px; height:120px; }
 .fc-monster-card { text-align:center; }
+
+/* ── FIGHT CAVE TARGET SELECTION ────────────────────────── */
+.fc-wave-monsters { margin-bottom:0.6rem; }
+.fc-target-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); gap:6px; margin-top:4px; }
+.fc-target-card { padding:8px; background:rgba(40,35,30,0.5); border:2px solid rgba(80,70,60,0.3); border-radius:6px; cursor:pointer; transition:all 0.15s; text-align:center; }
+.fc-target-card:hover { background:rgba(60,50,40,0.6); transform:scale(1.02); }
+.fc-target-active { background:rgba(200,100,30,0.15) !important; border-width:2px !important; }
+.fc-target-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+.fc-target-name { font-weight:bold; color:#d4c4a0; font-size:0.8rem; }
+.fc-target-style { font-size:0.7rem; font-weight:bold; text-transform:uppercase; }
+.fc-target-hp-track { height:6px; margin:3px 0; }
+.fc-target-hp { font-size:0.7rem; color:#908070; }
+.fc-target-fighting { font-size:0.7rem; font-weight:bold; color:#e8a040; margin-top:2px; }
+.fc-target-switch { font-size:0.65rem; color:#706050; margin-top:2px; }
+@media (max-width:600px) { .fc-target-grid { grid-template-columns:repeat(2,1fr); } }

@@ -220,6 +220,8 @@ const FightCaveMixin = {
         wavesData: [],         // generated wave arrays
         monsterQueue: [],      // monsters left in current wave (including splits)
         currentMonsterIdx: 0,  // which monster in queue we're fighting
+        waveMonsterHp: {},     // {idx: currentHp} — tracks HP of all alive monsters in wave
+        waveMonsterAlive: {},  // {idx: true/false} — tracks which monsters are alive
         startTime: null,
         jadPhase: null,        // null | 'idle' | 'charging' | 'telegraph' | 'awaiting_input' | 'resolving'
         jadAttackStyle: null,  // 'melee' | 'ranged' | 'magic'
@@ -294,6 +296,9 @@ const FightCaveMixin = {
     fc.betweenWaveTimer = 0;
     fc.totalKills = 0;
 
+    // Initialize HP tracker for first wave
+    this._initWaveMonsterHp(fc);
+
     this.state.stats.fightCaveAttempts++;
 
     // Start combat with first monster
@@ -325,21 +330,29 @@ const FightCaveMixin = {
     if (!fc.active) return;
 
     fc.totalKills++;
+    const deadIdx = fc.currentMonsterIdx;
 
-    // Handle magma blob split
+    // Mark this monster dead in tracker
+    fc.waveMonsterAlive[deadIdx] = false;
+    delete fc.waveMonsterHp[deadIdx];
+
+    // Handle magma blob split — add new alive monsters to the wave
     if (monster.splitsOnDeath && monster.splitInto) {
       const splitCount = monster.splitCount || 2;
-      const insertIdx = fc.currentMonsterIdx + 1;
       for (let i = 0; i < splitCount; i++) {
-        fc.monsterQueue.splice(insertIdx, 0, monster.splitInto);
+        const newIdx = fc.monsterQueue.length;
+        fc.monsterQueue.push(monster.splitInto);
+        const splitMonster = GAME_DATA.monsters[monster.splitInto];
+        fc.waveMonsterHp[newIdx] = splitMonster ? splitMonster.hp : 50;
+        fc.waveMonsterAlive[newIdx] = true;
       }
       this.emit('notification', {type:'info', text:`${monster.name} splits into ${splitCount} smaller blobs!`});
     }
 
-    // Move to next monster in queue
-    fc.currentMonsterIdx++;
+    // Check if all monsters in wave are dead
+    const anyAlive = Object.values(fc.waveMonsterAlive).some(v => v === true);
 
-    if (fc.currentMonsterIdx >= fc.monsterQueue.length) {
+    if (!anyAlive) {
       // Wave complete
       fc.currentWave++;
 
@@ -356,7 +369,7 @@ const FightCaveMixin = {
 
       // Between-wave pause
       fc.betweenWaves = true;
-      fc.betweenWaveTimer = 3.0; // 3 second pause between waves
+      fc.betweenWaveTimer = 3.0;
       fc.waveComplete = true;
 
       const nextWaveNum = fc.currentWave + 1;
@@ -365,7 +378,6 @@ const FightCaveMixin = {
       const unique = [...new Set(monsterNames)];
       this.emit('notification', {type:'info', text:`Wave ${fc.currentWave}/63 cleared! Next: Wave ${nextWaveNum} — ${unique.join(', ')}`});
 
-      // Determine phase tip
       const phase = GAME_DATA.fightCave.phases.find(p => nextWaveNum >= p.startWave && nextWaveNum <= p.endWave);
       if (phase && nextWaveNum === phase.startWave) {
         this.emit('notification', {type:'warn', text:`Phase: ${phase.name} — ${phase.tip}`});
@@ -375,31 +387,8 @@ const FightCaveMixin = {
       return;
     }
 
-    // Load next monster in current wave
-    const nextId = fc.monsterQueue[fc.currentMonsterIdx];
-    const next = GAME_DATA.monsters[nextId];
-    if (!next) {
-      this.emit('notification', {type:'warn', text:'Fight Cave error: missing monster data.'});
-      this.fleeFightCave();
-      return;
-    }
-
-    this.state.combat.monster = nextId;
-    this.state.combat.monsterHp = next.hp;
-    this.state.combat.monsterAttackTimer = 0;
-    this.state.combat.statusEffects.monster = {};
-
-    // Reset Jad phase if switching to Jad
-    if (next.isJad) {
-      fc.jadPhase = 'charging';
-      fc.jadChargeTimer = 0;
-      fc.jadHealersSpawned = false;
-      fc.jadHealers = [];
-      this.emit('notification', {type:'danger', text:'TzTok-Jad has arrived. Watch the attack telegraphs. Prayer flick or die.'});
-      this.emit('jadSpawn');
-    }
-
-    this.emit('combatStart', { fightCave: true, wave: fc.currentWave + 1 });
+    // Auto-switch to next alive target using kill priority
+    this._autoTargetNextMonster();
   },
 
   // ── FIGHT CAVE PLAYER DEATH ─────────────────────────────
@@ -473,6 +462,8 @@ const FightCaveMixin = {
     fc.wavesData = [];
     fc.monsterQueue = [];
     fc.currentMonsterIdx = 0;
+    fc.waveMonsterHp = {};
+    fc.waveMonsterAlive = {};
     fc.startTime = null;
     fc.jadPhase = null;
     fc.jadAttackStyle = null;
@@ -488,6 +479,81 @@ const FightCaveMixin = {
     fc.betweenWaves = false;
     fc.betweenWaveTimer = 0;
     fc.totalKills = 0;
+    fc._otherMonsterTimers = {};
+  },
+
+  // ── INIT WAVE MONSTER HP TRACKER ────────────────────────
+  _initWaveMonsterHp(fc) {
+    fc.waveMonsterHp = {};
+    fc.waveMonsterAlive = {};
+    for (let i = 0; i < fc.monsterQueue.length; i++) {
+      const m = GAME_DATA.monsters[fc.monsterQueue[i]];
+      fc.waveMonsterHp[i] = m ? m.hp : 100;
+      fc.waveMonsterAlive[i] = true;
+    }
+  },
+
+  // ── AUTO-TARGET NEXT ALIVE MONSTER (by kill priority) ───
+  _autoTargetNextMonster() {
+    const fc = this.state.fightCave;
+    const priority = GAME_DATA.fightCave.killPriority;
+
+    // Find next alive monster, preferring kill priority order
+    let bestIdx = -1;
+    let bestPriority = 999;
+    for (let i = 0; i < fc.monsterQueue.length; i++) {
+      if (!fc.waveMonsterAlive[i]) continue;
+      const mId = fc.monsterQueue[i];
+      const pri = priority.indexOf(mId);
+      const p = pri >= 0 ? pri : 999;
+      if (p < bestPriority || (p === bestPriority && bestIdx === -1)) {
+        bestPriority = p;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx === -1) return; // No alive monsters (shouldn't happen)
+
+    this._loadFightCaveTarget(bestIdx);
+  },
+
+  // ── SWITCH FIGHT CAVE TARGET (called by UI) ─────────────
+  switchFightCaveTarget(targetIdx) {
+    const fc = this.state.fightCave;
+    if (!fc.active) return;
+    if (targetIdx === fc.currentMonsterIdx) return; // Already targeting
+    if (!fc.waveMonsterAlive[targetIdx]) return; // Dead monster
+
+    // Save current monster's HP before switching
+    fc.waveMonsterHp[fc.currentMonsterIdx] = this.state.combat.monsterHp;
+
+    // Load new target
+    this._loadFightCaveTarget(targetIdx);
+    this.emit('notification', {type:'info', text:`Switched target to ${GAME_DATA.monsters[fc.monsterQueue[targetIdx]]?.name || 'monster'}.`});
+  },
+
+  // ── LOAD A FIGHT CAVE TARGET BY INDEX ───────────────────
+  _loadFightCaveTarget(idx) {
+    const fc = this.state.fightCave;
+    const mId = fc.monsterQueue[idx];
+    const m = GAME_DATA.monsters[mId];
+    if (!m) return;
+
+    fc.currentMonsterIdx = idx;
+    this.state.combat.monster = mId;
+    this.state.combat.monsterHp = fc.waveMonsterHp[idx] || m.hp;
+    this.state.combat.monsterAttackTimer = 0;
+    this.state.combat.statusEffects.monster = {};
+
+    // Jad setup
+    if (m.isJad && !fc.jadPhase) {
+      fc.jadPhase = 'charging';
+      fc.jadChargeTimer = 0;
+      fc.jadHealersSpawned = false;
+      fc.jadHealers = [];
+      this.emit('notification', {type:'danger', text:'TzTok-Jad has arrived. Watch the attack telegraphs. Prayer flick or die.'});
+      this.emit('jadSpawn');
+    }
   },
 
   // ── ADVANCE BETWEEN WAVES ───────────────────────────────
@@ -501,6 +567,10 @@ const FightCaveMixin = {
     fc.monsterQueue = [...fc.wavesData[fc.currentWave]];
     fc.currentMonsterIdx = 0;
     fc.bruteHealCounters = {};
+    fc._otherMonsterTimers = {};
+
+    // Initialize HP tracking for new wave
+    this._initWaveMonsterHp(fc);
 
     const firstId = fc.monsterQueue[0];
     const m = GAME_DATA.monsters[firstId];
@@ -564,16 +634,18 @@ const FightCaveMixin = {
     this._tickStatusEffects(c.statusEffects.monster, dt, 'monster');
     this._tickStatusEffects(c.statusEffects.player, dt, 'player');
 
-    // Player attacks
+    // Player attacks targeted monster
     const playerSpeed = this.getPlayerAttackSpeed();
     c.playerAttackTimer += dt;
     if (c.playerAttackTimer >= playerSpeed) {
       c.playerAttackTimer -= playerSpeed;
       this.playerAttack(monster);
       this.drainPrayerPoints();
+      // Sync HP back to tracker after player hit
+      fc.waveMonsterHp[fc.currentMonsterIdx] = c.monsterHp;
     }
 
-    // Monster attacks
+    // Current target attacks player
     let monsterSpeed = monster.attackSpeed * 0.7;
     c.monsterAttackTimer += dt;
     if (c.monsterAttackTimer >= monsterSpeed) {
@@ -581,12 +653,29 @@ const FightCaveMixin = {
       this._fightCaveMonsterAttack(monster);
     }
 
+    // Other alive monsters also attack (they're all in the room)
+    if (!fc._otherMonsterTimers) fc._otherMonsterTimers = {};
+    for (let i = 0; i < fc.monsterQueue.length; i++) {
+      if (i === fc.currentMonsterIdx) continue; // Skip current target
+      if (!fc.waveMonsterAlive[i]) continue; // Skip dead
+      const otherId = fc.monsterQueue[i];
+      const other = GAME_DATA.monsters[otherId];
+      if (!other) continue;
+      if (!fc._otherMonsterTimers[i]) fc._otherMonsterTimers[i] = 0;
+      fc._otherMonsterTimers[i] += dt;
+      const otherSpeed = other.attackSpeed * 0.7;
+      if (fc._otherMonsterTimers[i] >= otherSpeed) {
+        fc._otherMonsterTimers[i] -= otherSpeed;
+        this._fightCaveMonsterAttack(other);
+      }
+    }
+
     // Auto-eat after monster attack
     if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
 
     // Check deaths
     if (c.monsterHp <= 0) {
-      // Give combat XP
+      fc.waveMonsterHp[fc.currentMonsterIdx] = 0;
       this._awardFightCaveCombatXp(monster);
       this.onFightCaveMonsterDeath(monster);
     }

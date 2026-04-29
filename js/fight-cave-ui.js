@@ -229,26 +229,41 @@ function applyFightCaveUI() {
       </div>`;
     }
 
-    // ── WAVE QUEUE ────────────────────────────────────────
+    // ── WAVE MONSTERS — Interactive Target Selection ────────
     if (!isJad) {
-      const remaining = fc.monsterQueue.slice(fc.currentMonsterIdx);
-      html += `<div class="fc-wave-queue">
-        <span class="fc-queue-label">Wave Monsters:</span>
-        <div class="fc-queue-list">`;
-      for (let i = 0; i < remaining.length; i++) {
-        const mId = remaining[i];
+      html += `<div class="fc-wave-monsters">
+        <span class="fc-queue-label">Wave Monsters (click to switch target):</span>
+        <div class="fc-target-grid">`;
+      for (let i = 0; i < fc.monsterQueue.length; i++) {
+        if (!fc.waveMonsterAlive[i]) continue; // Skip dead monsters
+        const mId = fc.monsterQueue[i];
         const m = GAME_DATA.monsters[mId];
-        const isCurrent = i === 0;
+        if (!m) continue;
+        const isCurrent = i === fc.currentMonsterIdx;
+        const hp = fc.waveMonsterHp[i] || 0;
+        const hpPct = Math.max(0, (hp / m.hp) * 100);
         const styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
-        html += `<span class="fc-queue-monster ${isCurrent ? 'fc-queue-current' : ''}" style="border-color:${styleColors[m?.style]||'#666'}">
-          ${m?.name || mId}${isCurrent ? ' (fighting)' : ''}
-        </span>`;
+        const sColor = styleColors[m.style] || '#666';
+        html += `<div class="fc-target-card ${isCurrent ? 'fc-target-active' : ''}"
+          data-fc-action="switch-target" data-fc-param="${i}"
+          style="border-color:${isCurrent ? sColor : 'rgba(80,70,60,0.3)'}">
+          <div class="fc-target-header">
+            <span class="fc-target-name">${m.name}</span>
+            <span class="fc-target-style" style="color:${sColor}">${m.style}</span>
+          </div>
+          <div class="fc-bar-track fc-target-hp-track">
+            <div class="fc-bar-fill fc-monster-fill" style="width:${hpPct}%"></div>
+          </div>
+          <div class="fc-target-hp">${hp}/${m.hp}</div>
+          ${isCurrent ? '<div class="fc-target-fighting">ATTACKING</div>' : '<div class="fc-target-switch">Click to target</div>'}
+        </div>`;
       }
       html += `</div></div>`;
 
       // Kill priority selector — prayer management hint
-      const hasRanger = remaining.some(id => id === 'obsidian_ranger');
-      const hasMage = remaining.some(id => id === 'volcanic_mage');
+      const aliveMonsters = fc.monsterQueue.filter((_, i) => fc.waveMonsterAlive[i]);
+      const hasRanger = aliveMonsters.includes('obsidian_ranger');
+      const hasMage = aliveMonsters.includes('volcanic_mage');
       if (hasRanger || hasMage) {
         html += `<div class="fc-prayer-hint">`;
         if (hasMage) {
@@ -396,6 +411,8 @@ function applyFightCaveUI() {
     let _fcLastPhase = null;
     let _fcLastWave = -1;
     let _fcLastBetween = false;
+    let _fcLastTarget = -1;
+    let _fcLastAliveCount = -1;
 
     // Use event delegation on document for fight cave buttons
     // This way buttons work even when DOM is rebuilt
@@ -419,6 +436,7 @@ function applyFightCaveUI() {
           game.jadPrayerFlick(param);
           break;
         case 'tag-healer': game.tagJadHealer(parseInt(param)); break;
+        case 'switch-target': game.switchFightCaveTarget(parseInt(param)); break;
       }
     });
 
@@ -431,13 +449,18 @@ function applyFightCaveUI() {
       const phaseChanged = fc.jadPhase !== _fcLastPhase;
       const waveChanged = fc.currentWave !== _fcLastWave;
       const betweenChanged = fc.betweenWaves !== _fcLastBetween;
+      const targetChanged = fc.currentMonsterIdx !== _fcLastTarget;
+      const aliveCount = fc.waveMonsterAlive ? Object.values(fc.waveMonsterAlive).filter(v => v).length : 0;
+      const aliveChanged = aliveCount !== _fcLastAliveCount;
 
       _fcLastPhase = fc.jadPhase;
       _fcLastWave = fc.currentWave;
       _fcLastBetween = fc.betweenWaves;
+      _fcLastTarget = fc.currentMonsterIdx;
+      _fcLastAliveCount = aliveCount;
 
       // Full re-render only when state changes significantly
-      if (phaseChanged || waveChanged || betweenChanged) {
+      if (phaseChanged || waveChanged || betweenChanged || targetChanged || aliveChanged) {
         ui.renderPage('fight_cave');
         return;
       }
@@ -492,6 +515,8 @@ function applyFightCaveUI() {
       _fcLastPhase = null;
       _fcLastWave = -1;
       _fcLastBetween = false;
+      _fcLastTarget = -1;
+      _fcLastAliveCount = -1;
       ui.currentPage = 'fight_cave';
       ui.renderSidebar();
       ui.renderPage('fight_cave');
@@ -502,6 +527,8 @@ function applyFightCaveUI() {
       _fcLastPhase = null;
       _fcLastWave = -1;
       _fcLastBetween = false;
+      _fcLastTarget = -1;
+      _fcLastAliveCount = -1;
       ui.renderPage('fight_cave');
     });
 
