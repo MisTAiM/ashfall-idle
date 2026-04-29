@@ -2294,12 +2294,22 @@ class GameEngine {
     if (this.state.prayerPoints <= 0) {
       this.emit('notification', { type:'warn', text:'No prayer points. Bury bones to gain points.' }); return;
     }
-    // Max 2 active prayers
+    // Toggle off if already active
     if (this.state.activePrayers.includes(prayerId)) {
       this.state.activePrayers = this.state.activePrayers.filter(id => id !== prayerId);
       this.emit('notification', { type:'info', text:`Deactivated ${prayer.name}.` });
       return;
     }
+
+    // Protection prayers are mutually exclusive — only one at a time
+    const protectionPrayers = ['protect_melee', 'protect_ranged', 'protect_magic'];
+    const isProtection = protectionPrayers.includes(prayerId);
+    if (isProtection) {
+      // Remove any other active protection prayer
+      this.state.activePrayers = this.state.activePrayers.filter(id => !protectionPrayers.includes(id));
+    }
+
+    // Max 2 active prayers total
     if (this.state.activePrayers.length >= 2) {
       this.state.activePrayers.shift(); // remove oldest
     }

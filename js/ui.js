@@ -668,6 +668,46 @@ class UI {
 
     // ── ACTIVE COMBAT ──
     if (c.active && c.monster) {
+
+      // ── FIGHT CAVE OVERLAY (wave bar, between-wave, target cards) ──
+      const _fc = s.fightCave;
+      const _fcActive = _fc && _fc.active;
+
+      if (_fcActive) {
+        const _fcWaveNum = _fc.currentWave + 1;
+        const _fcProgress = ((_fc.currentWave) / 63) * 100;
+        const _fcPhase = GAME_DATA.fightCave?.phases?.find(p => _fcWaveNum >= p.startWave && _fcWaveNum <= p.endWave);
+        html += `<div class="fc-wave-bar">
+          <div class="fc-wave-label">Fight Cave — Wave ${_fcWaveNum} / 63</div>
+          <div class="fc-progress-track"><div class="fc-progress-fill" style="width:${_fcProgress}%"></div></div>
+        </div>`;
+        if (_fcPhase) {
+          html += `<div class="fc-phase-indicator">
+            <span class="fc-phase-badge">${_fcPhase.name}</span>
+            <span class="fc-phase-advice">${_fcPhase.tip}</span>
+          </div>`;
+        }
+      }
+
+      // ── FIGHT CAVE BETWEEN WAVES ──
+      if (_fcActive && _fc.betweenWaves) {
+        html += `<div class="fc-between-waves">
+          <h2>Wave ${_fc.currentWave} Cleared</h2>
+          <p id="fc-between-timer">Next wave in ${Math.ceil(_fc.betweenWaveTimer)}s...</p>
+          <p class="fc-between-tip">Eat food and drink potions now!</p>
+          <div class="fc-manual-actions">
+            <button class="btn btn-sm" data-fc-action="eat">Eat Food</button>
+            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="0">Potion 1</button>
+            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="1">Potion 2</button>
+            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="2">Potion 3</button>
+            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="3">Potion 4</button>
+          </div>
+        </div>`;
+        html += '</div>';
+        el.innerHTML = html;
+        return;
+      }
+
       const mon = GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster);
       if (!mon) { html += '<div class="bank-empty">Monster data missing. <button class="btn btn-sm" onclick="game.stopCombat();ui.renderPage(\'combat\')">Reset</button></div></div>'; el.innerHTML = html; return; }
       const max = this.engine.getMaxHp();
@@ -733,12 +773,121 @@ class UI {
         const d = GAME_DATA.dungeons.find(x=>x.id===c.dungeon);
         html += `<div class="dungeon-progress-v2"><span>Dungeon: ${d.name}</span><span>Wave ${c.dungeonWave+1} / ${d.waves.length}</span></div>`;
       }
+
+      // ── FIGHT CAVE TARGET CARDS + JAD PANEL ──
+      if (_fcActive) {
+        const _fcMon = GAME_DATA.monsters[c.monster];
+        const _isJad = _fcMon && _fcMon.isJad;
+
+        // Target selection cards (all alive monsters in wave)
+        if (!_isJad) {
+          html += `<div class="fc-wave-monsters">
+            <span class="fc-queue-label">Wave Monsters (click to switch target):</span>
+            <div class="fc-target-grid">`;
+          for (let i = 0; i < _fc.monsterQueue.length; i++) {
+            if (!_fc.waveMonsterAlive[i]) continue;
+            const _tmId = _fc.monsterQueue[i];
+            const _tm = GAME_DATA.monsters[_tmId];
+            if (!_tm) continue;
+            const _isCurrent = i === _fc.currentMonsterIdx;
+            const _thp = _fc.waveMonsterHp[i] || 0;
+            const _thpPct = Math.max(0, (_thp / _tm.hp) * 100);
+            const _styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
+            const _sColor = _styleColors[_tm.style] || '#666';
+            html += `<div class="fc-target-card ${_isCurrent ? 'fc-target-active' : ''}"
+              data-fc-action="switch-target" data-fc-param="${i}"
+              style="border-color:${_isCurrent ? _sColor : 'rgba(80,70,60,0.3)'}">
+              <div class="fc-target-header">
+                <span class="fc-target-name">${_tm.name}</span>
+                <span class="fc-target-style" style="color:${_sColor}">${_tm.style}</span>
+              </div>
+              <div class="fc-bar-track fc-target-hp-track">
+                <div class="fc-bar-fill fc-monster-fill" style="width:${_thpPct}%"></div>
+              </div>
+              <div class="fc-target-hp">${_thp}/${_tm.hp}</div>
+              ${_isCurrent ? '<div class="fc-target-fighting">ATTACKING</div>' : '<div class="fc-target-switch">Click to target</div>'}
+            </div>`;
+          }
+          html += `</div></div>`;
+
+          // Prayer hints for active threats
+          const _aliveMonsters = _fc.monsterQueue.filter((_, i) => _fc.waveMonsterAlive[i]);
+          const _hasRanger = _aliveMonsters.includes('obsidian_ranger');
+          const _hasMage = _aliveMonsters.includes('volcanic_mage');
+          if (_hasMage) {
+            html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">Volcanic Mage active — Protect from Magic!</div></div>`;
+          } else if (_hasRanger) {
+            html += `<div class="fc-prayer-hint"><div class="fc-hint-warn">Obsidian Ranger active — Protect from Ranged!</div></div>`;
+          }
+        }
+
+        // Jad telegraph panel
+        if (_isJad) {
+          html += `<div class="fc-jad-panel"><div class="fc-jad-telegraph">`;
+          if (_fc.jadPhase === 'charging') {
+            const _chPct = (_fc.jadChargeTimer / 2.0) * 100;
+            html += `<div class="fc-jad-charging">
+              <div class="fc-jad-charge-label">Jad is preparing an attack...</div>
+              <div class="fc-bar-track fc-jad-charge-track"><div class="fc-bar-fill fc-jad-charge-fill" id="fc-jad-charge-fill" style="width:${_chPct}%"></div></div>
+            </div>`;
+          } else if (_fc.jadPhase === 'telegraph' || _fc.jadPhase === 'awaiting_input') {
+            const _jStyle = _fc.jadAttackStyle;
+            const _jIcons = {
+              melee:  { symbol:'&#9994;', label:'MELEE', desc:'Jad lunges forward!', color:'#e74c3c', bg:'rgba(231,76,60,0.15)' },
+              ranged: { symbol:'&#11015;', label:'RANGED', desc:'Jad slams his feet to the ground!', color:'#e67e22', bg:'rgba(230,126,34,0.15)' },
+              magic:  { symbol:'&#128293;', label:'MAGIC', desc:'Jad rears up — fireball incoming!', color:'#3498db', bg:'rgba(52,152,219,0.15)' },
+            };
+            const _jt = _jIcons[_jStyle] || _jIcons.magic;
+            html += `<div class="fc-jad-telegraph-alert" style="background:${_jt.bg};border-color:${_jt.color}">
+              <div class="fc-jad-telegraph-icon" style="color:${_jt.color}">${_jt.symbol}</div>
+              <div class="fc-jad-telegraph-style" style="color:${_jt.color}">${_jt.label} ATTACK</div>
+              <div class="fc-jad-telegraph-desc">${_jt.desc}</div>
+            </div>`;
+            if (_fc.jadPhase === 'awaiting_input') {
+              const _tLeft = Math.max(0, 2.5 - _fc.jadInputTimer);
+              const _tPct = (_tLeft / 2.5) * 100;
+              html += `<div class="fc-jad-input-window">
+                <div class="fc-jad-timer-label" id="fc-jad-timer-label">PRAY NOW! ${_tLeft.toFixed(1)}s</div>
+                <div class="fc-bar-track fc-jad-timer-track"><div class="fc-bar-fill fc-jad-timer-fill" id="fc-jad-timer-fill" style="width:${_tPct}%"></div></div>
+              </div>
+              <div class="fc-jad-prayer-buttons">
+                <button class="fc-jad-pray-btn fc-pray-melee" data-fc-action="jad-flick" data-fc-param="melee"><span class="fc-pray-icon">&#9994;</span><span class="fc-pray-text">Protect Melee</span></button>
+                <button class="fc-jad-pray-btn fc-pray-ranged" data-fc-action="jad-flick" data-fc-param="ranged"><span class="fc-pray-icon">&#11015;</span><span class="fc-pray-text">Protect Ranged</span></button>
+                <button class="fc-jad-pray-btn fc-pray-magic" data-fc-action="jad-flick" data-fc-param="magic"><span class="fc-pray-icon">&#128293;</span><span class="fc-pray-text">Protect Magic</span></button>
+              </div>`;
+            }
+          } else if (_fc.jadPhase === 'resolving') {
+            html += `<div class="fc-jad-resolving"><div class="fc-jad-resolve-text">Attack resolved. Next attack charging...</div></div>`;
+          }
+          html += `</div>`; // end telegraph
+
+          // Jad healers
+          if (_fc.jadHealers && _fc.jadHealers.length > 0) {
+            html += `<div class="fc-jad-healers"><h3 class="fc-healer-title">Yt-HurKot Healers — Tag them to stop healing!</h3><div class="fc-healer-grid">`;
+            for (let i = 0; i < _fc.jadHealers.length; i++) {
+              const _h = _fc.jadHealers[i];
+              const _hhpPct = (_h.hp / _h.maxHp) * 100;
+              html += `<div class="fc-healer-card ${_h.tagged ? 'fc-healer-tagged' : 'fc-healer-healing'}">
+                <div class="fc-healer-label">Healer ${i + 1}</div>
+                <div class="fc-healer-status">${_h.tagged ? 'TAGGED (attacking you)' : 'HEALING JAD'}</div>
+                <div class="fc-bar-track fc-healer-hp-track"><div class="fc-bar-fill fc-healer-hp-fill" style="width:${_hhpPct}%"></div></div>
+                <div class="fc-healer-hp">${_h.hp}/${_h.maxHp}</div>
+                ${!_h.tagged && _h.hp > 0 ? `<button class="btn btn-xs btn-danger" data-fc-action="tag-healer" data-fc-param="${i}">TAG</button>` : ''}
+              </div>`;
+            }
+            html += `</div></div>`;
+          }
+          html += `</div>`; // end jad panel
+        }
+      }
       // Slayer task progress
       if (s.slayerTask && s.slayerTask.monster === c.monster) {
         const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
         html += `<div class="slayer-combat-bar"><span>${icon('target',14)} Slayer: ${s.slayerTask.killed}/${s.slayerTask.amount}</span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" style="width:${pct}%"></div></div></div>`;
       }
-      html += `<button class="btn btn-danger btn-flee" onclick="game.stopCombat()">${icon('combat',16)} Flee Combat</button>`;
+      html += _fcActive
+        ? `<button class="btn btn-danger btn-flee" data-fc-action="flee">${icon('combat',16)} Flee (Lose All Progress)</button>`
+        : `<button class="btn btn-danger btn-flee" onclick="game.stopCombat()">${icon('combat',16)} Flee Combat</button>`;
       // Wilderness-specific buttons
       if (c._isWilderness) {
         const fleeChance = Math.min(80, 40 + Math.floor(s.skills.defence.level * 0.3) + Math.floor(s.skills.hitpoints.level * 0.2));
@@ -818,7 +967,7 @@ class UI {
           html += `<button class="monster-btn-v2" ${locked?'disabled':''} onclick="game.startCombat('${area.id}','${mId}')">
             ${GAME_DATA.monsterArt?.[mId] ? `<span class="mb-art">${GAME_DATA.monsterArt[mId]}</span>` : ''}
             <span class="mb-name">${m.name}</span>
-            <span class="mb-info">Lv${m.combatLevel} | ${m.hp}hp | ${m.style}</span>
+            <span class="mb-info">Lv${m.combatLevel} | ${m.hp}hp | ${m.style} | ${m.xp||0}xp</span>
             ${topDrops ? `<div class="mb-drops">${topDrops}</div>` : ''}
             ${rollCount > 0 ? `<span class="mb-tables">${rollCount} drop tables</span>` : ''}
           </button>`;
