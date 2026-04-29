@@ -67,6 +67,7 @@ function applyAdminPanel() {
     // Tabs
     const tabs = [
       {id:'overview', label:'Overview'},
+      {id:'players',  label:'Players'},
       {id:'items',    label:'Items'},
       {id:'skills',   label:'Skills'},
       {id:'combat',   label:'Combat'},
@@ -124,6 +125,37 @@ function applyAdminPanel() {
           <button class="btn btn-sm" onclick="ui._admBroadcast()">Send</button>
         </div>
       </div>`;
+    }
+
+    // ── PLAYERS TAB ───────────────────────────────────────
+    if (tab === 'players') {
+      html += `<div class="adm-section">
+        <h3>Leaderboard Management</h3>
+        <div class="adm-btn-grid" style="margin-bottom:8px">
+          <button class="btn btn-sm" onclick="ui._admLoadPlayers()">Load All Players</button>
+          <button class="btn btn-sm btn-danger" onclick="ui._admDeleteGhosts()">Delete Ghost Accounts (TL matches yours)</button>
+        </div>
+      </div>`;
+
+      if (this._admPlayerList && this._admPlayerList.length > 0) {
+        html += `<div class="adm-section"><h3>Players (${this._admPlayerList.length})</h3>`;
+        html += `<input type="text" class="bank-search-input" placeholder="Filter players..." oninput="ui._admPlayerFilter=this.value;ui.renderPage('admin')" value="${this._admPlayerFilter||''}" style="margin-bottom:8px">`;
+        const pFilter = (this._admPlayerFilter || '').toLowerCase();
+        const filtered = pFilter
+          ? this._admPlayerList.filter(p => (p.displayName||'').toLowerCase().includes(pFilter) || p.uid.toLowerCase().includes(pFilter))
+          : this._admPlayerList;
+        for (const p of filtered) {
+          const isMe = p.uid === online.user?.uid;
+          const safeName = (p.displayName || '?').replace(/[<>"&]/g, '');
+          html += `<div class="adm-item-row" style="${isMe?'border-left:3px solid #c9873e;padding-left:6px':''}">
+            <span class="adm-item-name">${safeName}${isMe?' (YOU)':''}</span>
+            <span class="adm-item-id">${p.uid.substring(0,8)}...</span>
+            <span class="adm-item-qty">TL:${p.totalLevel||'?'} CL:${p.combatLevel||'?'}</span>
+            ${!isMe ? `<button class="btn btn-xs btn-danger" data-adm-delete-uid="${p.uid}" data-adm-delete-name="${safeName}">Delete</button>` : ''}
+          </div>`;
+        }
+        html += `</div>`;
+      }
     }
 
     // ── ITEMS TAB ─────────────────────────────────────────
@@ -432,6 +464,48 @@ function applyAdminPanel() {
     this.renderPage('admin');
   };
 
+  // ── PLAYER MANAGEMENT ──────────────────────────────────
+  UI.prototype._admLoadPlayers = async function() {
+    if (typeof online === 'undefined' || !online.isOnline) { this.toast({type:'warn',text:'Not online'}); return; }
+    try {
+      const snap = await online.firestore.collection('players').orderBy('totalLevel','desc').limit(100).get();
+      this._admPlayerList = [];
+      snap.forEach(doc => this._admPlayerList.push({ uid:doc.id, ...doc.data() }));
+      this.toast({type:'success', text:`Loaded ${this._admPlayerList.length} players`});
+      this.renderPage('admin');
+    } catch(e) { this.toast({type:'warn', text:'Error loading players: ' + e.message}); }
+  };
+
+  UI.prototype._admDeletePlayer = async function(uid, name) {
+    if (!confirm(`Delete "${name}" (${uid}) from leaderboard? This removes their public profile.`)) return;
+    const ok = await online.deletePlayerFromLeaderboard(uid);
+    if (ok) {
+      this.toast({type:'success', text:`Deleted ${name} from leaderboard`});
+      if (this._admPlayerList) this._admPlayerList = this._admPlayerList.filter(p => p.uid !== uid);
+      this.renderPage('admin');
+    } else {
+      this.toast({type:'warn', text:'Failed to delete — check permissions'});
+    }
+  };
+
+  UI.prototype._admDeleteGhosts = async function() {
+    if (!this._admPlayerList) { this.toast({type:'warn',text:'Load players first'}); return; }
+    const myUid = online.user?.uid;
+    const myTL = game.getTotalLevel();
+    // Ghost = same totalLevel as admin but different UID (anonymous clones)
+    const ghosts = this._admPlayerList.filter(p => p.uid !== myUid && p.totalLevel === myTL);
+    if (ghosts.length === 0) { this.toast({type:'info',text:'No ghost accounts found'}); return; }
+    if (!confirm(`Found ${ghosts.length} ghost account(s) with TL:${myTL}:\n${ghosts.map(g=>g.displayName).join(', ')}\n\nDelete all?`)) return;
+    let deleted = 0;
+    for (const g of ghosts) {
+      const ok = await online.deletePlayerFromLeaderboard(g.uid);
+      if (ok) deleted++;
+    }
+    this._admPlayerList = this._admPlayerList.filter(p => !ghosts.find(g => g.uid === p.uid));
+    this.toast({type:'success', text:`Deleted ${deleted}/${ghosts.length} ghost accounts`});
+    this.renderPage('admin');
+  };
+
   console.log('[Ashfall] Admin panel loaded.');
 }
 
@@ -439,6 +513,15 @@ function applyAdminPanel() {
 applyAdminPanel();
 
 // ── DIRECT ACCESS ROUTES ──────────────────────────────────
+// Admin delete button handler (data-adm-delete-uid)
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('[data-adm-delete-uid]');
+  if (!btn || typeof ui === 'undefined') return;
+  const uid = btn.getAttribute('data-adm-delete-uid');
+  const name = btn.getAttribute('data-adm-delete-name') || '?';
+  ui._admDeletePlayer(uid, name);
+});
+
 // #admin hash route — navigate to ashfall-idle.vercel.app/#admin
 window.addEventListener('hashchange', function() {
   if (location.hash === '#admin' && typeof ui !== 'undefined') {

@@ -188,7 +188,26 @@ class OnlineManager {
   }
 
   async signOut() {
+    // Save to cloud before signing out so data isn't lost
+    if (this.user && !this.user.isAnonymous && game && game.state) {
+      try { await this.saveToCloud(true); } catch(e) {}
+    }
+    // Clear localStorage to prevent ghost accounts on next anonymous sign-in
+    localStorage.removeItem('ashfall_save');
     try { await this.auth.signOut(); } catch(e) { console.error(e); }
+    // Reset admin flag
+    if (typeof _isAdminVerified !== 'undefined') _isAdminVerified = false;
+  }
+
+  // Admin: delete a player from the leaderboard/players collection
+  async deletePlayerFromLeaderboard(uid) {
+    if (!this.isOnline || !this.user) return false;
+    if (typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      await this.firestore.collection('players').doc(uid).delete();
+      console.log('[Admin] Deleted player:', uid);
+      return true;
+    } catch(e) { console.error('Delete player error:', e); return false; }
   }
 
   async setDisplayName(name) {
@@ -438,6 +457,8 @@ class OnlineManager {
 
   async syncProfile() {
     if (!this.isOnline || !this.user || !game) return;
+    // Anonymous users do NOT sync to the leaderboard — prevents ghost accounts
+    if (this.user.isAnonymous) return;
     try {
       const s = game.state;
       const skillLevels = {};
