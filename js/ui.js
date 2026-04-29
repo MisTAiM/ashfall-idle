@@ -515,7 +515,7 @@ class UI {
     let html = `<div class="combat-page">`;
     // ── XP TRACKER with highlighted active skills ──
     html += '<div class="combat-xp-panel" id="combat-xp-panel">';
-    const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer'];
+    const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','tactics'];
     for (const _sId of _cSkills) {
       const _sk = s.skills[_sId]; if (!_sk) continue;
       const _p = this.engine.getXpProgress(_sId);

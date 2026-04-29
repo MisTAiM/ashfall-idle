@@ -113,7 +113,7 @@ function applyFightCaveUI() {
 
     html += `<div class="fc-enter">
       <button class="btn btn-lg ${meetsReqs ? 'btn-danger' : ''}" ${meetsReqs ? '' : 'disabled'}
-        onclick="game.startFightCave()">
+        data-fc-action="start">
         ${meetsReqs ? 'Enter the Fight Cave' : 'Requirements Not Met'}
       </button>
     </div>`;
@@ -153,14 +153,14 @@ function applyFightCaveUI() {
     if (fc.betweenWaves) {
       html += `<div class="fc-between-waves">
         <h2>Wave ${fc.currentWave} Cleared</h2>
-        <p>Next wave in ${Math.ceil(fc.betweenWaveTimer)}s...</p>
+        <p id="fc-between-timer">Next wave in ${Math.ceil(fc.betweenWaveTimer)}s...</p>
         <p class="fc-between-tip">Eat food and drink potions now!</p>
         <div class="fc-manual-actions">
-          <button class="btn btn-sm" onclick="game.eatFood()">Eat Food</button>
-          <button class="btn btn-sm" onclick="game.drinkPotionBelt(0)">Potion 1</button>
-          <button class="btn btn-sm" onclick="game.drinkPotionBelt(1)">Potion 2</button>
-          <button class="btn btn-sm" onclick="game.drinkPotionBelt(2)">Potion 3</button>
-          <button class="btn btn-sm" onclick="game.drinkPotionBelt(3)">Potion 4</button>
+          <button class="btn btn-sm" data-fc-action="eat">Eat Food</button>
+          <button class="btn btn-sm" data-fc-action="potion" data-fc-param="0">Potion 1</button>
+          <button class="btn btn-sm" data-fc-action="potion" data-fc-param="1">Potion 2</button>
+          <button class="btn btn-sm" data-fc-action="potion" data-fc-param="2">Potion 3</button>
+          <button class="btn btn-sm" data-fc-action="potion" data-fc-param="3">Potion 4</button>
         </div>
       </div>`;
       html += `</div>`;
@@ -174,12 +174,12 @@ function applyFightCaveUI() {
     const ppPct = Math.max(0, (s.prayerPoints / ppMax) * 100);
     html += `<div class="fc-player-status">
       <div class="fc-stat-bar">
-        <span class="fc-bar-label">HP: ${c.playerHp}/${maxHp}</span>
-        <div class="fc-bar-track fc-hp-track"><div class="fc-bar-fill fc-hp-fill" style="width:${hpPct}%"></div></div>
+        <span class="fc-bar-label" id="fc-hp-label">HP: ${c.playerHp}/${maxHp}</span>
+        <div class="fc-bar-track fc-hp-track"><div class="fc-bar-fill fc-hp-fill" id="fc-hp-fill" style="width:${hpPct}%"></div></div>
       </div>
       <div class="fc-stat-bar">
-        <span class="fc-bar-label">Prayer: ${s.prayerPoints}/${ppMax}</span>
-        <div class="fc-bar-track fc-pp-track"><div class="fc-bar-fill fc-pp-fill" style="width:${ppPct}%"></div></div>
+        <span class="fc-bar-label" id="fc-pp-label">Prayer: ${s.prayerPoints}/${ppMax}</span>
+        <div class="fc-bar-track fc-pp-track"><div class="fc-bar-fill fc-pp-fill" id="fc-pp-fill" style="width:${ppPct}%"></div></div>
       </div>
       <div class="fc-active-prayers">
         ${s.activePrayers.map(id => {
@@ -198,14 +198,14 @@ function applyFightCaveUI() {
           const item = GAME_DATA.items[f.id];
           return `<span class="fc-supply-item" title="${item?.name}">${item?.name || f.id} x${f.qty}</span>`;
         }).join('')}
-        <button class="btn btn-xs" onclick="game.eatFood()">Eat</button>
+        <button class="btn btn-xs" data-fc-action="eat">Eat</button>
       </div>
       <div class="fc-supply-section">
         <span class="fc-supply-label">Potions:</span>
         ${(s.potionBelt || []).map((p, i) => {
           if (!p.id) return `<span class="fc-supply-empty">Empty</span>`;
           const item = GAME_DATA.items[p.id];
-          return `<span class="fc-supply-item fc-potion-btn" onclick="game.drinkPotionBelt(${i})" title="Click to drink">${item?.name || p.id} x${p.qty}</span>`;
+          return `<span class="fc-supply-item fc-potion-btn" data-fc-action="potion" data-fc-param="${i}" title="Click to drink">${item?.name || p.id} x${p.qty}</span>`;
         }).join('')}
       </div>
     </div>`;
@@ -223,8 +223,8 @@ function applyFightCaveUI() {
           <span class="fc-mon-current-level">Lv ${monster.combatLevel}</span>
         </div>
         <div class="fc-mon-hp-bar">
-          <span class="fc-bar-label">${c.monsterHp}/${monster.hp}</span>
-          <div class="fc-bar-track fc-monster-track"><div class="fc-bar-fill fc-monster-fill" style="width:${mHpPct}%"></div></div>
+          <span class="fc-bar-label" id="fc-mhp-label">${c.monsterHp}/${monster.hp}</span>
+          <div class="fc-bar-track fc-monster-track"><div class="fc-bar-fill fc-monster-fill" id="fc-mhp-fill" style="width:${mHpPct}%"></div></div>
         </div>
       </div>`;
     }
@@ -263,11 +263,11 @@ function applyFightCaveUI() {
       html += `<div class="fc-prayer-toggles">
         <span class="fc-prayer-label">Protection Prayers:</span>
         <button class="btn btn-sm ${s.activePrayers.includes('protect_melee') ? 'btn-active-prayer' : ''}"
-          onclick="game.activatePrayer('protect_melee')">Protect Melee</button>
+          data-fc-action="pray-melee">Protect Melee</button>
         <button class="btn btn-sm ${s.activePrayers.includes('protect_ranged') ? 'btn-active-prayer' : ''}"
-          onclick="game.activatePrayer('protect_ranged')">Protect Ranged</button>
+          data-fc-action="pray-ranged">Protect Ranged</button>
         <button class="btn btn-sm ${s.activePrayers.includes('protect_magic') ? 'btn-active-prayer' : ''}"
-          onclick="game.activatePrayer('protect_magic')">Protect Magic</button>
+          data-fc-action="pray-magic">Protect Magic</button>
       </div>`;
     }
 
@@ -278,7 +278,7 @@ function applyFightCaveUI() {
 
     // ── FLEE BUTTON ───────────────────────────────────────
     html += `<div class="fc-flee">
-      <button class="btn btn-sm btn-danger" onclick="if(confirm('Flee the Fight Cave? All progress will be lost!')) game.fleeFightCave()">
+      <button class="btn btn-sm btn-danger" data-fc-action="flee">
         Flee (Lose All Progress)
       </button>
     </div>`;
@@ -300,7 +300,7 @@ function applyFightCaveUI() {
       html += `<div class="fc-jad-charging">
         <div class="fc-jad-charge-label">Jad is preparing an attack...</div>
         <div class="fc-bar-track fc-jad-charge-track">
-          <div class="fc-bar-fill fc-jad-charge-fill" style="width:${chargePct}%"></div>
+          <div class="fc-bar-fill fc-jad-charge-fill" id="fc-jad-charge-fill" style="width:${chargePct}%"></div>
         </div>
       </div>`;
     }
@@ -325,23 +325,23 @@ function applyFightCaveUI() {
         const timePct = (timeLeft / 2.5) * 100;
 
         html += `<div class="fc-jad-input-window">
-          <div class="fc-jad-timer-label">PRAY NOW! ${timeLeft.toFixed(1)}s</div>
+          <div class="fc-jad-timer-label" id="fc-jad-timer-label">PRAY NOW! ${timeLeft.toFixed(1)}s</div>
           <div class="fc-bar-track fc-jad-timer-track">
-            <div class="fc-bar-fill fc-jad-timer-fill" style="width:${timePct}%"></div>
+            <div class="fc-bar-fill fc-jad-timer-fill" id="fc-jad-timer-fill" style="width:${timePct}%"></div>
           </div>
         </div>`;
 
-        // Big prayer flick buttons
+        // Big prayer flick buttons — data attributes for event delegation
         html += `<div class="fc-jad-prayer-buttons">
-          <button class="fc-jad-pray-btn fc-pray-melee" onclick="game.jadPrayerFlick('melee')">
+          <button class="fc-jad-pray-btn fc-pray-melee" data-fc-action="jad-flick" data-fc-param="melee">
             <span class="fc-pray-icon">&#9994;</span>
             <span class="fc-pray-text">Protect Melee</span>
           </button>
-          <button class="fc-jad-pray-btn fc-pray-ranged" onclick="game.jadPrayerFlick('ranged')">
+          <button class="fc-jad-pray-btn fc-pray-ranged" data-fc-action="jad-flick" data-fc-param="ranged">
             <span class="fc-pray-icon">&#11015;</span>
             <span class="fc-pray-text">Protect Ranged</span>
           </button>
-          <button class="fc-jad-pray-btn fc-pray-magic" onclick="game.jadPrayerFlick('magic')">
+          <button class="fc-jad-pray-btn fc-pray-magic" data-fc-action="jad-flick" data-fc-param="magic">
             <span class="fc-pray-icon">&#128293;</span>
             <span class="fc-pray-text">Protect Magic</span>
           </button>
@@ -372,7 +372,7 @@ function applyFightCaveUI() {
             <div class="fc-bar-fill fc-healer-hp-fill" style="width:${hpPct}%"></div>
           </div>
           <div class="fc-healer-hp">${h.hp}/${h.maxHp}</div>
-          ${!h.tagged && h.hp > 0 ? `<button class="btn btn-xs btn-danger" onclick="game.tagJadHealer(${i})">TAG</button>` : ''}
+          ${!h.tagged && h.hp > 0 ? `<button class="btn btn-xs btn-danger" data-fc-action="tag-healer" data-fc-param="${i}">TAG</button>` : ''}
         </div>`;
       }
       html += `</div></div>`;
@@ -393,15 +393,105 @@ function applyFightCaveUI() {
       return;
     }
 
-    // Re-render fight cave page on every tick when active
+    let _fcLastPhase = null;
+    let _fcLastWave = -1;
+    let _fcLastBetween = false;
+
+    // Use event delegation on document for fight cave buttons
+    // This way buttons work even when DOM is rebuilt
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('[data-fc-action]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const action = btn.getAttribute('data-fc-action');
+      const param = btn.getAttribute('data-fc-param');
+
+      switch (action) {
+        case 'start': game.startFightCave(); break;
+        case 'flee': if (confirm('Flee the Fight Cave? All progress will be lost!')) game.fleeFightCave(); break;
+        case 'eat': game.eatFood(); break;
+        case 'potion': game.drinkPotionBelt(parseInt(param)); break;
+        case 'pray-melee': game.activatePrayer('protect_melee'); break;
+        case 'pray-ranged': game.activatePrayer('protect_ranged'); break;
+        case 'pray-magic': game.activatePrayer('protect_magic'); break;
+        case 'jad-flick':
+          game.jadPrayerFlick(param);
+          break;
+        case 'tag-healer': game.tagJadHealer(parseInt(param)); break;
+      }
+    });
+
+    // Targeted DOM updates instead of full re-renders
     game.on('tick', () => {
-      if (ui.currentPage === 'fight_cave' && game.state.fightCave && game.state.fightCave.active) {
+      if (ui.currentPage !== 'fight_cave') return;
+      const fc = game.state.fightCave;
+      if (!fc || !fc.active) return;
+
+      const phaseChanged = fc.jadPhase !== _fcLastPhase;
+      const waveChanged = fc.currentWave !== _fcLastWave;
+      const betweenChanged = fc.betweenWaves !== _fcLastBetween;
+
+      _fcLastPhase = fc.jadPhase;
+      _fcLastWave = fc.currentWave;
+      _fcLastBetween = fc.betweenWaves;
+
+      // Full re-render only when state changes significantly
+      if (phaseChanged || waveChanged || betweenChanged) {
         ui.renderPage('fight_cave');
+        return;
+      }
+
+      // Otherwise do targeted updates to bars/timers only
+      const c = game.state.combat;
+      const maxHp = game.getMaxHp();
+
+      // Update player HP bar
+      const hpFill = document.getElementById('fc-hp-fill');
+      const hpLabel = document.getElementById('fc-hp-label');
+      if (hpFill) hpFill.style.width = Math.max(0, (c.playerHp / maxHp) * 100) + '%';
+      if (hpLabel) hpLabel.textContent = `HP: ${c.playerHp}/${maxHp}`;
+
+      // Update prayer bar
+      const ppFill = document.getElementById('fc-pp-fill');
+      const ppLabel = document.getElementById('fc-pp-label');
+      if (ppFill) ppFill.style.width = Math.max(0, (game.state.prayerPoints / 99) * 100) + '%';
+      if (ppLabel) ppLabel.textContent = `Prayer: ${game.state.prayerPoints}/99`;
+
+      // Update monster HP bar
+      const monster = GAME_DATA.monsters[c.monster];
+      if (monster) {
+        const mhpFill = document.getElementById('fc-mhp-fill');
+        const mhpLabel = document.getElementById('fc-mhp-label');
+        if (mhpFill) mhpFill.style.width = Math.max(0, (c.monsterHp / monster.hp) * 100) + '%';
+        if (mhpLabel) mhpLabel.textContent = `${c.monsterHp}/${monster.hp}`;
+      }
+
+      // Update Jad charge/timer bars (targeted, no re-render)
+      if (fc.jadPhase === 'charging') {
+        const chargeFill = document.getElementById('fc-jad-charge-fill');
+        if (chargeFill) chargeFill.style.width = ((fc.jadChargeTimer / 2.0) * 100) + '%';
+      }
+      if (fc.jadPhase === 'awaiting_input') {
+        const timerFill = document.getElementById('fc-jad-timer-fill');
+        const timerLabel = document.getElementById('fc-jad-timer-label');
+        const timeLeft = Math.max(0, 2.5 - fc.jadInputTimer);
+        if (timerFill) timerFill.style.width = ((timeLeft / 2.5) * 100) + '%';
+        if (timerLabel) timerLabel.textContent = `PRAY NOW! ${timeLeft.toFixed(1)}s`;
+      }
+
+      // Update between-wave timer
+      if (fc.betweenWaves) {
+        const bwTimer = document.getElementById('fc-between-timer');
+        if (bwTimer) bwTimer.textContent = `Next wave in ${Math.ceil(fc.betweenWaveTimer)}s...`;
       }
     });
 
     // Navigate to fight cave page on start
     game.on('fightCaveStart', () => {
+      _fcLastPhase = null;
+      _fcLastWave = -1;
+      _fcLastBetween = false;
       ui.currentPage = 'fight_cave';
       ui.renderSidebar();
       ui.renderPage('fight_cave');
@@ -409,6 +499,9 @@ function applyFightCaveUI() {
 
     // Refresh on fight cave end
     game.on('fightCaveEnd', () => {
+      _fcLastPhase = null;
+      _fcLastWave = -1;
+      _fcLastBetween = false;
       ui.renderPage('fight_cave');
     });
 

@@ -477,6 +477,9 @@ class GameEngine {
     c._pvpArena = false; c._pvpOpponent = null;
     c.statusEffects = { player:{}, monster:{} };
     c.playerHp = this.getMaxHp();
+    // Clear session loot so it doesn't persist into next session
+    c._sessionLoot = {};
+    c._sessionKills = 0;
     // Clear wilderness presence
     if (typeof online !== 'undefined' && online.isOnline) online.clearWildernessPresence();
     this.emit('combatStop');
@@ -874,6 +877,9 @@ class GameEngine {
       this.addXp('defence', Math.floor(xp * 0.2));
     }
     this.addXp('hitpoints', Math.floor(xp * 0.33));
+    // Passive Tactics XP from combat (small amount per kill, scaled by monster level)
+    const tacticsXpFromKill = Math.max(1, Math.floor(xp * 0.05));
+    this.addXp('tactics', tacticsXpFromKill);
     // Emit XP gain notification so player can SEE what they got
     const xpParts = [];
     if (style === 'melee') {
@@ -1457,7 +1463,23 @@ class GameEngine {
     }
   }
 
-  consumeRunes(spell) { if (!this.hasItems(spell.runes)) return false; this.removeItems(spell.runes); return true; }
+  consumeRunes(spell) {
+    // Check equipped staff for infinite rune provision
+    const weapon = this.state.equipment?.weapon;
+    const weaponData = weapon ? GAME_DATA.items[weapon] : null;
+    const providedRune = weaponData?.providesRune || null;
+
+    // Filter out runes provided by staff
+    const runesNeeded = [];
+    for (const r of spell.runes) {
+      if (providedRune && r.item === providedRune) continue; // Staff provides this rune
+      runesNeeded.push(r);
+    }
+    if (runesNeeded.length === 0) return true; // Staff covers all runes
+    if (!this.hasItems(runesNeeded)) return false;
+    this.removeItems(runesNeeded);
+    return true;
+  }
 
   // ── ABILITIES ──────────────────────────────────────────
   useAbility(slotIdx) {
@@ -1530,6 +1552,10 @@ class GameEngine {
     if (eff.buff) c.activeBuffs.push({ ...eff.buff, remaining: eff.buff.duration });
 
     this.emit('notification', { type:'info', text:`Used ${ab.name}${totalDmg>0?' ('+totalDmg+' dmg)':''}!` });
+
+    // Award Tactics XP for using abilities
+    const tacticsXp = Math.floor(ab.cooldown * 3 + (ab.tacticsReq || 1) * 5);
+    this.addXp('tactics', tacticsXp);
   }
 
   tickBuffs(dt) {
