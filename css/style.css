@@ -4756,3 +4756,56 @@ html, body {
 .bank-search-input::placeholder { color:rgba(180,160,140,0.4); }
 .bank-search-clear { font-size:14px; padding:4px 8px; }
 .bank-tab-count { font-size:0.7rem; opacity:0.6; margin-left:2px; }
+
+/* ── ADMIN PANEL ─────────────────────────────────────────── */
+.admin-panel { max-width:900px; margin:0 auto; padding:1rem; }
+.admin-header-bar { background:linear-gradient(135deg,#180808,#280a0a); border:1px solid #802020; border-radius:8px; padding:14px 18px; margin-bottom:12px; }
+.ahb-title { font-family:'Cinzel',serif; font-size:20px; color:#e04040; font-weight:700; margin-bottom:2px; }
+.ahb-sub { font-size:11px; color:#804040; font-family:'JetBrains Mono',monospace; }
+
+.admin-tabs { display:flex; flex-wrap:wrap; gap:2px; margin-bottom:12px; border-bottom:1px solid var(--border); }
+.admin-tab { background:none; border:none; border-bottom:2px solid transparent; color:#908070; padding:7px 12px; cursor:pointer; font-size:12px; font-family:inherit; transition:all .15s; }
+.admin-tab.active { border-bottom-color:#c44040; color:#e04040; font-weight:600; }
+.admin-tab:hover { color:#d4c4a0; }
+
+.adm-section { margin-bottom:16px; padding:12px; background:rgba(30,25,20,0.5); border:1px solid rgba(80,70,60,0.3); border-radius:6px; }
+.adm-section h3 { margin:0 0 8px 0; font-size:14px; color:#c9873e; font-family:'Cinzel',serif; }
+
+.adm-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:6px; }
+.adm-stat { font-size:12px; color:#b0a090; padding:4px 0; }
+.adm-stat strong { color:#d4c4a0; }
+
+.adm-btn-grid { display:flex; flex-wrap:wrap; gap:6px; }
+.adm-row-flex { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+
+.adm-item-list { max-height:400px; overflow-y:auto; margin-top:8px; }
+.adm-item-row { display:flex; align-items:center; gap:8px; padding:4px 6px; border-bottom:1px solid rgba(60,50,40,0.2); font-size:12px; }
+.adm-item-row:hover { background:rgba(60,50,40,0.3); }
+.adm-item-name { flex:1; color:#d4c4a0; font-weight:bold; }
+.adm-item-id { color:#706050; font-family:'JetBrains Mono',monospace; font-size:10px; min-width:120px; }
+.adm-item-qty { color:#c9873e; font-family:'JetBrains Mono',monospace; font-size:11px; min-width:40px; }
+
+.adm-skill-grid { display:flex; flex-direction:column; gap:4px; }
+.adm-skill-row { display:flex; align-items:center; gap:8px; padding:4px 6px; border-bottom:1px solid rgba(60,50,40,0.2); font-size:12px; }
+.adm-skill-row:hover { background:rgba(60,50,40,0.3); }
+.adm-sk-name { min-width:100px; color:#d4c4a0; font-weight:bold; }
+.adm-sk-level { min-width:50px; color:#c9873e; }
+.adm-sk-xp { min-width:90px; color:#908070; font-family:'JetBrains Mono',monospace; font-size:10px; }
+
+.adm-quest-row { display:flex; align-items:center; gap:8px; padding:4px 6px; border-bottom:1px solid rgba(60,50,40,0.2); font-size:12px; }
+.adm-q-done { opacity:0.5; }
+.adm-q-active { color:#c9873e; }
+.adm-q-status { font-size:14px; min-width:16px; }
+.adm-q-name { flex:1; color:#d4c4a0; }
+.adm-q-id { color:#706050; font-family:'JetBrains Mono',monospace; font-size:10px; }
+
+.adm-mon-grid { display:flex; flex-direction:column; gap:6px; }
+.adm-mon-card { padding:8px; background:rgba(40,35,30,0.4); border:1px solid rgba(80,70,60,0.2); border-radius:4px; }
+.adm-mon-name { font-weight:bold; color:#d4c4a0; font-size:13px; }
+.adm-mon-name small { color:#706050; font-weight:normal; }
+.adm-mon-stats { font-size:11px; color:#908070; margin:2px 0; font-family:'JetBrains Mono',monospace; }
+.adm-mon-drops { font-size:10px; color:#706050; margin-top:2px; }
+
+.adm-state-output { background:rgba(20,18,15,0.8); border:1px solid rgba(60,50,40,0.3); border-radius:4px; padding:10px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#b0a090; max-height:300px; overflow:auto; white-space:pre-wrap; word-break:break-all; margin-top:8px; }
+
+@media (max-width:600px) { .adm-grid { grid-template-columns:1fr; } .adm-item-row { flex-wrap:wrap; } }
