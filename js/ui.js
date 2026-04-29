@@ -1201,38 +1201,66 @@ class UI {
     let html = this.header('Bank','bank',`${entries.length} unique items stored.`,null);
     html += `<div class="bank-gold" id="bank-gold">${icon('coin',20)} <span id="bank-gold-val">${this.fmt(s.gold)}</span> Gold</div>`;
 
-    // Bank tabs
+    // Search bar
+    const searchVal = this._bankSearch || '';
+    html += `<div class="bank-search-bar">
+      <input type="text" class="bank-search-input" id="bank-search" placeholder="Search items..." value="${this.escHtml(searchVal)}" oninput="ui.setBankSearch(this.value)">
+      ${searchVal ? `<button class="btn btn-xs bank-search-clear" onclick="ui.setBankSearch('')">✕</button>` : ''}
+    </div>`;
+
+    // Item categorization function
+    const _catItem = (id) => {
+      const item = GAME_DATA.items[id]; if (!item) return 'misc';
+      if (item.subtype === 'rune' || item.type === 'rune') return 'runes';
+      if (item.type === 'weapon' || item.type === 'armor' || item.type === 'ammo' || item.type === 'arrow' || item.type === 'tool' || item.type === 'pickaxe' || item.type === 'hatchet' || item.type === 'fishing_rod') return 'equipment';
+      if (item.type === 'food') return 'food';
+      if (item.type === 'potion' || item.type === 'consumable') return 'potions';
+      if (item.type === 'resource' || item.type === 'ore' || item.type === 'bar' || item.type === 'log' || item.type === 'gem' || item.type === 'herb' || item.type === 'fish') return 'resources';
+      if (item.type === 'seed') return 'seeds';
+      if (item.type === 'summoning' || item.type === 'pouch') return 'summoning';
+      return 'misc';
+    };
+
+    // Count items per tab
+    const tabCounts = {};
+    for (const [id] of entries) { const cat = _catItem(id); tabCounts[cat] = (tabCounts[cat]||0) + 1; }
+
+    // Bank tabs with counts
     const tab = this._bankTab || 'all';
     const tabs = [
-      {id:'all',label:'All'},
-      {id:'equipment',label:'Equipment'},
-      {id:'resources',label:'Resources'},
-      {id:'food',label:'Food/Potions'},
-      {id:'runes',label:'Runes'},
-      {id:'misc',label:'Misc'},
+      {id:'all',       label:'All',       count:entries.length},
+      {id:'equipment', label:'Equipment', count:tabCounts.equipment||0},
+      {id:'resources', label:'Resources', count:tabCounts.resources||0},
+      {id:'food',      label:'Food',      count:tabCounts.food||0},
+      {id:'potions',   label:'Potions',   count:tabCounts.potions||0},
+      {id:'runes',     label:'Runes',     count:tabCounts.runes||0},
+      {id:'seeds',     label:'Seeds',     count:tabCounts.seeds||0},
+      {id:'summoning', label:'Summoning', count:tabCounts.summoning||0},
+      {id:'misc',      label:'Misc',      count:tabCounts.misc||0},
     ];
     html += '<div class="bank-tabs">';
     for (const t of tabs) {
-      html += `<button class="bank-tab ${tab===t.id?'active':''}" onclick="ui.setBankTab('${t.id}')">${t.label}</button>`;
+      if (t.count === 0 && t.id !== 'all') continue;
+      html += `<button class="bank-tab ${tab===t.id?'active':''}" onclick="ui.setBankTab('${t.id}')">${t.label} <span class="bank-tab-count">${t.count}</span></button>`;
     }
     html += '</div>';
 
-    // Filter items by tab
+    // Filter items by tab + search
+    const searchLower = searchVal.toLowerCase();
     const filtered = entries.filter(([id]) => {
       const item = GAME_DATA.items[id]; if (!item) return false;
-      if (tab === 'all') return true;
-      if (tab === 'equipment') return item.type === 'weapon' || item.type === 'armor' || item.type === 'ammo';
-      if (tab === 'resources') return item.type === 'resource';
-      if (tab === 'food') return item.type === 'food' || item.type === 'potion';
-      if (tab === 'runes') return item.subtype === 'rune';
-      if (tab === 'misc') return item.type === 'seed' || (item.subtype === 'misc' && item.subtype !== 'rune');
+      if (tab !== 'all' && _catItem(id) !== tab) return false;
+      if (searchLower) {
+        const name = (item.name || id).toLowerCase();
+        const desc = (item.desc || '').toLowerCase();
+        if (!name.includes(searchLower) && !desc.includes(searchLower) && !id.includes(searchLower)) return false;
+      }
       return true;
     });
 
     html += '<div class="bank-grid">';
     for (const [id, q] of filtered) {
       const item = GAME_DATA.items[id]; if (!item) continue;
-      // Build stat string for tooltips
       let statStr = '';
       if (item.stats) {
         const parts = [];
@@ -1242,7 +1270,9 @@ class UI {
         statStr = parts.join(', ');
       }
       if (item.heals) statStr += (statStr?', ':'') + `Heals ${item.heals}`;
+      if (item.prayerRestore) statStr += (statStr?', ':'') + `+${item.prayerRestore} prayer`;
       if (item.rangedBonus && item.type === 'ammo') statStr += (statStr?', ':'') + `+${item.rangedBonus} ranged`;
+      if (item.providesRune) statStr += (statStr?', ':'') + `Free ${GAME_DATA.items[item.providesRune]?.name || item.providesRune}`;
       if (item.levelReq) {
         const reqs = Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ');
         statStr += (statStr?' | ':'') + `Req: ${reqs}`;
@@ -1255,7 +1285,8 @@ class UI {
         <div class="bi-qty" data-bank-qty="${id}">x${this.fmt(q)}</div>
         <div class="bi-actions">
           ${item.slot ? `<button class="btn btn-xs" onclick="game.equipItem('${id}')">Equip</button>` : ''}
-          ${item.type==='food'||item.type==='potion' ? `<button class="btn btn-xs" onclick="game.equipFood('${id}')">Eat/Use</button>` : ''}
+          ${item.type==='food' ? `<button class="btn btn-xs" onclick="game.equipFood('${id}')">Add to Bag</button>` : ''}
+          ${item.type==='potion' ? `<button class="btn btn-xs" onclick="ui.showPotionBeltSelect('${id}')">Belt</button>` : ''}
           ${GAME_DATA.boneValues && GAME_DATA.boneValues[id] ? `<button class="btn btn-xs" onclick="game.buryBones('${id}',${q})">Bury All</button>` : ''}
           ${item.sellPrice>0 ? `<div class="bi-sell-row">
             <button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',1)">1</button>
@@ -1269,12 +1300,35 @@ class UI {
         </div>
       </div>`;
     }
-    if (filtered.length === 0) html += `<div class="bank-empty">${tab==='all'?'Your bank is empty. Start gathering!':'No items in this category.'}</div>`;
+    if (filtered.length === 0) {
+      html += searchVal
+        ? `<div class="bank-empty">No items matching "${this.escHtml(searchVal)}".</div>`
+        : `<div class="bank-empty">${tab==='all'?'Your bank is empty. Start gathering!':'No items in this category.'}</div>`;
+    }
     html += '</div>';
     el.innerHTML = html;
+    // Restore search focus
+    if (searchVal) { const inp = document.getElementById('bank-search'); if (inp) { inp.focus(); inp.setSelectionRange(searchVal.length, searchVal.length); } }
   }
 
   setBankTab(tab) { this._bankTab = tab; this.renderPage('bank'); }
+  setBankSearch(val) { this._bankSearch = val; this.renderPage('bank'); }
+
+  showPotionBeltSelect(itemId) {
+    const item = GAME_DATA.items[itemId]; if (!item) return;
+    const slots = this.engine.state.potionBelt;
+    let msg = `Load ${item.name} into which belt slot?\n`;
+    for (let i = 0; i < 4; i++) {
+      const s = slots[i];
+      const existing = s?.id ? GAME_DATA.items[s.id] : null;
+      msg += `${i+1}: ${existing ? existing.name + ' x' + s.qty : 'Empty'}\n`;
+    }
+    const choice = prompt(msg, '1');
+    if (choice) {
+      const slot = parseInt(choice) - 1;
+      if (slot >= 0 && slot < 4) { this.engine.equipPotionBelt(slot, itemId); this.renderPage('bank'); }
+    }
+  }
 
   renderShopPage(el) {
     const s = this.engine.state;

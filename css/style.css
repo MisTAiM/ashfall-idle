@@ -4748,3 +4748,11 @@ html, body {
 .fc-target-fighting { font-size:0.7rem; font-weight:bold; color:#e8a040; margin-top:2px; }
 .fc-target-switch { font-size:0.65rem; color:#706050; margin-top:2px; }
 @media (max-width:600px) { .fc-target-grid { grid-template-columns:repeat(2,1fr); } }
+
+/* ── BANK SEARCH BAR ────────────────────────────────────── */
+.bank-search-bar { display:flex; gap:6px; align-items:center; margin-bottom:8px; padding:0 4px; }
+.bank-search-input { flex:1; padding:8px 12px; background:var(--bg-deep); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:'Crimson Text',serif; font-size:14px; outline:none; transition:border-color 0.2s; }
+.bank-search-input:focus { border-color:var(--accent); }
+.bank-search-input::placeholder { color:rgba(180,160,140,0.4); }
+.bank-search-clear { font-size:14px; padding:4px 8px; }
+.bank-tab-count { font-size:0.7rem; opacity:0.6; margin-left:2px; }
