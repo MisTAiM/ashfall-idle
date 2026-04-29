@@ -4,13 +4,13 @@
 // ============================================================
 
 function applyFightCaveUI() {
-  if (typeof AshfallUI === 'undefined') {
+  if (typeof UI === 'undefined') {
     setTimeout(applyFightCaveUI, 100);
     return;
   }
 
   // ── RENDER FIGHT CAVE PAGE ────────────────────────────────
-  AshfallUI.prototype.renderFightCavePage = function(el) {
+  UI.prototype.renderFightCavePage = function(el) {
     const s = this.engine.state;
     const fc = s.fightCave;
 
@@ -124,7 +124,7 @@ function applyFightCaveUI() {
 
 
   // ── RENDER ACTIVE FIGHT CAVE ──────────────────────────────
-  AshfallUI.prototype._renderFightCaveActive = function(el, fc, s) {
+  UI.prototype._renderFightCaveActive = function(el, fc, s) {
     const c = s.combat;
     const monster = GAME_DATA.monsters[c.monster];
     const waveNum = fc.currentWave + 1;
@@ -289,7 +289,7 @@ function applyFightCaveUI() {
 
 
   // ── JAD BOSS PANEL ──────────────────────────────────────
-  AshfallUI.prototype._renderJadPanel = function(fc, s) {
+  UI.prototype._renderJadPanel = function(fc, s) {
     let html = `<div class="fc-jad-panel">`;
 
     // ── ATTACK TELEGRAPH ──────────────────────────────────
@@ -384,46 +384,51 @@ function applyFightCaveUI() {
 
 
   // ── HOOK INTO RENDER CYCLE ──────────────────────────────
-  // Auto-refresh the fight cave page during active combat
-  const origInit = AshfallUI.prototype.init;
-  AshfallUI.prototype.init = function() {
-    origInit.call(this);
+  // Directly attach event listeners to the existing game/ui instances
+  // since these scripts load after ui.js has already instantiated everything
+
+  function attachFightCaveListeners() {
+    if (typeof game === 'undefined' || typeof ui === 'undefined') {
+      setTimeout(attachFightCaveListeners, 100);
+      return;
+    }
 
     // Re-render fight cave page on every tick when active
-    this.engine.on('tick', () => {
-      if (this.currentPage === 'fight_cave' && this.engine.state.fightCave && this.engine.state.fightCave.active) {
-        this.renderPage('fight_cave');
+    game.on('tick', () => {
+      if (ui.currentPage === 'fight_cave' && game.state.fightCave && game.state.fightCave.active) {
+        ui.renderPage('fight_cave');
       }
     });
 
     // Navigate to fight cave page on start
-    this.engine.on('fightCaveStart', () => {
-      this.currentPage = 'fight_cave';
-      this.renderSidebar();
-      this.renderPage('fight_cave');
+    game.on('fightCaveStart', () => {
+      ui.currentPage = 'fight_cave';
+      ui.renderSidebar();
+      ui.renderPage('fight_cave');
     });
 
     // Refresh on fight cave end
-    this.engine.on('fightCaveEnd', () => {
-      this.renderPage('fight_cave');
+    game.on('fightCaveEnd', () => {
+      ui.renderPage('fight_cave');
     });
 
     // Navigate to fight cave combat on combatStart if in fight cave
-    this.engine.on('combatStart', (data) => {
+    game.on('combatStart', (data) => {
       if (data && data.fightCave) {
-        this.currentPage = 'fight_cave';
-        this.renderSidebar();
-        this.renderPage('fight_cave');
+        ui.currentPage = 'fight_cave';
+        ui.renderSidebar();
+        ui.renderPage('fight_cave');
       }
     });
-  };
+
+    console.log('[Ashfall] Fight Cave UI listeners attached.');
+  }
+
+  attachFightCaveListeners();
 
   console.log('[Ashfall] Fight Cave UI loaded.');
 }
 
-// Auto-apply
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', applyFightCaveUI);
-} else {
-  applyFightCaveUI();
-}
+// Apply patches IMMEDIATELY at script parse time.
+// UI class is defined by now (ui.js loaded before this).
+applyFightCaveUI();

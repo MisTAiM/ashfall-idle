@@ -205,7 +205,7 @@ GAME_DATA.achievements.push(
 
 
 // ── FIGHT CAVE ENGINE MIXIN ────────────────────────────────
-// These methods get added to the AshfallEngine prototype after engine.js loads.
+// These methods get added to the GameEngine prototype after engine.js loads.
 // The init is called in the DOMContentLoaded or after engine is instantiated.
 
 const FightCaveMixin = {
@@ -916,28 +916,28 @@ const FightCaveMixin = {
 // ── APPLY MIXIN TO ENGINE ──────────────────────────────────
 // This runs after engine.js is loaded. We patch the prototype.
 function applyFightCaveMixin() {
-  if (typeof AshfallEngine === 'undefined') {
-    console.warn('[FightCave] AshfallEngine not found. Retrying...');
+  if (typeof GameEngine === 'undefined') {
+    console.warn('[FightCave] GameEngine not found. Retrying...');
     setTimeout(applyFightCaveMixin, 100);
     return;
   }
 
   // Add all mixin methods to the engine prototype
   for (const [name, fn] of Object.entries(FightCaveMixin)) {
-    AshfallEngine.prototype[name] = fn;
+    GameEngine.prototype[name] = fn;
   }
 
   // Patch migrateSave to init fight cave state
-  const origMigrate = AshfallEngine.prototype.migrateSave;
-  AshfallEngine.prototype.migrateSave = function(saveData) {
+  const origMigrate = GameEngine.prototype.migrateSave;
+  GameEngine.prototype.migrateSave = function(saveData) {
     const result = origMigrate.call(this, saveData);
     this.initFightCaveState();
     return result;
   };
 
   // Patch tickCombat to route to fight cave
-  const origTickCombat = AshfallEngine.prototype.tickCombat;
-  AshfallEngine.prototype.tickCombat = function(dt) {
+  const origTickCombat = GameEngine.prototype.tickCombat;
+  GameEngine.prototype.tickCombat = function(dt) {
     if (this.state.fightCave && this.state.fightCave.active) {
       this.tickFightCave(dt);
       return;
@@ -946,8 +946,8 @@ function applyFightCaveMixin() {
   };
 
   // Patch onMonsterDeath to check fight cave
-  const origOnMonsterDeath = AshfallEngine.prototype.onMonsterDeath;
-  AshfallEngine.prototype.onMonsterDeath = function(monster, isWB) {
+  const origOnMonsterDeath = GameEngine.prototype.onMonsterDeath;
+  GameEngine.prototype.onMonsterDeath = function(monster, isWB) {
     if (this.state.fightCave && this.state.fightCave.active) {
       // Fight cave handles its own monster death — don't run normal logic
       return;
@@ -956,8 +956,8 @@ function applyFightCaveMixin() {
   };
 
   // Patch onPlayerDeath to check fight cave
-  const origOnPlayerDeath = AshfallEngine.prototype.onPlayerDeath;
-  AshfallEngine.prototype.onPlayerDeath = function() {
+  const origOnPlayerDeath = GameEngine.prototype.onPlayerDeath;
+  GameEngine.prototype.onPlayerDeath = function() {
     if (this.state.fightCave && this.state.fightCave.active) {
       this.onFightCavePlayerDeath();
       return;
@@ -966,8 +966,8 @@ function applyFightCaveMixin() {
   };
 
   // Patch stopCombat to also stop fight cave
-  const origStopCombat = AshfallEngine.prototype.stopCombat;
-  AshfallEngine.prototype.stopCombat = function() {
+  const origStopCombat = GameEngine.prototype.stopCombat;
+  GameEngine.prototype.stopCombat = function() {
     // If fight cave is active, fleeing
     if (this.state.fightCave && this.state.fightCave.active) {
       this.fleeFightCave();
@@ -1023,14 +1023,14 @@ function fcGetPlayerName() {
 
 // Patch the Fight Cave methods to add broadcasts + death tracking
 function patchFightCaveBroadcasts() {
-  if (typeof AshfallEngine === 'undefined') {
+  if (typeof GameEngine === 'undefined') {
     setTimeout(patchFightCaveBroadcasts, 200);
     return;
   }
 
   // Patch startFightCave to broadcast entry
-  const origStart = AshfallEngine.prototype.startFightCave;
-  AshfallEngine.prototype.startFightCave = function() {
+  const origStart = GameEngine.prototype.startFightCave;
+  GameEngine.prototype.startFightCave = function() {
     origStart.call(this);
     if (this.state.fightCave && this.state.fightCave.active) {
       const name = fcGetPlayerName();
@@ -1044,8 +1044,8 @@ function patchFightCaveBroadcasts() {
   };
 
   // Patch onFightCavePlayerDeath to broadcast death with counter
-  const origDeath = AshfallEngine.prototype.onFightCavePlayerDeath;
-  AshfallEngine.prototype.onFightCavePlayerDeath = function() {
+  const origDeath = GameEngine.prototype.onFightCavePlayerDeath;
+  GameEngine.prototype.onFightCavePlayerDeath = function() {
     const fc = this.state.fightCave;
     const wave = (fc.currentWave || 0) + 1;
     const monster = this.state.combat.monster;
@@ -1066,8 +1066,8 @@ function patchFightCaveBroadcasts() {
   };
 
   // Patch _completeFightCave to broadcast victory
-  const origComplete = AshfallEngine.prototype._completeFightCave;
-  AshfallEngine.prototype._completeFightCave = function() {
+  const origComplete = GameEngine.prototype._completeFightCave;
+  GameEngine.prototype._completeFightCave = function() {
     const fc = this.state.fightCave;
     const elapsed = Date.now() - (fc.startTime || Date.now());
     const minutes = Math.floor(elapsed / 60000);
@@ -1084,8 +1084,8 @@ function patchFightCaveBroadcasts() {
   };
 
   // Patch fleeFightCave to broadcast surrender
-  const origFlee = AshfallEngine.prototype.fleeFightCave;
-  AshfallEngine.prototype.fleeFightCave = function() {
+  const origFlee = GameEngine.prototype.fleeFightCave;
+  GameEngine.prototype.fleeFightCave = function() {
     const fc = this.state.fightCave;
     const wave = (fc.currentWave || 0) + 1;
     origFlee.call(this);
@@ -1096,10 +1096,9 @@ function patchFightCaveBroadcasts() {
   console.log('[Ashfall] Fight Cave broadcasts enabled.');
 }
 
-// Auto-apply when script loads
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => { applyFightCaveMixin(); patchFightCaveBroadcasts(); });
-} else {
-  applyFightCaveMixin();
-  patchFightCaveBroadcasts();
-}
+// Apply patches IMMEDIATELY at script parse time.
+// These scripts load AFTER engine.js (GameEngine exists) but BEFORE
+// DOMContentLoaded fires (which is when game.init() runs).
+// So we patch the prototype now, and init() will use the patched version.
+applyFightCaveMixin();
+patchFightCaveBroadcasts();
