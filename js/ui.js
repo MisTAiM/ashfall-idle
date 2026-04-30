@@ -950,14 +950,15 @@ class UI {
       const sk = c._sessionKills || 0;
       html += `<div class="session-loot-section" id="session-loot">`;
       if (sk > 0) {
-        html += `<div class="sl-header"><span class="sl-title">${icon('coin',12)} Session Loot</span><span class="sl-kills">${sk} kills</span></div><div class="sl-items">`;
-        if (sl._gold) html += `<div class="sl-item sl-gold"><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(sl._gold.qty)}</span></div>`;
-        const rarOrder = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5};
-        const sorted = Object.entries(sl).filter(([k])=>k!=='_gold').sort((a,b) => (rarOrder[a[1].rarity]||5) - (rarOrder[b[1].rarity]||5));
+        const rarOrder = { mythic:0, legendary:1, epic:2, rare:3, uncommon:4, common:5 };
+        html += `<div class="sl-header"><span class="sl-title">⚔ Session Loot</span><span class="sl-kills">${sk} kills</span><button class="sl-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;ui._lastSessionGold=0;ui.renderPage('combat')">Reset</button></div><div class="sl-items">`;
+        if (sl._gold?.qty > 0) html += `<div class="sl-item sl-gold"><span class="sl-icon">🪙</span><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(sl._gold.qty)}</span></div>`;
+        const sorted = Object.entries(sl).filter(([k])=>k!=='_gold').sort((a,b)=>(rarOrder[a[1].rarity]||5)-(rarOrder[b[1].rarity]||5));
         for (const [itemId, data] of sorted) {
           const it = GAME_DATA.items[itemId];
-          const rarClass = data.rarity === 'legendary' || data.rarity === 'mythic' ? 'sl-legendary' : data.rarity === 'epic' ? 'sl-epic' : data.rarity === 'rare' ? 'sl-rare' : '';
-          html += `<div class="sl-item ${rarClass}"><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
+          const rc = data.rarity==='legendary'||data.rarity==='mythic'?'sl-legendary':data.rarity==='epic'?'sl-epic':data.rarity==='rare'?'sl-rare':'';
+          const iconSvg = window.renderItemSprite ? window.renderItemSprite(itemId, 14) : '';
+          html += `<div class="sl-item ${rc}"><span class="sl-icon">${iconSvg}</span><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
         }
         html += '</div>';
       } else {
@@ -2090,48 +2091,122 @@ class UI {
   // ── PRAYER PAGE ─────────────────────────────────────────
   renderPrayerPage(el) {
     const s = this.engine.state;
+    const maxPP = 99, pp = s.prayerPoints || 0;
+    const ppPct = Math.round((pp / maxPP) * 100);
+    const active = s.activePrayers || [];
+    const drainPerAtk = active.reduce((sum, id) => {
+      const p = GAME_DATA.prayers.find(pr => pr.id === id);
+      return sum + (p?.pointCost || 0);
+    }, 0);
+
     let html = this.header('Prayer','sparkle','Bury bones for prayer points. Activate up to 2 prayers for combat buffs.','prayer');
-    html += `<div class="prayer-info">
-      <div class="stat-row"><span>Prayer Points</span><span class="pi-val gold-val">${this.fmt(s.prayerPoints)}</span></div>
-      <div class="stat-row"><span>Active Prayers</span><span class="pi-val">${s.activePrayers.length}/2</span></div>
-      <div class="stat-row"><span>Bones Buried</span><span class="pi-val">${this.fmt(s.stats.bonesBuried||0)}</span></div>
+
+    html += `<div class="prayer-dash">
+      <div class="prayer-kpi"><div class="prayer-kpi-val">${pp}</div><div class="prayer-kpi-lbl">Prayer Points</div></div>
+      <div class="prayer-kpi"><div class="prayer-kpi-val">${active.length}/2</div><div class="prayer-kpi-lbl">Active</div></div>
+      <div class="prayer-kpi"><div class="prayer-kpi-val">${drainPerAtk > 0 ? '-'+drainPerAtk : '—'}</div><div class="prayer-kpi-lbl">Drain/Atk</div></div>
+    </div>
+    <div class="prayer-pts-bar-wrap">
+      <div class="prayer-pts-bar-label"><span>Prayer Points</span><span>${pp} / ${maxPP}</span></div>
+      <div class="prayer-pts-bar-track"><div class="prayer-pts-bar-fill" style="width:${ppPct}%"></div></div>
     </div>`;
 
-    // Bury bones section
-    html += '<h2 class="section-title">Bury Bones</h2><div class="actions-grid">';
-    const boneItems = Object.entries(GAME_DATA.boneValues);
-    for (const [boneId, boneData] of boneItems) {
-      const item = GAME_DATA.items[boneId];
-      if (!item) continue;
+    // Bone SVG icons per type
+    const boneIcon = (id) => {
+      const icons = {
+        bones:       `<svg viewBox="0 0 28 28"><circle cx="7" cy="7" r="3.5" fill="#e8e0d4"/><circle cx="21" cy="21" r="3.5" fill="#e8e0d4"/><rect x="5.5" y="5.5" width="17" height="4" fill="#e8e0d4" transform="rotate(45 14 14)"/></svg>`,
+        big_bones:   `<svg viewBox="0 0 28 28"><circle cx="6" cy="6" r="4" fill="#d4c8b8"/><circle cx="22" cy="22" r="4" fill="#d4c8b8"/><rect x="4" y="4" width="20" height="5" fill="#d4c8b8" transform="rotate(45 14 14)"/></svg>`,
+        dragon_bones:`<svg viewBox="0 0 28 28"><circle cx="6" cy="6" r="4" fill="#4a8a3e"/><circle cx="22" cy="22" r="4" fill="#4a8a3e"/><rect x="4" y="4" width="20" height="5" fill="#4a8a3e" transform="rotate(45 14 14)"/><path d="M10 10 L18 18" stroke="#6acc5e" stroke-width="1.5" opacity="0.6"/></svg>`,
+        frost_bones: `<svg viewBox="0 0 28 28"><circle cx="6" cy="6" r="4" fill="#7ac4e8"/><circle cx="22" cy="22" r="4" fill="#7ac4e8"/><rect x="4" y="4" width="20" height="5" fill="#7ac4e8" transform="rotate(45 14 14)"/></svg>`,
+        ash_bones:   `<svg viewBox="0 0 28 28"><circle cx="6" cy="6" r="4" fill="#d67338"/><circle cx="22" cy="22" r="4" fill="#d67338"/><rect x="4" y="4" width="20" height="5" fill="#d67338" transform="rotate(45 14 14)"/></svg>`,
+        void_bones:  `<svg viewBox="0 0 28 28"><circle cx="6" cy="6" r="4" fill="#6a3a9a"/><circle cx="22" cy="22" r="4" fill="#6a3a9a"/><rect x="4" y="4" width="20" height="5" fill="#6a3a9a" transform="rotate(45 14 14)"/></svg>`,
+      };
+      return icons[id] || icons.bones;
+    };
+
+    html += '<h2 class="section-title">Bury Bones</h2><div class="bone-grid">';
+    for (const [boneId, boneData] of Object.entries(GAME_DATA.boneValues)) {
+      const item = GAME_DATA.items[boneId]; if (!item) continue;
       const qty = s.bank[boneId] || 0;
-      html += `<div class="action-card ${qty<=0?'locked':''}">
-        <div class="ac-header"><span class="ac-name">${item.name}</span><span class="ac-level">x${qty}</span></div>
-        <div class="recipe-output">+${boneData.points} points, +${boneData.xp} XP each</div>
-        <div class="shop-btns">
-          <button class="btn btn-xs" ${qty<=0?'disabled':''} onclick="game.buryBones('${boneId}',1)">Bury 1</button>
-          <button class="btn btn-xs" ${qty<10?'disabled':''} onclick="game.buryBones('${boneId}',10)">Bury 10</button>
-          <button class="btn btn-xs" ${qty<=0?'disabled':''} onclick="game.buryBones('${boneId}',${qty})">Bury All</button>
+      html += `<div class="bone-card ${qty>0?'bone-have':''}">
+        <div class="bone-card-header">
+          <span class="bone-icon" style="width:24px;height:24px;display:inline-flex">${boneIcon(boneId)}</span>
+          <span class="bone-name">${item.name}</span>
+          ${qty>0?`<span class="bone-qty-badge">x${qty}</span>`:''}
+        </div>
+        <div class="bone-stats">+${boneData.points} pts · +${boneData.xp} XP</div>
+        <div class="bone-btns">
+          <button class="btn btn-xs" ${!qty?'disabled':''} onclick="game.buryBones('${boneId}',1)">1</button>
+          <button class="btn btn-xs" ${qty<5?'disabled':''} onclick="game.buryBones('${boneId}',5)">5</button>
+          <button class="btn btn-xs" ${qty<10?'disabled':''} onclick="game.buryBones('${boneId}',10)">10</button>
+          <button class="btn btn-xs" ${!qty?'disabled':''} onclick="game.buryBones('${boneId}',${qty})">All</button>
         </div>
       </div>`;
     }
     html += '</div>';
 
-    // Prayer list
-    html += '<h2 class="section-title">Prayers</h2><div class="actions-grid">';
-    for (const prayer of GAME_DATA.prayers) {
-      const locked = s.skills.prayer.level < prayer.level;
-      const active = s.activePrayers.includes(prayer.id);
-      html += `<div class="action-card ${locked?'locked':''} ${active?'active':''}" ${locked?'':`onclick="game.activatePrayer('${prayer.id}')"`}>
-        <div class="ac-header"><span class="ac-name">${prayer.name}</span><span class="ac-level">Lv ${prayer.level}</span></div>
-        <p class="area-desc">${prayer.desc}</p>
-        <div class="ac-footer"><span>Cost: ${prayer.pointCost} pts/atk</span>${active?'<span class="ach-check">Active</span>':''}</div>
-        ${locked?`<div class="locked-overlay">Requires Level ${prayer.level}</div>`:''}
-      </div>`;
+    // Prayer icon SVGs
+    const prayerIcon = (id) => {
+      const m = {
+        thick_skin:`<svg viewBox="0 0 28 28"><polygon points="14,3 22,7 24,16 20,23 8,23 4,16 6,7" fill="#4a9ed4" opacity="0.2" stroke="#4a9ed4" stroke-width="1.5"/></svg>`,
+        burst_of_str:`<svg viewBox="0 0 28 28"><path d="M14 4 L17 10 L24 10 L18 15 L21 22 L14 18 L7 22 L10 15 L4 10 L11 10Z" fill="#d4a83a" opacity="0.7"/></svg>`,
+        clarity_of_thought:`<svg viewBox="0 0 28 28"><circle cx="14" cy="12" r="6" fill="none" stroke="#c8cad4" stroke-width="1.5"/><line x1="14" y1="4" x2="14" y2="8" stroke="#c8cad4" stroke-width="1.5"/><path d="M10 22 Q14 18 18 22" fill="none" stroke="#c8cad4" stroke-width="1.5"/></svg>`,
+        sharp_eye:`<svg viewBox="0 0 28 28"><ellipse cx="14" cy="14" rx="10" ry="6" fill="none" stroke="#4a8a3e" stroke-width="1.5"/><circle cx="14" cy="14" r="3" fill="#4a8a3e" opacity="0.8"/></svg>`,
+        mystic_will:`<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="8" fill="none" stroke="#8a5ec4" stroke-width="1.5" stroke-dasharray="3,2"/><circle cx="14" cy="14" r="3.5" fill="#8a5ec4" opacity="0.5"/></svg>`,
+        rock_skin:`<svg viewBox="0 0 28 28"><polygon points="14,3 22,7 24,16 20,23 8,23 4,16 6,7" fill="#4a9ed4" opacity="0.3" stroke="#4a9ed4" stroke-width="2"/></svg>`,
+        superhuman_str:`<svg viewBox="0 0 28 28"><path d="M14 4 L17 10 L24 10 L18 15 L21 22 L14 18 L7 22 L10 15 L4 10 L11 10Z" fill="#d4a83a"/></svg>`,
+        improved_reflexes:`<svg viewBox="0 0 28 28"><circle cx="14" cy="12" r="6" fill="none" stroke="#c8cad4" stroke-width="2"/><line x1="14" y1="4" x2="14" y2="7" stroke="#c8cad4" stroke-width="2"/><line x1="14" y1="18" x2="14" y2="24" stroke="#c8cad4" stroke-width="1.5"/></svg>`,
+        hawk_eye:`<svg viewBox="0 0 28 28"><ellipse cx="14" cy="14" rx="10" ry="6" fill="none" stroke="#5aaa4e" stroke-width="2"/><circle cx="14" cy="14" r="4" fill="#4a8a3e" opacity="0.9"/></svg>`,
+        mystic_lore:`<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="8" fill="none" stroke="#9a6ed4" stroke-width="2" stroke-dasharray="4,2"/><circle cx="14" cy="14" r="4" fill="#8a5ec4" opacity="0.7"/></svg>`,
+        steel_skin:`<svg viewBox="0 0 28 28"><polygon points="14,3 22,7 24,16 20,23 8,23 4,16 6,7" fill="#4a9ed4" opacity="0.5" stroke="#4a9ed4" stroke-width="2.5"/></svg>`,
+        ultimate_str:`<svg viewBox="0 0 28 28"><path d="M14 3 L17.5 9.5 L25 9.5 L19 14.5 L22 22 L14 17.5 L6 22 L9 14.5 L3 9.5 L10.5 9.5Z" fill="#d4a83a" stroke="#c9873e" stroke-width="0.5"/></svg>`,
+        incredible_reflexes:`<svg viewBox="0 0 28 28"><circle cx="14" cy="12" r="7" fill="none" stroke="#d4d8e0" stroke-width="2.5"/><line x1="14" y1="3" x2="14" y2="7" stroke="#d4d8e0" stroke-width="2.5"/><circle cx="14" cy="12" r="3" fill="#d4d8e0" opacity="0.4"/></svg>`,
+        eagle_eye:`<svg viewBox="0 0 28 28"><ellipse cx="14" cy="14" rx="10" ry="6" fill="none" stroke="#6acc5e" stroke-width="2.5"/><circle cx="14" cy="14" r="4.5" fill="#5aaa4e" opacity="0.9"/></svg>`,
+        mystic_might:`<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="9" fill="none" stroke="#aa7ef4" stroke-width="2.5" stroke-dasharray="5,2"/><circle cx="14" cy="14" r="5" fill="#9a6ed4" opacity="0.8"/></svg>`,
+        piety:`<svg viewBox="0 0 28 28"><polygon points="14,3 22,7 24,16 20,23 8,23 4,16 6,7" fill="none" stroke="#d4a83a" stroke-width="2"/><rect x="12" y="8" width="4" height="12" fill="#d4a83a" opacity="0.8"/><rect x="9" y="12" width="10" height="3" fill="#d4a83a" opacity="0.8"/></svg>`,
+        rigour:`<svg viewBox="0 0 28 28"><polygon points="14,3 22,7 24,16 20,23 8,23 4,16 6,7" fill="none" stroke="#5aaa4e" stroke-width="2"/><ellipse cx="14" cy="14" rx="5" ry="3" fill="#4a8a3e" opacity="0.8"/></svg>`,
+        augury:`<svg viewBox="0 0 28 28"><polygon points="14,3 22,7 24,16 20,23 8,23 4,16 6,7" fill="none" stroke="#aa7ef4" stroke-width="2"/><circle cx="14" cy="14" r="5" fill="#8a5ec4" opacity="0.5" stroke="#aa7ef4" stroke-width="1.5" stroke-dasharray="3,2"/></svg>`,
+        protect_melee:`<svg viewBox="0 0 28 28"><path d="M14 4 L22 8 L22 18 Q22 24 14 26 Q6 24 6 18 L6 8Z" fill="rgba(196,64,64,0.15)" stroke="#c44040" stroke-width="2"/><path d="M10 13 L13 16 L18 10" stroke="#c44040" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`,
+        protect_ranged:`<svg viewBox="0 0 28 28"><path d="M14 4 L22 8 L22 18 Q22 24 14 26 Q6 24 6 18 L6 8Z" fill="rgba(90,170,78,0.15)" stroke="#5aaa4e" stroke-width="2"/><path d="M10 13 L13 16 L18 10" stroke="#5aaa4e" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`,
+        protect_magic:`<svg viewBox="0 0 28 28"><path d="M14 4 L22 8 L22 18 Q22 24 14 26 Q6 24 6 18 L6 8Z" fill="rgba(138,94,196,0.15)" stroke="#8a5ec4" stroke-width="2"/><path d="M10 13 L13 16 L18 10" stroke="#8a5ec4" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`,
+      };
+      return m[id] || `<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="9" fill="none" stroke="var(--accent)" stroke-width="1.5"/></svg>`;
+    };
+
+    const categories = [
+      { label:'Protection', ids:['protect_melee','protect_ranged','protect_magic'] },
+      { label:'Defence', ids:['thick_skin','rock_skin','steel_skin'] },
+      { label:'Strength', ids:['burst_of_str','superhuman_str','ultimate_str'] },
+      { label:'Attack', ids:['clarity_of_thought','improved_reflexes','incredible_reflexes'] },
+      { label:'Ranged', ids:['sharp_eye','hawk_eye','eagle_eye'] },
+      { label:'Magic', ids:['mystic_will','mystic_lore','mystic_might'] },
+      { label:'Elite', ids:['piety','rigour','augury'] },
+    ];
+
+    html += '<h2 class="section-title">Prayers</h2>';
+    for (const cat of categories) {
+      const prayers = cat.ids.map(id => GAME_DATA.prayers.find(p => p.id === id)).filter(Boolean);
+      if (!prayers.length) continue;
+      html += `<div class="prayer-category"><div class="prayer-category-header">${cat.label}</div><div class="prayer-grid-v2">`;
+      for (const p of prayers) {
+        const locked = s.skills.prayer.level < p.level;
+        const isActive = active.includes(p.id);
+        const cls = locked ? 'prayer-locked-v2' : isActive ? 'prayer-active-v2' : '';
+        const ponclick = locked ? '' : `onclick="game.activatePrayer('${p.id}');ui.renderPage('prayer')"`;
+        html += `<div class="prayer-card ${cls}" ${ponclick}>
+          <div class="prayer-card-icon">${prayerIcon(p.id)}</div>
+          <div class="prayer-card-name">${p.name}</div>
+          <div class="prayer-card-stats">${p.desc}</div>
+          <div class="prayer-card-cost">${p.pointCost} pts/atk</div>
+          <div class="prayer-card-lv">Lv ${p.level}</div>
+          ${isActive ? '<div class="prayer-active-badge">ACTIVE</div>' : ''}
+          ${locked ? `<div class="locked-overlay" style="font-size:10px">Lv ${p.level}</div>` : ''}
+        </div>`;
+      }
+      html += '</div></div>';
     }
-    html += '</div>';
     el.innerHTML = html;
   }
-
   // ── SLAYER PAGE ────────────────────────────────────────
   renderSlayerPage(el) {
     const s = this.engine.state;
@@ -3280,7 +3355,7 @@ class UI {
   }
 
   showLootBag(d) {
-    // Per-kill flash notification
+    // ── PER-KILL FLASH ─────────────────────────────────────
     const existing = document.getElementById('loot-flash');
     if (existing) existing.remove();
     const arena = document.querySelector('.combat-arena');
@@ -3288,35 +3363,75 @@ class UI {
       const flash = document.createElement('div');
       flash.id = 'loot-flash';
       flash.className = 'loot-flash';
-      flash.innerHTML = d.bag.slice(0,4).map(l => {
+
+      // Header
+      const header = document.createElement('div');
+      header.className = 'loot-flash-header';
+      header.textContent = d.monster ? `${d.monster} dropped` : 'Loot';
+      flash.appendChild(header);
+
+      // Items row
+      const row = document.createElement('div');
+      row.className = 'loot-flash-items';
+      const rarityClass = { rare:'lf-rare', epic:'lf-epic', legendary:'lf-legendary', mythic:'lf-legendary' };
+      const showItems = d.bag.slice(0, 6);
+      for (const l of showItems) {
         const it = GAME_DATA.items[l.item];
-        return `<span class="lf-item">+${l.qty} ${it?.name||l.item}</span>`;
-      }).join('');
+        const rc = rarityClass[l.rarity] || '';
+        const iconSvg = window.renderItemSprite ? window.renderItemSprite(l.item, 16) : '';
+        const div = document.createElement('div');
+        div.className = `lf-item ${rc}`;
+        div.innerHTML = `<span class="lf-icon">${iconSvg}</span><span class="lf-qty">+${l.qty}</span><span class="lf-name">${it?.name||l.item}</span>`;
+        row.appendChild(div);
+      }
+      // Gold
+      if (d.sessionLoot?._gold) {
+        const lastGold = this._lastSessionGold || 0;
+        const thisGold = (d.sessionLoot._gold.qty || 0) - lastGold;
+        this._lastSessionGold = d.sessionLoot._gold.qty || 0;
+        if (thisGold > 0) {
+          const gdiv = document.createElement('div');
+          gdiv.className = 'lf-item lf-gold';
+          gdiv.innerHTML = `<span class="lf-qty">+${this.fmt(thisGold)}</span><span class="lf-name">gp</span>`;
+          row.appendChild(gdiv);
+        }
+      }
+      flash.appendChild(row);
       arena.appendChild(flash);
-      setTimeout(() => { if (flash.parentNode) flash.remove(); }, 3000);
+      setTimeout(() => { if (flash.parentNode) flash.remove(); }, 3200);
     }
 
-    // Update persistent session loot panel
+    // ── LIVE SESSION LOOT UPDATE ───────────────────────────
     const panel = document.getElementById('session-loot');
     if (panel && d.sessionLoot) {
-      const entries = Object.entries(d.sessionLoot);
-      const kills = d.kills || 0;
-      let html = `<div class="sl-header"><span class="sl-title">${icon('coin',12)} Session Loot</span><span class="sl-kills">${kills} kills</span></div><div class="sl-items">`;
-      // Gold first
-      if (d.sessionLoot._gold) {
-        html += `<div class="sl-item sl-gold"><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(d.sessionLoot._gold.qty)}</span></div>`;
-      }
-      // Items sorted by rarity
-      const rarOrder = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5};
-      const sorted = entries.filter(([k])=>k!=='_gold').sort((a,b) => (rarOrder[a[1].rarity]||5) - (rarOrder[b[1].rarity]||5));
-      for (const [itemId, data] of sorted) {
-        const it = GAME_DATA.items[itemId];
-        const rarClass = data.rarity === 'legendary' || data.rarity === 'mythic' ? 'sl-legendary' : data.rarity === 'epic' ? 'sl-epic' : data.rarity === 'rare' ? 'sl-rare' : '';
-        html += `<div class="sl-item ${rarClass}"><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
-      }
-      html += '</div>';
-      panel.innerHTML = html;
+      this._renderSessionLootPanel(panel, d.sessionLoot, d.kills || 0);
     }
+  }
+
+  _renderSessionLootPanel(panel, sessionLoot, kills) {
+    const rarOrder = { mythic:0, legendary:1, epic:2, rare:3, uncommon:4, common:5 };
+    let html = `<div class="sl-header">
+      <span class="sl-title">⚔ Session Loot</span>
+      <span class="sl-kills">${kills} kills</span>
+      <button class="sl-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;ui._lastSessionGold=0;ui.renderPage('combat')" title="Reset session loot">Reset</button>
+    </div><div class="sl-items">`;
+    // Gold first
+    if (sessionLoot._gold?.qty > 0) {
+      html += `<div class="sl-item sl-gold"><span class="sl-icon">🪙</span><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(sessionLoot._gold.qty)}</span></div>`;
+    }
+    const sorted = Object.entries(sessionLoot)
+      .filter(([k]) => k !== '_gold')
+      .sort((a,b) => (rarOrder[a[1].rarity]||5) - (rarOrder[b[1].rarity]||5));
+    for (const [itemId, data] of sorted) {
+      const it = GAME_DATA.items[itemId];
+      const rc = data.rarity === 'legendary' || data.rarity === 'mythic' ? 'sl-legendary'
+               : data.rarity === 'epic' ? 'sl-epic'
+               : data.rarity === 'rare' ? 'sl-rare' : '';
+      const iconSvg = window.renderItemSprite ? window.renderItemSprite(itemId, 14) : '';
+      html += `<div class="sl-item ${rc}"><span class="sl-icon">${iconSvg}</span><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
+    }
+    html += '</div>';
+    panel.innerHTML = html;
   }
 
   showHitSplat(d) {

@@ -494,90 +494,59 @@ Object.assign(GAME_DATA.monsterArt, {
 // ── SPRITE SYSTEM EXTENSIONS ────────────────────────────────────
 // Add missing sprite type handlers to the spriteFor() function
 // Extends sprites.js without modifying it
+//
+// CRITICAL: must capture original via window.spriteFor (not the bare name)
+// BEFORE assigning the new version. Using a function declaration would hoist
+// and overwrite window.spriteFor before the capture line executes.
 
-const _origSpriteFor = typeof spriteFor === 'function' ? spriteFor : null;
+(function() {
+  // Capture the original spriteFor from sprites.js (loaded before this file)
+  const _orig = window.spriteFor || null;
 
-function spriteFor(spriteId) {
-  if (!spriteId) return _origSpriteFor ? _origSpriteFor(spriteId) : _defaultSprite();
-  const [type, variant] = spriteId.split('-');
-
-  switch(type) {
-    // ── TOOLS ──────────────────────────────────────────────────
-    case 'tool': {
-      const c = variant === 'pickaxe' ? '#9da4b4' : variant === 'hatchet' ? '#7a6a4a' : '#6a5a3a';
-      if (variant === 'pickaxe') return `<svg viewBox="0 0 32 32">
-        <line x1="6" y1="26" x2="20" y2="12" stroke="#5a3a1a" stroke-width="2"/>
-        <path d="M20 12 Q28 4 28 8 Q28 12 24 12 Q26 16 22 16 Q20 12 20 12Z" fill="${c}" stroke="#1a1a1f" stroke-width="1"/>
-        <path d="M20 12 L28 8" stroke="${shade(c,20)}" stroke-width="1" opacity="0.6"/>
-      </svg>`;
-      if (variant === 'hatchet') return `<svg viewBox="0 0 32 32">
-        <line x1="8" y1="28" x2="18" y2="18" stroke="#5a3a1a" stroke-width="2"/>
-        <path d="M18 18 Q14 8 20 6 Q28 6 26 12 Q24 18 18 18Z" fill="${c}" stroke="#1a1a1f" stroke-width="1"/>
-        <path d="M18 18 Q22 14 26 12" stroke="${shade(c,20)}" stroke-width="1" opacity="0.6"/>
-      </svg>`;
-      if (variant === 'rod') return `<svg viewBox="0 0 32 32">
-        <line x1="4" y1="28" x2="28" y2="4" stroke="#7a5a2a" stroke-width="2"/>
-        <circle cx="28" cy="4" r="2" fill="${c}"/>
-        <path d="M4 28 Q8 20 16 12" stroke="#7a8294" stroke-width="0.8" fill="none" stroke-dasharray="2,2"/>
-        <circle cx="16" cy="24" r="2" fill="#4a7ec4" opacity="0.7"/>
-      </svg>`;
-      return _origSpriteFor ? _origSpriteFor(spriteId) : _defaultSprite();
-    }
-
-    // ── AMMO ───────────────────────────────────────────────────
-    case 'ammo': {
-      const c = variant === 'arrow' ? '#9da4b4' : '#7a8294';
-      return `<svg viewBox="0 0 32 32">
-        <line x1="5" y1="27" x2="23" y2="9" stroke="#7a4a2a" stroke-width="1.5"/>
-        <polygon points="23,9 27,5 29,7 25,11" fill="${c}" stroke="#1a1a1f" stroke-width="0.5"/>
-        <polygon points="5,27 3,31 7,29" fill="#3a4a3a"/>
-        <line x1="9" y1="23" x2="13" y2="19" stroke="#3a4a3a" stroke-width="1.5"/>
-      </svg>`;
-    }
-
-    // ── BOOKS / TOMES / GRIMOIRES ──────────────────────────────
-    case 'item': {
-      if (variant === 'book') return `<svg viewBox="0 0 32 32">
-        <rect x="6" y="4" width="20" height="24" rx="2" fill="#7a5a3a" stroke="#1a1a1f" stroke-width="1"/>
-        <rect x="6" y="4" width="4" height="24" rx="1" fill="#5a3a1a"/>
-        <rect x="10" y="7" width="13" height="1.5" rx="0.5" fill="#c4a87a" opacity="0.5"/>
-        <rect x="10" y="11" width="13" height="1.5" rx="0.5" fill="#c4a87a" opacity="0.5"/>
-        <rect x="10" y="15" width="10" height="1.5" rx="0.5" fill="#c4a87a" opacity="0.5"/>
-        <circle cx="17" cy="22" r="3" fill="#c4a83a" opacity="0.4"/>
-        <text x="17" y="24" text-anchor="middle" fill="#c4a83a" font-size="4" font-weight="bold" opacity="0.8">✦</text>
-      </svg>`;
-      return _origSpriteFor ? _origSpriteFor(spriteId) : _defaultSprite();
-    }
-
-    // ── MISC EXTRAS ────────────────────────────────────────────
-    case 'misc': {
-      if (variant === 'pouch') return `<svg viewBox="0 0 32 32">
-        <path d="M10 14 Q8 22 10 26 Q14 30 16 30 Q18 30 22 26 Q24 22 22 14 Q20 8 16 8 Q12 8 10 14Z" fill="#7a5a3a" stroke="#1a1a1f" stroke-width="1"/>
-        <path d="M12 14 Q16 12 20 14" stroke="#5a3a1a" stroke-width="2" fill="none"/>
-        <path d="M13 14 Q14 8 16 6 Q18 8 19 14" fill="#5a3a1a"/>
-        <circle cx="16" cy="20" r="3" fill="#c4a83a" opacity="0.3"/>
-      </svg>`;
-      if (variant === 'shard') return `<svg viewBox="0 0 32 32">
-        <polygon points="16,4 22,12 20,20 16,24 12,20 10,12" fill="#c8e8f8" stroke="#4a8aa8" stroke-width="1"/>
-        <polygon points="16,4 20,12 16,16" fill="#e8f8ff" opacity="0.6"/>
-        <line x1="16" y1="4" x2="16" y2="24" stroke="#4a8aa8" stroke-width="0.5" opacity="0.4"/>
-      </svg>`;
-      // fall through to original
-      return _origSpriteFor ? _origSpriteFor(spriteId) : _defaultSprite();
-    }
-
-    // Pass everything else to the original spriteFor
-    default:
-      return _origSpriteFor ? _origSpriteFor(spriteId) : _defaultSprite();
+  function _defaultSprite() {
+    return `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10" fill="#7a8294" stroke="#4a5264" stroke-width="1"/><text x="16" y="21" text-anchor="middle" fill="#fff" font-size="14">?</text></svg>`;
   }
-}
 
-function _defaultSprite() {
-  return `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10" fill="#7a8294" stroke="#4a5264" stroke-width="1"/><text x="16" y="21" text-anchor="middle" fill="#fff" font-size="14">?</text></svg>`;
-}
+  // Assign as expression — not hoisted, so _orig is captured correctly above
+  window.spriteFor = function(spriteId) {
+    if (!spriteId) return _orig ? _orig(spriteId) : _defaultSprite();
+    const [type, variant] = spriteId.split('-');
 
-// Expose globally
-window.spriteFor = spriteFor;
+    switch(type) {
+      // ── TOOLS ──────────────────────────────────────────────────
+      case 'tool': {
+        const c = variant === 'pickaxe' ? '#9da4b4' : variant === 'hatchet' ? '#7a6a4a' : '#6a5a3a';
+        if (variant === 'pickaxe') return `<svg viewBox="0 0 32 32"><line x1="6" y1="26" x2="20" y2="12" stroke="#5a3a1a" stroke-width="2"/><path d="M20 12 Q28 4 28 8 Q28 12 24 12 Q26 16 22 16 Q20 12 20 12Z" fill="${c}" stroke="#1a1a1f" stroke-width="1"/></svg>`;
+        if (variant === 'hatchet') return `<svg viewBox="0 0 32 32"><line x1="8" y1="28" x2="18" y2="18" stroke="#5a3a1a" stroke-width="2"/><path d="M18 18 Q14 8 20 6 Q28 6 26 12 Q24 18 18 18Z" fill="${c}" stroke="#1a1a1f" stroke-width="1"/></svg>`;
+        if (variant === 'rod') return `<svg viewBox="0 0 32 32"><line x1="4" y1="28" x2="28" y2="4" stroke="#7a5a2a" stroke-width="2"/><circle cx="28" cy="4" r="2" fill="${c}"/><path d="M4 28 Q8 20 16 12" stroke="#7a8294" stroke-width="0.8" fill="none" stroke-dasharray="2,2"/><circle cx="16" cy="24" r="2" fill="#4a7ec4" opacity="0.7"/></svg>`;
+        return _orig ? _orig(spriteId) : _defaultSprite();
+      }
+
+      // ── AMMO ───────────────────────────────────────────────────
+      case 'ammo': {
+        const c = '#9da4b4';
+        return `<svg viewBox="0 0 32 32"><line x1="5" y1="27" x2="23" y2="9" stroke="#7a4a2a" stroke-width="1.5"/><polygon points="23,9 27,5 29,7 25,11" fill="${c}" stroke="#1a1a1f" stroke-width="0.5"/><polygon points="5,27 3,31 7,29" fill="#3a4a3a"/><line x1="9" y1="23" x2="13" y2="19" stroke="#3a4a3a" stroke-width="1.5"/></svg>`;
+      }
+
+      // ── BOOKS / TOMES / GRIMOIRES ──────────────────────────────
+      case 'item': {
+        if (variant === 'book') return `<svg viewBox="0 0 32 32"><rect x="6" y="4" width="20" height="24" rx="2" fill="#7a5a3a" stroke="#1a1a1f" stroke-width="1"/><rect x="6" y="4" width="4" height="24" rx="1" fill="#5a3a1a"/><rect x="10" y="7" width="13" height="1.5" rx="0.5" fill="#c4a87a" opacity="0.5"/><rect x="10" y="11" width="13" height="1.5" rx="0.5" fill="#c4a87a" opacity="0.5"/><rect x="10" y="15" width="10" height="1.5" rx="0.5" fill="#c4a87a" opacity="0.5"/><circle cx="17" cy="22" r="3" fill="#c4a83a" opacity="0.4"/></svg>`;
+        return _orig ? _orig(spriteId) : _defaultSprite();
+      }
+
+      // ── MISC EXTRAS (extend original misc handling) ────────────
+      case 'misc': {
+        if (variant === 'pouch') return `<svg viewBox="0 0 32 32"><path d="M10 14 Q8 22 10 26 Q14 30 16 30 Q18 30 22 26 Q24 22 22 14 Q20 8 16 8 Q12 8 10 14Z" fill="#7a5a3a" stroke="#1a1a1f" stroke-width="1"/><path d="M12 14 Q16 12 20 14" stroke="#5a3a1a" stroke-width="2" fill="none"/><path d="M13 14 Q14 8 16 6 Q18 8 19 14" fill="#5a3a1a"/></svg>`;
+        if (variant === 'shard') return `<svg viewBox="0 0 32 32"><polygon points="16,4 22,12 20,20 16,24 12,20 10,12" fill="#c8e8f8" stroke="#4a8aa8" stroke-width="1"/><polygon points="16,4 20,12 16,16" fill="#e8f8ff" opacity="0.6"/></svg>`;
+        return _orig ? _orig(spriteId) : _defaultSprite();
+      }
+
+      // Pass everything else to the original spriteFor from sprites.js
+      default:
+        return _orig ? _orig(spriteId) : _defaultSprite();
+    }
+  };
+})();
 
 // ── ITEM-SPECIFIC CUSTOM SPRITES ────────────────────────────────
 // Override specific items that need unique shapes beyond the generic handler
