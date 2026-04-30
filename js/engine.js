@@ -139,6 +139,7 @@ class GameEngine {
     if (!s.slayerTask) s.slayerTask = null;
     if (s.slayerAutoEnabled === undefined) s.slayerAutoEnabled = false;
     if (s.activeSpellbook === undefined) s.activeSpellbook = 'standard';
+    if (!s.unlockedSpellbooks) s.unlockedSpellbooks = {};
     if (!s.stats.bonesBuried) s.stats.bonesBuried = 0;
     if (!s.stats.slayerTasksCompleted) s.stats.slayerTasksCompleted = 0;
     if (!s.stats.slayerKillsOnTask) s.stats.slayerKillsOnTask = 0;
@@ -1464,17 +1465,22 @@ class GameEngine {
   }
 
   consumeRunes(spell) {
+    if (!spell.runes || spell.runes.length === 0) return true;
     // Check equipped staff for infinite rune provision
     const weapon = this.state.equipment?.weapon;
     const weaponData = weapon ? GAME_DATA.items[weapon] : null;
-    const providedRune = weaponData?.providesRune || null;
+
+    // Elder staff / any staff with providesAllRunes → free cast
+    if (weaponData?.providesAllRunes) return true;
+
+    // Build a Set of rune IDs this staff provides (supports string or array)
+    const raw = weaponData?.providesRune;
+    const freeRunes = raw
+      ? new Set(Array.isArray(raw) ? raw : [raw])
+      : new Set();
 
     // Filter out runes provided by staff
-    const runesNeeded = [];
-    for (const r of spell.runes) {
-      if (providedRune && r.item === providedRune) continue; // Staff provides this rune
-      runesNeeded.push(r);
-    }
+    const runesNeeded = spell.runes.filter(r => !freeRunes.has(r.item));
     if (runesNeeded.length === 0) return true; // Staff covers all runes
     if (!this.hasItems(runesNeeded)) return false;
     this.removeItems(runesNeeded);
@@ -2495,13 +2501,35 @@ class GameEngine {
   switchSpellbook(bookId) {
     const book = GAME_DATA.spellbooks[bookId];
     if (!book) return;
-    if (book.unlockReq) {
-      for (const [sk, lv] of Object.entries(book.unlockReq)) {
-        if (this.state.skills[sk]?.level < lv) {
-          this.emit('notification', { type:'warn', text:`Requires ${GAME_DATA.skills[sk]?.name} level ${lv}.` }); return;
+
+    // Standard spellbook is always available
+    if (bookId !== 'standard') {
+      // Check skill requirements
+      if (book.unlockReq) {
+        for (const [sk, lv] of Object.entries(book.unlockReq)) {
+          if ((this.state.skills[sk]?.level || 0) < lv) {
+            this.emit('notification', { type:'warn', text:`Requires ${GAME_DATA.skills[sk]?.name||sk} level ${lv}.` }); return;
+          }
+        }
+      }
+      // Check unlock item: must have consumed the tome (tracked in unlockedSpellbooks)
+      if (book.unlockItem) {
+        if (!this.state.unlockedSpellbooks) this.state.unlockedSpellbooks = {};
+        const alreadyUnlocked = this.state.unlockedSpellbooks[bookId];
+        const hasTome = (this.state.bank[book.unlockItem] || 0) > 0;
+        if (!alreadyUnlocked && !hasTome) {
+          const tomeName = GAME_DATA.items[book.unlockItem]?.name || book.unlockItem;
+          this.emit('notification', { type:'warn', text:`Requires ${tomeName} to unlock.` }); return;
+        }
+        // Auto-consume the tome and mark unlocked
+        if (!alreadyUnlocked && hasTome) {
+          this.removeItem(book.unlockItem, 1);
+          this.state.unlockedSpellbooks[bookId] = true;
+          this.emit('notification', { type:'success', text:`${book.name} spellbook unlocked!` });
         }
       }
     }
+
     this.state.activeSpellbook = bookId;
     this.state.combat.selectedSpell = null; // reset spell selection
     this.emit('notification', { type:'info', text:`Switched to ${book.name} spellbook.` });

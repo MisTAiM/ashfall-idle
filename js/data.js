@@ -1940,3 +1940,77 @@ GAME_DATA.combatAreas.forEach(area => {
 });
 
 console.log('[Ashfall] Multi-mob encounters:', GAME_DATA.multiMobEncounters.length);
+
+// ================================================================
+// SPELLBOOK CONFIGURATION — Physical unlock tomes + book polish
+// ================================================================
+
+// ── SPELLBOOK UNLOCK ITEMS ───────────────────────────────
+// Each advanced spellbook requires a physical tome/grimoire found in the world.
+// Once consumed, the book is unlocked permanently on the account.
+const _spellbookTomes = [
+  { id:'tome_of_pyromancy', name:'Tome of Pyromancy',  book:'pyromancy',  sprite:'item-book',
+    desc:'Ancient tome of fire magic. Study it to unlock the Pyromancy spellbook.',
+    sellPrice:5000, rarity:'uncommon', type:'consumable', subtype:'spellbook_tome' },
+  { id:'tome_of_cryomancy', name:'Tome of Cryomancy',  book:'cryomancy',  sprite:'item-book',
+    desc:'A frost-bound tome sealed with ice runes. Unlocks the Cryomancy spellbook.',
+    sellPrice:6000, rarity:'uncommon', type:'consumable', subtype:'spellbook_tome' },
+  { id:'grimoire_of_blood',  name:'Grimoire of Blood',  book:'blood_magic', sprite:'item-book',
+    desc:'A dark grimoire written in blood. Unlocks the Blood Magic spellbook.',
+    sellPrice:9000, rarity:'rare',     type:'consumable', subtype:'spellbook_tome' },
+  { id:'codex_of_the_void',  name:'Codex of the Void',  book:'void_magic',  sprite:'item-book',
+    desc:'A reality-warping codex from beyond the veil. Unlocks the Void Magic spellbook.',
+    sellPrice:20000, rarity:'epic',   type:'consumable', subtype:'spellbook_tome' },
+  { id:'necromantic_tome',   name:'Necromantic Tome',   book:'necromancy',  sprite:'item-book',
+    desc:'A tome of death magic. Unlocks the Necromancy spellbook.',
+    sellPrice:15000, rarity:'rare',   type:'consumable', subtype:'spellbook_tome' },
+];
+for (const t of _spellbookTomes) {
+  GAME_DATA.items[t.id] = { id:t.id, name:t.name, type:t.type, subtype:t.subtype, sprite:t.sprite,
+    desc:t.desc, sellPrice:t.sellPrice, rarity:t.rarity, unlocksSpellbook:t.book };
+}
+
+// ── SPELLBOOK DROP SOURCES ───────────────────────────────
+// Pyromancy tome: fire monsters / dark mage / dungeon reward
+GAME_DATA.monsters.fire_elemental && GAME_DATA.monsters.fire_elemental.drops.push(
+  {item:'tome_of_pyromancy', qty:1, chance:0.02});
+GAME_DATA.monsters.dark_mage && GAME_DATA.monsters.dark_mage.drops.push(
+  {item:'tome_of_pyromancy', qty:1, chance:0.01});
+
+// Cryomancy tome: ice-adjacent / skeleton
+GAME_DATA.monsters.skeleton && GAME_DATA.monsters.skeleton.drops.push(
+  {item:'tome_of_cryomancy', qty:1, chance:0.01});
+
+// Blood grimoire: vampyre / demon
+GAME_DATA.monsters.demon && GAME_DATA.monsters.demon.drops.push(
+  {item:'grimoire_of_blood', qty:1, chance:0.01});
+
+// Void codex: void walker / abyssal
+GAME_DATA.monsters.void_walker && GAME_DATA.monsters.void_walker.drops.push(
+  {item:'codex_of_the_void', qty:1, chance:0.01});
+
+// Necromantic tome: skeleton / dark mage
+GAME_DATA.monsters.skeleton && GAME_DATA.monsters.skeleton.drops.push(
+  {item:'necromantic_tome', qty:1, chance:0.005});
+GAME_DATA.monsters.dark_mage && GAME_DATA.monsters.dark_mage.drops.push(
+  {item:'necromantic_tome', qty:1, chance:0.008});
+
+// ── UPDATE SPELLBOOK UNLOCK REQS TO INCLUDE ITEM ────────
+// The engine will check both skill levels AND ownership of the tome
+GAME_DATA.spellbooks.pyromancy.unlockItem  = 'tome_of_pyromancy';
+GAME_DATA.spellbooks.cryomancy.unlockItem  = 'tome_of_cryomancy';
+GAME_DATA.spellbooks.blood_magic.unlockItem = 'grimoire_of_blood';
+GAME_DATA.spellbooks.void_magic.unlockItem  = 'codex_of_the_void';
+GAME_DATA.spellbooks.necromancy.unlockItem  = 'necromantic_tome';
+
+// ── SHOP: TOMES AVAILABLE AT HIGH REPUTATION ────────────
+// Available in black market (high ashen_guild rep) as a fallback
+GAME_DATA.shop.push(
+  {item:'tome_of_pyromancy', price:15000, category:'magic'},
+  {item:'tome_of_cryomancy', price:18000, category:'magic'},
+  {item:'grimoire_of_blood',  price:28000, category:'magic'},
+  {item:'codex_of_the_void',  price:60000, category:'magic'},
+  {item:'necromantic_tome',   price:45000, category:'magic'},
+);
+
+console.log('[Ashfall] Spellbook tomes configured:', _spellbookTomes.length);

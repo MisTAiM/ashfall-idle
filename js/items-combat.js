@@ -257,13 +257,13 @@ for (const b of _bows) {
 
 // ── STAVES ───────────────────────────────────────────────
 const _staves = [
-  {id:'staff_of_air',  name:'Staff of Air',   level:1,  mag:5,  atk:3,  rarity:'common',  desc:'Basic air staff. Unlimited air runes.',     providesRune:'air_rune'},
-  {id:'staff_of_fire', name:'Staff of Fire',  level:10, mag:10, atk:6,  rarity:'common',  desc:'Basic fire staff. Unlimited fire runes.',   providesRune:'fire_rune'},
-  {id:'staff_of_water',name:'Staff of Water', level:10, mag:10, atk:6,  rarity:'common',  desc:'Basic water staff. Unlimited water runes.', providesRune:'water_rune'},
-  {id:'staff_of_earth',name:'Staff of Earth', level:10, mag:10, atk:6,  rarity:'common',  desc:'Basic earth staff. Unlimited earth runes.', providesRune:'earth_rune'},
-  {id:'mystic_staff',  name:'Mystic Staff',   level:30, mag:20, atk:12, rarity:'uncommon', desc:'A mystic staff with moderate power.'},
-  {id:'void_staff',    name:'Void Staff',     level:55, mag:38, atk:20, rarity:'rare',     desc:'Channels void energy.'},
-  {id:'elder_staff',   name:'Elder Staff',    level:75, mag:55, atk:28, rarity:'epic',     desc:'Ancient elder staff of immense power.'},
+  {id:'staff_of_air',  name:'Staff of Air',   level:1,  mag:5,  atk:3,  rarity:'common',  desc:'Basic air staff. Unlimited air runes.',                          providesRune:'air_rune'},
+  {id:'staff_of_fire', name:'Staff of Fire',  level:10, mag:10, atk:6,  rarity:'common',  desc:'Basic fire staff. Unlimited fire runes.',                        providesRune:'fire_rune'},
+  {id:'staff_of_water',name:'Staff of Water', level:10, mag:10, atk:6,  rarity:'common',  desc:'Basic water staff. Unlimited water runes.',                      providesRune:'water_rune'},
+  {id:'staff_of_earth',name:'Staff of Earth', level:10, mag:10, atk:6,  rarity:'common',  desc:'Basic earth staff. Unlimited earth runes.',                      providesRune:'earth_rune'},
+  {id:'mystic_staff',  name:'Mystic Staff',   level:30, mag:20, atk:12, rarity:'uncommon', desc:'A mystic staff. Unlimited chaos runes.',                         providesRune:'chaos_rune'},
+  {id:'void_staff',    name:'Void Staff',     level:55, mag:38, atk:20, rarity:'rare',     desc:'Channels void energy. Unlimited death & chaos runes.',           providesRune:['death_rune','chaos_rune']},
+  {id:'elder_staff',   name:'Elder Staff',    level:75, mag:55, atk:28, rarity:'epic',     desc:'Ancient elder staff. Unlimited all elemental & combat runes.',   providesAllRunes:true},
 ];
 for (const st of _staves) {
   if (!GAME_DATA.items[st.id]) {
@@ -272,7 +272,8 @@ for (const st of _staves) {
       stats:{magicBonus:st.mag, attackBonus:st.atk}, attackSpeed:2.4, style:'magic',
       levelReq:{magic:st.level}, sellPrice:500*(st.level+1),
       rarity:st.rarity, desc:st.desc,
-      ...(st.providesRune ? {providesRune: st.providesRune} : {}),
+      ...(st.providesRune  ? {providesRune: st.providesRune}   : {}),
+      ...(st.providesAllRunes ? {providesAllRunes: true}       : {}),
     };
   }
 }

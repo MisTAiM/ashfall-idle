@@ -561,14 +561,29 @@ class UI {
     // ── SPELL SELECT (magic only) ──
     if (c.combatStyle === 'magic') {
       const bookName = GAME_DATA.spellbooks[s.activeSpellbook||'standard']?.name || 'Standard';
+      // Determine which runes are free from equipped staff
+      const wpnId = s.equipment?.weapon;
+      const wpnData = wpnId ? GAME_DATA.items[wpnId] : null;
+      const allRunesFree = wpnData?.providesAllRunes || false;
+      const rawFree = wpnData?.providesRune;
+      const freeRuneSet = allRunesFree ? null : (rawFree ? new Set(Array.isArray(rawFree) ? rawFree : [rawFree]) : new Set());
+
       html += `<div class="combat-section"><div class="cs-header">${icon('wand',14)} ${bookName} Spellbook</div><div class="spell-grid">`;
       const spells = this.engine.getSpellsForActiveBook();
       for (const sp of spells) {
         const locked = s.skills.magic.level < sp.level;
         const active = c.selectedSpell === sp.id;
+        const runeLabel = sp.runes.map(r => {
+          const isFree = allRunesFree || (freeRuneSet && freeRuneSet.has(r.item));
+          const name = GAME_DATA.items[r.item]?.name || r.item;
+          return isFree
+            ? `<span class="rune-free" title="Provided by staff">${name} ∞</span>`
+            : `${name} x${r.qty}`;
+        }).join(', ');
         html += `<button class="spell-card ${active?'spell-active':''} ${locked?'locked':''}" ${locked?'disabled':''} onclick="ui.selectSpell('${sp.id}')" title="${sp.desc}">
           <div class="sc-name">${sp.name}</div>
           <div class="sc-info">Lv${sp.level} | Hit: ${sp.maxHit}</div>
+          <div class="sc-runes">${runeLabel || 'No runes'}</div>
         </button>`;
       }
       html += '</div></div>';
@@ -1273,7 +1288,11 @@ class UI {
       if (item.heals) statStr += (statStr?', ':'') + `Heals ${item.heals}`;
       if (item.prayerRestore) statStr += (statStr?', ':'') + `+${item.prayerRestore} prayer`;
       if (item.rangedBonus && item.type === 'ammo') statStr += (statStr?', ':'') + `+${item.rangedBonus} ranged`;
-      if (item.providesRune) statStr += (statStr?', ':'') + `Free ${GAME_DATA.items[item.providesRune]?.name || item.providesRune}`;
+      if (item.providesAllRunes) statStr += (statStr?', ':'') + 'Unlimited All Runes';
+      else if (item.providesRune) {
+        const runes = Array.isArray(item.providesRune) ? item.providesRune : [item.providesRune];
+        statStr += (statStr?', ':'') + 'Free ' + runes.map(r=>GAME_DATA.items[r]?.name||r).join(' & ');
+      }
       if (item.levelReq) {
         const reqs = Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ');
         statStr += (statStr?' | ':'') + `Req: ${reqs}`;
@@ -2204,20 +2223,46 @@ class UI {
   // ── SPELLBOOKS PAGE ────────────────────────────────────
   renderSpellbooksPage(el) {
     const s = this.engine.state;
-    let html = this.header('Spellbooks','wand','Switch between spellbooks to access different spell schools.',null);
+    let html = this.header('Spellbooks','wand','Switch between spellbooks to access different spell schools. Advanced books require a physical tome to unlock.',null);
     const activeBook = s.activeSpellbook || 'standard';
+
+    // Staff context for free rune display
+    const wpnId = s.equipment?.weapon;
+    const wpnData = wpnId ? GAME_DATA.items[wpnId] : null;
+    const allRunesFree = wpnData?.providesAllRunes || false;
+    const rawFree = wpnData?.providesRune;
+    const freeRuneSet = allRunesFree ? null : (rawFree ? new Set(Array.isArray(rawFree) ? rawFree : [rawFree]) : new Set());
+    if (wpnData?.providesRune || wpnData?.providesAllRunes) {
+      const freeLabel = allRunesFree ? 'all runes' : (Array.isArray(rawFree) ? rawFree.map(r=>GAME_DATA.items[r]?.name||r).join(' & ') : (GAME_DATA.items[rawFree]?.name||rawFree));
+      html += `<div class="info-banner">${icon('wand',14)} ${wpnData.name} provides <strong>unlimited ${freeLabel}</strong>. These runes are marked <span class="rune-free">∞ FREE</span> in spell listings below.</div>`;
+    }
 
     html += '<h2 class="section-title">Available Spellbooks</h2><div class="actions-grid">';
     for (const [id, book] of Object.entries(GAME_DATA.spellbooks)) {
-      const locked = book.unlockReq && Object.entries(book.unlockReq).some(([sk,lv]) => s.skills[sk]?.level < lv);
       const active = activeBook === id;
-      const reqStr = book.unlockReq ? Object.entries(book.unlockReq).map(([sk,lv])=>`${GAME_DATA.skills[sk]?.name} ${lv}`).join(', ') : 'None';
+      const skillLocked = book.unlockReq && Object.entries(book.unlockReq).some(([sk,lv]) => (s.skills[sk]?.level||0) < lv);
+      const alreadyUnlocked = !book.unlockItem || id === 'standard' || (s.unlockedSpellbooks?.[id]);
+      const hasTome = book.unlockItem && (s.bank?.[book.unlockItem]||0) > 0;
+      const itemLocked = book.unlockItem && !alreadyUnlocked && !hasTome;
+      const locked = skillLocked || itemLocked;
+
+      const reqParts = [];
+      if (book.unlockReq) reqParts.push(...Object.entries(book.unlockReq).map(([sk,lv])=>`${GAME_DATA.skills[sk]?.name||sk} ${lv}`));
+      if (book.unlockItem) {
+        const tomeName = GAME_DATA.items[book.unlockItem]?.name || book.unlockItem;
+        if (alreadyUnlocked) reqParts.push(`<span style="color:var(--success)">${tomeName} ✓</span>`);
+        else if (hasTome) reqParts.push(`<span style="color:var(--amber)">${tomeName} (in bank — will be consumed)</span>`);
+        else reqParts.push(`<span style="color:var(--danger)">${tomeName} needed</span>`);
+      }
+      const reqStr = reqParts.length ? reqParts.join(', ') : 'None';
+      const bookColor = book.color || 'var(--amber)';
+
       html += `<div class="action-card ${locked?'locked':''} ${active?'active':''}" style="${book.color?'border-left:3px solid '+book.color:''}">
-        <div class="ac-header"><span class="ac-name">${book.name}</span>${active?'<span class="ach-check">Active</span>':''}</div>
+        <div class="ac-header"><span class="ac-name" style="color:${bookColor}">${book.name}</span>${active?'<span class="ach-check">Active</span>':''}</div>
         <p class="area-desc">${book.desc}</p>
         <div class="ac-footer"><span>Requires: ${reqStr}</span></div>
-        ${!locked&&!active?`<button class="btn btn-sm" onclick="game.switchSpellbook('${id}')">Activate</button>`:''}
-        ${locked?`<div class="locked-overlay">Requires ${reqStr}</div>`:''}
+        ${!locked&&!active?`<button class="btn btn-sm" onclick="game.switchSpellbook('${id}');ui.renderPage('spellbooks')">Activate</button>`:''}
+        ${locked?`<div class="locked-overlay">${skillLocked?'Skill level too low':itemLocked?'Tome required':''}</div>`:''}
       </div>`;
     }
     html += '</div>';
@@ -2225,14 +2270,30 @@ class UI {
     // Show spells for active book
     const spells = this.engine.getSpellsForActiveBook();
     const bookData = GAME_DATA.spellbooks[activeBook];
-    html += `<h2 class="section-title">${bookData?.name||'Standard'} Spells</h2><div class="actions-grid">`;
+    const bookColor = bookData?.color || 'var(--amber)';
+    html += `<h2 class="section-title" style="color:${bookColor}">${bookData?.name||'Standard'} Spells</h2><div class="actions-grid">`;
     for (const sp of spells) {
       const locked = s.skills.magic.level < sp.level;
       const selected = s.combat.selectedSpell === sp.id;
-      html += `<div class="action-card ${locked?'locked':''} ${selected?'active':''}" ${locked?'':`onclick="ui.selectSpell('${sp.id}')"`}>
+      const runeLabel = sp.runes.map(r => {
+        const isFree = allRunesFree || (freeRuneSet && freeRuneSet.has(r.item));
+        const name = GAME_DATA.items[r.item]?.name || r.item;
+        return isFree
+          ? `<span class="rune-free">${name} ∞</span>`
+          : `${name} x${r.qty}`;
+      }).join(' + ');
+
+      const tags = [];
+      if (sp.statusChance) Object.keys(sp.statusChance).forEach(s2=>tags.push(s2));
+      if (sp.lifesteal) tags.push(`Heal ${Math.round(sp.lifesteal*100)}%`);
+      if (sp.defIgnore) tags.push(`Ignore ${Math.round(sp.defIgnore*100)}% def`);
+      const tagHtml = tags.length ? `<div class="spell-tags">${tags.map(t=>`<span class="spell-tag">${t}</span>`).join('')}</div>` : '';
+
+      html += `<div class="action-card ${locked?'locked':''} ${selected?'active':''}" ${locked?'':`onclick="ui.selectSpell('${sp.id}');ui.renderPage('spellbooks')"`}>
         <div class="ac-header"><span class="ac-name">${sp.name}</span><span class="ac-level">Lv ${sp.level}</span></div>
         <p class="area-desc">${sp.desc}</p>
-        <div class="ac-footer"><span>Max Hit: ${sp.maxHit}</span><span>Runes: ${sp.runes.map(r=>(GAME_DATA.items[r.item]?.name||r.item)+' x'+r.qty).join(', ')}</span></div>
+        ${tagHtml}
+        <div class="ac-footer"><span>Max Hit: ${sp.maxHit}</span><span>${runeLabel || 'No runes'}</span></div>
         ${locked?`<div class="locked-overlay">Magic ${sp.level}</div>`:''}
       </div>`;
     }
