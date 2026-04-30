@@ -4835,4 +4835,63 @@ html, body {
 
 .adm-state-output { background:rgba(20,18,15,0.8); border:1px solid rgba(60,50,40,0.3); border-radius:4px; padding:10px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#b0a090; max-height:300px; overflow:auto; white-space:pre-wrap; word-break:break-all; margin-top:8px; }
 
+/* ── ADMIN v3.0 ADDITIONS ── */
+.ahb-ver { font-size:11px; color:var(--text-dim); margin-left:6px; font-family:'JetBrains Mono',monospace; }
+.adm-col-flex { display:flex; flex-direction:column; gap:6px; }
+.adm-dashboard-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; margin-bottom:14px; }
+.adm-kpi { background:rgba(40,30,20,0.6); border:1px solid rgba(100,80,50,0.3); border-radius:8px; padding:10px; text-align:center; }
+.adm-kpi-val { font-size:20px; font-weight:700; color:var(--accent); font-family:'Cinzel',serif; }
+.adm-kpi-lbl { font-size:10px; color:var(--text-dim); margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
+.adm-dash-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.adm-dash-half { margin-bottom:0 !important; }
+
+/* Player table */
+.adm-player-table { display:flex; flex-direction:column; gap:2px; }
+.adm-pt-header { display:grid; grid-template-columns:2fr 1.5fr 50px 50px 60px 1fr; gap:8px; padding:4px 8px; font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); }
+.adm-pt-row { display:grid; grid-template-columns:2fr 1.5fr 50px 50px 60px 1fr; gap:8px; align-items:center; padding:4px 8px; border-bottom:1px solid rgba(60,50,40,0.15); font-size:12px; }
+.adm-pt-row:hover { background:rgba(60,50,40,0.25); }
+.adm-pt-me { border-left:2px solid var(--accent); }
+.adm-pt-btns { display:flex; gap:4px; flex-wrap:wrap; }
+
+/* Item edit layout */
+.adm-item-edit-layout { display:grid; grid-template-columns:180px 1fr; gap:16px; }
+.adm-item-preview-col { display:flex; flex-direction:column; align-items:center; }
+.adm-item-preview-box { width:160px; height:160px; background:rgba(20,15,10,0.6); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.adm-item-preview-box img, .adm-item-preview-box svg { max-width:100%; max-height:100%; object-fit:contain; }
+.adm-no-img-placeholder { color:var(--text-dim); font-size:12px; text-align:center; }
+.adm-item-stats-col { flex:1; }
+.adm-item-thumb { width:20px; height:20px; object-fit:contain; margin-right:2px; vertical-align:middle; }
+.adm-item-dot { width:8px; height:8px; border-radius:50%; background:var(--border); flex-shrink:0; }
+
+/* XP bar in skill row */
+.adm-sk-xpbar { flex:1; height:4px; background:rgba(60,50,40,0.4); border-radius:2px; overflow:hidden; min-width:40px; }
+.adm-sk-xpfill { height:100%; background:var(--accent); border-radius:2px; }
+
+/* Flags grid */
+.adm-flags-grid { display:flex; flex-direction:column; gap:6px; }
+.adm-flag-row { display:grid; grid-template-columns:1fr 80px 120px; gap:8px; align-items:center; padding:6px 8px; background:rgba(30,25,20,0.4); border-radius:4px; font-size:12px; }
+.adm-flag-name { color:var(--text-bright); font-weight:600; }
+.adm-flag-desc { color:var(--text-dim); font-size:10px; }
+.adm-flag-val { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); }
+.adm-flag-actions { display:flex; gap:4px; }
+
+/* Log rows */
+.adm-log-row { display:grid; grid-template-columns:130px 100px 130px 1fr; gap:8px; padding:4px 8px; border-bottom:1px solid rgba(60,50,40,0.15); font-size:11px; }
+.adm-log-row:hover { background:rgba(60,50,40,0.2); }
+.adm-log-time { color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:10px; }
+.adm-log-by { color:var(--accent); }
+.adm-log-action { color:var(--text-bright); font-weight:600; }
+.adm-log-data { color:var(--text-dim); }
+
+/* Roadmap */
+.adm-roadmap { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.adm-rm-section h4 { margin:0 0 8px; font-size:12px; color:var(--accent); font-family:'Cinzel',serif; }
+.adm-rm-item { padding:5px 8px; border-radius:4px; font-size:11px; margin-bottom:4px; }
+.adm-rm-planned { background:rgba(40,60,40,0.4); border-left:2px solid #4a8a3e; color:#b0d0a0; }
+.adm-rm-backlog  { background:rgba(40,40,60,0.4); border-left:2px solid #4a60a0; color:#a0b0d0; }
+.adm-rm-idea     { background:rgba(50,40,60,0.4); border-left:2px solid #8060a0; color:#c0a0d0; }
+
+/* Monster art img */
+.monster-art-img { max-width:100%; max-height:100%; object-fit:contain; image-rendering:crisp-edges; }
+
 @media (max-width:600px) { .adm-grid { grid-template-columns:1fr; } .adm-item-row { flex-wrap:wrap; } }

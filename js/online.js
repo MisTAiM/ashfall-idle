@@ -80,6 +80,8 @@ class OnlineManager {
           this._updatePresence();
           // Start inbox real-time listener
           if (!user.isAnonymous) this.startInboxListener();
+          // Load custom item images from RTDB (all users)
+          this.loadAllItemImages();
           this.emit('authChanged', { user, displayName:this.displayName });
         } else {
           if (this._autoSaveInterval) clearInterval(this._autoSaveInterval);
@@ -199,15 +201,148 @@ class OnlineManager {
     if (typeof _isAdminVerified !== 'undefined') _isAdminVerified = false;
   }
 
-  // Admin: delete a player from the leaderboard/players collection
-  async deletePlayerFromLeaderboard(uid) {
-    if (!this.isOnline || !this.user) return false;
-    if (typeof isAdmin !== 'function' || !isAdmin()) return false;
+  // ── ADMIN: DELETE PLAYER ───────────────────────────────
+  // Removes player from players, leaderboard, saves, bazaar,
+  // pvp_queue, and records a ban entry + admin log
+  async deletePlayer(uid, displayName) {
+    if (!this.isOnline || !this.user) return { ok: false, error: 'Not online' };
+    if (typeof isAdmin !== 'function' || !isAdmin()) return { ok: false, error: 'Not admin' };
+    const errors = [];
+    const deleted = [];
+    const collections = ['players', 'leaderboard', 'saves'];
+    for (const col of collections) {
+      try {
+        await this.firestore.collection(col).doc(uid).delete();
+        deleted.push(col);
+      } catch(e) { errors.push(`${col}: ${e.code || e.message}`); }
+    }
+    // Remove bazaar listings
     try {
-      await this.firestore.collection('players').doc(uid).delete();
-      console.log('[Admin] Deleted player:', uid);
+      const bSnap = await this.firestore.collection('bazaar').where('sellerId','==',uid).get();
+      const batch = this.firestore.batch();
+      bSnap.forEach(doc => batch.delete(doc.ref));
+      if (!bSnap.empty) { await batch.commit(); deleted.push('bazaar'); }
+    } catch(e) { errors.push(`bazaar: ${e.code||e.message}`); }
+    // Remove from PVP queue
+    try {
+      await this.firestore.collection('pvp_queue').doc(uid).delete();
+      deleted.push('pvp_queue');
+    } catch(e) {}
+    // Record ban in RTDB (prevents re-registration)
+    try {
+      await this.db.ref(`/admin_bans/${uid}`).set({
+        banned: true, by: this.user.uid, at: Date.now(), name: displayName || uid
+      });
+      deleted.push('admin_bans(rtdb)');
+    } catch(e) { errors.push(`bans(rtdb): ${e.message}`); }
+    // Admin action log
+    await this.adminLog('delete_player', { targetUid: uid, targetName: displayName, deleted, errors });
+    return { ok: deleted.length > 0, deleted, errors };
+  }
+
+  // Legacy alias for compatibility
+  async deletePlayerFromLeaderboard(uid) {
+    const result = await this.deletePlayer(uid, uid);
+    return result.ok;
+  }
+
+  // ── ADMIN: ACTION LOG ─────────────────────────────────
+  async adminLog(action, data) {
+    if (!this.isOnline || !this.user || typeof isAdmin !== 'function' || !isAdmin()) return;
+    try {
+      await this.db.ref('/admin_log').push({
+        action, by: this.user.uid, byName: this.displayName || 'Admin',
+        at: Date.now(), data: JSON.stringify(data)
+      });
+    } catch(e) {} // Non-fatal
+  }
+
+  // ── ADMIN: GAME SETTINGS / FEATURE FLAGS ──────────────
+  async getGameSettings() {
+    if (!this.isOnline) return {};
+    try {
+      const snap = await this.db.ref('/game_settings').once('value');
+      return snap.val() || {};
+    } catch(e) { return {}; }
+  }
+  async setGameSetting(key, value) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      await this.db.ref(`/game_settings/${key}`).set(value);
+      await this.adminLog('set_setting', { key, value });
       return true;
-    } catch(e) { console.error('Delete player error:', e); return false; }
+    } catch(e) { console.error('Set setting error:', e); return false; }
+  }
+
+  // ── ADMIN: ANNOUNCEMENTS ──────────────────────────────
+  async postAnnouncement(title, body, type) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      await this.db.ref('/announcements').push({ title, body, type: type||'info', at: Date.now(), by: this.displayName||'Admin' });
+      await this.adminLog('announcement', { title, body, type });
+      return true;
+    } catch(e) { return false; }
+  }
+  async getAnnouncements() {
+    if (!this.isOnline) return [];
+    try {
+      const snap = await this.db.ref('/announcements').orderByChild('at').limitToLast(20).once('value');
+      const items = [];
+      snap.forEach(c => items.unshift({ id: c.key, ...c.val() }));
+      return items;
+    } catch(e) { return []; }
+  }
+  async deleteAnnouncement(id) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try { await this.db.ref(`/announcements/${id}`).remove(); return true; } catch(e) { return false; }
+  }
+
+  // ── ADMIN: ITEM IMAGES (SVG/PNG) ─────────────────────
+  async saveItemImage(itemId, dataUrl) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) throw new Error('Not authorized');
+    await this.db.ref(`/item_images/${itemId}`).set(dataUrl);
+    await this.adminLog('item_image_upload', { itemId });
+  }
+  async deleteItemImage(itemId) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) throw new Error('Not authorized');
+    await this.db.ref(`/item_images/${itemId}`).remove();
+    await this.adminLog('item_image_delete', { itemId });
+  }
+  async loadAllItemImages() {
+    if (!this.isOnline) return;
+    try {
+      const snap = await this.db.ref('/item_images').once('value');
+      const data = snap.val(); if (!data) return;
+      let count = 0;
+      for (const [itemId, imgData] of Object.entries(data)) {
+        if (GAME_DATA.items[itemId] && imgData) { GAME_DATA.items[itemId]._customImage = imgData; count++; }
+      }
+      console.log(`[Admin] Loaded ${count} custom item images`);
+    } catch(e) { console.warn('[Admin] Could not load item images:', e); }
+  }
+
+  // ── ADMIN: READ ACTION LOG ─────────────────────────────
+  async getAdminLog(limit) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return [];
+    try {
+      const snap = await this.db.ref('/admin_log').orderByChild('at').limitToLast(limit||50).once('value');
+      const items = [];
+      snap.forEach(c => items.unshift({ id: c.key, ...c.val() }));
+      return items;
+    } catch(e) { return []; }
+  }
+
+  // ── ADMIN: LEADERBOARD RESET ──────────────────────────
+  async resetLeaderboard() {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const snap = await this.firestore.collection('leaderboard').get();
+      const batch = this.firestore.batch();
+      snap.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      await this.adminLog('reset_leaderboard', { count: snap.size });
+      return true;
+    } catch(e) { console.error('Reset leaderboard error:', e); return false; }
   }
 
   async setDisplayName(name) {

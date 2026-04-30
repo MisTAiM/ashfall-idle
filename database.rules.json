@@ -12,6 +12,30 @@
         ".read": true,
         ".write": "auth != null && auth.uid === $uid"
       }
+    },
+    "monster_images": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ndLiweJRdGbaqWIbPgIj0Izigez2'"
+    },
+    "item_images": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ndLiweJRdGbaqWIbPgIj0Izigez2'"
+    },
+    "admin_log": {
+      ".read": "auth != null && auth.uid === 'ndLiweJRdGbaqWIbPgIj0Izigez2'",
+      ".write": "auth != null && auth.uid === 'ndLiweJRdGbaqWIbPgIj0Izigez2'"
+    },
+    "admin_bans": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ndLiweJRdGbaqWIbPgIj0Izigez2'"
+    },
+    "game_settings": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ndLiweJRdGbaqWIbPgIj0Izigez2'"
+    },
+    "announcements": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'ndLiweJRdGbaqWIbPgIj0Izigez2'"
     }
   }
 }
