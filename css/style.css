@@ -4805,11 +4805,33 @@ html, body {
 .adm-q-id { color:#706050; font-family:'JetBrains Mono',monospace; font-size:10px; }
 
 .adm-mon-grid { display:flex; flex-direction:column; gap:6px; }
-.adm-mon-card { padding:8px; background:rgba(40,35,30,0.4); border:1px solid rgba(80,70,60,0.2); border-radius:4px; }
+.adm-mon-card { display:flex; align-items:center; gap:10px; padding:8px; background:rgba(40,35,30,0.4); border:1px solid rgba(80,70,60,0.2); border-radius:4px; }
+.adm-mon-thumb { width:48px; height:48px; flex-shrink:0; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:4px; background:rgba(20,15,10,0.5); }
+.adm-mon-thumb img, .adm-mon-thumb svg { width:100%; height:100%; object-fit:contain; }
+.adm-mon-info { flex:1; min-width:0; }
+.adm-mon-actions { display:flex; gap:4px; flex-shrink:0; }
 .adm-mon-name { font-weight:bold; color:#d4c4a0; font-size:13px; }
 .adm-mon-name small { color:#706050; font-weight:normal; }
 .adm-mon-stats { font-size:11px; color:#908070; margin:2px 0; font-family:'JetBrains Mono',monospace; }
 .adm-mon-drops { font-size:10px; color:#706050; margin-top:2px; }
+.adm-mon-no-art { color:#504030; font-size:18px; }
+.adm-mon-preview-large { width:180px; height:180px; background:rgba(20,15,10,0.6); border:1px solid rgba(80,70,60,0.3); border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:10px; }
+.adm-mon-preview-large img, .adm-mon-preview-large svg { max-width:100%; max-height:100%; object-fit:contain; }
+.adm-mon-no-art-lg { color:#504030; font-size:28px; }
+.adm-badge-img { font-size:9px; padding:1px 5px; background:#2a4a2a; color:#4ae04a; border-radius:10px; margin-left:4px; }
+.adm-badge-svg { font-size:9px; padding:1px 5px; background:#2a3a4a; color:#4a9ed4; border-radius:10px; margin-left:4px; }
+.adm-img-upload-area { padding:10px; background:rgba(20,15,10,0.4); border:1px dashed rgba(80,70,60,0.4); border-radius:6px; }
+.adm-img-status { margin-top:6px; font-size:12px; color:#c9873e; min-height:16px; }
+.adm-img-hint { margin-top:6px; font-size:10px; color:#605040; }
+.adm-img-note { font-size:11px; color:#4a9ed4; align-self:center; }
+.adm-edit-grid { display:grid; grid-template-columns:140px 1fr; gap:6px 12px; align-items:center; }
+.adm-edit-grid label { font-size:12px; color:#908070; text-align:right; padding-right:6px; }
+.adm-drop-list { display:flex; flex-direction:column; gap:4px; max-height:250px; overflow-y:auto; margin-bottom:8px; }
+.adm-drop-row { display:flex; align-items:center; gap:8px; padding:4px 8px; background:rgba(30,25,20,0.4); border-radius:3px; font-size:12px; color:#b0a090; }
+.adm-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; display:flex; align-items:center; justify-content:center; }
+.adm-modal { background:var(--bg-panel); border:1px solid var(--border); border-radius:8px; padding:20px; min-width:320px; max-width:480px; }
+.adm-modal h4 { margin:0 0 12px; color:var(--accent); font-family:'Cinzel',serif; }
+.monster-art-img { max-width:100%; max-height:100%; object-fit:contain; image-rendering:crisp-edges; }
 
 .adm-state-output { background:rgba(20,18,15,0.8); border:1px solid rgba(60,50,40,0.3); border-radius:4px; padding:10px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#b0a090; max-height:300px; overflow:auto; white-space:pre-wrap; word-break:break-all; margin-top:8px; }
 
