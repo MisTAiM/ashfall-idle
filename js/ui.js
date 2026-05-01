@@ -836,14 +836,6 @@ class UI {
       const pHpPct = Math.max(0, Math.min(100, (c.playerHp||0) / max * 100));
       const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
 
-      // ── MULTI-MOB ARENA ──────────────────────────────────
-      if (c._multiMobMode && this.engine.state.multiMob?.active) {
-        const mm = this.engine.state.multiMob;
-        html += this._renderMultiMobArena(mm, s, max, pHpPct, pHpColor);
-        el.innerHTML = html;
-        return;
-      }
-
       const mHpPct = Math.max(0, Math.min(100, (c.monsterHp||0) / (mon.hp||1) * 100));
       const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
 
@@ -903,6 +895,48 @@ class UI {
       if (c.dungeon) {
         const d = GAME_DATA.dungeons.find(x=>x.id===c.dungeon);
         html += `<div class="dungeon-progress-v2"><span>Dungeon: ${d.name}</span><span>Wave ${c.dungeonWave+1} / ${d.waves.length}</span></div>`;
+      }
+
+      // ── MULTI-MOB TARGET CARDS ──────────────────────────────
+      if (c._multiMobMode && this.engine.state.multiMob?.active) {
+        const mm = this.engine.state.multiMob;
+        const aliveCount = mm.alive.filter(Boolean).length;
+        html += `<div class="fc-wave-monsters">
+          <span class="fc-queue-label">⚔ ${aliveCount}/${mm.mobs.length} enemies — ALL attacking simultaneously — click to switch target:</span>
+          <div class="fc-target-grid">`;
+        for (let i = 0; i < mm.mobs.length; i++) {
+          const mob    = mm.mobs[i];
+          const alive  = mm.alive[i];
+          const hp     = mm.hp[i];
+          const hPct   = alive ? Math.max(0, Math.min(100, (hp/mob.hp)*100)) : 0;
+          const isTgt  = alive && mm.targetIdx === i;
+          const _styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
+          const sColor = _styleColors[mob.style] || '#888';
+          html += `<div class="fc-target-card ${isTgt ? 'fc-target-active' : ''} ${!alive ? 'mm-dead-card' : ''}"
+            style="border-color:${isTgt ? sColor : alive ? 'rgba(80,70,60,0.3)' : 'rgba(40,40,40,0.2)'};${alive&&!isTgt?'cursor:pointer':''}"
+            ${alive && !isTgt ? `onclick="game.multiMobSetTarget(${i})"` : ''}>
+            <div class="fc-target-header">
+              <span class="fc-target-name">${mob.name}</span>
+              <span class="fc-target-style" style="color:${sColor}">${mob.style}</span>
+            </div>
+            <div class="fc-bar-track fc-target-hp-track">
+              <div class="fc-bar-fill fc-monster-fill" id="mm-mhp-fill-${i}" style="width:${hPct.toFixed(1)}%;opacity:${alive?1:0.3}"></div>
+            </div>
+            <div class="fc-target-hp" id="mm-mhp-val-${i}">${alive ? Math.ceil(hp)+'/'+mob.hp : 'DEAD'}</div>
+            ${isTgt ? `<div class="fc-target-fighting" style="color:${sColor}">ATTACKING</div>` : alive ? '<div class="fc-target-switch">Click to target</div>' : '<div class="fc-target-fighting" style="color:#666">☠ Defeated</div>'}
+          </div>`;
+        }
+        html += `</div></div>`;
+        // Prayer hint
+        const aliveStyles = mm.mobs.filter((_,i) => mm.alive[i]).map(m => m.style);
+        const hasMulti = new Set(aliveStyles).size > 1;
+        if (hasMulti) {
+          html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">Multiple attack styles active — Protection prayers only block one type!</div></div>`;
+        } else if (aliveStyles[0] === 'magic') {
+          html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">All enemies use Magic — Protect from Magic!</div></div>`;
+        } else if (aliveStyles[0] === 'ranged') {
+          html += `<div class="fc-prayer-hint"><div class="fc-hint-warn">All enemies use Ranged — Protect from Ranged!</div></div>`;
+        }
       }
 
       // ── FIGHT CAVE TARGET CARDS + JAD PANEL ──
@@ -3699,116 +3733,49 @@ class UI {
     val.textContent = `${hp}/${maxHp}`;
   }
 
-  _renderMultiMobArena(mm, s, maxHp, pHpPct, pHpColor) {
-    const c = s.combat;
-    const aliveCount = mm.alive.filter(Boolean).length;
-    const totalCount = mm.mobs.length;
 
-    let html = '<div class="combat-arena-v2 combat-arena" id="mm-arena">';
-
-    // ── WARNING BANNER ──────────────────────────────────────
-    html += `<div class="mm-warning-banner">
-      ⚔ MULTI-MOB ENCOUNTER — ${aliveCount}/${totalCount} enemies alive — ALL attack simultaneously
-    </div>`;
-
-    // ── PLAYER HP BAR (same style as normal combat) ─────────
-    const _prof = s.profile || {};
-    const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
-    html += `<div class="ca-side ca-player player-side" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&size=48" width="48" height="48" class="player-combat-avatar" style="border-radius:4px">
-        <div style="flex:1">
-          <div class="ca-name">${typeof online!=='undefined'&&online.displayName?online.displayName:'You'}</div>
-          <div class="ca-hp-container">
-            <div class="ca-hp-bar"><div class="ca-hp-fill" id="mm-php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
-            <div class="ca-hp-text" id="mm-php-text">${Math.max(0,Math.floor(c.playerHp||0))} / ${maxHp}</div>
-          </div>
-        </div>
-        <button class="btn btn-xs btn-danger" onclick="game.stopCombat();ui.renderPage('combat')" style="flex-shrink:0">Flee</button>
-      </div>
-      <div class="splat-area" id="player-splats" style="position:relative;height:20px"></div>
-    </div>`;
-
-    // ── MOB TARGET CARDS (Fight Cave style) ─────────────────
-    html += '<div class="fc-wave-monsters"><span class="fc-queue-label">Enemies — Click a card to switch target:</span><div class="fc-target-grid">';
-
-    for (let i = 0; i < mm.mobs.length; i++) {
-      const mob    = mm.mobs[i];
-      const alive  = mm.alive[i];
-      const hp     = mm.hp[i];
-      const maxH   = mob.hp;
-      const hPct   = alive ? Math.max(0, Math.min(100, (hp/maxH)*100)) : 0;
-      const isTgt  = alive && mm.targetIdx === i;
-      const styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
-      const sColor = styleColors[mob.style] || '#888';
-      const art    = GAME_DATA.monsterArt?.[mob._srcId] || '';
-
-      html += `<div class="fc-target-card mm-target-card ${isTgt ? 'fc-target-active' : ''} ${!alive ? 'mm-dead-card' : ''}"
-        style="border-color:${isTgt ? sColor : alive ? 'rgba(80,70,60,0.3)' : 'rgba(40,40,40,0.2)'};cursor:${alive&&!isTgt?'pointer':'default'}"
-        ${alive && !isTgt ? `onclick="game.multiMobSetTarget(${i})"` : ''}>
-        <div class="fc-target-header">
-          <span class="fc-target-name">${mob.name}</span>
-          <span class="fc-target-style" style="color:${sColor}">${mob.style}</span>
-        </div>
-        ${art ? `<div class="mm-card-art">${art}</div>` : ''}
-        <div class="fc-bar-track fc-target-hp-track">
-          <div class="fc-bar-fill fc-monster-fill" id="mm-mhp-fill-${i}" style="width:${hPct.toFixed(1)}%;opacity:${alive?1:0.3}"></div>
-        </div>
-        <div class="fc-target-hp" id="mm-mhp-val-${i}">${alive ? Math.ceil(hp)+'/'+maxH : 'DEAD'}</div>
-        <div class="fc-target-fighting">
-          ${isTgt ? `<span style="color:${sColor};animation:blink 0.8s step-end infinite">⚔ ATTACKING</span>` : alive ? 'Click to target' : '☠ Defeated'}
-        </div>
-        <div style="font-size:9px;color:var(--text-dim);margin-top:2px">Lv${mob.combatLevel||0} | ${mob.maxHit}max hit</div>
-      </div>`;
-    }
-
-    html += '</div></div>';
-
-    // ── SPLAT ZONE FOR MONSTER HITS ─────────────────────────
-    html += '<div class="splat-area" id="monster-splats" style="position:relative;height:24px;margin-top:4px"></div>';
-
-    // ── PRAYER HINTS ─────────────────────────────────────────
-    const aliveStyles = mm.mobs.filter((m,i) => mm.alive[i]).map(m => m.style);
-    const hasMultiStyle = new Set(aliveStyles).size > 1;
-    if (hasMultiStyle) {
-      html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">Multiple attack styles — Protection prayers only cover one. Choose wisely.</div></div>`;
-    } else if (aliveStyles[0] === 'magic') {
-      html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">All enemies use Magic — Protect from Magic!</div></div>`;
-    } else if (aliveStyles[0] === 'ranged') {
-      html += `<div class="fc-prayer-hint"><div class="fc-hint-warn">All enemies use Ranged — Protect from Ranged!</div></div>`;
-    }
-
-    html += '</div>';
-    return html;
-  }
 
   _updateMultiMobUI() {
     const mm = this.engine.state.multiMob;
     const c  = this.engine.state.combat;
     if (!mm?.active) return;
 
+    // Main arena monster HP bar (normal combat bar, shows current target)
+    const tgt  = mm.mobs[mm.targetIdx];
+    if (tgt) {
+      const mHp  = mm.hp[mm.targetIdx] || 0;
+      const mMax = tgt.hp || 1;
+      const mPct = Math.max(0, Math.min(100, (mHp/mMax)*100));
+      const mCol = mPct > 50 ? '#8a3a3a' : mPct > 25 ? '#c4a83a' : '#4a8a3e';
+      const mBar = document.getElementById('mhp-bar');
+      const mTxt = document.getElementById('mhp-text');
+      if (mBar) { mBar.style.width = mPct.toFixed(1)+'%'; mBar.style.background = mCol; }
+      if (mTxt) mTxt.textContent = Math.max(0,Math.ceil(mHp)) + ' / ' + mMax;
+    }
+
     // Player HP bar
     const maxHp = this.engine.getMaxHp();
     const pHp   = Math.max(0, c.playerHp || 0);
     const pPct  = Math.min(100, (pHp/maxHp)*100);
     const pCol  = pPct > 50 ? '#4a8a3e' : pPct > 25 ? '#c4a83a' : '#c44040';
-    const pBar  = document.getElementById('mm-php-bar');
-    const pTxt  = document.getElementById('mm-php-text');
+    const pBar  = document.getElementById('php-bar');
+    const pTxt  = document.getElementById('php-text');
     if (pBar) { pBar.style.width = pPct.toFixed(1)+'%'; pBar.style.background = pCol; }
     if (pTxt) pTxt.textContent = Math.floor(pHp) + ' / ' + maxHp;
 
-    // Mob cards
+    // Per-mob target cards
     for (let i = 0; i < mm.mobs.length; i++) {
-      const hp   = mm.hp[i];
-      const maxH = mm.mobs[i].hp;
+      const hp    = mm.hp[i];
+      const maxH  = mm.mobs[i].hp;
       const alive = mm.alive[i];
-      const hPct = alive ? Math.max(0, Math.min(100, (hp/maxH)*100)) : 0;
-      const fill = document.getElementById('mm-mhp-fill-'+i);
-      const val  = document.getElementById('mm-mhp-val-'+i);
+      const hPct  = alive ? Math.max(0, Math.min(100, (hp/maxH)*100)) : 0;
+      const fill  = document.getElementById('mm-mhp-fill-'+i);
+      const val   = document.getElementById('mm-mhp-val-'+i);
       if (fill) { fill.style.width = hPct.toFixed(1)+'%'; fill.style.opacity = alive ? '1' : '0.3'; }
       if (val)  val.textContent = alive ? Math.ceil(hp)+'/'+maxH : 'DEAD';
     }
   }
+
   showPetAction(d) {
     const arena = document.querySelector('.combat-arena');
     if (!arena) return;
