@@ -5335,3 +5335,71 @@ html, body {
 .pcs-art svg { width: 28px; height: 28px; }
 .pcs-name { font-family: 'Cinzel', serif; font-size: 11px; color: var(--accent); flex: 1; }
 .pcs-ability { font-size: 9px; color: var(--text-dim); }
+
+/* ══════════════════════════════════════════════════════════════
+   THIEVING v2 — HP bar, anger meter, target cards
+   ══════════════════════════════════════════════════════════════ */
+.thiev-status-bar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 14px; margin-bottom: 12px;
+}
+.thiev-hp-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.thiev-hp-label { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-dim); width: 20px; }
+.thiev-hp-track { width: 160px; height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; overflow: hidden; }
+.thiev-hp-fill  { height: 100%; border-radius: 5px; transition: width 0.4s, background 0.3s; }
+.thiev-hp-val   { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.thiev-food-strip { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+.thiev-food-btn  {
+  font-size: 10px; padding: 3px 8px; background: rgba(74,190,108,0.08);
+  border: 1px solid rgba(74,190,108,0.2); border-radius: 4px; color: #4abe6c;
+  cursor: pointer; transition: all 0.15s;
+}
+.thiev-food-btn:hover { background: rgba(74,190,108,0.18); }
+.thiev-no-food { font-size: 10px; color: var(--text-dim); font-style: italic; }
+
+.thiev-active-bar {
+  background: rgba(201,135,62,0.06); border: 1px solid rgba(201,135,62,0.25);
+  border-radius: var(--radius); padding: 10px 14px; margin-bottom: 12px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.tab-title { font-family: 'Cinzel', serif; font-size: 12px; color: var(--text-bright); }
+.thiev-prog-row, .thiev-anger-row { display: flex; align-items: center; gap: 8px; }
+.thiev-prog-label, .thiev-anger-label { font-size: 10px; color: var(--text-dim); width: 80px; flex-shrink: 0; }
+.thiev-prog-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.thiev-prog-fill  { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.2s; }
+.thiev-anger-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.thiev-anger-fill  { height: 100%; background: linear-gradient(90deg,#d4a83a,#c44040); border-radius: 3px; transition: width 0.3s; }
+.thiev-fight-chance { font-size: 10px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+
+.thiev-target-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-bottom: 20px; }
+.thiev-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px; position: relative;
+  display: flex; flex-direction: column; gap: 7px; transition: border-color 0.15s;
+}
+.thiev-card:hover { border-color: var(--accent-dim); }
+.thiev-active { border-color: var(--accent) !important; background: rgba(201,135,62,0.06) !important; }
+
+.thiev-card-header { display: flex; align-items: flex-start; gap: 8px; }
+.thiev-portrait { font-size: 24px; flex-shrink: 0; line-height: 1; }
+.thiev-card-info { flex: 1; min-width: 0; }
+.thiev-card-name { font-family: 'Cinzel', serif; font-size: 13px; color: var(--text-bright); }
+.thiev-card-desc { font-size: 10px; color: var(--text-dim); line-height: 1.3; margin-top: 2px; }
+.thiev-lv-badge  { font-size: 9px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 3px; padding: 2px 6px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+
+.thiev-stats-row, .thiev-danger-row { display: flex; gap: 8px; flex-wrap: wrap; font-size: 10px; color: var(--text-dim); }
+.thiev-danger-row { font-size: 10px; }
+.thiev-anger-mini { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+.thiev-anger-track-sm { flex: 1; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; min-width: 60px; }
+.thiev-anger-fill-sm  { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.thiev-loot-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.thiev-drop-sm  { font-size: 9px; padding: 1px 5px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim); }
+
+.thiev-mechanics-note {
+  background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent-dim);
+  border-radius: var(--radius); padding: 12px 14px; margin-top: 20px; font-size: 12px;
+}
+.thiev-mechanics-note h4 { font-family: 'Cinzel', serif; color: var(--accent); margin-bottom: 8px; }
+.thiev-mechanics-note p { margin-bottom: 5px; color: var(--text-dim); line-height: 1.5; }
+.thiev-mechanics-note strong { color: var(--text); }

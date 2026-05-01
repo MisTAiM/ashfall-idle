@@ -175,6 +175,9 @@ class GameEngine {
     }
     // Pet combat counter
     if (!s.combat._petAttackCounter) s.combat._petAttackCounter = 0;
+    // Thieving v2
+    if (s.thievingHp === undefined) s.thievingHp = null; // null = full HP (init lazily)
+    if (!s.thievingAnger) s.thievingAnger = {};
     if (!s.familiar) s.familiar = { active:null, timeLeft:0 };
     if (!s.potionBelt) s.potionBelt = [{id:null,qty:0},{id:null,qty:0},{id:null,qty:0},{id:null,qty:0}];
     if (s.specEnergy === undefined) s.specEnergy = 100;
@@ -373,17 +376,63 @@ class GameEngine {
       this.state.stats.itemsCrafted++;
       this.trackQuestProgress('craft', { item:action.output.item, qty:action.output.qty });
     } else if (skillId === 'thieving') {
-      const reduction = this.getMasteryLevel(skillId, action.id) * 0.003;
-      if (Math.random() < Math.max(0.05, action.stunChance - reduction)) {
+      const thievLv   = this.state.skills.thieving.level;
+      const mastReduce = this.getMasteryLevel(skillId, action.id) * 0.003;
+      const stunRoll   = Math.random();
+      const stunChance = Math.max(0.03, action.stunChance - mastReduce - (thievLv * 0.001));
+
+      if (stunRoll < stunChance) {
+        // ── STUN: set negative progress (pause)
         this.state.actionProgress = -action.stunTime;
-        this.emit('notification', { type:'warn', text:`Stunned by the ${action.name}!` }); return;
+
+        // ── BLOW DAMAGE: stun hit deals HP damage
+        // Formula: base 1–8 + target_level/10, scales with target anger level
+        const angerMult = this._getThievingAnger(action.id);
+        const baseDmg   = Math.max(1, Math.floor(Math.random() * 8 + action.level/10));
+        const damage    = Math.floor(baseDmg * (1 + angerMult * 0.5));
+        if (!this.state.thievingHp) this.state.thievingHp = this.getMaxHp();
+        this.state.thievingHp = Math.max(0, this.state.thievingHp - damage);
+
+        // Auto-eat from food bag if HP falls below 40%
+        if (this.state.thievingHp < this.getMaxHp() * 0.40) {
+          this._thievingAutoEat();
+        }
+
+        this.emit('thievingStun', { action, damage, angerMult, hp: this.state.thievingHp, maxHp: this.getMaxHp() });
+        this.emit('notification', { type:'warn', text:`Stunned! ${action.name} hits you for ${damage} damage.` });
+
+        // ── ANGER: accumulate anger on this target
+        if (!this.state.thievingAnger) this.state.thievingAnger = {};
+        this.state.thievingAnger[action.id] = Math.min(1.0, (this.state.thievingAnger[action.id] || 0) + 0.15);
+
+        // ── DEATH CHECK
+        if (this.state.thievingHp <= 0) {
+          this.state.thievingHp = 1;
+          this._thievingDeath();
+          return;
+        }
+
+        // ── FIGHT TRIGGER: angry target may pull you into combat
+        const fightChance = this._calcThievingFightChance(action);
+        if (Math.random() < fightChance && !this.state.combat.active) {
+          this._triggerThievingFight(action);
+          return;
+        }
+        return;
       }
+
+      // Successful pickpocket — reduce anger
+      if (this.state.thievingAnger?.[action.id]) {
+        this.state.thievingAnger[action.id] = Math.max(0, this.state.thievingAnger[action.id] - 0.03);
+      }
+
       const gold = this.randInt(action.gold.min, action.gold.max);
       this.state.gold += gold; this.state.stats.goldEarned += gold;
       for (const drop of (action.loot || [])) {
         if (Math.random() < drop.chance) this.addItem(drop.item, drop.qty);
       }
       this.trackQuestProgress('thieve', { target:action.id, qty:1 });
+      this.emit('thievingSuccess', { action, gold, hp: this.state.thievingHp || this.getMaxHp() });
     }
     this.addXp(skillId, action.xp);
     this.addMasteryXp(skillId, action.masteryId||action.id, action.xp);
@@ -1327,6 +1376,109 @@ class GameEngine {
   }
 
   getMaxHp(skills) { const s = skills || this.state.skills; return Math.floor(s.hitpoints.level * 10 + 10); }
+
+  // ── THIEVING HELPERS ───────────────────────────────────
+  _getThievingAnger(targetId) {
+    return this.state.thievingAnger?.[targetId] || 0;
+  }
+
+  _calcThievingFightChance(action) {
+    // Formula: base chance (2% to 20%) × anger multiplier × target level factor
+    // High-level targets are more likely to fight back when angry
+    const anger      = this._getThievingAnger(action.id);
+    const lvFactor   = (action.level || 1) / 90;       // 0–1 based on level
+    const baseChance = 0.02 + lvFactor * 0.08;         // 2%–10% base
+    return Math.min(0.75, baseChance + anger * 0.40);  // anger adds up to 40%
+  }
+
+  _triggerThievingFight(action) {
+    // Convert pickpocket target into a temporary combat monster
+    const monsterId = action.combatTarget || this._pickThievingMonster(action);
+    if (!monsterId || !GAME_DATA.monsters[monsterId]) {
+      this.emit('notification', { type:'danger', text:`${action.name} attacks you! Run!` });
+      this.state.thievingAnger[action.id] = 0;
+      this.stopSkill();
+      return;
+    }
+    this.stopSkill();
+    this.emit('notification', { type:'danger', text:`${action.name} is furious and attacks you!` });
+    // Reset anger after fight trigger
+    if (this.state.thievingAnger) this.state.thievingAnger[action.id] = 0;
+    // Sync combat HP to thieving HP
+    this.state.combat.playerHp = this.state.thievingHp || this.getMaxHp();
+    this.startCombat(null, monsterId);
+  }
+
+  _pickThievingMonster(action) {
+    // Map pickpocket target to appropriate combat monster
+    const map = {
+      pickpocket_man:      'goblin',
+      pickpocket_farmer:   'bandit',
+      pickpocket_warrior:  'hollow_soldier',
+      pickpocket_rogue:    'shadow_archer',
+      pickpocket_guard:    'guard',
+      pickpocket_merchant: 'bandit',
+      pickpocket_paladin:  'black_knight',
+      pickpocket_knight:   'hollow_knight',
+      pickpocket_king:     'hollow_lord',
+      steal_cake:          'rat',
+      steal_silk:          'guard',
+      steal_gem:           'black_knight',
+      steal_magic:         'dark_mage',
+    };
+    return map[action.id] || 'bandit';
+  }
+
+  _thievingAutoEat() {
+    if (!Array.isArray(this.state.foodBag) || this.state.foodBag.length === 0) return;
+    const maxHp = this.getMaxHp();
+    // Find best food
+    let best = null, bestHeal = 0, bestIdx = -1;
+    for (let i = 0; i < this.state.foodBag.length; i++) {
+      const slot = this.state.foodBag[i];
+      if (slot.qty <= 0) continue;
+      const item = GAME_DATA.items[slot.id];
+      if (item?.heals > bestHeal) { bestHeal = item.heals; best = slot; bestIdx = i; }
+    }
+    if (!best || bestHeal === 0) return;
+    const healed = Math.min(bestHeal, maxHp - this.state.thievingHp);
+    this.state.thievingHp = Math.min(maxHp, this.state.thievingHp + bestHeal);
+    best.qty--;
+    if (best.qty <= 0) this.state.foodBag.splice(bestIdx, 1);
+    this.emit('notification', { type:'success', text:`Auto-ate food. Healed ${bestHeal} HP.` });
+    this.emit('thievingHpChanged', { hp: this.state.thievingHp, maxHp });
+  }
+
+  _thievingDeath() {
+    this.stopSkill();
+    this.state.thievingHp = this.getMaxHp(); // Restore HP on death (soft death)
+    this.state.stats.deaths = (this.state.stats.deaths||0) + 1;
+    this.emit('notification', { type:'danger', text:'You were beaten unconscious and lost half your gold!' });
+    this.state.gold = Math.floor(this.state.gold * 0.50);
+  }
+
+  calcThievingFightChancePublic(action) { return this._calcThievingFightChance(action); }
+
+  resetThievingAnger(targetId) {
+    if (!this.state.thievingAnger) this.state.thievingAnger = {};
+    if (targetId) this.state.thievingAnger[targetId] = 0;
+    else this.state.thievingAnger = {};
+  }
+
+  thievingEatFood(itemId) {
+    // Manual eat during thieving
+    const maxHp = this.getMaxHp();
+    if ((this.state.thievingHp||maxHp) >= maxHp) { this.emit('notification',{type:'info',text:'Already at full HP.'}); return; }
+    const slot = this.state.foodBag?.find(f => f.id === itemId && f.qty > 0);
+    if (!slot) { this.emit('notification',{type:'warn',text:'No food of that type in bag.'}); return; }
+    const item = GAME_DATA.items[itemId];
+    if (!item?.heals) return;
+    if (!this.state.thievingHp) this.state.thievingHp = maxHp;
+    this.state.thievingHp = Math.min(maxHp, this.state.thievingHp + item.heals);
+    slot.qty--;
+    if (slot.qty <= 0) this.state.foodBag.splice(this.state.foodBag.indexOf(slot), 1);
+    this.emit('thievingHpChanged', { hp: this.state.thievingHp, maxHp });
+  }
 
   getPlayerAttackSpeed() {
     const w = this.getEquippedItem('weapon');
@@ -2842,3 +2994,6 @@ class GameEngine {
 }
 
 const game = new GameEngine();
+// Convenience aliases
+game.startSkillAction   = (skill, action) => game.startSkill(skill, action);
+game._calcThievingFightChance = (action) => game.calcThievingFightChancePublic(action);

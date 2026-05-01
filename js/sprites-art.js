@@ -903,3 +903,201 @@ Object.assign(GAME_DATA.petArt, {
   </svg>`,
 });
 console.log('[Ashfall] Pet art loaded:', Object.keys(GAME_DATA.petArt).length, 'pets');
+
+// ── EXPANSION PET ART ──────────────────────────────────────────────
+Object.assign(GAME_DATA.petArt, {
+
+  pet_void_hatchling: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="24" cy="24" r="18" fill="#0a0014" opacity="0.5"/>
+    <ellipse cx="24" cy="32" rx="10" ry="7" fill="#1a0a2a"/>
+    <path d="M14 30 Q8 26 10 34 Q14 36 14 32Z" fill="#0a0014"/>
+    <path d="M34 30 Q40 26 38 34 Q34 36 34 32Z" fill="#0a0014"/>
+    <circle cx="24" cy="22" r="9" fill="#2a0a4a"/>
+    <circle cx="20" cy="19" r="4" fill="#0a0014"/><circle cx="20" cy="19" r="2.5" fill="#9030d0"/><circle cx="20.5" cy="18.5" r="1" fill="#e0a0ff"/>
+    <circle cx="28" cy="19" r="4" fill="#0a0014"/><circle cx="28" cy="19" r="2.5" fill="#9030d0"/><circle cx="28.5" cy="18.5" r="1" fill="#e0a0ff"/>
+    <circle cx="24" cy="14" r="2" fill="#6a10aa" opacity="0.7"/>
+    <path d="M20 27 Q24 30 28 27" fill="none" stroke="#6a10aa" stroke-width="1.5"/>
+    <path d="M24 38 Q18 44 14 48" stroke="#1a0a2a" stroke-width="2.5" fill="none" opacity="0.7"/>
+    <path d="M24 38 Q30 44 34 48" stroke="#1a0a2a" stroke-width="2.5" fill="none" opacity="0.7"/>
+    <circle cx="10" cy="18" r="2" fill="#5a0a9a" opacity="0.5"/>
+    <circle cx="38" cy="22" r="1.5" fill="#5a0a9a" opacity="0.4"/>
+  </svg>`,
+
+  pet_storm_chick: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="24" cy="24" r="16" fill="#1a2a4a" opacity="0.3"/>
+    <ellipse cx="24" cy="32" rx="11" ry="8" fill="#2a3a5a"/>
+    <circle cx="24" cy="22" r="10" fill="#3a4a6a"/>
+    <ellipse cx="17" cy="17" rx="4" ry="5" fill="#2a3a5a" transform="rotate(-20 17 17)"/>
+    <ellipse cx="31" cy="17" rx="4" ry="5" fill="#2a3a5a" transform="rotate(20 31 17)"/>
+    <!-- fluffy lightning-streaked body -->
+    <path d="M18 28 L22 22 L19 26 L23 20" stroke="#60c0ff" stroke-width="1" fill="none" opacity="0.6"/>
+    <circle cx="20" cy="20" r="3" fill="#0a1020"/><circle cx="20" cy="20" r="2" fill="#60c0ff"/><circle cx="20.5" cy="19.5" r="0.7" fill="#fff"/>
+    <circle cx="28" cy="20" r="3" fill="#0a1020"/><circle cx="28" cy="20" r="2" fill="#60c0ff"/><circle cx="28.5" cy="19.5" r="0.7" fill="#fff"/>
+    <!-- tiny beak -->
+    <polygon points="24,24 22,27 26,27" fill="#d4a83a"/>
+    <!-- stubby wings -->
+    <path d="M14 26 Q8 22 10 30 Q14 32 14 28Z" fill="#2a3a5a"/>
+    <path d="M34 26 Q40 22 38 30 Q34 32 34 28Z" fill="#2a3a5a"/>
+    <!-- spark on head -->
+    <polyline points="24,12 22,8 26,9 24,5" stroke="#80d0ff" stroke-width="1.5" fill="none"/>
+  </svg>`,
+
+  pet_dungeon_rat: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="24" cy="32" rx="13" ry="9" fill="#4a4030"/>
+    <ellipse cx="18" cy="38" rx="4" ry="3" fill="#3a3020"/><ellipse cx="30" cy="38" rx="4" ry="3" fill="#3a3020"/>
+    <ellipse cx="24" cy="28" rx="11" ry="7" fill="#5a5040"/>
+    <circle cx="24" cy="20" r="9" fill="#5a5040"/>
+    <ellipse cx="17" cy="14" rx="3.5" ry="5" fill="#4a4030" transform="rotate(-10 17 14)"/>
+    <ellipse cx="31" cy="14" rx="3.5" ry="5" fill="#4a4030" transform="rotate(10 31 14)"/>
+    <circle cx="17" cy="14" r="2" fill="#3a3020"/>
+    <circle cx="31" cy="14" r="2" fill="#3a3020"/>
+    <!-- red beady eyes -->
+    <circle cx="20" cy="19" r="2.5" fill="#0a0000"/><circle cx="20" cy="19" r="1.5" fill="#c44040"/><circle cx="20.5" cy="18.5" r="0.5" fill="#ff8080"/>
+    <circle cx="28" cy="19" r="2.5" fill="#0a0000"/><circle cx="28" cy="19" r="1.5" fill="#c44040"/><circle cx="28.5" cy="18.5" r="0.5" fill="#ff8080"/>
+    <ellipse cx="24" cy="23" rx="2" ry="1.5" fill="#3a3020"/>
+    <path d="M21 25 Q24 28 27 25" fill="none" stroke="#3a3020" stroke-width="1.5"/>
+    <!-- whiskers -->
+    <line x1="20" y1="22" x2="10" y2="20" stroke="#7a6a50" stroke-width="0.8" opacity="0.7"/>
+    <line x1="20" y1="23" x2="10" y2="24" stroke="#7a6a50" stroke-width="0.8" opacity="0.7"/>
+    <line x1="28" y1="22" x2="38" y2="20" stroke="#7a6a50" stroke-width="0.8" opacity="0.7"/>
+    <line x1="28" y1="23" x2="38" y2="24" stroke="#7a6a50" stroke-width="0.8" opacity="0.7"/>
+    <!-- long scaly tail -->
+    <path d="M34 32 Q44 30 46 38 Q44 44 40 46" stroke="#3a3020" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>`,
+
+  pet_spider_hatchling: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- legs -->
+    <line x1="20" y1="24" x2="6" y2="16" stroke="#2a1a3a" stroke-width="2"/>
+    <line x1="20" y1="26" x2="6" y2="26" stroke="#2a1a3a" stroke-width="2"/>
+    <line x1="20" y1="28" x2="8" y2="36" stroke="#2a1a3a" stroke-width="2"/>
+    <line x1="28" y1="24" x2="42" y2="16" stroke="#2a1a3a" stroke-width="2"/>
+    <line x1="28" y1="26" x2="42" y2="26" stroke="#2a1a3a" stroke-width="2"/>
+    <line x1="28" y1="28" x2="40" y2="36" stroke="#2a1a3a" stroke-width="2"/>
+    <!-- abdomen -->
+    <ellipse cx="24" cy="32" rx="9" ry="8" fill="#3a1a4a"/>
+    <!-- hourglass marking -->
+    <polygon points="24,28 26,31 24,34 22,31" fill="#c44040" opacity="0.8"/>
+    <!-- cephalothorax -->
+    <circle cx="24" cy="22" r="7" fill="#4a2a5a"/>
+    <!-- 8 eyes -->
+    <circle cx="20" cy="19" r="1.5" fill="#0a0000"/><circle cx="20" cy="19" r="0.9" fill="#60c060"/>
+    <circle cx="24" cy="18" r="1.5" fill="#0a0000"/><circle cx="24" cy="18" r="0.9" fill="#60c060"/>
+    <circle cx="28" cy="19" r="1.5" fill="#0a0000"/><circle cx="28" cy="19" r="0.9" fill="#60c060"/>
+    <circle cx="21" cy="22" r="1" fill="#0a0000"/><circle cx="27" cy="22" r="1" fill="#0a0000"/>
+    <!-- fangs -->
+    <line x1="22" y1="25" x2="20" y2="28" stroke="#2a1a3a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="26" y1="25" x2="28" y2="28" stroke="#2a1a3a" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- silk thread -->
+    <line x1="24" y1="40" x2="24" y2="48" stroke="#a0a0c0" stroke-width="0.8" opacity="0.5"/>
+  </svg>`,
+
+  pet_magma_mite: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- glow -->
+    <circle cx="24" cy="28" r="16" fill="#d63a1a" opacity="0.2"/>
+    <!-- lava pool body -->
+    <ellipse cx="24" cy="32" rx="14" ry="9" fill="#2a0a00"/>
+    <!-- lava cracks -->
+    <path d="M14 30 L20 26 L18 32" stroke="#d63a1a" stroke-width="2" fill="none" opacity="0.8"/>
+    <path d="M28 28 L34 32 L30 36" stroke="#ff6020" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <!-- small round body floating in lava -->
+    <circle cx="24" cy="24" r="10" fill="#1a0800"/>
+    <!-- lava cracks on body -->
+    <path d="M18 22 L22 26" stroke="#d63a1a" stroke-width="2" opacity="0.8"/>
+    <path d="M28 20 L26 26" stroke="#ff6020" stroke-width="1.5" opacity="0.7"/>
+    <!-- magma eyes -->
+    <circle cx="20" cy="20" r="3.5" fill="#0a0000"/><circle cx="20" cy="20" r="2.2" fill="#d63a1a"/><circle cx="20" cy="20" r="1" fill="#ff8040"/><circle cx="20.5" cy="19.5" r="0.4" fill="#ffd080"/>
+    <circle cx="28" cy="20" r="3.5" fill="#0a0000"/><circle cx="28" cy="20" r="2.2" fill="#d63a1a"/><circle cx="28" cy="20" r="1" fill="#ff8040"/><circle cx="28.5" cy="19.5" r="0.4" fill="#ffd080"/>
+    <!-- tiny stubby limbs of lava -->
+    <ellipse cx="14" cy="28" rx="4" ry="2.5" fill="#1a0800"/>
+    <ellipse cx="34" cy="28" rx="4" ry="2.5" fill="#1a0800"/>
+    <!-- magma drips -->
+    <path d="M20 34 Q20 40 19 42" stroke="#d63a1a" stroke-width="1.5" opacity="0.6"/>
+    <circle cx="19" cy="43" r="1.5" fill="#d63a1a" opacity="0.7"/>
+  </svg>`,
+
+  pet_ice_familiar: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- ice aura -->
+    <circle cx="24" cy="24" r="20" fill="#7ac4e8" opacity="0.1"/>
+    <!-- snowflake body structure -->
+    <line x1="24" y1="8" x2="24" y2="40" stroke="#7ac4e8" stroke-width="2" opacity="0.5"/>
+    <line x1="10" y1="24" x2="38" y2="24" stroke="#7ac4e8" stroke-width="2" opacity="0.5"/>
+    <line x1="14" y1="14" x2="34" y2="34" stroke="#7ac4e8" stroke-width="2" opacity="0.4"/>
+    <line x1="34" y1="14" x2="14" y2="34" stroke="#7ac4e8" stroke-width="2" opacity="0.4"/>
+    <!-- core ice crystal -->
+    <polygon points="24,12 28,20 24,28 20,20" fill="#c8e8f8" opacity="0.9"/>
+    <polygon points="20,16 24,12 28,16 24,20" fill="#a8d8f8" opacity="0.7"/>
+    <!-- tiny face at center -->
+    <circle cx="22" cy="19" r="1.5" fill="#0a2030" opacity="0.8"/>
+    <circle cx="26" cy="19" r="1.5" fill="#0a2030" opacity="0.8"/>
+    <path d="M22 22 Q24 24 26 22" fill="none" stroke="#4a9ed4" stroke-width="1"/>
+    <!-- snowflake tips -->
+    <circle cx="24" cy="8" r="2" fill="#c8e8f8"/>
+    <circle cx="24" cy="40" r="2" fill="#c8e8f8"/>
+    <circle cx="10" cy="24" r="2" fill="#c8e8f8"/>
+    <circle cx="38" cy="24" r="2" fill="#c8e8f8"/>
+    <circle cx="14" cy="14" r="1.5" fill="#a8d8f8"/>
+    <circle cx="34" cy="34" r="1.5" fill="#a8d8f8"/>
+    <circle cx="34" cy="14" r="1.5" fill="#a8d8f8"/>
+    <circle cx="14" cy="34" r="1.5" fill="#a8d8f8"/>
+    <!-- sparkle particles -->
+    <circle cx="18" cy="30" r="1" fill="#c8e8f8" opacity="0.5"/>
+    <circle cx="32" cy="18" r="1" fill="#7ac4e8" opacity="0.5"/>
+  </svg>`,
+
+  pet_fishing_spirit: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- water aura -->
+    <circle cx="24" cy="26" r="18" fill="#4a9ed4" opacity="0.12"/>
+    <!-- wispy water body -->
+    <path d="M14 38 Q12 28 16 20 Q20 12 24 10 Q28 12 32 20 Q36 28 34 38Z" fill="#1a4a7a" opacity="0.8"/>
+    <path d="M17 36 Q15 28 18 22 Q21 15 24 13 Q27 15 30 22 Q33 28 31 36Z" fill="#2a6a9a" opacity="0.7"/>
+    <!-- water ripple body details -->
+    <path d="M18 30 Q24 26 30 30" fill="none" stroke="#4a9ed4" stroke-width="1.2" opacity="0.6"/>
+    <path d="M17 34 Q24 30 31 34" fill="none" stroke="#4a9ed4" stroke-width="1" opacity="0.4"/>
+    <!-- glowing blue eyes -->
+    <circle cx="20" cy="20" r="3.5" fill="#0a1a2a"/><circle cx="20" cy="20" r="2.2" fill="#4a9ed4"/><circle cx="20" cy="20" r="1" fill="#c8e8f8"/><circle cx="20.5" cy="19.5" r="0.4" fill="#fff"/>
+    <circle cx="28" cy="20" r="3.5" fill="#0a1a2a"/><circle cx="28" cy="20" r="2.2" fill="#4a9ed4"/><circle cx="28" cy="20" r="1" fill="#c8e8f8"/><circle cx="28.5" cy="19.5" r="0.4" fill="#fff"/>
+    <!-- serene smile -->
+    <path d="M21 25 Q24 28 27 25" fill="none" stroke="#4a9ed4" stroke-width="1.2"/>
+    <!-- water-flow tail -->
+    <path d="M24 38 Q18 42 14 48" stroke="#1a4a7a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M24 38 Q30 42 34 48" stroke="#1a4a7a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- bubbles -->
+    <circle cx="12" cy="24" r="2" fill="none" stroke="#4a9ed4" stroke-width="1" opacity="0.4"/>
+    <circle cx="38" cy="28" r="1.5" fill="none" stroke="#4a9ed4" stroke-width="0.8" opacity="0.3"/>
+    <circle cx="14" cy="32" r="1" fill="none" stroke="#7ac4e8" stroke-width="0.8" opacity="0.3"/>
+  </svg>`,
+
+  pet_phoenix_chick: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- golden flame aura -->
+    <circle cx="24" cy="26" r="18" fill="#d4a83a" opacity="0.15"/>
+    <!-- tail feathers: long ornate -->
+    <path d="M24 36 Q16 42 12 48" stroke="#d4a83a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M24 36 Q24 44 22 48" stroke="#c9873e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M24 36 Q32 42 36 48" stroke="#d4a83a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M24 36 Q20 44 17 48" stroke="#d67338" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M24 36 Q28 44 31 48" stroke="#d67338" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <!-- body -->
+    <ellipse cx="24" cy="28" rx="11" ry="9" fill="#c9873e"/>
+    <ellipse cx="24" cy="26" rx="9" ry="7" fill="#d4a83a"/>
+    <!-- golden wings, slightly open -->
+    <path d="M14 24 Q6 16 8 24 Q10 28 14 26Z" fill="#c9873e"/>
+    <path d="M34 24 Q42 16 40 24 Q38 28 34 26Z" fill="#c9873e"/>
+    <!-- head -->
+    <circle cx="24" cy="18" r="8" fill="#d4a83a"/>
+    <!-- crest feathers: red-gold -->
+    <path d="M20 11 Q18 5 22 8Z" fill="#d63a1a"/>
+    <path d="M24 10 Q24 4 26 7Z" fill="#d4a83a"/>
+    <path d="M28 11 Q30 5 26 8Z" fill="#d63a1a"/>
+    <!-- amber eyes -->
+    <circle cx="20" cy="17" r="3" fill="#1a0800"/><circle cx="20" cy="17" r="2" fill="#d4a83a"/><circle cx="20.5" cy="16.5" r="0.7" fill="#fff" opacity="0.9"/>
+    <circle cx="28" cy="17" r="3" fill="#1a0800"/><circle cx="28" cy="17" r="2" fill="#d4a83a"/><circle cx="28.5" cy="16.5" r="0.7" fill="#fff" opacity="0.9"/>
+    <!-- small golden beak -->
+    <polygon points="24,21 22,24 26,24" fill="#d4a83a"/>
+    <!-- flame sparks around wings -->
+    <circle cx="9" cy="20" r="1" fill="#d63a1a" opacity="0.5"/>
+    <circle cx="39" cy="20" r="1.5" fill="#d4a83a" opacity="0.5"/>
+    <circle cx="12" cy="28" r="1" fill="#ff8040" opacity="0.4"/>
+  </svg>`,
+
+});
+console.log('[Ashfall] Total pet art entries:', Object.keys(GAME_DATA.petArt).length);

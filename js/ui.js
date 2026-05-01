@@ -127,6 +127,8 @@ class UI {
     this.engine.on('lootDrop', (d) => this.showLootBag(d));
     this.engine.on('petAction', (d) => this.showPetAction(d));
     this.engine.on('petChanged', () => { if (this.currentPage === 'combat') this.renderPage('combat'); if (this.currentPage === 'pets') this.renderPage('pets'); });
+    this.engine.on('thievingStun', (d) => { if (this.currentPage === 'thieving') this._updateThievingHpBar(d.hp, d.maxHp); });
+    this.engine.on('thievingHpChanged', (d) => { if (this.currentPage === 'thieving') this._updateThievingHpBar(d.hp, d.maxHp); });
     this.engine.on('xpGain', (d) => this.showXpGain(d));
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (['equipment','bank','combat'].includes(this.currentPage)) this.renderPage(this.currentPage); });
@@ -438,64 +440,156 @@ class UI {
 
   renderThievingPage(el) {
     const s = this.engine.state;
-    let html = this.header('Thieving','mask','Pickpocket NPCs and steal from market stalls for gold, items, and XP.','thieving');
+    const thievLv   = s.skills.thieving?.level || 1;
+    const maxHp     = game.getMaxHp();
+    const thievHp   = s.thievingHp !== null && s.thievingHp !== undefined ? s.thievingHp : maxHp;
+    const hpPct     = Math.round((thievHp / maxHp) * 100);
+    const hpColor   = hpPct > 60 ? '#4abe6c' : hpPct > 30 ? '#d4a83a' : '#c44040';
+
+    let html = this.header('Thieving','mask','Pickpocket NPCs and steal from market stalls for gold, items and XP. Beware: getting caught deals damage, and angry targets will attack you.','thieving');
+
+    // ── STATUS BAR ─────────────────────────────────────────
+    html += `<div class="thiev-status-bar">
+      <div class="thiev-hp-wrap">
+        <span class="thiev-hp-label">HP</span>
+        <div class="thiev-hp-track"><div class="thiev-hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>
+        <span class="thiev-hp-val">${thievHp}/${maxHp}</span>
+      </div>
+      <div class="thiev-food-strip">
+        ${(s.foodBag||[]).length > 0
+          ? s.foodBag.map((f,i) => {
+              const it = GAME_DATA.items[f.id];
+              return `<button class="thiev-food-btn" onclick="game.thievingEatFood('${f.id}');ui.renderPage('thieving')" title="Eat ${it?.name||f.id} (+${it?.heals||0} HP)">${it?.name||f.id} x${f.qty}</button>`;
+            }).join('')
+          : '<span class="thiev-no-food">No food — add food from Bank</span>'
+        }
+      </div>
+    </div>`;
+
+    // ── ACTIVE ACTION ──────────────────────────────────────
     if (s.activeSkill === 'thieving' && s.activeAction) {
       const a = GAME_DATA.thievingTargets.find(x=>x.id===s.activeAction);
       if (a) {
         const p = Math.min(1, Math.max(0, s.actionProgress / a.time));
-        html += `<div class="active-action-bar">
-          <div class="aa-label">${a.isStall?'Stealing from':'Pickpocketing'}: ${a.name}</div>
-          <div class="aa-progress"><div class="aa-fill" style="width:${(p*100).toFixed(0)}%"></div></div>
-          <button class="btn btn-danger btn-sm" onclick="ui.stopAction()">Stop</button>
+        const anger = s.thievingAnger?.[a.id] || 0;
+        const angerPct = Math.round(anger * 100);
+        const fightChance = game._calcThievingFightChance(a);
+        html += `<div class="thiev-active-bar">
+          <div class="tab-title">${a.portrait||'🗡️'} ${a.isStall?'Stealing from':'Pickpocketing'}: <strong>${a.name}</strong></div>
+          <div class="thiev-prog-row">
+            <span class="thiev-prog-label">Progress</span>
+            <div class="thiev-prog-track"><div class="thiev-prog-fill" style="width:${(p*100).toFixed(0)}%"></div></div>
+          </div>
+          <div class="thiev-anger-row">
+            <span class="thiev-anger-label">Anger ${angerPct}%</span>
+            <div class="thiev-anger-track"><div class="thiev-anger-fill" style="width:${angerPct}%"></div></div>
+            <span class="thiev-fight-chance" title="Chance target attacks you on next stun">Fight: ${(fightChance*100).toFixed(0)}%</span>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="ui.stopAction();ui.renderPage('thieving')">Stop</button>
+          ${angerPct > 30 ? `<button class="btn btn-xs" onclick="game.resetThievingAnger('${a.id}');ui.renderPage('thieving')" title="Wait and calm the target down">Calm Down</button>` : ''}
         </div>`;
       }
     }
-    // Split into pickpockets and stalls
+
+    // ── SECTION: PICKPOCKET ────────────────────────────────
     const pickpockets = GAME_DATA.thievingTargets.filter(t => !t.isStall);
-    const stalls = GAME_DATA.thievingTargets.filter(t => t.isStall);
-
-    html += '<h2 class="section-title">Pickpocket Targets</h2><div class="actions-grid">';
+    html += '<h2 class="section-title">Pickpocket Targets</h2><div class="thiev-target-grid">';
     for (const t of pickpockets) {
-      const locked = s.skills.thieving.level < t.level;
+      const locked   = thievLv < t.level;
       const isActive = s.activeSkill === 'thieving' && s.activeAction === t.id;
-      html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('thieving','${t.id}')"`}>
-        <div class="ac-header"><span class="ac-name">${t.name}</span><span class="ac-level">Lv ${t.level}</span></div>
-        <div class="thiev-stats">
-          <span>Gold: ${t.gold.min}-${t.gold.max}</span>
-          <span>Stun: ${(t.stunChance*100).toFixed(0)}% (${t.stunTime}s)</span>
+      const anger    = s.thievingAnger?.[t.id] || 0;
+      const angerPct = Math.round(anger * 100);
+      const fightChance = game._calcThievingFightChance(t);
+      const mastLv   = game.getMasteryLevel?.('thieving', t.id) || 0;
+      const effStun  = Math.max(0.03, t.stunChance - mastLv * 0.003).toFixed(2);
+
+      html += `<div class="thiev-card ${locked?'locked':''} ${isActive?'thiev-active':''}">
+        <div class="thiev-card-header">
+          <span class="thiev-portrait">${t.portrait||'👤'}</span>
+          <div class="thiev-card-info">
+            <div class="thiev-card-name">${t.name}</div>
+            <div class="thiev-card-desc">${t.desc||''}</div>
+          </div>
+          <span class="thiev-lv-badge">Lv ${t.level}</span>
         </div>
-        <div class="thiev-loot">`;
-      for (const l of (t.loot||[])) {
-        const item = GAME_DATA.items[l.item];
-        html += `<span class="thiev-drop" title="${(l.chance*100).toFixed(1)}% chance">${item?.name||l.item} x${l.qty} <small>(${(l.chance*100).toFixed(0)}%)</small></span>`;
-      }
-      html += `</div>
-        <div class="ac-footer"><span class="ac-xp">+${t.xp} XP</span><span class="ac-time">${t.time}s</span></div>
-        ${locked?`<div class="locked-overlay">Level ${t.level}</div>`:''}
+        ${!locked ? `
+        <div class="thiev-stats-row">
+          <span>💰 ${t.gold.min}–${t.gold.max}gp</span>
+          <span>⚡ ${t.xp}xp</span>
+          <span>⏱ ${t.time}s</span>
+        </div>
+        <div class="thiev-danger-row">
+          <span title="Chance of being caught">😵 Stun ${Math.round(parseFloat(effStun)*100)}%</span>
+          <span title="Damage dealt when stunned">💔 Hit ${t.stunDmgBase||1}–${(t.stunDmgBase||1)+Math.ceil(t.level/10)}</span>
+          <span title="Chance target attacks you" style="color:${fightChance>0.2?'#c44040':fightChance>0.1?'#d4a83a':'var(--text-dim)'}">⚔ Fight ${(fightChance*100).toFixed(0)}%</span>
+        </div>
+        ${angerPct > 0 ? `<div class="thiev-anger-mini">
+          <span>😡 Anger:</span>
+          <div class="thiev-anger-track-sm"><div class="thiev-anger-fill-sm" style="width:${angerPct}%;background:${angerPct>60?'#c44040':angerPct>30?'#d4a83a':'#c9873e'}"></div></div>
+          <span>${angerPct}%</span>
+        </div>` : ''}
+        <div class="thiev-loot-row">${(t.loot||[]).map(l => {
+          const it = GAME_DATA.items[l.item];
+          return `<span class="thiev-drop-sm" title="${(l.chance*100).toFixed(1)}%">${it?.name||l.item}</span>`;
+        }).join('')}</div>
+        <button class="btn btn-sm ${isActive?'btn-danger':''}" onclick="${isActive?`ui.stopAction();ui.renderPage('thieving')`:`game.startSkillAction('thieving','${t.id}');ui.renderPage('thieving')`}">${isActive?'Stop':'Pickpocket'}</button>
+        ` : `<div class="locked-overlay">Thieving ${t.level}</div>`}
       </div>`;
     }
     html += '</div>';
 
-    html += '<h2 class="section-title">Market Stalls</h2><div class="actions-grid">';
+    // ── SECTION: STALLS ────────────────────────────────────
+    const stalls = GAME_DATA.thievingTargets.filter(t => t.isStall);
+    html += '<h2 class="section-title">Market Stalls</h2><div class="thiev-target-grid">';
     for (const t of stalls) {
-      const locked = s.skills.thieving.level < t.level;
+      const locked   = thievLv < t.level;
       const isActive = s.activeSkill === 'thieving' && s.activeAction === t.id;
-      html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('thieving','${t.id}')"`}>
-        <div class="ac-header"><span class="ac-name">${t.name}</span><span class="ac-level">Lv ${t.level}</span></div>
-        <div class="thiev-loot">`;
-      for (const l of (t.loot||[])) {
-        const item = GAME_DATA.items[l.item];
-        html += `<span class="thiev-drop">${item?.name||l.item} x${l.qty} <small>(${(l.chance*100).toFixed(0)}%)</small></span>`;
-      }
-      html += `</div>
-        <div class="ac-footer"><span class="ac-xp">+${t.xp} XP</span><span class="ac-time">${t.time}s</span><span>Stun: ${(t.stunChance*100).toFixed(0)}%</span></div>
-        ${locked?`<div class="locked-overlay">Level ${t.level}</div>`:''}
+      const anger    = s.thievingAnger?.[t.id] || 0;
+      const angerPct = Math.round(anger * 100);
+      const fightChance = game._calcThievingFightChance(t);
+
+      html += `<div class="thiev-card ${locked?'locked':''} ${isActive?'thiev-active':''}">
+        <div class="thiev-card-header">
+          <span class="thiev-portrait">${t.portrait||'🏪'}</span>
+          <div class="thiev-card-info">
+            <div class="thiev-card-name">${t.name}</div>
+            <div class="thiev-card-desc">${t.desc||''}</div>
+          </div>
+          <span class="thiev-lv-badge">Lv ${t.level}</span>
+        </div>
+        ${!locked ? `
+        <div class="thiev-stats-row">
+          <span>⚡ ${t.xp}xp</span><span>⏱ ${t.time}s</span>
+          ${t.gold.max > 0 ? `<span>💰 ${t.gold.min}–${t.gold.max}gp</span>` : ''}
+        </div>
+        <div class="thiev-danger-row">
+          <span>😵 Stun ${Math.round(t.stunChance*100)}%</span>
+          <span>💔 Hit ${t.stunDmgBase||1}–${(t.stunDmgBase||1)+Math.ceil(t.level/10)}</span>
+          <span style="color:${fightChance>0.2?'#c44040':fightChance>0.1?'#d4a83a':'var(--text-dim)'}">⚔ Fight ${(fightChance*100).toFixed(0)}%</span>
+        </div>
+        ${angerPct > 0 ? `<div class="thiev-anger-mini"><span>😡</span><div class="thiev-anger-track-sm"><div class="thiev-anger-fill-sm" style="width:${angerPct}%"></div></div><span>${angerPct}%</span></div>` : ''}
+        <div class="thiev-loot-row">${(t.loot||[]).map(l => {
+          const it = GAME_DATA.items[l.item];
+          return `<span class="thiev-drop-sm">${it?.name||l.item} <small>${(l.chance*100).toFixed(0)}%</small></span>`;
+        }).join('')}</div>
+        <button class="btn btn-sm ${isActive?'btn-danger':''}" onclick="${isActive?`ui.stopAction();ui.renderPage('thieving')`:`game.startSkillAction('thieving','${t.id}');ui.renderPage('thieving')`}">${isActive?'Stop':'Steal'}</button>
+        ` : `<div class="locked-overlay">Thieving ${t.level}</div>`}
       </div>`;
     }
     html += '</div>';
+
+    // ── MECHANICS NOTE ─────────────────────────────────────
+    html += `<div class="thiev-mechanics-note">
+      <h4>⚠ How it works</h4>
+      <p><strong>Stun:</strong> Getting caught pauses your action for ${'{stunTime}'}s and deals damage. Higher-level targets hit harder.</p>
+      <p><strong>Anger:</strong> Each stun increases your target's anger. At high anger, they may fight you directly instead.</p>
+      <p><strong>Fight Chance:</strong> Calculated as base(2%–10% by target level) + anger×40%. A very angry Knight can pull you into combat 50%+ of the time.</p>
+      <p><strong>Auto-eat:</strong> When HP drops below 40%, food is consumed from your food bag automatically. Add food from the Bank page.</p>
+      <p><strong>Mastery:</strong> Each mastery level in a target reduces their effective stun chance by 0.3%.</p>
+    </div>`;
+
     el.innerHTML = html;
   }
-
   renderCombatPage(el) {
     try {
     const s = this.engine.state, c = s.combat;
@@ -3592,6 +3686,17 @@ class UI {
     }
     html += '</div>';
     panel.innerHTML = html;
+  }
+
+  _updateThievingHpBar(hp, maxHp) {
+    const track = document.querySelector('.thiev-hp-fill');
+    const val   = document.querySelector('.thiev-hp-val');
+    if (!track || !val) return;
+    const pct = Math.round((hp/maxHp)*100);
+    const col = pct > 60 ? '#4abe6c' : pct > 30 ? '#d4a83a' : '#c44040';
+    track.style.width  = pct + '%';
+    track.style.background = col;
+    val.textContent = `${hp}/${maxHp}`;
   }
 
   showPetAction(d) {

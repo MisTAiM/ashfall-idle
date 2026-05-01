@@ -1284,33 +1284,52 @@ for (const [id,name,type,slot,style,speed,stats,req,price,sprite,desc,unique] of
 
 // ── THIEVING OVERHAUL ────────────────────────────────────
 GAME_DATA.thievingTargets = [
-  {id:'pickpocket_man',name:'Man',level:1,xp:8,time:3.0,stunChance:0.20,stunTime:3,gold:{min:1,max:10},
-   loot:[{item:'bones',qty:1,chance:0.10}]},
-  {id:'pickpocket_farmer',name:'Farmer',level:10,xp:15,time:3.5,stunChance:0.25,stunTime:4,gold:{min:5,max:25},
-   loot:[{item:'potato_seed',qty:1,chance:0.15},{item:'onion_seed',qty:1,chance:0.10},{item:'feather',qty:3,chance:0.20}]},
-  {id:'pickpocket_warrior',name:'Warrior',level:25,xp:35,time:4.0,stunChance:0.30,stunTime:5,gold:{min:15,max:60},
-   loot:[{item:'iron_sword',qty:1,chance:0.05},{item:'steel_arrows',qty:5,chance:0.15},{item:'potion_healing_i',qty:1,chance:0.10}]},
-  {id:'pickpocket_rogue',name:'Rogue',level:32,xp:50,time:4.0,stunChance:0.30,stunTime:5,gold:{min:20,max:80},
-   loot:[{item:'chaos_rune',qty:3,chance:0.12},{item:'death_rune',qty:1,chance:0.05},{item:'leather',qty:2,chance:0.20},{item:'topaz',qty:1,chance:0.04}]},
-  {id:'pickpocket_guard',name:'Guard',level:40,xp:70,time:4.5,stunChance:0.35,stunTime:5,gold:{min:25,max:100},
-   loot:[{item:'steel_sword',qty:1,chance:0.03},{item:'sapphire',qty:1,chance:0.05},{item:'chaos_rune',qty:5,chance:0.10},{item:'steel_plate',qty:1,chance:0.02}]},
-  {id:'pickpocket_merchant',name:'Wealthy Merchant',level:50,xp:100,time:4.5,stunChance:0.35,stunTime:6,gold:{min:40,max:200},
-   loot:[{item:'ruby',qty:1,chance:0.06},{item:'emerald',qty:1,chance:0.04},{item:'gold_ring',qty:1,chance:0.03},{item:'gold_amulet',qty:1,chance:0.03},{item:'enchant_scroll',qty:1,chance:0.05}]},
-  {id:'pickpocket_paladin',name:'Paladin',level:60,xp:150,time:5.0,stunChance:0.40,stunTime:6,gold:{min:50,max:250},
-   loot:[{item:'diamond',qty:1,chance:0.04},{item:'prayer_potion',qty:1,chance:0.08},{item:'ruby_amulet',qty:1,chance:0.02},{item:'adamant_sword',qty:1,chance:0.01}]},
-  {id:'pickpocket_knight',name:'Knight',level:75,xp:220,time:5.0,stunChance:0.45,stunTime:7,gold:{min:80,max:300},
-   loot:[{item:'diamond',qty:1,chance:0.06},{item:'enchant_scroll',qty:1,chance:0.08},{item:'glory_amulet',qty:1,chance:0.01},{item:'obsidian_cape',qty:1,chance:0.005}]},
-  {id:'pickpocket_king',name:'King',level:90,xp:350,time:5.5,stunChance:0.50,stunTime:8,gold:{min:150,max:500},
-   loot:[{item:'onyx',qty:1,chance:0.03},{item:'celestial_essence',qty:1,chance:0.02},{item:'diamond_ring',qty:1,chance:0.01},{item:'void_crystal',qty:1,chance:0.03}]},
-  // Stalls
-  {id:'steal_cake',name:'Cake Stall',level:5,xp:10,time:2.5,stunChance:0.15,stunTime:3,gold:{min:0,max:0},
-   loot:[{item:'cooked_meat',qty:1,chance:0.70},{item:'bread',qty:1,chance:0.50}],isStall:true},
-  {id:'steal_silk',name:'Silk Stall',level:20,xp:25,time:3.0,stunChance:0.25,stunTime:4,gold:{min:10,max:30},
-   loot:[{item:'leather',qty:2,chance:0.60},{item:'hard_leather',qty:1,chance:0.30}],isStall:true},
-  {id:'steal_gem',name:'Gem Stall',level:45,xp:80,time:4.0,stunChance:0.40,stunTime:6,gold:{min:0,max:0},
-   loot:[{item:'topaz',qty:1,chance:0.30},{item:'sapphire',qty:1,chance:0.20},{item:'ruby',qty:1,chance:0.15},{item:'emerald',qty:1,chance:0.10},{item:'diamond',qty:1,chance:0.03}],isStall:true},
-  {id:'steal_magic',name:'Magic Stall',level:65,xp:150,time:4.5,stunChance:0.45,stunTime:7,gold:{min:0,max:0},
-   loot:[{item:'fire_rune',qty:10,chance:0.40},{item:'chaos_rune',qty:5,chance:0.30},{item:'death_rune',qty:3,chance:0.20},{item:'enchant_dust',qty:2,chance:0.15},{item:'arcane_shard',qty:1,chance:0.05}],isStall:true},
+  // ── PICKPOCKET TARGETS ──────────────────────────────────
+  // level: thieving req | stunDmgBase: base damage on stun hit | angerRate: how fast anger builds
+  {id:'pickpocket_man',     name:'Man',           level:1,  xp:8,   time:3.0, stunChance:0.20, stunTime:3,  gold:{min:1,max:10},
+   loot:[{item:'bones',qty:1,chance:0.10}],
+   stunDmgBase:1, angerRate:0.10, combatTarget:'rat',         portrait:'👨',  desc:'A common man going about his day. Easy target.'},
+  {id:'pickpocket_farmer',  name:'Farmer',        level:10, xp:15,  time:3.5, stunChance:0.25, stunTime:4,  gold:{min:5,max:25},
+   loot:[{item:'potato_seed',qty:1,chance:0.30},{item:'onion_seed',qty:1,chance:0.15}],
+   stunDmgBase:2, angerRate:0.12, combatTarget:'bandit',      portrait:'🧑‍🌾', desc:'A weathered farmer. Suspicious of strangers.'},
+  {id:'pickpocket_warrior', name:'Warrior',       level:25, xp:35,  time:4.0, stunChance:0.30, stunTime:5,  gold:{min:15,max:60},
+   loot:[{item:'iron_ore',qty:1,chance:0.15},{item:'iron_sword',qty:1,chance:0.03}],
+   stunDmgBase:4, angerRate:0.15, combatTarget:'hollow_soldier', portrait:'⚔️', desc:'A battle-hardened warrior. Their counter-strike hurts.'},
+  {id:'pickpocket_rogue',   name:'Rogue',         level:32, xp:50,  time:4.0, stunChance:0.30, stunTime:5,  gold:{min:20,max:80},
+   loot:[{item:'lockpick',qty:1,chance:0.20},{item:'poison_vial',qty:1,chance:0.08}],
+   stunDmgBase:5, angerRate:0.18, combatTarget:'shadow_archer', portrait:'🗡️', desc:'A fellow rogue — catching them is impressive. Fights dirty.'},
+  {id:'pickpocket_guard',   name:'Guard',         level:40, xp:70,  time:4.5, stunChance:0.35, stunTime:5,  gold:{min:25,max:100},
+   loot:[{item:'iron_ore',qty:2,chance:0.10},{item:'leather',qty:1,chance:0.15}],
+   stunDmgBase:6, angerRate:0.20, combatTarget:'guard',        portrait:'💂', desc:'City guard on patrol. Will sound an alarm when angry.'},
+  {id:'pickpocket_merchant',name:'Wealthy Merchant',level:50,xp:100,time:4.5, stunChance:0.35, stunTime:6,  gold:{min:40,max:200},
+   loot:[{item:'sapphire',qty:1,chance:0.08},{item:'ruby',qty:1,chance:0.04},{item:'herb_seed',qty:2,chance:0.15}],
+   stunDmgBase:5, angerRate:0.15, combatTarget:'bandit',       portrait:'💼', desc:'A prosperous merchant. Fat purse, private bodyguard.'},
+  {id:'pickpocket_paladin', name:'Paladin',       level:60, xp:150, time:5.0, stunChance:0.40, stunTime:6,  gold:{min:50,max:250},
+   loot:[{item:'prayer_potion',qty:1,chance:0.10},{item:'diamond',qty:1,chance:0.04}],
+   stunDmgBase:8, angerRate:0.25, combatTarget:'black_knight', portrait:'✝️',  desc:'A holy warrior. Will smite you hard if caught.'},
+  {id:'pickpocket_knight',  name:'Knight',        level:75, xp:220, time:5.0, stunChance:0.45, stunTime:7,  gold:{min:80,max:300},
+   loot:[{item:'diamond',qty:1,chance:0.03},{item:'enchant_scroll',qty:1,chance:0.08},{item:'steel_sword',qty:1,chance:0.02}],
+   stunDmgBase:10, angerRate:0.28, combatTarget:'hollow_knight', portrait:'🤺', desc:'A royal knight. Full plate, full fury.'},
+  {id:'pickpocket_king',    name:'King',          level:90, xp:350, time:5.5, stunChance:0.50, stunTime:8,  gold:{min:150,max:500},
+   loot:[{item:'onyx',qty:1,chance:0.02},{item:'celestial_essence',qty:1,chance:0.03},{item:'dragon_bones',qty:1,chance:0.05}],
+   stunDmgBase:15, angerRate:0.35, combatTarget:'hollow_lord',  portrait:'👑', desc:'The King himself. Caught means executed — or you fight your way out.'},
+
+  // ── MARKET STALLS ────────────────────────────────────────
+  {id:'steal_cake',    name:'Cake Stall',  level:5,  xp:10,  time:2.5, stunChance:0.15, stunTime:3,  gold:{min:0,max:0},
+   loot:[{item:'cooked_meat',qty:1,chance:0.70},{item:'bread',qty:1,chance:0.50}],
+   stunDmgBase:1, angerRate:0.08, combatTarget:'rat', isStall:true, portrait:'🎂', desc:'A bakery stall. Easy grab, smells wonderful.'},
+  {id:'steal_silk',    name:'Silk Stall',  level:20, xp:25,  time:3.0, stunChance:0.25, stunTime:4,  gold:{min:10,max:30},
+   loot:[{item:'leather',qty:2,chance:0.60},{item:'hard_leather',qty:1,chance:0.30}],
+   stunDmgBase:2, angerRate:0.12, combatTarget:'guard', isStall:true, portrait:'🧵', desc:'Fine cloth merchant. Guards nearby.'},
+  {id:'steal_gem',     name:'Gem Stall',   level:45, xp:80,  time:4.0, stunChance:0.40, stunTime:6,  gold:{min:0,max:0},
+   loot:[{item:'topaz',qty:1,chance:0.30},{item:'sapphire',qty:1,chance:0.20},{item:'ruby',qty:1,chance:0.15},{item:'emerald',qty:1,chance:0.10},{item:'diamond',qty:1,chance:0.03}],
+   stunDmgBase:4, angerRate:0.20, combatTarget:'black_knight', isStall:true, portrait:'💎', desc:'Precious gem stall with an alert merchant.'},
+  {id:'steal_magic',   name:'Magic Stall', level:65, xp:150, time:4.5, stunChance:0.45, stunTime:7,  gold:{min:0,max:0},
+   loot:[{item:'fire_rune',qty:10,chance:0.40},{item:'chaos_rune',qty:5,chance:0.30},{item:'death_rune',qty:3,chance:0.20},{item:'enchant_dust',qty:2,chance:0.15},{item:'arcane_shard',qty:1,chance:0.05}],
+   stunDmgBase:7, angerRate:0.28, combatTarget:'dark_mage', isStall:true, portrait:'🔮', desc:'Arcane wares protected by magical wards.'},
+  {id:'steal_dragonry',name:'Dragon Stall',level:85, xp:300, time:5.0, stunChance:0.50, stunTime:8,  gold:{min:0,max:0},
+   loot:[{item:'dragon_bones',qty:2,chance:0.30},{item:'dragonite',qty:1,chance:0.15},{item:'dragon_seed',qty:1,chance:0.08},{item:'dragon_scale',qty:3,chance:0.25}],
+   stunDmgBase:12, angerRate:0.35, combatTarget:'steel_dragon', isStall:true, portrait:'🐉', desc:'A black market stall dealing in dragon contraband. Extremely dangerous.'},
 ];
 
 // Simple food items for thieving
@@ -2220,3 +2239,104 @@ GAME_DATA.combatPets = [
 GAME_DATA.pets = GAME_DATA.combatPets;
 
 console.log('[Ashfall] Farming v2 + Combat Pets loaded. Seeds:', Object.values(GAME_DATA.items).filter(i=>i.type==='seed').length, 'Combat pets:', GAME_DATA.combatPets.length);
+
+// ── THIEVING v2 ITEMS ─────────────────────────────────────────────
+if (!GAME_DATA.items.lockpick)    GAME_DATA.items.lockpick    = {id:'lockpick',    name:'Lockpick',    type:'tool',subtype:'thieving',sellPrice:15, desc:'Used to pick locks on chests and doors.'};
+if (!GAME_DATA.items.poison_vial) GAME_DATA.items.poison_vial = {id:'poison_vial', name:'Poison Vial', type:'consumable',subtype:'thieving',sellPrice:30, desc:'A vial of rogue\'s poison. Applies poison in combat.'};
+if (!GAME_DATA.items.dragon_scale) GAME_DATA.items.dragon_scale= {id:'dragon_scale',name:'Dragon Scale',type:'resource',sellPrice:200,desc:'Thick draconic scale. Used in high-level crafting.'};
+if (!GAME_DATA.items.dragonite)   GAME_DATA.items.dragonite   = {id:'dragonite',   name:'Dragonite',   type:'resource',rarity:'rare',sellPrice:500,desc:'Rare dragonic crystal. Used in Dragonite armour sets.'};
+if (!GAME_DATA.items.enchant_scroll) GAME_DATA.items.enchant_scroll = {id:'enchant_scroll',name:'Enchanting Scroll',type:'consumable',subtype:'enchanting',sellPrice:75,desc:'A pre-written enchantment scroll.'};
+if (!GAME_DATA.items.dark_mage) {
+  GAME_DATA.monsters.dark_mage = {id:'dark_mage',name:'Dark Mage',hp:200,maxHit:20,attackSpeed:2.5,combatLevel:45,style:'magic',evasion:{melee:20,ranged:15,magic:40},xp:350,gold:{min:30,max:80},drops:[{item:'death_rune',qty:3,chance:0.5},{item:'chaos_rune',qty:5,chance:0.4},{item:'tome_of_pyromancy',qty:1,chance:0.01}]};
+}
+if (!GAME_DATA.monsters.guard) {
+  GAME_DATA.monsters.guard = {id:'guard',name:'Guard',hp:120,maxHit:12,attackSpeed:2.8,combatLevel:22,style:'melee',evasion:{melee:18,ranged:15,magic:10},xp:180,gold:{min:8,max:25},drops:[{item:'iron_ore',qty:1,chance:0.2},{item:'bones',qty:1,chance:1.0}]};
+}
+
+// Add lockpick + poison vial to shop (thieving tab)  
+GAME_DATA.shop.push(
+  {item:'lockpick',    price:50,  category:'thieving'},
+  {item:'poison_vial', price:90,  category:'thieving'},
+);
+
+// ================================================================
+// COMBAT PETS EXPANSION — 8 more pets
+// ================================================================
+GAME_DATA.combatPets.push(
+
+  // ── BOSS PETS ───────────────────────────────────────────────────
+  {
+    id:'void_hatchling',  name:'Void Hatchling',  source:'void_emperor', dropRate:0.005,
+    desc:'A fragment of the Void Emperor\'s consciousness. Drains monster HP directly.',
+    combatType:'drain', element:'void',
+    action:{ every:4, type:'damage', baseDmg:15, scaling:'magic', statusChance:{poison:0.30}, desc:'Void Drain' },
+    passive:{ magicDmg:8, voidResist:5 },
+    sprite:'pet_void_hatchling',
+  },
+  {
+    id:'storm_chick',     name:'Stormy',           source:'storm_reaver', dropRate:0.02,
+    desc:'A fluffy chick crackling with residual lightning. Zaps enemies.',
+    combatType:'damage', element:'lightning',
+    action:{ every:3, type:'damage', baseDmg:7, scaling:'magic', statusChance:{shock:0.40}, desc:'Tiny Zap' },
+    passive:{ rangedDmg:4 },
+    sprite:'pet_storm_chick',
+  },
+
+  // ── DUNGEON PETS ─────────────────────────────────────────────────
+  {
+    id:'dungeon_rat',     name:'Dungeon Rat',      source:'rat',          dropRate:0.0005,
+    desc:'A cunning rat from the depths. Gnaws on enemies every 2 attacks.',
+    combatType:'bleed', element:'nature',
+    action:{ every:2, type:'status', statusChance:{bleed:0.60}, stacksApplied:1, desc:'Gnaw' },
+    passive:{ gatherSpeed:2, skill:'thieving' },
+    sprite:'pet_dungeon_rat',
+  },
+  {
+    id:'spider_hatchling',name:'Spider Hatchling', source:'spider',       dropRate:0.001,
+    desc:'A tiny venomous spider. Injects venom every 4 attacks.',
+    combatType:'poison', element:'nature',
+    action:{ every:4, type:'status', statusChance:{poison:1.0}, stacksApplied:3, desc:'Venom Bite' },
+    passive:{ poisonChance:15 },
+    sprite:'pet_spider_hatchling',
+  },
+
+  // ── ELEMENTAL PETS ───────────────────────────────────────────────
+  {
+    id:'magma_mite',      name:'Magma Mite',       source:'fire_giant',   dropRate:0.003,
+    desc:'A tiny magma creature. Coats enemies in lava every 5 attacks.',
+    combatType:'damage', element:'fire',
+    action:{ every:5, type:'damage', baseDmg:20, scaling:'magic', statusChance:{burn:0.80}, desc:'Magma Coat' },
+    passive:{ burnChance:12 },
+    sprite:'pet_magma_mite',
+  },
+  {
+    id:'ice_familiar',    name:'Ice Familiar',     source:'frost_spirit', dropRate:0.008,
+    desc:'A wisp of pure cold. Freezes enemies solid briefly.',
+    combatType:'freeze', element:'ice',
+    action:{ every:6, type:'stun', stunDuration:2.0, stunChance:0.70, desc:'Deep Freeze' },
+    passive:{ freezeChance:12 },
+    sprite:'pet_ice_familiar',
+  },
+
+  // ── SKILLING PETS WITH COMBAT UTILITY ───────────────────────────
+  {
+    id:'fishing_spirit',  name:'Aqua Spirit',      source:'fishing',      dropRate:0.0001,
+    desc:'A water spirit from the deep. Drenches enemies to weaken fire attacks.',
+    combatType:'debuff', element:'water',
+    action:{ every:5, type:'debuff', stat:'magic', amount:8, duration:3, desc:'Drench' },
+    passive:{ gatherSpeed:5, skill:'fishing' },
+    sprite:'pet_fishing_spirit',
+  },
+  {
+    id:'phoenix_chick',   name:'Phoenix Chick',    source:'phoenix',      dropRate:0.003,
+    desc:'Born from dying flames. When you drop below 20% HP it triggers a burst heal.',
+    combatType:'support', element:'fire',
+    action:{ every:999, type:'heal', amount:25, scaling:'hp', triggerBelowPct:20, desc:'Phoenix Burst (auto at 20% HP)' },
+    passive:{ burnResist:10, combatDmg:3 },
+    sprite:'pet_phoenix_chick',
+  },
+);
+
+// Keep GAME_DATA.pets in sync
+GAME_DATA.pets = GAME_DATA.combatPets;
+console.log('[Ashfall] Total combat pets:', GAME_DATA.combatPets.length);
