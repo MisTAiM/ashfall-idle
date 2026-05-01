@@ -1413,8 +1413,8 @@ class GameEngine {
 
   // Called every tickCombat in multi-mob mode
   tickMultiMob(dt) {
-    const mm  = this.state.multiMob;
-    const c   = this.state.combat;
+    const mm = this.state.multiMob;
+    const c  = this.state.combat;
     if (!mm?.active) return;
 
     // ── PLAYER ATTACKS CURRENT TARGET ──────────────────────
@@ -1424,17 +1424,15 @@ class GameEngine {
       c.playerAttackTimer -= playerSpeed;
       const tgt = mm.mobs[mm.targetIdx];
       if (tgt && mm.alive[mm.targetIdx]) {
-        // Sync monster HP to multi-mob hp array before attack
-        c.monsterHp = mm.hp[mm.targetIdx];
+        c.monsterHp = mm.hp[mm.targetIdx]; // sync IN
         this.playerAttack(tgt);
         this.drainPrayerPoints();
         this.doPetCombatAction(tgt);
-        // Sync back
-        mm.hp[mm.targetIdx] = c.monsterHp;
+        mm.hp[mm.targetIdx] = c.monsterHp; // sync OUT
       }
     }
 
-    // ── EACH ALIVE MOB ATTACKS PLAYER ──────────────────────
+    // ── ALL ALIVE MOBS ATTACK PLAYER SIMULTANEOUSLY ─────────
     for (let i = 0; i < mm.mobs.length; i++) {
       if (!mm.alive[i]) continue;
       const mob = mm.mobs[i];
@@ -1442,56 +1440,84 @@ class GameEngine {
       const mobSpeed = (mob.attackSpeed || 3) * 0.7;
       if (mm.attackTimers[i] >= mobSpeed) {
         mm.attackTimers[i] -= mobSpeed;
-        // Auto-eat check before mob hits
+        this.monsterAttack(mob); // reduces c.playerHp
         if (c.autoEat && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
-        this.monsterAttack(mob);
       }
     }
 
-    // ── CHECK DEATHS ────────────────────────────────────────
+    // ── CHECK MOB DEATHS ─────────────────────────────────────
     for (let i = 0; i < mm.mobs.length; i++) {
-      if (!mm.alive[i]) continue;
-      if (mm.hp[i] <= 0) {
-        mm.alive[i] = false;
-        mm.hp[i] = 0;
-        const dead = mm.mobs[i];
-        // Loot this mob
-        const g = dead.gold || {min:0,max:0};
-        const gold = this.randInt(g.min, g.max);
-        this.state.gold += gold;
-        this.state.stats.goldEarned += gold;
-        this.state.stats.monstersKilled = (this.state.stats.monstersKilled||0)+1;
-        const loot = [];
-        for (const drop of (dead.drops||[])) {
-          if (Math.random() < drop.chance) {
-            this.addItem(drop.item, drop.qty);
-            loot.push({ item:drop.item, qty:drop.qty, rarity: GAME_DATA.items[drop.item]?.rarity });
-          }
-        }
-        this.addXp('hitpoints', Math.floor((dead.xp||0)*0.2));
-        this._addCombatXp(dead);
-        this.rollPetDrop(dead._srcId);
-        this.emit('notification', {type:'success', text:`${dead.name} defeated!`});
-        this.emit('lootDrop', { bag:loot, monster:dead.name, sessionLoot: this.state.combat._sessionLoot||{}, kills: this.state.combat._sessionKills||0 });
-        this.emit('multiMobChanged');
+      if (!mm.alive[i] || mm.hp[i] > 0) continue;
+      mm.alive[i] = false;
+      mm.hp[i] = 0;
+      const dead = mm.mobs[i];
 
-        // If dead mob was target, auto-switch to next alive
-        if (mm.targetIdx === i) {
-          const nextAlive = mm.alive.findIndex((a,j) => a && j !== i);
-          if (nextAlive >= 0) {
-            mm.targetIdx = nextAlive;
-            c.monster    = mm.mobs[nextAlive]._srcId;
-            c.monsterHp  = mm.hp[nextAlive];
-            c.statusEffects.monster = {};
-            this.emit('notification', {type:'info', text:`Now targeting ${mm.mobs[nextAlive].name}.`});
-          }
+      // XP reward (same distribution as onMonsterDeath)
+      const style   = c.combatStyle || 'melee';
+      const xpMode  = c.xpMode || 'controlled';
+      const xp      = dead.xp || 0;
+      this.addXp('hitpoints', Math.floor(xp * 0.33));
+      if (style === 'melee') {
+        if (xpMode === 'accurate')        { this.addXp('attack',   Math.floor(xp*0.9)); this.addXp('defence', Math.floor(xp*0.1)); }
+        else if (xpMode === 'aggressive') { this.addXp('strength', Math.floor(xp*0.9)); this.addXp('defence', Math.floor(xp*0.1)); }
+        else if (xpMode === 'defensive')  { this.addXp('defence',  Math.floor(xp*0.9)); this.addXp('attack',  Math.floor(xp*0.1)); }
+        else { this.addXp('attack', Math.floor(xp*0.33)); this.addXp('strength', Math.floor(xp*0.33)); this.addXp('defence', Math.floor(xp*0.34)); }
+      } else if (style === 'ranged') {
+        this.addXp('ranged', Math.floor(xp * 0.9)); this.addXp('defence', Math.floor(xp * 0.1));
+      } else {
+        this.addXp('magic', Math.floor(xp * 0.8)); this.addXp('defence', Math.floor(xp * 0.2));
+      }
+      this.addXp('tactics', Math.max(1, Math.floor(xp * 0.05)));
+      this.state.stats.monstersKilled = (this.state.stats.monstersKilled||0)+1;
+      if (!this.state.stats.uniqueKills) this.state.stats.uniqueKills = {};
+      this.state.stats.uniqueKills[dead._srcId] = (this.state.stats.uniqueKills[dead._srcId]||0)+1;
+
+      // Gold
+      const g = dead.gold || {min:0,max:0};
+      const gold = this.randInt(g.min, g.max);
+      this.state.gold += gold;
+      this.state.stats.goldEarned += gold;
+
+      // Loot
+      if (!c._sessionLoot) c._sessionLoot = {};
+      if (!c._sessionKills) c._sessionKills = 0;
+      c._sessionKills++;
+      const loot = [];
+      for (const drop of (dead.drops||[])) {
+        if (Math.random() < drop.chance) {
+          this.addItem(drop.item, drop.qty);
+          const rarity = GAME_DATA.items[drop.item]?.rarity || 'common';
+          loot.push({ item:drop.item, qty:drop.qty, rarity });
+          if (!c._sessionLoot[drop.item]) c._sessionLoot[drop.item] = { qty:0, rarity };
+          c._sessionLoot[drop.item].qty += drop.qty;
+        }
+      }
+      if (gold > 0) {
+        if (!c._sessionLoot['_gold']) c._sessionLoot['_gold'] = { qty:0 };
+        c._sessionLoot['_gold'].qty += gold;
+      }
+
+      this.trackSlayerKill(dead._srcId);
+      this.rollPetDrop(dead._srcId);
+      this.emit('notification', {type:'success', text:`${dead.name} defeated!`});
+      if (loot.length > 0) this.emit('lootDrop', { bag:loot, monster:dead.name, sessionLoot:c._sessionLoot, kills:c._sessionKills });
+      this.emit('multiMobChanged');
+
+      // Auto-switch target if current mob just died
+      if (mm.targetIdx === i) {
+        const next = mm.alive.findIndex((a,j) => a && j !== i);
+        if (next >= 0) {
+          mm.targetIdx = next;
+          c.monster   = mm.mobs[next]._srcId;
+          c.monsterHp = mm.hp[next];
+          c.statusEffects.monster = {};
+          this.emit('notification', {type:'info', text:`Targeting ${mm.mobs[next].name}.`});
         }
       }
     }
 
-    // ── ALL DEAD? → END ENCOUNTER ───────────────────────────
-    const anyAlive = mm.alive.some(v => v);
-    if (!anyAlive) {
+    // ── ALL MOBS DEAD → VICTORY ──────────────────────────────
+    if (!mm.alive.some(Boolean)) {
       this._endMultiMobEncounter();
       return;
     }
@@ -1499,9 +1525,10 @@ class GameEngine {
     // ── PLAYER DEATH ─────────────────────────────────────────
     if (c.playerHp <= 0) {
       this._playerDeathInMultiMob();
+      return;
     }
 
-    // Keep combat monsterHp in sync with current target
+    // Keep combat state in sync with current target
     c.monsterHp = mm.hp[mm.targetIdx] || 0;
     c.monster   = mm.mobs[mm.targetIdx]?._srcId || c.monster;
   }

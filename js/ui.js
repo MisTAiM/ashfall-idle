@@ -3702,60 +3702,83 @@ class UI {
   _renderMultiMobArena(mm, s, maxHp, pHpPct, pHpColor) {
     const c = s.combat;
     const aliveCount = mm.alive.filter(Boolean).length;
-    let html = `<div class="mm-encounter-arena" id="mm-arena">`;
+    const totalCount = mm.mobs.length;
 
-    // ── PLAYER HP BAR ──
-    html += `<div class="mm-player-bar">
-      <div class="mm-player-name">⚔ You <span style="color:var(--text-dim);font-size:11px">vs ${aliveCount} enemies</span></div>
-      <div class="mm-hp-track"><div class="mm-hp-fill" id="mm-php-fill" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
-      <div class="mm-hp-val" id="mm-php-val">${Math.max(0,Math.floor(c.playerHp||0))} / ${maxHp}</div>
-      <button class="btn btn-xs btn-danger mm-flee-btn" onclick="game.stopCombat();ui.renderPage('combat')">Flee</button>
+    let html = '<div class="combat-arena-v2 combat-arena" id="mm-arena">';
+
+    // ── WARNING BANNER ──────────────────────────────────────
+    html += `<div class="mm-warning-banner">
+      ⚔ MULTI-MOB ENCOUNTER — ${aliveCount}/${totalCount} enemies alive — ALL attack simultaneously
     </div>`;
 
-    // ── MOB ROWS ──
-    html += `<div class="mm-mob-list" id="mm-mob-list">`;
-    for (let i = 0; i < mm.mobs.length; i++) {
-      const mob  = mm.mobs[i];
-      const alive = mm.alive[i];
-      const hp   = mm.hp[i];
-      const maxH = mob.hp;
-      const hPct = alive ? Math.max(0, Math.min(100, (hp/maxH)*100)) : 0;
-      const hCol = hPct > 50 ? '#8a3a3a' : hPct > 25 ? '#c4a83a' : '#4a8a3e';
-      const isTarget = alive && mm.targetIdx === i;
-      const art  = GAME_DATA.monsterArt?.[mob._srcId] || '';
-
-      html += `<div class="mm-mob-row ${isTarget ? 'mm-target' : ''} ${!alive ? 'mm-dead' : ''}" id="mm-mob-${i}">
-        <div class="mm-mob-art">${art || `<div class="mm-no-art">💀</div>`}</div>
-        <div class="mm-mob-info">
-          <div class="mm-mob-name">${mob.name} <span class="mm-mob-lv">Lv ${mob.combatLevel||0}</span> ${isTarget ? '<span class="mm-targeting-badge">TARGET</span>' : ''} ${!alive ? '<span class="mm-dead-badge">DEAD</span>' : ''}</div>
-          <div class="mm-hp-track-mob"><div class="mm-hp-fill-mob" id="mm-mhp-${i}" style="width:${hPct.toFixed(1)}%;background:${hCol};${!alive?'opacity:0.2':''}"></div></div>
-          <div class="mm-hp-val-mob" id="mm-mhpv-${i}">${alive ? Math.ceil(hp) + ' / ' + maxH : 'DEAD'}</div>
+    // ── PLAYER HP BAR (same style as normal combat) ─────────
+    const _prof = s.profile || {};
+    const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
+    html += `<div class="ca-side ca-player player-side" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&size=48" width="48" height="48" class="player-combat-avatar" style="border-radius:4px">
+        <div style="flex:1">
+          <div class="ca-name">${typeof online!=='undefined'&&online.displayName?online.displayName:'You'}</div>
+          <div class="ca-hp-container">
+            <div class="ca-hp-bar"><div class="ca-hp-fill" id="mm-php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
+            <div class="ca-hp-text" id="mm-php-text">${Math.max(0,Math.floor(c.playerHp||0))} / ${maxHp}</div>
+          </div>
         </div>
-        ${alive && !isTarget ? `<button class="btn btn-xs mm-target-btn" onclick="game.multiMobSetTarget(${i})">Target</button>` : ''}
-        ${isTarget ? `<div class="mm-swords">⚔</div>` : ''}
+        <button class="btn btn-xs btn-danger" onclick="game.stopCombat();ui.renderPage('combat')" style="flex-shrink:0">Flee</button>
+      </div>
+      <div class="splat-area" id="player-splats" style="position:relative;height:20px"></div>
+    </div>`;
+
+    // ── MOB TARGET CARDS (Fight Cave style) ─────────────────
+    html += '<div class="fc-wave-monsters"><span class="fc-queue-label">Enemies — Click a card to switch target:</span><div class="fc-target-grid">';
+
+    for (let i = 0; i < mm.mobs.length; i++) {
+      const mob    = mm.mobs[i];
+      const alive  = mm.alive[i];
+      const hp     = mm.hp[i];
+      const maxH   = mob.hp;
+      const hPct   = alive ? Math.max(0, Math.min(100, (hp/maxH)*100)) : 0;
+      const isTgt  = alive && mm.targetIdx === i;
+      const styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
+      const sColor = styleColors[mob.style] || '#888';
+      const art    = GAME_DATA.monsterArt?.[mob._srcId] || '';
+
+      html += `<div class="fc-target-card mm-target-card ${isTgt ? 'fc-target-active' : ''} ${!alive ? 'mm-dead-card' : ''}"
+        style="border-color:${isTgt ? sColor : alive ? 'rgba(80,70,60,0.3)' : 'rgba(40,40,40,0.2)'};cursor:${alive&&!isTgt?'pointer':'default'}"
+        ${alive && !isTgt ? `onclick="game.multiMobSetTarget(${i})"` : ''}>
+        <div class="fc-target-header">
+          <span class="fc-target-name">${mob.name}</span>
+          <span class="fc-target-style" style="color:${sColor}">${mob.style}</span>
+        </div>
+        ${art ? `<div class="mm-card-art">${art}</div>` : ''}
+        <div class="fc-bar-track fc-target-hp-track">
+          <div class="fc-bar-fill fc-monster-fill" id="mm-mhp-fill-${i}" style="width:${hPct.toFixed(1)}%;opacity:${alive?1:0.3}"></div>
+        </div>
+        <div class="fc-target-hp" id="mm-mhp-val-${i}">${alive ? Math.ceil(hp)+'/'+maxH : 'DEAD'}</div>
+        <div class="fc-target-fighting">
+          ${isTgt ? `<span style="color:${sColor};animation:blink 0.8s step-end infinite">⚔ ATTACKING</span>` : alive ? 'Click to target' : '☠ Defeated'}
+        </div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:2px">Lv${mob.combatLevel||0} | ${mob.maxHit}max hit</div>
       </div>`;
     }
-    html += `</div>`;
 
-    // ── LIVE COMBAT LOG STRIP ──
-    html += `<div class="mm-log" id="mm-log"><div class="mm-log-entry">Encounter started — all enemies attack simultaneously.</div></div>`;
+    html += '</div></div>';
 
-    // ── FOOD + PRAY BUTTONS ──
-    html += `<div class="mm-quick-actions">`;
-    const foods = (s.foodBag||[]).filter(f=>f.qty>0).slice(0,3);
-    for (const f of foods) {
-      const it = GAME_DATA.items[f.id];
-      html += `<button class="btn btn-xs mm-eat-btn" onclick="game.eatFood();ui._updateMultiMobUI()" title="${it?.name||f.id} +${it?.heals||0}hp">🍖 Eat ${it?.name||f.id}</button>`;
+    // ── SPLAT ZONE FOR MONSTER HITS ─────────────────────────
+    html += '<div class="splat-area" id="monster-splats" style="position:relative;height:24px;margin-top:4px"></div>';
+
+    // ── PRAYER HINTS ─────────────────────────────────────────
+    const aliveStyles = mm.mobs.filter((m,i) => mm.alive[i]).map(m => m.style);
+    const hasMultiStyle = new Set(aliveStyles).size > 1;
+    if (hasMultiStyle) {
+      html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">Multiple attack styles — Protection prayers only cover one. Choose wisely.</div></div>`;
+    } else if (aliveStyles[0] === 'magic') {
+      html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">All enemies use Magic — Protect from Magic!</div></div>`;
+    } else if (aliveStyles[0] === 'ranged') {
+      html += `<div class="fc-prayer-hint"><div class="fc-hint-warn">All enemies use Ranged — Protect from Ranged!</div></div>`;
     }
-    const pp = s.prayerPoints || 0;
-    if (pp > 0) {
-      html += `<span class="mm-prayer-pts">🙏 ${pp}pp</span>`;
-    }
-    html += `<button class="btn btn-xs mm-spec-btn" onclick="game.useSpecialAttack?.()" title="Use Special Attack (${s.specEnergy||0}% energy)">⚡ Spec ${s.specEnergy||0}%</button>`;
-    html += `</div>`;
 
-    html += `<div class="splat-area combat-arena" id="monster-splats" style="position:relative;height:0;overflow:visible"></div>`;
-    html += `</div>`;
+    html += '</div>';
     return html;
   }
 
@@ -3764,36 +3787,28 @@ class UI {
     const c  = this.engine.state.combat;
     if (!mm?.active) return;
 
-    // Update each mob row
+    // Player HP bar
+    const maxHp = this.engine.getMaxHp();
+    const pHp   = Math.max(0, c.playerHp || 0);
+    const pPct  = Math.min(100, (pHp/maxHp)*100);
+    const pCol  = pPct > 50 ? '#4a8a3e' : pPct > 25 ? '#c4a83a' : '#c44040';
+    const pBar  = document.getElementById('mm-php-bar');
+    const pTxt  = document.getElementById('mm-php-text');
+    if (pBar) { pBar.style.width = pPct.toFixed(1)+'%'; pBar.style.background = pCol; }
+    if (pTxt) pTxt.textContent = Math.floor(pHp) + ' / ' + maxHp;
+
+    // Mob cards
     for (let i = 0; i < mm.mobs.length; i++) {
       const hp   = mm.hp[i];
       const maxH = mm.mobs[i].hp;
       const alive = mm.alive[i];
       const hPct = alive ? Math.max(0, Math.min(100, (hp/maxH)*100)) : 0;
-      const hCol = hPct > 50 ? '#8a3a3a' : hPct > 25 ? '#c4a83a' : '#4a8a3e';
-      const isTarget = alive && mm.targetIdx === i;
-
-      const row = document.getElementById('mm-mob-' + i);
-      if (row) {
-        row.className = 'mm-mob-row' + (isTarget ? ' mm-target' : '') + (!alive ? ' mm-dead' : '');
-      }
-      const fill = document.getElementById('mm-mhp-' + i);
-      if (fill) { fill.style.width = hPct.toFixed(1) + '%'; fill.style.background = hCol; fill.style.opacity = alive ? '1' : '0.2'; }
-      const val = document.getElementById('mm-mhpv-' + i);
-      if (val) val.textContent = alive ? Math.ceil(hp) + ' / ' + maxH : 'DEAD';
+      const fill = document.getElementById('mm-mhp-fill-'+i);
+      const val  = document.getElementById('mm-mhp-val-'+i);
+      if (fill) { fill.style.width = hPct.toFixed(1)+'%'; fill.style.opacity = alive ? '1' : '0.3'; }
+      if (val)  val.textContent = alive ? Math.ceil(hp)+'/'+maxH : 'DEAD';
     }
-
-    // Update player HP
-    const maxHp = this.engine.getMaxHp();
-    const pHp   = c.playerHp || 0;
-    const pPct  = Math.max(0, Math.min(100, (pHp/maxHp)*100));
-    const pCol  = pPct > 50 ? '#4a8a3e' : pPct > 25 ? '#c4a83a' : '#c44040';
-    const pFill = document.getElementById('mm-php-fill');
-    const pVal  = document.getElementById('mm-php-val');
-    if (pFill) { pFill.style.width = pPct.toFixed(1)+'%'; pFill.style.background = pCol; }
-    if (pVal)  pVal.textContent = Math.max(0,Math.floor(pHp)) + ' / ' + maxHp;
   }
-
   showPetAction(d) {
     const arena = document.querySelector('.combat-arena');
     if (!arena) return;
