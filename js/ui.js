@@ -125,6 +125,8 @@ class UI {
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatHit', (d) => this.showHitSplat(d));
     this.engine.on('lootDrop', (d) => this.showLootBag(d));
+    this.engine.on('petAction', (d) => this.showPetAction(d));
+    this.engine.on('petChanged', () => { if (this.currentPage === 'combat') this.renderPage('combat'); if (this.currentPage === 'pets') this.renderPage('pets'); });
     this.engine.on('xpGain', (d) => this.showXpGain(d));
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (['equipment','bank','combat'].includes(this.currentPage)) this.renderPage(this.currentPage); });
@@ -587,6 +589,25 @@ class UI {
         </button>`;
       }
       html += '</div></div>';
+    }
+
+    // ── ACTIVE PET STRIP ──
+    const pets = GAME_DATA.combatPets || GAME_DATA.pets || [];
+    const activePetData = s.activePet ? pets.find(p => p.id === s.activePet) : null;
+    if (activePetData) {
+      const petArtSvg = GAME_DATA.petArt?.[activePetData.id] || '';
+      html += `<div class="pet-combat-strip" onclick="ui.renderPage('pets')" title="Active Pet — Click to manage">
+        <div class="pcs-art">${petArtSvg}</div>
+        <div>
+          <div class="pcs-name">🐾 ${activePetData.name}</div>
+          <div class="pcs-ability">${activePetData.action?.desc||'ability'} every ${activePetData.action?.every||4} attacks</div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="pet-combat-strip" onclick="ui.renderPage('pets')" style="opacity:0.5" title="No pet equipped">
+        <div class="pcs-art"><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="10" fill="none" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="3,2"/><text x="14" y="18" text-anchor="middle" fill="var(--text-dim)" font-size="10">?</text></svg></div>
+        <div><div class="pcs-name" style="color:var(--text-dim)">No pet equipped</div><div class="pcs-ability">Visit Pets page to equip one</div></div>
+      </div>`;
     }
 
     // ── PRAYER BAR ──
@@ -1178,40 +1199,134 @@ class UI {
 
   renderFarmingPage(el) {
     const s = this.engine.state;
-    let html = this.header('Farming','seedling',GAME_DATA.skills.farming.desc,'farming');
-    html += '<div class="farm-plots">';
-    for (let i = 0; i < s.farming.plots.length; i++) {
-      const plot = s.farming.plots[i];
-      let content = '';
-      if (plot.seed) {
-        const seed = GAME_DATA.items[plot.seed];
-        if (plot.ready) content = `<div class="plot-ready">${seed.name.replace(' Seed','')} - READY</div><button class="btn btn-sm btn-success" onclick="game.harvestPlot(${i})">Harvest</button>`;
-        else {
+    game._ensureFarmingState && game._ensureFarmingState();
+    const plots = s.farming?.plots || [];
+    const farmLv = s.skills.farming?.level || 1;
+    let html = this.header('Farming','seedling','Plant seeds, water crops, compost plots, and harvest yields. Keep weeds away with a rake.','farming');
+
+    // Stats bar
+    html += `<div class="prayer-dash" style="margin-bottom:12px">
+      <div class="prayer-kpi"><div class="prayer-kpi-val">${farmLv}</div><div class="prayer-kpi-lbl">Farm Level</div></div>
+      <div class="prayer-kpi"><div class="prayer-kpi-val">${plots.filter(p=>p.seed&&p.ready).length}</div><div class="prayer-kpi-lbl">Ready</div></div>
+      <div class="prayer-kpi"><div class="prayer-kpi-val">${plots.filter(p=>p.seed&&!p.ready&&!p.dead).length}</div><div class="prayer-kpi-lbl">Growing</div></div>
+      <div class="prayer-kpi"><div class="prayer-kpi-val">${plots.filter(p=>p.dead).length}</div><div class="prayer-kpi-lbl">Dead</div></div>
+    </div>`;
+
+    // Gardening tools in bank info strip
+    const toolCheck = (id,name) => (s.bank[id]||0)>0 ? `<span class="farm-tool-have">✓ ${name}</span>` : `<span class="farm-tool-miss">✗ ${name}</span>`;
+    html += `<div class="farm-tools-strip">
+      <span class="farm-tools-label">Tools:</span>
+      ${toolCheck('watering_can_mith','Mith Can')||toolCheck('watering_can_iron','Iron Can')||toolCheck('watering_can','Can')}
+      ${toolCheck('spade','Spade')}
+      ${toolCheck('rake','Rake')}
+      <span class="farm-tools-sep">Compost:</span>
+      ${(s.bank['ultracompost']||0)>0?`<span class="farm-tool-have">✓ Ultra x${s.bank['ultracompost']}</span>`:
+        (s.bank['supercompost']||0)>0?`<span class="farm-tool-have">✓ Super x${s.bank['supercompost']}</span>`:
+        (s.bank['compost_bin']||0)>0?`<span class="farm-tool-have">✓ Compost x${s.bank['compost_bin']}</span>`:
+        `<span class="farm-tool-miss">✗ No compost</span>`}
+    </div>`;
+
+    // Plot sections by type
+    const patchTypes = [
+      {type:'allotment', label:'Allotment Patches', icon:'🌽'},
+      {type:'herb',      label:'Herb Patches',      icon:'🌿'},
+      {type:'tree',      label:'Tree Patches',       icon:'🌳'},
+      {type:'special',   label:'Special Patches',    icon:'✨'},
+    ];
+
+    for (const patch of patchTypes) {
+      const patchPlots = plots.map((p,i)=>({...p,idx:i})).filter(p=>(p.type||'allotment')===patch.type);
+      if (!patchPlots.length) continue;
+
+      // Check if any seeds exist for this type
+      const seeds = Object.values(GAME_DATA.items).filter(i => i.type==='seed' && (i.seedType===patch.type || (patch.type==='allotment'&&!i.seedType)));
+      const hasSeeds = seeds.some(sd => (s.bank[sd.id]||0) > 0);
+
+      html += `<h2 class="section-title">${patch.icon} ${patch.label}</h2><div class="farm-patch-grid">`;
+
+      for (const plot of patchPlots) {
+        const i = plot.idx;
+        const seed = plot.seed ? GAME_DATA.items[plot.seed] : null;
+        const compostLabel = plot.compostTier===3?'🟣 Ultra':plot.compostTier===2?'🟢 Super':plot.compostTier===1?'🟤 Compost':'';
+
+        let plotClass = 'farm-plot-card';
+        let plotContent = '';
+
+        if (plot.dead) {
+          plotClass += ' farm-plot-dead';
+          plotContent = `<div class="fp-state fp-dead">☠ Dead — ${seed?.name?.replace(' Seed','')||'Crop'}</div>
+            <div class="fp-actions">
+              <button class="btn btn-sm btn-danger" onclick="game.clearPlot(${i});ui.renderPage('farming')">🗑 Clear (Spade)</button>
+            </div>`;
+        } else if (plot.seed && plot.ready) {
+          plotClass += ' farm-plot-ready';
+          const yieldItem = GAME_DATA.items[seed?.yield];
+          plotContent = `<div class="fp-state fp-ready">✅ ${seed?.name?.replace(' Seed','')||'Crop'} — Ready!</div>
+            <div class="fp-yield-hint">Yield: ~${seed?.baseYield||3}+ ${yieldItem?.name||seed?.yield}</div>
+            <div class="fp-actions">
+              <button class="btn btn-sm" onclick="game.harvestPlot(${i});ui.renderPage('farming')">🌾 Harvest</button>
+            </div>`;
+        } else if (plot.seed) {
           const elapsed = Date.now() - plot.plantedAt;
-          const pct = Math.min(100, elapsed / plot.growTime * 100);
+          const pct = Math.min(100, (elapsed / plot.growTime) * 100);
           const left = Math.max(0, Math.ceil((plot.growTime - elapsed)/1000));
-          content = `<div class="plot-growing">${seed.name.replace(' Seed','')}</div><div class="sh-xp-bar"><div class="sh-xp-fill growing-fill" style="width:${pct.toFixed(1)}%"></div></div><div class="plot-timer">${this.fmtTime(left)}</div>`;
+          const timeStr = this.fmtTime(left);
+          plotClass += ' farm-plot-growing';
+          plotContent = `<div class="fp-state fp-growing">${seed?.name?.replace(' Seed','')||'Growing'}</div>
+            <div class="fp-grow-bar-wrap">
+              <div class="fp-grow-bar-track"><div class="fp-grow-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+              <span class="fp-timer">${timeStr}</span>
+            </div>
+            <div class="fp-badges">
+              ${plot.watered?`<span class="fp-badge fp-watered">💧 Watered +${Math.round((plot.waterBonus||0)*100)}%</span>`:''}
+              ${compostLabel?`<span class="fp-badge fp-compost">${compostLabel}</span>`:''}
+              ${plot.hasWeeds?`<span class="fp-badge fp-weeds">🌱 Weeds!</span>`:''}
+            </div>
+            <div class="fp-actions">
+              ${!plot.watered?`<button class="btn btn-xs" onclick="game.waterPlot(${i});ui.renderPage('farming')">💧 Water</button>`:''}
+              ${plot.hasWeeds?`<button class="btn btn-xs" onclick="game.removeWeeds(${i});ui.renderPage('farming')">🌾 Rake</button>`:''}
+              <button class="btn btn-xs btn-danger" onclick="game.clearPlot(${i});ui.renderPage('farming')">✕ Clear</button>
+            </div>`;
+        } else {
+          // Empty plot
+          const canPlant = seeds.filter(sd => (s.bank[sd.id]||0) > 0 && farmLv >= (sd.levelReq||1));
+          plotContent = `<div class="fp-state fp-empty">Empty</div>
+            ${compostLabel?`<div class="fp-badges"><span class="fp-badge fp-compost">${compostLabel}</span></div>`:''}
+            <div class="fp-actions">
+              ${!plot.compostTier?`<button class="btn btn-xs" onclick="game.compostPlot(${i});ui.renderPage('farming')" title="Apply best compost from bank">🌱 Compost</button>`:''}
+              ${canPlant.length>0?canPlant.slice(0,3).map(sd=>`<button class="btn btn-xs" onclick="game.plantSeed(${i},'${sd.id}');ui.renderPage('farming')">${sd.name.replace(' Seed','').replace(' Sapling','')} (x${s.bank[sd.id]})</button>`).join(''):`<span class="fp-no-seeds">No seeds</span>`}
+            </div>`;
         }
-      } else content = `<div class="plot-empty">Empty Plot</div>`;
-      html += `<div class="farm-plot">${content}</div>`;
+
+        html += `<div class="${plotClass}">
+          <div class="fp-header"><span class="fp-plot-num">Plot ${i+1}</span>${compostLabel&&!plot.seed?`<span class="fp-badge fp-compost">${compostLabel}</span>`:''}</div>
+          ${plotContent}
+        </div>`;
+      }
+      html += '</div>';
     }
-    html += '</div>';
-    html += '<h2 class="section-title">Available Seeds</h2><div class="actions-grid">';
-    const seeds = Object.entries(GAME_DATA.items).filter(([,v]) => v.type === 'seed');
-    for (const [id, seed] of seeds) {
-      const qty = s.bank[id] || 0;
-      const empty = s.farming.plots.findIndex(p => !p.seed);
-      html += `<div class="action-card ${qty<=0?'locked':''}">
-        <div class="ac-header"><span class="ac-name">${seed.name}</span><span class="ac-level">x${qty}</span></div>
-        <div class="recipe-output">Grows: ${GAME_DATA.items[seed.yield]?.name || seed.yield}</div>
-        <div class="ac-footer"><span class="ac-time">${this.fmtTime(seed.growTime)}</span></div>
-        <button class="btn btn-sm" ${qty<=0||empty<0?'disabled':''} onclick="game.plantSeed(${empty},'${id}')">Plant</button>
-      </div>`;
+
+    // Seed shop link + available seeds
+    html += `<h2 class="section-title">Seeds in Bank</h2><div class="actions-grid">`;
+    const allSeeds = Object.values(GAME_DATA.items).filter(i => i.type==='seed' && (s.bank[i.id]||0) > 0).sort((a,b)=>(a.levelReq||0)-(b.levelReq||0));
+    if (allSeeds.length === 0) {
+      html += `<div class="bank-empty">No seeds in bank. Buy seeds from the Shop (Farming tab) or pickpocket farmers.</div>`;
+    } else {
+      for (const seed of allSeeds) {
+        const qty = s.bank[seed.id] || 0;
+        const yieldName = GAME_DATA.items[seed.yield]?.name || seed.yield;
+        const locked = farmLv < (seed.levelReq||1);
+        html += `<div class="action-card ${locked?'locked':''}">
+          <div class="ac-header"><span class="ac-name">${seed.name}</span><span class="ac-level">x${qty}</span></div>
+          <div class="recipe-output">Yields: ${yieldName} ~x${seed.baseYield||3} base</div>
+          <div class="ac-footer"><span>${this.fmtTime(seed.growTime)}</span><span>${seed.seedType||'allotment'}</span></div>
+          ${locked?`<div class="locked-overlay">Farm Lv ${seed.levelReq}</div>`:''}
+        </div>`;
+      }
     }
     html += '</div>';
     el.innerHTML = html;
   }
-
   renderBankPage(el) {
     const s = this.engine.state;
     const entries = Object.entries(s.bank).filter(([,q])=>q>0).sort((a,b)=>a[0].localeCompare(b[0]));
@@ -2264,37 +2379,82 @@ class UI {
   // ── PETS PAGE ──────────────────────────────────────────
   renderPetsPage(el) {
     const s = this.engine.state;
-    const allPets = GAME_DATA.pets || [];
-    const owned = s.pets || [];
-    let html = this.header('Pets','paw',`${owned.length}/${allPets.length} pets collected. Equip one for a passive bonus.`,null);
+    const allPets = GAME_DATA.combatPets || GAME_DATA.pets || [];
+    const owned   = s.pets || [];
+    const active  = s.activePet;
 
-    if (s.activePet) {
-      const pet = allPets.find(p => p.id === s.activePet);
+    let html = this.header('Pets','paw',`${owned.length}/${allPets.length} pets collected. Combat pets fight alongside you — each has a unique ability.`,null);
+
+    // Active pet display
+    if (active) {
+      const pet = allPets.find(p => p.id === active);
       if (pet) {
-        html += `<div class="alignment-display">
-          <div class="al-current">Active Pet: <strong>${pet.name}</strong></div>
-          <div class="al-desc">${pet.desc}</div>
-          <button class="btn btn-xs btn-danger" onclick="game.equipPet('${pet.id}')">Unequip</button>
+        html += `<div class="active-pet-banner">
+          <div class="apb-art">${GAME_DATA.petArt?.[pet.id]||this._defaultPetSvg(pet)}</div>
+          <div class="apb-info">
+            <div class="apb-name">${pet.name} <span class="apb-active-badge">ACTIVE</span></div>
+            <div class="apb-desc">${pet.desc}</div>
+            <div class="apb-action">⚔ <strong>${pet.action?.desc||'Combat ability'}</strong> — every ${pet.action?.every||3} player attacks</div>
+            ${pet.passive ? `<div class="apb-passive">📿 Passive: ${Object.entries(pet.passive).map(([k,v])=>k+' +'+v).join(', ')}</div>` : ''}
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="game.equipPet('${pet.id}');ui.renderPage('pets')">Unequip</button>
         </div>`;
       }
     }
 
-    html += '<h2 class="section-title">Collection</h2><div class="actions-grid">';
-    for (const pet of allPets) {
-      const have = owned.includes(pet.id);
-      const isActive = s.activePet === pet.id;
-      const sourceLabel = GAME_DATA.monsters[pet.source]?.name || GAME_DATA.skills[pet.source]?.name || pet.source;
-      html += `<div class="action-card ${have?'':'locked'} ${isActive?'active':''}">
-        <div class="ac-header"><span class="ac-name">${have?pet.name:'???'}</span>${isActive?'<span class="ach-check">Active</span>':''}</div>
-        <p class="area-desc">${have?pet.desc:'Unknown pet. Keep training to discover.'}</p>
-        <div class="ac-footer"><span>Source: ${sourceLabel}</span><span>1/${Math.floor(1/pet.dropRate)}</span></div>
-        ${have&&!isActive?`<button class="btn btn-xs" onclick="game.equipPet('${pet.id}')">Equip</button>`:''}
+    // Pet categories
+    const categories = [
+      { label:'Combat Pets', types:['damage','debuff','pierce','bleed','stun','slow','poison'] },
+      { label:'Support Pets', types:['support'] },
+      { label:'Skilling Pets', types:[''] },
+    ];
+
+    // Group pets: owned first sorted by combat type
+    const sorted = [...allPets].sort((a,b) => {
+      const ao = owned.includes(a.id)?0:1, bo = owned.includes(b.id)?0:1;
+      return ao-bo;
+    });
+
+    html += '<h2 class="section-title">Pet Collection</h2><div class="pet-grid">';
+    for (const pet of sorted) {
+      const have    = owned.includes(pet.id);
+      const isActive = active === pet.id;
+      const src      = GAME_DATA.monsters[pet.source]?.name || GAME_DATA.skills[pet.source]?.name || pet.source;
+      const rarity   = 1/pet.dropRate >= 200 ? 'rare' : 1/pet.dropRate >= 100 ? 'uncommon' : 'common';
+      const typeColors = { damage:'#d67338', debuff:'#d4a83a', support:'#4abe6c', pierce:'#7ac4e8', stun:'#d4a83a', slow:'#4a9ed4', poison:'#7ab030', bleed:'#c44040' };
+      const typeColor = typeColors[pet.combatType||''] || 'var(--accent)';
+
+      html += `<div class="pet-card ${have?'pet-owned':'pet-locked'} ${isActive?'pet-active-card':''}">
+        <div class="pet-art-wrap">${have ? (GAME_DATA.petArt?.[pet.id]||this._defaultPetSvg(pet)) : '<div class="pet-unknown-art">?</div>'}</div>
+        <div class="pet-info">
+          <div class="pet-name">${have?pet.name:'???'}</div>
+          ${have ? `<div class="pet-type-badge" style="background:${typeColor}22;color:${typeColor};border-color:${typeColor}50">${pet.combatType||'skilling'}</div>` : ''}
+          <div class="pet-desc">${have?pet.desc:'Unknown pet. Keep fighting to discover.'}</div>
+          ${have && pet.action ? `<div class="pet-ability">⚔ ${pet.action.desc||'ability'} every ${pet.action.every} attacks</div>` : ''}
+          <div class="pet-source">Source: ${src} <span style="color:var(--text-dim)">(1/${Math.floor(1/pet.dropRate).toLocaleString()})</span></div>
+        </div>
+        <div class="pet-card-btns">
+          ${have && !isActive ? `<button class="btn btn-sm" onclick="game.equipPet('${pet.id}');ui.renderPage('pets')">Equip</button>` : ''}
+          ${isActive ? '<div class="pet-equipped-label">Equipped</div>' : ''}
+        </div>
       </div>`;
     }
     html += '</div>';
     el.innerHTML = html;
   }
 
+  _defaultPetSvg(pet) {
+    // Generate a simple colored SVG for pets without art
+    const colors = { damage:'#d67338', support:'#4abe6c', debuff:'#d4a83a', pierce:'#7ac4e8', stun:'#d4a83a', slow:'#4a9ed4', poison:'#7ab030', bleed:'#c44040' };
+    const col = colors[pet.combatType||''] || '#c9873e';
+    return `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="16" fill="${col}22" stroke="${col}" stroke-width="1.5"/>
+      <circle cx="20" cy="17" r="7" fill="${col}" opacity="0.8"/>
+      <ellipse cx="20" cy="32" rx="10" ry="6" fill="${col}" opacity="0.6"/>
+      <circle cx="16" cy="15" r="1.5" fill="white" opacity="0.9"/>
+      <circle cx="24" cy="15" r="1.5" fill="white" opacity="0.9"/>
+    </svg>`;
+  }
   // ── SPELLBOOKS PAGE ────────────────────────────────────
   renderSpellbooksPage(el) {
     const s = this.engine.state;
@@ -3432,6 +3592,25 @@ class UI {
     }
     html += '</div>';
     panel.innerHTML = html;
+  }
+
+  showPetAction(d) {
+    const arena = document.querySelector('.combat-arena');
+    if (!arena) return;
+    const existing = document.getElementById('pet-action-flash');
+    if (existing) existing.remove();
+    const flash = document.createElement('div');
+    flash.id = 'pet-action-flash';
+    flash.className = 'pet-action-flash';
+    const typeColor = { damage:'#d67338', heal:'#4abe6c', status:'#b585e0', debuff:'#d4a83a', pierce:'#7ac4e8', stun:'#d4a83a', slow:'#4a9ed4' };
+    const color = typeColor[d.type] || '#c9873e';
+    let text = `${d.pet?.name||'Pet'}: ${d.action||'attacks'}`;
+    if (d.dmg)  text += ` (${d.dmg} dmg)`;
+    if (d.heal) text += ` (+${d.heal} HP)`;
+    flash.innerHTML = `<span class="pa-pet-name" style="color:${color}">${text}</span>`;
+    flash.style.borderColor = color + '50';
+    arena.appendChild(flash);
+    setTimeout(() => { if (flash.parentNode) flash.remove(); }, 2000);
   }
 
   showHitSplat(d) {

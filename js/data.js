@@ -2014,3 +2014,209 @@ GAME_DATA.shop.push(
 );
 
 console.log('[Ashfall] Spellbook tomes configured:', _spellbookTomes.length);
+
+// ================================================================
+// FARMING SYSTEM v2.0 — Real mechanics, compost, tools, watering
+// ================================================================
+
+// ── GARDENING TOOLS ──────────────────────────────────────────────
+GAME_DATA.items.watering_can      = {id:'watering_can',     name:'Watering Can',      type:'tool',subtype:'gardening',sprite:'tool-rod',sellPrice:50,  desc:'Waters crops to boost growth speed by 25%.',uses:30,maxUses:30};
+GAME_DATA.items.watering_can_iron = {id:'watering_can_iron',name:'Iron Watering Can', type:'tool',subtype:'gardening',sprite:'tool-rod',sellPrice:200, desc:'Waters crops, boosting growth by 40%. Holds more water.',uses:60,maxUses:60};
+GAME_DATA.items.watering_can_mith = {id:'watering_can_mith',name:'Mithril Watering Can',type:'tool',subtype:'gardening',sprite:'tool-rod',sellPrice:800,desc:'Superior watering can. +60% growth speed, 100 uses.',uses:100,maxUses:100};
+GAME_DATA.items.spade             = {id:'spade',            name:'Spade',             type:'tool',subtype:'gardening',sprite:'tool-pickaxe',sellPrice:30,desc:'Used to clear dead or diseased crops from plots.',uses:999,maxUses:999};
+GAME_DATA.items.rake              = {id:'rake',             name:'Rake',              type:'tool',subtype:'gardening',sprite:'tool-hatchet',sellPrice:40,desc:'Removes weeds from farming plots.',uses:999,maxUses:999};
+GAME_DATA.items.secateurs_magic   = {id:'secateurs_magic',  name:'Magic Secateurs',  type:'tool',subtype:'gardening',sprite:'misc-gem',sellPrice:0,  desc:'Rare tool that boosts herb yield by +10% per cut.',unique:true};
+
+// ── COMPOST ───────────────────────────────────────────────────────
+GAME_DATA.items.compost_bin       = {id:'compost_bin',      name:'Compost',           type:'compost',compostTier:1,growBonus:0.10,diseaseReduct:0.05,sellPrice:10, desc:'Basic compost. +10% yield, -5% disease chance.'};
+GAME_DATA.items.supercompost      = {id:'supercompost',     name:'Supercompost',      type:'compost',compostTier:2,growBonus:0.20,diseaseReduct:0.12,sellPrice:35, desc:'Superior compost. +20% yield, -12% disease chance.'};
+GAME_DATA.items.ultracompost      = {id:'ultracompost',     name:'Ultracompost',      type:'compost',compostTier:3,growBonus:0.35,diseaseReduct:0.20,sellPrice:90, desc:'Finest compost. +35% yield, -20% disease chance, +2 base yield.'};
+GAME_DATA.items.bottomless_bucket = {id:'bottomless_bucket',name:'Bottomless Bucket', type:'tool',subtype:'compost_bucket',sellPrice:0,desc:'Infinite compost storage. Can store one compost type for unlimited uses.',unique:true};
+
+// ── COMPOST INGREDIENTS ───────────────────────────────────────────
+GAME_DATA.items.rotting_leaves    = {id:'rotting_leaves',   name:'Rotting Leaves',    type:'resource',subtype:'compost_input',sellPrice:2, desc:'Add 15 to a compost bin to make compost.'};
+GAME_DATA.items.plant_cuttings    = {id:'plant_cuttings',   name:'Plant Cuttings',    type:'resource',subtype:'compost_input',sellPrice:3, desc:'Crop trimmings for composting.'};
+GAME_DATA.items.volcanic_ash      = {id:'volcanic_ash',     name:'Volcanic Ash',      type:'resource',subtype:'compost_input',sellPrice:20,desc:'Add to compost for supercompost.'};
+
+// ── EXTRA SEEDS ───────────────────────────────────────────────────
+GAME_DATA.items.sweetcorn_seed    = {id:'sweetcorn_seed',   name:'Sweetcorn Seed',    type:'seed',seedType:'allotment',growTime:900, yield:'sweetcorn',    baseYield:4,levelReq:20,xp:18.5,sellPrice:8, sprite:'misc-seed',desc:'Allotment crop. Grows in 15 min.'};
+GAME_DATA.items.tomato_seed       = {id:'tomato_seed',      name:'Tomato Seed',       type:'seed',seedType:'allotment',growTime:1200,yield:'tomato',        baseYield:4,levelReq:26,xp:24.5,sellPrice:12,sprite:'misc-seed',desc:'Allotment crop. Grows in 20 min.'};
+GAME_DATA.items.strawberry_seed   = {id:'strawberry_seed',  name:'Strawberry Seed',   type:'seed',seedType:'allotment',growTime:1600,yield:'strawberry',    baseYield:4,levelReq:31,xp:29.0,sellPrice:18,sprite:'misc-seed',desc:'Allotment crop. Grows in 26 min.'};
+GAME_DATA.items.watermelon_seed   = {id:'watermelon_seed',  name:'Watermelon Seed',   type:'seed',seedType:'allotment',growTime:2400,yield:'watermelon',    baseYield:3,levelReq:47,xp:48.5,sellPrice:45,sprite:'misc-seed',desc:'Allotment crop. Grows in 40 min.'};
+GAME_DATA.items.snape_grass_seed  = {id:'snape_grass_seed', name:'Snape Grass Seed',  type:'seed',seedType:'herb',     growTime:1200,yield:'snape_grass',   baseYield:6,levelReq:61,xp:82.0,sellPrice:80,sprite:'misc-seed',desc:'Herb crop. Grows in 20 min.'};
+GAME_DATA.items.ranarr_seed       = {id:'ranarr_seed',      name:'Ranarr Seed',       type:'seed',seedType:'herb',     growTime:1600,yield:'ranarr',        baseYield:5,levelReq:32,xp:27.0,sellPrice:65,sprite:'misc-seed',desc:'Herb crop. Grows in 26 min.'};
+GAME_DATA.items.torstol_seed      = {id:'torstol_seed',     name:'Torstol Seed',      type:'seed',seedType:'herb',     growTime:2800,yield:'torstol',       baseYield:4,levelReq:85,xp:199.0,sellPrice:180,sprite:'misc-seed',desc:'Powerful herb. Grows in 46 min.'};
+GAME_DATA.items.oak_sapling       = {id:'oak_sapling',      name:'Oak Sapling',       type:'seed',seedType:'tree',     growTime:14400,yield:'oak_logs',     baseYield:10,levelReq:15,xp:467.5,sellPrice:15,sprite:'misc-seed',desc:'Tree patch. Grows in 4 hours.'};
+GAME_DATA.items.willow_sapling    = {id:'willow_sapling',   name:'Willow Sapling',    type:'seed',seedType:'tree',     growTime:28800,yield:'willow_logs',  baseYield:12,levelReq:30,xp:1478.0,sellPrice:30,sprite:'misc-seed',desc:'Tree patch. Grows in 8 hours.'};
+GAME_DATA.items.yew_sapling       = {id:'yew_sapling',      name:'Yew Sapling',       type:'seed',seedType:'tree',     growTime:86400,yield:'yew_logs',     baseYield:15,levelReq:60,xp:7069.5,sellPrice:90,sprite:'misc-seed',desc:'Tree patch. Grows in 24 hours.'};
+GAME_DATA.items.magic_sapling     = {id:'magic_sapling',    name:'Magic Sapling',     type:'seed',seedType:'tree',     growTime:172800,yield:'magic_logs',  baseYield:20,levelReq:75,xp:13768.0,sellPrice:200,sprite:'misc-seed',desc:'Magic tree. Grows in 48 hours.'};
+
+// ── CROP YIELDS (items) ───────────────────────────────────────────
+const _addCrop = (id,name,type,sellPrice,desc) => { if(!GAME_DATA.items[id]) GAME_DATA.items[id]={id,name,type:'resource',subtype:'crop',sellPrice,desc}; };
+_addCrop('potato','Potato','crop',3,'A freshly grown potato.');
+_addCrop('onion','Onion','crop',5,'A sharp-smelling onion.');
+_addCrop('sweetcorn','Sweetcorn','crop',10,'Golden corn on the cob.');
+_addCrop('tomato','Tomato','crop',12,'A ripe red tomato.');
+_addCrop('strawberry','Strawberry','crop',15,'A plump strawberry.');
+_addCrop('watermelon','Watermelon','crop',25,'A huge, juicy watermelon.');
+_addCrop('snape_grass','Snape Grass','herb',30,'A medicinal grass used in potions.');
+_addCrop('ranarr','Ranarr Weed','herb',90,'A powerful healing herb.');
+_addCrop('torstol','Torstol','herb',250,'The most potent herb. Used in extreme potions.');
+_addCrop('dragonbloom','Dragonbloom','herb',350,'A rare bloom that smells of flame.');
+
+// ── SHOP ENTRIES ──────────────────────────────────────────────────
+GAME_DATA.shop.push(
+  // Gardening tools
+  {item:'watering_can',     price:150,  category:'farming'},
+  {item:'watering_can_iron',price:600,  category:'farming'},
+  {item:'watering_can_mith',price:2500, category:'farming'},
+  {item:'spade',            price:80,   category:'farming'},
+  {item:'rake',             price:100,  category:'farming'},
+  // Compost
+  {item:'compost_bin',      price:30,   category:'farming'},
+  {item:'supercompost',     price:90,   category:'farming'},
+  {item:'ultracompost',     price:250,  category:'farming'},
+  // Seeds in shop
+  {item:'sweetcorn_seed',   price:25,   category:'seeds'},
+  {item:'tomato_seed',      price:40,   category:'seeds'},
+  {item:'strawberry_seed',  price:60,   category:'seeds'},
+  {item:'watermelon_seed',  price:130,  category:'seeds'},
+  {item:'ranarr_seed',      price:200,  category:'seeds'},
+  {item:'oak_sapling',      price:50,   category:'seeds'},
+  {item:'willow_sapling',   price:100,  category:'seeds'},
+);
+
+// Fix existing seeds to have new fields
+const _seedFixes = {
+  potato_seed: {seedType:'allotment',baseYield:3,levelReq:1, xp:8.0},
+  onion_seed:  {seedType:'allotment',baseYield:3,levelReq:5, xp:9.5},
+  herb_seed:   {seedType:'herb',     baseYield:5,levelReq:9, xp:11.0},
+  blood_seed:  {seedType:'herb',     baseYield:5,levelReq:25,xp:36.0},
+  moon_seed:   {seedType:'herb',     baseYield:6,levelReq:50,xp:68.0},
+  dragon_seed: {seedType:'special',  baseYield:2,levelReq:70,xp:216.0},
+};
+for (const [id, fields] of Object.entries(_seedFixes)) {
+  if (GAME_DATA.items[id]) Object.assign(GAME_DATA.items[id], fields);
+}
+
+// ── PLOT TYPE DEFINITIONS ──────────────────────────────────────────
+GAME_DATA.farmPlotTypes = {
+  allotment: { name:'Allotment', slots:3, icon:'🌽', desc:'Grows vegetables and fruits.' },
+  herb:      { name:'Herb Patch',slots:4, icon:'🌿', desc:'Grows herbs used in potions.' },
+  tree:      { name:'Tree Patch', slots:1, icon:'🌳', desc:'Grows trees that can be cut.' },
+  special:   { name:'Special',   slots:1, icon:'✨', desc:'Rare and exotic plants.' },
+};
+
+// ================================================================
+// COMBAT PET SYSTEM v2.0
+// ================================================================
+
+// ── COMBAT PET DEFINITIONS ────────────────────────────────────────
+// action: fires every X player attacks. type: damage|heal|status|buff
+GAME_DATA.combatPets = [
+  // Starter-range pets (common drops)
+  {
+    id:'baby_dragon', name:'Baby Dragon', source:'dragon', dropRate:0.002,
+    desc:'A fierce baby dragon. Breathes fire every 3 attacks.',
+    combatType:'damage', element:'fire',
+    action:{ every:3, type:'damage', baseDmg:8, scaling:'magic', statusChance:{burn:0.20}, desc:'Breathes fire' },
+    passive:{ combatDmg:3 },
+    sprite:'pet_baby_dragon',
+  },
+  {
+    id:'shadow_imp', name:'Shadow Imp', source:'demon', dropRate:0.003,
+    desc:'A cunning imp. Reduces monster defence every 4 attacks.',
+    combatType:'debuff', element:'dark',
+    action:{ every:4, type:'debuff', stat:'defence', amount:10, duration:3, desc:'Shadow Curse' },
+    passive:{ magicDmg:5 },
+    sprite:'pet_shadow_imp',
+  },
+  {
+    id:'void_wisp', name:'Void Wisp', source:'void_walker', dropRate:0.005,
+    desc:'A void fragment. Phases through monster defences occasionally.',
+    combatType:'pierce', element:'void',
+    action:{ every:5, type:'pierce', defIgnore:0.50, desc:'Void Phase' },
+    passive:{ evasion:5 },
+    sprite:'pet_void_wisp',
+  },
+  {
+    id:'ash_sprite', name:'Ash Sprite', source:'ashfall_titan', dropRate:0.01,
+    desc:'Born of the Ashfall. Heals you every 4 attacks.',
+    combatType:'support', element:'fire',
+    action:{ every:4, type:'heal', amount:6, scaling:'hp', desc:'Ash Mend' },
+    passive:{ allXp:2 },
+    sprite:'pet_ash_sprite',
+  },
+  // World boss pets (rare)
+  {
+    id:'blight_pup', name:'Blighted Pup', source:'blight_warden', dropRate:0.02,
+    desc:'A sick little pup. Poisons enemies every 3 attacks.',
+    combatType:'poison', element:'nature',
+    action:{ every:3, type:'status', statusChance:{poison:0.80}, stacksApplied:2, desc:'Blight Spit' },
+    passive:{ poisonChance:10 },
+    sprite:'pet_blight_pup',
+  },
+  {
+    id:'storm_cub', name:'Storm Cub', source:'storm_reaver', dropRate:0.015,
+    desc:'A cub crackling with electricity. Stuns monsters.',
+    combatType:'stun', element:'lightning',
+    action:{ every:5, type:'stun', stunDuration:1.5, stunChance:0.60, desc:'Thunder Strike' },
+    passive:{ freezeChance:10 },
+    sprite:'pet_storm_cub',
+  },
+  {
+    id:'ashen_shade', name:'Ashen Shade', source:'ashen_overlord', dropRate:0.01,
+    desc:'A shade of the burnt king. Deals massive fire damage every 6 attacks.',
+    combatType:'damage', element:'fire',
+    action:{ every:6, type:'damage', baseDmg:25, scaling:'magic', statusChance:{burn:0.50}, desc:'Ashen Wrath' },
+    passive:{ burnChance:10 },
+    sprite:'pet_ashen_shade',
+  },
+  // Skilling pets with minor combat support
+  {
+    id:'beaver',    name:'Rocky the Beaver', source:'woodcutting', dropRate:0.0001,
+    desc:'Whacks monsters with a tiny log every 6 attacks.',
+    combatType:'damage', element:'nature',
+    action:{ every:6, type:'damage', baseDmg:4, scaling:'str', desc:'Log Smack' },
+    passive:{ gatherSpeed:3, skill:'woodcutting' },
+    sprite:'pet_beaver',
+  },
+  {
+    id:'golem',     name:'Golem Jr.', source:'mining', dropRate:0.0001,
+    desc:'Throws a rock every 5 attacks.',
+    combatType:'damage', element:'earth',
+    action:{ every:5, type:'damage', baseDmg:6, scaling:'str', desc:'Rock Throw' },
+    passive:{ gatherSpeed:3, skill:'mining' },
+    sprite:'pet_golem',
+  },
+  {
+    id:'blood_pup', name:'Bloodfang Pup', source:'bloodfang_alpha', dropRate:0.005,
+    desc:'A fierce pup. Bites enemies every 3 attacks.',
+    combatType:'bleed', element:'nature',
+    action:{ every:3, type:'status', statusChance:{bleed:0.70}, stacksApplied:1, desc:'Fang Bite' },
+    passive:{ bleedDmg:8 },
+    sprite:'pet_blood_pup',
+  },
+  // Familiar-style pets unlocked via quests
+  {
+    id:'ashling_pet', name:'Tamed Ashling', source:'ashling', dropRate:0.003,
+    desc:'A tamed ashling ember. Burns enemies every 4 attacks.',
+    combatType:'damage', element:'fire',
+    action:{ every:4, type:'damage', baseDmg:6, scaling:'magic', statusChance:{burn:0.30}, desc:'Ember Touch' },
+    passive:{ fireResist:5 },
+    sprite:'pet_ashling',
+  },
+  {
+    id:'frost_sprite', name:'Frost Sprite', source:'frost_wraith', dropRate:0.003,
+    desc:'A tiny ice wraith. Slows monster attacks.',
+    combatType:'slow', element:'ice',
+    action:{ every:4, type:'slow', amount:0.20, duration:2, desc:'Frost Slow' },
+    passive:{ freezeResist:5 },
+    sprite:'pet_frost_sprite',
+  },
+];
+
+// Keep GAME_DATA.pets for legacy compat (pets page still lists all)
+GAME_DATA.pets = GAME_DATA.combatPets;
+
+console.log('[Ashfall] Farming v2 + Combat Pets loaded. Seeds:', Object.values(GAME_DATA.items).filter(i=>i.type==='seed').length, 'Combat pets:', GAME_DATA.combatPets.length);

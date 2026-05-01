@@ -155,6 +155,26 @@ class GameEngine {
     if (!s.equipment.amulet) s.equipment.amulet = null;
     if (!s.equipment.cape) s.equipment.cape = null;
     if (!s.equipment.gloves) s.equipment.gloves = null;
+    // Farming v2 migration
+    if (!s.farming) s.farming = {};
+    if (!s.farming.canUses) s.farming.canUses = {};
+    // Upgrade old flat plot array to typed patch system
+    if (Array.isArray(s.farming.plots)) {
+      for (const p of s.farming.plots) {
+        if (!p.type) p.type = 'allotment';
+        if (p.watered === undefined) p.watered = false;
+        if (p.waterBonus === undefined) p.waterBonus = 0;
+        if (p.compostTier === undefined) p.compostTier = 0;
+        if (p.compostBonus === undefined) p.compostBonus = 0;
+        if (p.diseaseReduction === undefined) p.diseaseReduction = 0;
+        if (p.hasWeeds === undefined) p.hasWeeds = false;
+        if (p.dead === undefined) p.dead = false;
+        if (p._diseaseChecked === undefined) p._diseaseChecked = false;
+        if (p._diseaseChance === undefined) p._diseaseChance = 0;
+      }
+    }
+    // Pet combat counter
+    if (!s.combat._petAttackCounter) s.combat._petAttackCounter = 0;
     if (!s.familiar) s.familiar = { active:null, timeLeft:0 };
     if (!s.potionBelt) s.potionBelt = [{id:null,qty:0},{id:null,qty:0},{id:null,qty:0},{id:null,qty:0}];
     if (s.specEnergy === undefined) s.specEnergy = 100;
@@ -497,12 +517,15 @@ class GameEngine {
     this._tickStatusEffects(c.statusEffects.player, dt, 'player');
     const playerSpeed = this.getPlayerAttackSpeed();
     c.playerAttackTimer += dt;
-    if (c.playerAttackTimer >= playerSpeed) { c.playerAttackTimer -= playerSpeed; this.playerAttack(monster); this.drainPrayerPoints(); }
+    if (c.playerAttackTimer >= playerSpeed) { c.playerAttackTimer -= playerSpeed; this.playerAttack(monster); this.drainPrayerPoints(); this.doPetCombatAction(monster); }
     c.monsterAttackTimer += dt;
     let monsterSpeed = monster.attackSpeed * 0.7;
     // Freeze slows monster attack speed
     const mFreeze = c.statusEffects?.monster?.freeze;
     if (mFreeze && mFreeze.stacks > 0) monsterSpeed *= (1 + 0.10 * mFreeze.stacks);
+    // Pet slow effect
+    const mSlow = c.statusEffects?.monster?.slow;
+    if (mSlow && mSlow.timer > 0) monsterSpeed *= (1 + (mSlow.amount||0.20));
     // Shock stun on monster
     const mShock = c.statusEffects?.monster?.shock;
     let monsterStunned = false;
@@ -1842,41 +1865,202 @@ class GameEngine {
   }
 
   // ── FARMING ────────────────────────────────────────────
+  // ── FARMING v2 ─────────────────────────────────────────
+  _makePlot(type) {
+    return { seed:null, plantedAt:null, growTime:0, ready:false, dead:false,
+             type:type||'allotment', watered:false, waterBonus:0,
+             compostTier:0, compostBonus:0, diseaseReduction:0,
+             hasWeeds:false, _diseaseChecked:false, _diseaseChance:0 };
+  }
+
+  _ensureFarmingState() {
+    const s = this.state;
+    if (!s.farming) s.farming = {};
+    if (!Array.isArray(s.farming.plots)) s.farming.plots = [];
+    // Count existing typed plots
+    const have = {};
+    for (const p of s.farming.plots) {
+      const t = p.type || 'allotment';
+      have[t] = (have[t]||0)+1;
+    }
+    // Add missing plots for each type
+    const need = { allotment:3, herb:4, tree:1, special:1 };
+    for (const [type, count] of Object.entries(need)) {
+      while ((have[type]||0) < count) {
+        s.farming.plots.push(this._makePlot(type));
+        have[type] = (have[type]||0)+1;
+      }
+    }
+    if (!s.farming.canUses) s.farming.canUses = {};
+  }
+
   plantSeed(idx, seedId) {
-    if (idx < 0 || idx >= this.state.farming.plots.length) return;
-    const plot = this.state.farming.plots[idx];
-    if (plot.seed) return;
+    this._ensureFarmingState();
+    const s = this.state;
+    if (idx < 0 || idx >= s.farming.plots.length) return;
+    const plot = s.farming.plots[idx];
+    if (plot.seed || plot.dead) { this.emit('notification',{type:'warn',text: plot.dead ? 'Clear the dead crop first (use spade).' : 'Plot already occupied.'}); return; }
     const seed = GAME_DATA.items[seedId];
     if (!seed || seed.type !== 'seed') return;
-    if (!this.state.bank[seedId] || this.state.bank[seedId] <= 0) return;
+    if ((s.bank[seedId]||0) <= 0) { this.emit('notification',{type:'warn',text:'No seeds in bank.'}); return; }
+    if (seed.levelReq && s.skills.farming.level < seed.levelReq) {
+      this.emit('notification',{type:'warn',text:`Farming level ${seed.levelReq} required.`}); return;
+    }
+    // Plot type matching
+    const st = seed.seedType || 'allotment';
+    if (plot.type !== 'allotment' && plot.type !== st) {
+      const names = {herb:'Herb Patch',tree:'Tree Patch',special:'Special Patch'};
+      this.emit('notification',{type:'warn',text:`${names[plot.type]||plot.type} requires ${st} seeds.`}); return;
+    }
     this.removeItem(seedId, 1);
     plot.seed = seedId;
     plot.plantedAt = Date.now();
     plot.growTime = seed.growTime * 1000;
     plot.ready = false;
+    plot.dead = false;
+    plot.watered = false;
+    plot.waterBonus = 0;
+    plot.hasWeeds = false;
+    plot._diseaseChecked = false;
+    const diseaseBase = st === 'tree' ? 0.04 : st === 'herb' ? 0.07 : 0.10;
+    plot._diseaseChance = Math.max(0, diseaseBase - (plot.diseaseReduction||0));
+    this.addXp('farming', Math.ceil((seed.xp||8) * 0.1));
     this.emit('farmingChanged');
+    this.emit('notification',{type:'success',text:`Planted ${seed.name}.`});
+  }
+
+  waterPlot(idx) {
+    this._ensureFarmingState();
+    const s = this.state;
+    if (idx < 0 || idx >= s.farming.plots.length) return;
+    const plot = s.farming.plots[idx];
+    if (!plot.seed || plot.ready || plot.dead) { this.emit('notification',{type:'warn',text:'Nothing to water.'}); return; }
+    // Find best watering can
+    const cans = [{id:'watering_can_mith',bonus:0.60},{id:'watering_can_iron',bonus:0.40},{id:'watering_can',bonus:0.25}];
+    let can = null;
+    for (const c of cans) {
+      if ((s.bank[c.id]||0) > 0) { can = c; break; }
+    }
+    if (!can) { this.emit('notification',{type:'warn',text:'You need a watering can. Buy one from the shop.'}); return; }
+    const item = GAME_DATA.items[can.id];
+    if (!s.farming.canUses[can.id]) s.farming.canUses[can.id] = item.maxUses || 30;
+    s.farming.canUses[can.id]--;
+    if (s.farming.canUses[can.id] <= 0) {
+      this.removeItem(can.id, 1);
+      delete s.farming.canUses[can.id];
+    }
+    if (plot.watered) { this.emit('notification',{type:'info',text:'Plot already watered.'}); return; }
+    plot.watered = true;
+    plot.waterBonus = can.bonus;
+    const elapsed = Date.now() - plot.plantedAt;
+    const remaining = plot.growTime - elapsed;
+    if (remaining > 0) plot.growTime = elapsed + Math.floor(remaining * (1 - can.bonus));
+    this.emit('farmingChanged');
+    this.emit('notification',{type:'success',text:`Watered! Growth speed +${Math.round(can.bonus*100)}%.`});
+  }
+
+  compostPlot(idx) {
+    this._ensureFarmingState();
+    const s = this.state;
+    if (idx < 0 || idx >= s.farming.plots.length) return;
+    const plot = s.farming.plots[idx];
+    if (plot.seed && !plot.dead) { this.emit('notification',{type:'warn',text:'Apply compost before planting.'}); return; }
+    const composts = ['ultracompost','supercompost','compost_bin'];
+    let chosen = null;
+    for (const c of composts) if ((s.bank[c]||0) > 0) { chosen = c; break; }
+    if (!chosen) { this.emit('notification',{type:'warn',text:'No compost in bank. Buy some from the shop.'}); return; }
+    const ci = GAME_DATA.items[chosen];
+    this.removeItem(chosen, 1);
+    plot.compostTier = ci.compostTier||1;
+    plot.compostBonus = ci.growBonus||0.10;
+    plot.diseaseReduction = ci.diseaseReduct||0.05;
+    this.emit('farmingChanged');
+    this.emit('notification',{type:'success',text:`Applied ${ci.name}. Yield +${Math.round((ci.growBonus||0.10)*100)}%.`});
+  }
+
+  clearPlot(idx) {
+    this._ensureFarmingState();
+    const s = this.state;
+    if (idx < 0 || idx >= s.farming.plots.length) return;
+    const plot = s.farming.plots[idx];
+    if (!plot.seed && !plot.dead) { this.emit('notification',{type:'info',text:'Plot is already empty.'}); return; }
+    if (plot.seed && !plot.dead && !plot.ready && !(s.bank['spade']||0)) {
+      this.emit('notification',{type:'warn',text:'You need a spade to clear a growing crop.'}); return;
+    }
+    const type = plot.type||'allotment';
+    const compostTier = plot.compostTier, compostBonus = plot.compostBonus, diseaseReduction = plot.diseaseReduction;
+    Object.assign(plot, this._makePlot(type));
+    // Preserve compost if it wasn't used yet (dead crop case)
+    if (plot.dead || true) { plot.compostTier = compostTier; plot.compostBonus = compostBonus; plot.diseaseReduction = diseaseReduction; }
+    this.emit('farmingChanged');
+    this.emit('notification',{type:'info',text:'Plot cleared.'});
+  }
+
+  removeWeeds(idx) {
+    this._ensureFarmingState();
+    const s = this.state;
+    if (idx < 0 || idx >= s.farming.plots.length) return;
+    const plot = s.farming.plots[idx];
+    if (!plot.hasWeeds) { this.emit('notification',{type:'info',text:'No weeds here.'}); return; }
+    if (!(s.bank['rake']||0)) { this.emit('notification',{type:'warn',text:'You need a rake to remove weeds.'}); return; }
+    plot.hasWeeds = false;
+    const elapsed = Date.now() - plot.plantedAt;
+    if (plot.growTime > elapsed + 5000) plot.growTime = elapsed + Math.floor((plot.growTime-elapsed)*0.85);
+    this.emit('farmingChanged');
+    this.emit('notification',{type:'success',text:'Weeds removed.'});
   }
 
   harvestPlot(idx) {
-    if (idx < 0 || idx >= this.state.farming.plots.length) return;
-    const plot = this.state.farming.plots[idx];
-    if (!plot.seed || !plot.ready) return;
+    this._ensureFarmingState();
+    const s = this.state;
+    if (idx < 0 || idx >= s.farming.plots.length) return;
+    const plot = s.farming.plots[idx];
+    if (!plot.seed || !plot.ready || plot.dead) return;
     const seed = GAME_DATA.items[plot.seed];
-    const yId = seed.yield;
-    const qty = this.randInt(3, 8);
-    this.addItem(yId, qty);
-    this.addXp('farming', Math.floor(qty * 10));
-    if (Math.random() < 0.40) this.addItem(plot.seed, 1);
-    this.trackQuestProgress('gather', { item:yId, qty });
-    plot.seed = null; plot.plantedAt = null; plot.growTime = 0; plot.ready = false;
+    if (!seed) return;
+    const base = seed.baseYield || 3;
+    const compostMult = 1 + (plot.compostBonus||0);
+    const ultraExtra = plot.compostTier >= 3 ? 2 : 0;
+    const farmLv = s.skills.farming?.level || 1;
+    const lvMult = 1 + farmLv/200;
+    const secateurs = (s.bank['secateurs_magic']||0) > 0 ? 0.10 : 0;
+    const petYield = this.getPetBonus('farmYield')||0;
+    let qty = Math.round(base * compostMult * lvMult) + ultraExtra;
+    if (seed.seedType === 'herb' && Math.random() < 0.15 + secateurs) qty++;
+    if (petYield > 0) qty = Math.floor(qty * (1+petYield/100));
+    qty = Math.max(1, qty);
+    this.addItem(seed.yield, qty);
+    const xpGain = Math.floor((seed.xp||10) * qty);
+    this.addXp('farming', xpGain);
+    if (Math.random() < 0.35 + (plot.compostTier||0)*0.05) this.addItem(plot.seed, 1);
+    this.trackQuestProgress('gather', { item:seed.yield, qty });
+    const type = plot.type||'allotment';
+    const compostTier = plot.compostTier, compostBonus = plot.compostBonus, diseaseReduction = plot.diseaseReduction;
+    Object.assign(plot, this._makePlot(type));
     this.emit('farmingChanged');
-    this.emit('notification', { type:'success', text:`Harvested ${qty}x ${GAME_DATA.items[yId].name}!` });
+    this.emit('notification',{type:'success',text:`Harvested ${qty}x ${GAME_DATA.items[seed.yield]?.name||seed.yield}!`});
   }
 
   tickFarming(now) {
+    this._ensureFarmingState();
     for (const plot of this.state.farming.plots) {
-      if (plot.seed && plot.plantedAt && !plot.ready) {
-        if (now - plot.plantedAt >= plot.growTime) plot.ready = true;
+      if (!plot.seed || plot.ready || plot.dead) continue;
+      const elapsed = now - plot.plantedAt;
+      if (!plot._diseaseChecked && elapsed > plot.growTime * 0.5) {
+        plot._diseaseChecked = true;
+        if ((plot._diseaseChance||0) > 0 && Math.random() < plot._diseaseChance) {
+          plot.dead = true;
+          this.emit('farmingChanged');
+          const name = GAME_DATA.items[plot.seed]?.name||'crop';
+          this.emit('notification',{type:'warn',text:`${name} died of disease! Use compost to prevent this.`});
+          continue;
+        }
+      }
+      if (elapsed >= plot.growTime) {
+        plot.ready = true;
+        const name = (GAME_DATA.items[plot.seed]?.name||'crop').replace(' Seed','');
+        this.emit('farmingChanged');
+        this.emit('notification',{type:'success',text:`Your ${name} is ready to harvest!`});
       }
     }
   }
@@ -2391,13 +2575,13 @@ class GameEngine {
 
   // ── PET SYSTEM ─────────────────────────────────────────
   rollPetDrop(sourceId) {
-    if (!GAME_DATA.pets) return;
-    for (const pet of GAME_DATA.pets) {
+    const pets = GAME_DATA.combatPets || GAME_DATA.pets || [];
+    for (const pet of pets) {
       if (pet.source === sourceId && !this.state.pets.includes(pet.id)) {
         if (Math.random() < pet.dropRate) {
           this.state.pets.push(pet.id);
           this.state.stats.petsFound = (this.state.stats.petsFound || 0) + 1;
-          this.emit('notification', { type:'achievement', text:`PET DROP: ${pet.name}! ${pet.desc}` });
+          this.emit('notification', { type:'achievement', text:`🐾 PET DROP: ${pet.name}! ${pet.desc}` });
           this.emit('petFound', pet);
         }
       }
@@ -2407,15 +2591,117 @@ class GameEngine {
   equipPet(petId) {
     if (!this.state.pets.includes(petId)) return;
     this.state.activePet = this.state.activePet === petId ? null : petId;
-    const pet = GAME_DATA.pets.find(p => p.id === petId);
-    this.emit('notification', { type:'info', text: this.state.activePet ? `Equipped ${pet.name}.` : `Unequipped pet.` });
+    if (!this.state.combat._petAttackCounter) this.state.combat._petAttackCounter = 0;
+    const pets = GAME_DATA.combatPets || GAME_DATA.pets || [];
+    const pet = pets.find(p => p.id === petId);
+    this.emit('notification', { type:'info', text: this.state.activePet ? `${pet?.name} is now following you into battle!` : 'Pet unequipped.' });
+    this.emit('petChanged');
   }
 
   getPetBonus(type) {
     if (!this.state.activePet) return 0;
-    const pet = GAME_DATA.pets.find(p => p.id === this.state.activePet);
-    if (pet?.bonus?.type === type) return pet.bonus.value || 0;
+    const pets = GAME_DATA.combatPets || GAME_DATA.pets || [];
+    const pet = pets.find(p => p.id === this.state.activePet);
+    if (!pet) return 0;
+    // New format: pet.passive.type
+    if (pet.passive) {
+      if (type === 'lootQty' && pet.passive.lootQty) return pet.passive.lootQty;
+      if (type === 'farmYield' && pet.passive.farmYield) return pet.passive.farmYield;
+      if (type === 'combatDmg' && pet.passive.combatDmg) return pet.passive.combatDmg;
+      if (type === 'magicDmg' && pet.passive.magicDmg) return pet.passive.magicDmg;
+    }
+    // Legacy format: pet.bonus.type
+    if (pet.bonus?.type === type) return pet.bonus.value || 0;
     return 0;
+  }
+
+  // ── COMBAT PET ATTACK ──────────────────────────────────
+  // Called from playerAttack() after each player hit
+  doPetCombatAction(monster) {
+    if (!this.state.activePet || !this.state.combat.active) return;
+    const pets = GAME_DATA.combatPets || GAME_DATA.pets || [];
+    const pet = pets.find(p => p.id === this.state.activePet);
+    if (!pet?.action) return;
+
+    const c = this.state.combat;
+    if (!c._petAttackCounter) c._petAttackCounter = 0;
+    c._petAttackCounter++;
+    if (c._petAttackCounter < pet.action.every) return;
+    c._petAttackCounter = 0;
+
+    const action = pet.action;
+    const magicLv = this.state.skills.magic?.level || 1;
+    const strLv   = this.state.skills.strength?.level || 1;
+
+    switch (action.type) {
+      case 'damage': {
+        const base = action.baseDmg || 5;
+        const scale = action.scaling === 'magic' ? magicLv/10 : strLv/10;
+        const dmg = Math.max(1, Math.floor(base + scale + Math.random() * base));
+        c.monsterHp = Math.max(0, (c.monsterHp||0) - dmg);
+        this.emit('petAction', { pet, action:action.desc||'attacks', dmg, type:'damage' });
+        // Apply status
+        if (action.statusChance) {
+          for (const [effect, chance] of Object.entries(action.statusChance)) {
+            if (Math.random() < chance) {
+              this._applyStatusEffect('monster', effect, { stacks: action.stacksApplied||1 });
+            }
+          }
+        }
+        break;
+      }
+      case 'heal': {
+        const maxHp = this.getMaxHp();
+        const healAmt = action.scaling === 'hp'
+          ? Math.floor(maxHp * (action.amount/100))
+          : action.amount || 5;
+        c.playerHp = Math.min(maxHp, (c.playerHp||0) + healAmt);
+        this.emit('petAction', { pet, action:action.desc||'heals', heal:healAmt, type:'heal' });
+        break;
+      }
+      case 'status': {
+        if (action.statusChance) {
+          for (const [effect, chance] of Object.entries(action.statusChance)) {
+            if (Math.random() < chance) {
+              this._applyStatusEffect('monster', effect, { stacks: action.stacksApplied||1 });
+              this.emit('petAction', { pet, action:action.desc||'applies '+effect, type:'status', effect });
+            }
+          }
+        }
+        break;
+      }
+      case 'debuff': {
+        if (!c.statusEffects.monster._petDebuff) c.statusEffects.monster._petDebuff = {};
+        c.statusEffects.monster._petDebuff[action.stat] = {
+          amount: action.amount||10, timer: (action.duration||2)*1000
+        };
+        this.emit('petAction', { pet, action:action.desc||'debuffs', type:'debuff' });
+        break;
+      }
+      case 'pierce': {
+        const base = action.baseDmg || 8;
+        const defIgnore = action.defIgnore || 0.50;
+        const dmg = Math.floor(base + Math.random()*base);
+        c.monsterHp = Math.max(0, (c.monsterHp||0) - dmg);
+        this.emit('petAction', { pet, action:action.desc||'pierces', dmg, type:'pierce' });
+        break;
+      }
+      case 'stun': {
+        if (Math.random() < (action.stunChance||0.50)) {
+          if (!c.statusEffects.monster.stun) c.statusEffects.monster.stun = {};
+          c.statusEffects.monster.stun.timer = (action.stunDuration||1)*1000;
+          c.statusEffects.monster.stun.stacks = 1;
+          this.emit('petAction', { pet, action:action.desc||'stuns', type:'stun' });
+        }
+        break;
+      }
+      case 'slow': {
+        if (!c.statusEffects.monster.slow) c.statusEffects.monster.slow = {};
+        c.statusEffects.monster.slow = { amount:action.amount||0.20, timer:(action.duration||2)*1000, stacks:1 };
+        this.emit('petAction', { pet, action:action.desc||'slows', type:'slow' });
+        break;
+      }
+    }
   }
 
   // ── SLAYER SYSTEM ──────────────────────────────────────

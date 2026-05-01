@@ -593,3 +593,313 @@ window.renderItemSprite = function(itemId, size = 32) {
 console.log('[Ashfall] sprites-art.js loaded');
 console.log('  NPC portraits total:', Object.keys(GAME_DATA.npcArt).length);
 console.log('  Monster art total:', Object.keys(GAME_DATA.monsterArt).length);
+
+// ── COMBAT PET ART ────────────────────────────────────────────────
+if (!GAME_DATA.petArt) GAME_DATA.petArt = {};
+
+Object.assign(GAME_DATA.petArt, {
+
+  baby_dragon: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="24" cy="30" rx="12" ry="10" fill="#8a3a2a"/>
+    <ellipse cx="24" cy="28" rx="9" ry="8" fill="#c44a30"/>
+    <!-- wings -->
+    <path d="M14 26 Q6 18 8 26 Q12 30 14 28Z" fill="#7a2a1a" opacity="0.8"/>
+    <path d="M34 26 Q42 18 40 26 Q36 30 34 28Z" fill="#7a2a1a" opacity="0.8"/>
+    <!-- head -->
+    <circle cx="24" cy="18" r="9" fill="#c44a30"/>
+    <!-- snout -->
+    <ellipse cx="24" cy="22" rx="5" ry="3" fill="#a03820"/>
+    <!-- eyes glowing -->
+    <circle cx="20" cy="16" r="3" fill="#1a0a0a"/><circle cx="20" cy="16" r="1.8" fill="#ff6a20"/><circle cx="20.5" cy="15.5" r="0.6" fill="#ffd080"/>
+    <circle cx="28" cy="16" r="3" fill="#1a0a0a"/><circle cx="28" cy="16" r="1.8" fill="#ff6a20"/><circle cx="28.5" cy="15.5" r="0.6" fill="#ffd080"/>
+    <!-- tiny horns -->
+    <polygon points="20,10 18,6 22,9" fill="#7a2a1a"/>
+    <polygon points="28,10 26,6 30,9" fill="#7a2a1a"/>
+    <!-- fire breath -->
+    <path d="M26 24 Q30 22 34 26 Q30 28 26 26Z" fill="#d67338" opacity="0.7"/>
+    <!-- tail -->
+    <path d="M32 34 Q40 38 38 44 Q34 42 32 36Z" fill="#8a3a2a"/>
+    <!-- legs -->
+    <ellipse cx="18" cy="38" rx="4" ry="3" fill="#a03820"/>
+    <ellipse cx="30" cy="38" rx="4" ry="3" fill="#a03820"/>
+  </svg>`,
+
+  shadow_imp: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="24" cy="32" rx="10" ry="8" fill="#2a1a3a"/>
+    <!-- ears -->
+    <polygon points="14,18 10,8 18,16" fill="#3a1a4a"/>
+    <polygon points="34,18 38,8 30,16" fill="#3a1a4a"/>
+    <!-- head -->
+    <circle cx="24" cy="20" r="11" fill="#3a1a4a"/>
+    <!-- eyes: glowing red -->
+    <circle cx="20" cy="18" r="3" fill="#0a0010"/><circle cx="20" cy="18" r="2" fill="#c44040"/><circle cx="20.5" cy="17.5" r="0.7" fill="#ff8080"/>
+    <circle cx="28" cy="18" r="3" fill="#0a0010"/><circle cx="28" cy="18" r="2" fill="#c44040"/><circle cx="28.5" cy="17.5" r="0.7" fill="#ff8080"/>
+    <!-- grin -->
+    <path d="M19 25 Q24 29 29 25" fill="none" stroke="#c44040" stroke-width="1.5"/>
+    <rect x="21" y="24" width="2" height="3" fill="#e8d4d4" opacity="0.7"/>
+    <rect x="25" y="24" width="2" height="3" fill="#e8d4d4" opacity="0.7"/>
+    <!-- shadow hands -->
+    <ellipse cx="14" cy="30" rx="4" ry="3" fill="#2a1a3a"/>
+    <ellipse cx="34" cy="30" rx="4" ry="3" fill="#2a1a3a"/>
+    <!-- tail -->
+    <path d="M30 36 Q38 40 36 44" stroke="#3a1a4a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <polygon points="36,44 34,48 38,47" fill="#c44040"/>
+    <!-- shadow aura -->
+    <circle cx="24" cy="20" r="13" fill="none" stroke="#5a1a7a" stroke-width="1" opacity="0.4" stroke-dasharray="3,3"/>
+  </svg>`,
+
+  void_wisp: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- void aura layers -->
+    <circle cx="24" cy="24" r="20" fill="#0a0014" opacity="0.3"/>
+    <circle cx="24" cy="24" r="15" fill="#1a0a2a" opacity="0.5"/>
+    <!-- main body -->
+    <circle cx="24" cy="24" r="10" fill="#2a0a4a"/>
+    <!-- void eye clusters -->
+    <circle cx="20" cy="20" r="4" fill="#0a0014"/><circle cx="20" cy="20" r="2.5" fill="#8a30c0"/><circle cx="20.5" cy="19.5" r="1" fill="#d080ff"/>
+    <circle cx="28" cy="22" r="3" fill="#0a0014"/><circle cx="28" cy="22" r="2" fill="#6a20a0"/><circle cx="28.5" cy="21.5" r="0.7" fill="#c060f0"/>
+    <circle cx="22" cy="28" r="2.5" fill="#0a0014"/><circle cx="22" cy="28" r="1.5" fill="#5a109a"/><circle cx="22.5" cy="27.5" r="0.5" fill="#b050e0"/>
+    <!-- void tendrils -->
+    <path d="M24 34 Q20 40 16 44" stroke="#3a0a6a" stroke-width="2" fill="none" opacity="0.7"/>
+    <path d="M24 34 Q28 40 32 44" stroke="#3a0a6a" stroke-width="2" fill="none" opacity="0.7"/>
+    <path d="M14 20 Q8 18 4 22" stroke="#2a0a5a" stroke-width="1.5" fill="none" opacity="0.5"/>
+    <path d="M34 20 Q40 18 44 22" stroke="#2a0a5a" stroke-width="1.5" fill="none" opacity="0.5"/>
+    <!-- floating particles -->
+    <circle cx="10" cy="14" r="1.5" fill="#6a20a0" opacity="0.5"/>
+    <circle cx="38" cy="16" r="1" fill="#6a20a0" opacity="0.4"/>
+    <circle cx="14" cy="36" r="1" fill="#5a10a0" opacity="0.4"/>
+    <circle cx="38" cy="36" r="1.5" fill="#5a10a0" opacity="0.3"/>
+  </svg>`,
+
+  ash_sprite: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- glow -->
+    <circle cx="24" cy="24" r="18" fill="#d67338" opacity="0.15"/>
+    <!-- body: ember shape -->
+    <ellipse cx="24" cy="28" rx="8" ry="7" fill="#d67338"/>
+    <!-- wings: heat shimmer -->
+    <path d="M16 24 Q8 16 12 24 Q14 28 16 26Z" fill="#c9873e" opacity="0.7"/>
+    <path d="M32 24 Q40 16 36 24 Q34 28 32 26Z" fill="#c9873e" opacity="0.7"/>
+    <!-- head: bright ember -->
+    <circle cx="24" cy="20" r="8" fill="#ff8040"/>
+    <!-- amber eyes -->
+    <circle cx="21" cy="18" r="2.5" fill="#1a0a00"/><circle cx="21" cy="18" r="1.5" fill="#ffd080"/><circle cx="21.5" cy="17.5" r="0.5" fill="#ffffff"/>
+    <circle cx="27" cy="18" r="2.5" fill="#1a0a00"/><circle cx="27" cy="18" r="1.5" fill="#ffd080"/><circle cx="27.5" cy="17.5" r="0.5" fill="#ffffff"/>
+    <!-- warm smile -->
+    <path d="M21 23 Q24 26 27 23" fill="none" stroke="#c9873e" stroke-width="1.2"/>
+    <!-- ash particles floating -->
+    <circle cx="16" cy="14" r="1" fill="#888" opacity="0.5"/>
+    <circle cx="30" cy="12" r="1.5" fill="#888" opacity="0.4"/>
+    <circle cx="34" cy="20" r="1" fill="#aaa" opacity="0.35"/>
+    <circle cx="14" cy="28" r="1" fill="#999" opacity="0.3"/>
+    <!-- flame tuft on head -->
+    <path d="M24 12 Q22 8 24 6 Q26 8 24 12Z" fill="#ff6020"/>
+    <path d="M20 14 Q18 10 20 8 Q22 10 20 14Z" fill="#ff8040" opacity="0.7"/>
+    <path d="M28 14 Q30 10 28 8 Q26 10 28 14Z" fill="#ff8040" opacity="0.7"/>
+    <!-- legs -->
+    <ellipse cx="20" cy="34" rx="3" ry="2" fill="#c9873e"/>
+    <ellipse cx="28" cy="34" rx="3" ry="2" fill="#c9873e"/>
+  </svg>`,
+
+  blight_pup: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="24" cy="32" rx="13" ry="9" fill="#3a4a2a"/>
+    <!-- legs -->
+    <rect x="14" y="36" width="5" height="8" rx="2" fill="#2a3a1a"/>
+    <rect x="20" y="38" width="5" height="6" rx="2" fill="#2a3a1a"/>
+    <rect x="27" y="38" width="5" height="6" rx="2" fill="#2a3a1a"/>
+    <rect x="33" y="36" width="5" height="8" rx="2" fill="#2a3a1a"/>
+    <!-- body -->
+    <ellipse cx="24" cy="30" rx="12" ry="8" fill="#4a5a2a"/>
+    <!-- blight pustules -->
+    <circle cx="18" cy="28" r="2.5" fill="#6aaa2a" opacity="0.8"/><circle cx="18" cy="28" r="1.2" fill="#8acc2a"/>
+    <circle cx="30" cy="30" r="2" fill="#6aaa2a" opacity="0.7"/><circle cx="30" cy="30" r="1" fill="#8acc2a"/>
+    <!-- head -->
+    <circle cx="24" cy="20" r="10" fill="#4a5a2a"/>
+    <!-- ears -->
+    <ellipse cx="16" cy="14" rx="4" ry="6" fill="#3a4a1a" transform="rotate(-15 16 14)"/>
+    <ellipse cx="32" cy="14" rx="4" ry="6" fill="#3a4a1a" transform="rotate(15 32 14)"/>
+    <!-- sickly eyes -->
+    <circle cx="20" cy="19" r="3" fill="#0a1a0a"/><circle cx="20" cy="19" r="2" fill="#6aaa2a"/><circle cx="20.5" cy="18.5" r="0.7" fill="#aae82a"/>
+    <circle cx="28" cy="19" r="3" fill="#0a1a0a"/><circle cx="28" cy="19" r="2" fill="#6aaa2a"/><circle cx="28.5" cy="18.5" r="0.7" fill="#aae82a"/>
+    <!-- nose + grin -->
+    <ellipse cx="24" cy="23" rx="2.5" ry="1.5" fill="#2a3a1a"/>
+    <path d="M20 26 Q24 29 28 26" fill="none" stroke="#4a6a1a" stroke-width="1.5"/>
+    <!-- dripping blight -->
+    <path d="M22 30 Q22 36 21 38" stroke="#4a8a0a" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <circle cx="21" cy="39" r="1.2" fill="#4a8a0a" opacity="0.8"/>
+    <!-- tail -->
+    <path d="M34 30 Q42 28 40 36" stroke="#3a4a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>`,
+
+  storm_cub: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- electric aura -->
+    <circle cx="24" cy="24" r="20" fill="#1a2a4a" opacity="0.3"/>
+    <ellipse cx="24" cy="30" rx="13" ry="9" fill="#1a2a4a"/>
+    <!-- legs -->
+    <rect x="14" y="36" width="5" height="8" rx="2" fill="#12203a"/>
+    <rect x="20" y="38" width="5" height="6" rx="2" fill="#12203a"/>
+    <rect x="27" y="38" width="5" height="6" rx="2" fill="#12203a"/>
+    <rect x="33" y="36" width="5" height="8" rx="2" fill="#12203a"/>
+    <!-- body -->
+    <ellipse cx="24" cy="28" rx="12" ry="8" fill="#2a3a5a"/>
+    <!-- lightning marks on body -->
+    <polyline points="18,24 20,28 17,30 19,34" stroke="#60c0ff" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <!-- head -->
+    <circle cx="24" cy="18" r="10" fill="#2a3a5a"/>
+    <!-- fluffy ears -->
+    <circle cx="16" cy="12" r="5" fill="#1a2a4a"/>
+    <circle cx="32" cy="12" r="5" fill="#1a2a4a"/>
+    <circle cx="16" cy="12" r="3" fill="#2a3a5a"/>
+    <circle cx="32" cy="12" r="3" fill="#2a3a5a"/>
+    <!-- electric eyes -->
+    <circle cx="20" cy="17" r="3.5" fill="#0a1020"/><circle cx="20" cy="17" r="2" fill="#60c0ff"/><circle cx="20.5" cy="16.5" r="0.8" fill="#ffffff"/>
+    <circle cx="28" cy="17" r="3.5" fill="#0a1020"/><circle cx="28" cy="17" r="2" fill="#60c0ff"/><circle cx="28.5" cy="16.5" r="0.8" fill="#ffffff"/>
+    <!-- lightning arc between eyes -->
+    <polyline points="22,17 24,14 26,17" stroke="#80d0ff" stroke-width="1" fill="none" opacity="0.8"/>
+    <!-- nose -->
+    <ellipse cx="24" cy="22" rx="2" ry="1.5" fill="#12203a"/>
+    <!-- tail with lightning -->
+    <path d="M34 30 Q42 26 40 34" stroke="#1a2a4a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <polyline points="34,30 36,26 38,30 40,26" stroke="#60c0ff" stroke-width="1.2" fill="none" opacity="0.6"/>
+  </svg>`,
+
+  blood_pup: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="24" cy="30" rx="13" ry="9" fill="#5a2a2a"/>
+    <rect x="14" y="36" width="5" height="9" rx="2" fill="#4a1a1a"/>
+    <rect x="20" y="38" width="5" height="7" rx="2" fill="#4a1a1a"/>
+    <rect x="27" y="38" width="5" height="7" rx="2" fill="#4a1a1a"/>
+    <rect x="33" y="36" width="5" height="9" rx="2" fill="#4a1a1a"/>
+    <ellipse cx="24" cy="28" rx="12" ry="8" fill="#6a3a3a"/>
+    <circle cx="24" cy="18" r="10" fill="#6a3a3a"/>
+    <!-- large bloodfang ears - pointed -->
+    <polygon points="14,16 10,4 20,14" fill="#5a2a2a"/>
+    <polygon points="34,16 38,4 28,14" fill="#5a2a2a"/>
+    <!-- fierce red eyes -->
+    <circle cx="20" cy="17" r="3.5" fill="#0a0000"/><circle cx="20" cy="17" r="2.2" fill="#c44040"/><circle cx="20.5" cy="16.5" r="0.8" fill="#ff8080"/>
+    <circle cx="28" cy="17" r="3.5" fill="#0a0000"/><circle cx="28" cy="17" r="2.2" fill="#c44040"/><circle cx="28.5" cy="16.5" r="0.8" fill="#ff8080"/>
+    <!-- snarl with fangs -->
+    <path d="M19 24 Q24 28 29 24" fill="#3a1a1a" stroke="#c44040" stroke-width="1"/>
+    <polygon points="21,23 20,27 22,27" fill="#e8e0d4"/>
+    <polygon points="27,23 26,27 28,27" fill="#e8e0d4"/>
+    <!-- blood drips -->
+    <path d="M21 27 Q21 32 20 34" stroke="#c44040" stroke-width="1.5" opacity="0.7"/>
+    <circle cx="20" cy="35" r="1" fill="#c44040" opacity="0.8"/>
+    <!-- tail -->
+    <path d="M35 30 Q44 28 42 36" stroke="#5a2a2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- claws -->
+    <line x1="13" y1="44" x2="11" y2="46" stroke="#8a4a4a" stroke-width="1.5"/>
+    <line x1="16" y1="44" x2="15" y2="46" stroke="#8a4a4a" stroke-width="1.5"/>
+    <line x1="36" y1="44" x2="37" y2="46" stroke="#8a4a4a" stroke-width="1.5"/>
+    <line x1="38" y1="44" x2="40" y2="46" stroke="#8a4a4a" stroke-width="1.5"/>
+  </svg>`,
+
+  beaver: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="24" cy="32" rx="14" ry="10" fill="#7a5a2a"/>
+    <rect x="14" y="38" width="6" height="7" rx="2" fill="#5a3a1a"/>
+    <rect x="30" y="38" width="6" height="7" rx="2" fill="#5a3a1a"/>
+    <ellipse cx="24" cy="28" rx="12" ry="8" fill="#9a7a4a"/>
+    <circle cx="24" cy="18" r="10" fill="#9a7a4a"/>
+    <!-- big round ears -->
+    <circle cx="15" cy="12" r="5" fill="#7a5a2a"/>
+    <circle cx="33" cy="12" r="5" fill="#7a5a2a"/>
+    <!-- shiny eyes -->
+    <circle cx="20" cy="17" r="3" fill="#1a0a00"/><circle cx="20" cy="17" r="1.8" fill="#3a2a10"/><circle cx="20.5" cy="16.5" r="0.7" fill="#fff" opacity="0.8"/>
+    <circle cx="28" cy="17" r="3" fill="#1a0a00"/><circle cx="28" cy="17" r="1.8" fill="#3a2a10"/><circle cx="28.5" cy="16.5" r="0.7" fill="#fff" opacity="0.8"/>
+    <!-- big flat nose -->
+    <ellipse cx="24" cy="22" rx="3" ry="2" fill="#5a3a1a"/>
+    <!-- buckteeth -->
+    <rect x="21" y="24" width="3" height="4" rx="1" fill="#e8e0d0"/>
+    <rect x="25" y="24" width="3" height="4" rx="1" fill="#e8e0d0"/>
+    <!-- flat paddle tail -->
+    <ellipse cx="36" cy="36" rx="8" ry="4" fill="#5a3a1a" transform="rotate(-20 36 36)"/>
+    <!-- tiny log it carries -->
+    <rect x="6" y="28" width="10" height="4" rx="2" fill="#7a5a2a" transform="rotate(-30 11 30)"/>
+    <line x1="6" y1="30" x2="16" y2="26" stroke="#9a7a4a" stroke-width="0.8" opacity="0.5"/>
+  </svg>`,
+
+  golem: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- stone body: blocky -->
+    <rect x="14" y="24" width="20" height="18" rx="3" fill="#6a6a5a"/>
+    <rect x="10" y="28" width="8" height="12" rx="2" fill="#5a5a4a"/>
+    <rect x="30" y="28" width="8" height="12" rx="2" fill="#5a5a4a"/>
+    <rect x="16" y="38" width="7" height="8" rx="2" fill="#5a5a4a"/>
+    <rect x="25" y="38" width="7" height="8" rx="2" fill="#5a5a4a"/>
+    <!-- stone cracks -->
+    <path d="M18 28 L22 34" stroke="#3a3a2a" stroke-width="1.5" opacity="0.5"/>
+    <path d="M30 32 L26 38" stroke="#3a3a2a" stroke-width="1" opacity="0.4"/>
+    <!-- head: rough stone cube -->
+    <rect x="14" y="10" width="20" height="16" rx="3" fill="#7a7a6a"/>
+    <!-- glowing mineral eyes -->
+    <rect x="18" y="14" width="5" height="4" rx="1" fill="#1a1a10"/>
+    <rect x="25" y="14" width="5" height="4" rx="1" fill="#1a1a10"/>
+    <rect x="19" y="15" width="3" height="2" rx="0.5" fill="#c9873e"/>
+    <rect x="26" y="15" width="3" height="2" rx="0.5" fill="#c9873e"/>
+    <!-- stone mouth -->
+    <rect x="19" y="21" width="10" height="2" rx="1" fill="#3a3a2a"/>
+    <!-- carrying a rock -->
+    <circle cx="38" cy="22" r="5" fill="#5a5a4a" stroke="#4a4a3a" stroke-width="1"/>
+    <circle cx="38" cy="22" r="3" fill="#4a4a3a" opacity="0.5"/>
+  </svg>`,
+
+  ashling_pet: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- flame body -->
+    <path d="M24 44 Q12 38 10 28 Q10 18 24 14 Q38 18 38 28 Q36 38 24 44Z" fill="#d67338" opacity="0.9"/>
+    <path d="M24 40 Q16 36 14 28 Q14 20 24 18 Q34 20 34 28 Q32 36 24 40Z" fill="#ff8040"/>
+    <!-- core face -->
+    <ellipse cx="24" cy="26" rx="8" ry="9" fill="#ff6020"/>
+    <!-- amber eyes -->
+    <circle cx="21" cy="23" r="3" fill="#1a0800"/><circle cx="21" cy="23" r="2" fill="#ffd080"/><circle cx="21.5" cy="22.5" r="0.7" fill="#fff" opacity="0.8"/>
+    <circle cx="27" cy="23" r="3" fill="#1a0800"/><circle cx="27" cy="23" r="2" fill="#ffd080"/><circle cx="27.5" cy="22.5" r="0.7" fill="#fff" opacity="0.8"/>
+    <!-- happy smile -->
+    <path d="M20 30 Q24 34 28 30" fill="none" stroke="#d67338" stroke-width="1.5"/>
+    <!-- flame tips -->
+    <path d="M24 14 Q22 8 24 4 Q26 8 24 14Z" fill="#ff6020" opacity="0.9"/>
+    <path d="M18 16 Q15 10 18 7 Q20 11 18 16Z" fill="#d67338" opacity="0.7"/>
+    <path d="M30 16 Q33 10 30 7 Q28 11 30 16Z" fill="#d67338" opacity="0.7"/>
+  </svg>`,
+
+  frost_sprite: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- frost aura -->
+    <circle cx="24" cy="24" r="20" fill="#7ac4e8" opacity="0.1"/>
+    <!-- ice crystal body -->
+    <polygon points="24,8 30,20 24,40 18,20" fill="#c8e8f8" opacity="0.8"/>
+    <polygon points="10,20 24,14 38,20 24,26" fill="#a8d8f8" opacity="0.7"/>
+    <!-- core -->
+    <circle cx="24" cy="22" r="8" fill="#7ac4e8" opacity="0.9"/>
+    <!-- ice-blue eyes -->
+    <circle cx="21" cy="20" r="2.5" fill="#0a2030"/><circle cx="21" cy="20" r="1.5" fill="#4a9ed4"/><circle cx="21.5" cy="19.5" r="0.5" fill="#c8f0ff"/>
+    <circle cx="27" cy="20" r="2.5" fill="#0a2030"/><circle cx="27" cy="20" r="1.5" fill="#4a9ed4"/><circle cx="27.5" cy="19.5" r="0.5" fill="#c8f0ff"/>
+    <!-- snowflake face detail -->
+    <line x1="24" y1="24" x2="24" y2="27" stroke="#7ac4e8" stroke-width="1" opacity="0.6"/>
+    <line x1="22" y1="25" x2="26" y2="25" stroke="#7ac4e8" stroke-width="1" opacity="0.6"/>
+    <!-- ice crystal wings -->
+    <path d="M14 20 Q8 14 12 20 Q14 24 14 22Z" fill="#c8e8f8" opacity="0.7"/>
+    <path d="M34 20 Q40 14 36 20 Q34 24 34 22Z" fill="#c8e8f8" opacity="0.7"/>
+    <!-- frost sparkles -->
+    <circle cx="10" cy="16" r="1" fill="#c8e8f8" opacity="0.6"/>
+    <circle cx="38" cy="18" r="1.5" fill="#7ac4e8" opacity="0.5"/>
+    <circle cx="14" cy="34" r="1" fill="#c8e8f8" opacity="0.4"/>
+    <circle cx="36" cy="32" r="1" fill="#7ac4e8" opacity="0.4"/>
+  </svg>`,
+
+  ashen_shade: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- shadow form — translucent, crackling with embers -->
+    <ellipse cx="24" cy="38" rx="16" ry="8" fill="#1a0a00" opacity="0.5"/>
+    <!-- body trails off into smoke -->
+    <path d="M14 40 Q10 32 12 20 Q14 8 24 6 Q34 8 36 20 Q38 32 34 40Z" fill="#1a0a00" opacity="0.7"/>
+    <path d="M16 38 Q14 30 16 20 Q18 10 24 8 Q30 10 32 20 Q34 30 32 38Z" fill="#2a1000" opacity="0.8"/>
+    <!-- ember cracks in body -->
+    <path d="M18 22 L22 28 L18 32" stroke="#d63a1a" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <path d="M28 26 L32 30" stroke="#d63a1a" stroke-width="1" fill="none" opacity="0.6"/>
+    <path d="M22 16 L24 22 L22 26" stroke="#ff6020" stroke-width="1" fill="none" opacity="0.5"/>
+    <!-- burning ember eyes -->
+    <circle cx="20" cy="18" r="4" fill="#0a0000"/><circle cx="20" cy="18" r="2.5" fill="#d63a1a"/><circle cx="20" cy="18" r="1.2" fill="#ff8040"/><circle cx="20.5" cy="17.5" r="0.5" fill="#ffd080"/>
+    <circle cx="28" cy="18" r="4" fill="#0a0000"/><circle cx="28" cy="18" r="2.5" fill="#d63a1a"/><circle cx="28" cy="18" r="1.2" fill="#ff8040"/><circle cx="28.5" cy="17.5" r="0.5" fill="#ffd080"/>
+    <!-- ash smoke rising -->
+    <circle cx="18" cy="6" r="2" fill="#3a3030" opacity="0.4"/>
+    <circle cx="24" cy="4" r="3" fill="#2a2020" opacity="0.3"/>
+    <circle cx="30" cy="5" r="2" fill="#3a3030" opacity="0.35"/>
+    <!-- shadow tendrils -->
+    <path d="M16 38 Q10 42 8 46" stroke="#1a0a00" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
+    <path d="M32 38 Q38 42 40 46" stroke="#1a0a00" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
+  </svg>`,
+});
+console.log('[Ashfall] Pet art loaded:', Object.keys(GAME_DATA.petArt).length, 'pets');

@@ -5219,3 +5219,119 @@ html, body {
 }
 .bone-stats { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; }
 .bone-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ══════════════════════════════════════════════════════════════
+   FARMING v2 — Plots, watering, compost, tools strip
+   ══════════════════════════════════════════════════════════════ */
+.farm-tools-strip {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 12px; margin-bottom: 14px; font-size: 11px;
+}
+.farm-tools-label  { color: var(--text-dim); font-weight: 600; }
+.farm-tools-sep    { color: var(--text-dim); margin-left: 6px; }
+.farm-tool-have { color: #4abe6c; background: rgba(74,190,108,0.1); border: 1px solid rgba(74,190,108,0.2); border-radius: 4px; padding: 1px 7px; }
+.farm-tool-miss { color: var(--text-dim); opacity: 0.6; }
+
+.farm-patch-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 18px;
+}
+.farm-plot-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px; transition: border-color 0.15s;
+  position: relative;
+}
+.farm-plot-card:hover { border-color: var(--accent-dim); }
+.farm-plot-empty  { border-color: rgba(255,255,255,0.05); }
+.farm-plot-growing{ border-color: rgba(74,190,108,0.25); }
+.farm-plot-ready  { border-color: rgba(212,168,58,0.5); background: linear-gradient(135deg,rgba(212,168,58,0.08),rgba(212,168,58,0.03)); box-shadow: 0 0 12px rgba(212,168,58,0.15); }
+.farm-plot-dead   { border-color: rgba(196,64,64,0.3); background: rgba(196,64,64,0.04); }
+
+.fp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.fp-plot-num { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+.fp-state { font-family: 'Cinzel', serif; font-size: 12px; margin-bottom: 6px; }
+.fp-empty   { color: var(--text-dim); }
+.fp-growing { color: #4abe6c; }
+.fp-ready   { color: #d4a83a; }
+.fp-dead    { color: #c44040; }
+
+.fp-grow-bar-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.fp-grow-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.fp-grow-bar-fill  { height: 100%; background: linear-gradient(90deg,#4abe6c,#d4a83a); border-radius: 3px; transition: width 0.5s; }
+.fp-timer { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+
+.fp-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.fp-badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; }
+.fp-watered { background: rgba(74,158,212,0.15); color: #4a9ed4; border: 1px solid rgba(74,158,212,0.25); }
+.fp-compost { background: rgba(74,140,50,0.15); color: #4abe6c; border: 1px solid rgba(74,190,108,0.2); }
+.fp-weeds   { background: rgba(180,140,50,0.15); color: #d4a83a; border: 1px solid rgba(212,168,58,0.25); animation: weedsPulse 1.5s ease-in-out infinite; }
+@keyframes weedsPulse { 0%,100%{opacity:0.7}50%{opacity:1} }
+.fp-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.fp-no-seeds { font-size: 10px; color: var(--text-dim); font-style: italic; }
+.fp-yield-hint { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
+
+/* ══════════════════════════════════════════════════════════════
+   COMBAT PETS — cards, active banner, action flash
+   ══════════════════════════════════════════════════════════════ */
+.active-pet-banner {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: linear-gradient(135deg,rgba(201,135,62,0.08),rgba(201,135,62,0.03));
+  border: 1px solid rgba(201,135,62,0.30); border-radius: var(--radius);
+  padding: 14px; margin-bottom: 16px;
+}
+.apb-art { width: 60px; height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.apb-art svg { width: 60px; height: 60px; }
+.apb-info { flex: 1; }
+.apb-name { font-family: 'Cinzel', serif; font-size: 14px; color: var(--text-bright); margin-bottom: 4px; }
+.apb-active-badge { font-size: 9px; background: var(--accent); color: #0a0b0f; border-radius: 3px; padding: 1px 5px; font-weight: 700; margin-left: 6px; vertical-align: middle; }
+.apb-desc { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+.apb-action { font-size: 11px; color: var(--text); margin-bottom: 2px; }
+.apb-passive { font-size: 10px; color: var(--text-dim); }
+
+.pet-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;
+}
+.pet-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px; display: flex; flex-direction: column; gap: 8px; transition: all 0.2s;
+}
+.pet-card:hover { border-color: var(--accent-dim); transform: translateY(-1px); }
+.pet-owned { border-color: rgba(201,135,62,0.20); }
+.pet-locked { opacity: 0.5; filter: grayscale(0.6); }
+.pet-active-card { border-color: var(--accent) !important; box-shadow: 0 0 14px rgba(201,135,62,0.25); }
+
+.pet-art-wrap { width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+.pet-art-wrap svg { width: 48px; height: 48px; }
+.pet-unknown-art { width: 48px; height: 48px; background: rgba(255,255,255,0.04); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-dim); }
+
+.pet-info { flex: 1; }
+.pet-name { font-family: 'Cinzel', serif; font-size: 12px; color: var(--text-bright); margin-bottom: 4px; }
+.pet-type-badge { display: inline-block; font-size: 9px; padding: 1px 7px; border-radius: 10px; border: 1px solid; margin-bottom: 4px; text-transform: capitalize; }
+.pet-desc { font-size: 10px; color: var(--text-dim); line-height: 1.4; margin-bottom: 4px; }
+.pet-ability { font-size: 10px; color: var(--text); }
+.pet-source { font-size: 9px; color: var(--text-dim); margin-top: 4px; }
+.pet-card-btns { display: flex; gap: 6px; margin-top: auto; }
+.pet-equipped-label { font-size: 10px; color: var(--accent); font-family: 'Cinzel', serif; }
+
+/* Pet action flash (combat) */
+.pet-action-flash {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  background: rgba(10,11,15,0.90); border: 1px solid rgba(201,135,62,0.25);
+  border-radius: 4px; padding: 4px 10px; font-size: 11px; pointer-events: none;
+  z-index: 55; white-space: nowrap; backdrop-filter: blur(4px);
+  animation: petFlashIn 0.3s ease-out, petFlashOut 0.4s ease-in 1.6s forwards;
+}
+@keyframes petFlashIn  { from { opacity:0; transform:translateX(-50%) translateY(-6px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+@keyframes petFlashOut { from { opacity:1; } to { opacity:0; } }
+.pa-pet-name { font-family: 'JetBrains Mono', monospace; }
+
+/* Pet in combat sidebar strip */
+.pet-combat-strip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(201,135,62,0.04); border: 1px solid rgba(201,135,62,0.15);
+  border-radius: var(--radius); padding: 7px 10px; margin-bottom: 8px; cursor: pointer;
+}
+.pcs-art { width: 28px; height: 28px; }
+.pcs-art svg { width: 28px; height: 28px; }
+.pcs-name { font-family: 'Cinzel', serif; font-size: 11px; color: var(--accent); flex: 1; }
+.pcs-ability { font-size: 9px; color: var(--text-dim); }
