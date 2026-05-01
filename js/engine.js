@@ -544,6 +544,8 @@ class GameEngine {
     c.active = false; c.area = null; c.monster = null; c.dungeon = null; c.worldBoss = null;
     c._isWilderness = false; c._pvpTriggered = false; c._isDuel = false; c._teleBlocked = 0;
     c._multiMob = false; c._requiresPrayer = false; c._pvpRealPlayer = null;
+    c._multiMobMode = false;
+    if (this.state.multiMob) this.state.multiMob = null;
     c._pvpArena = false; c._pvpOpponent = null;
     c.statusEffects = { player:{}, monster:{} };
     c.playerHp = this.getMaxHp();
@@ -558,6 +560,15 @@ class GameEngine {
   tickCombat(dt) {
     const c = this.state.combat;
     if (!c.active || !c.monster) return;
+
+    // ── MULTI-MOB MODE: delegate to dedicated tick ──────────
+    if (c._multiMobMode && this.state.multiMob?.active) {
+      this._tickStatusEffects(c.statusEffects.monster, dt, 'monster');
+      this._tickStatusEffects(c.statusEffects.player,  dt, 'player');
+      this.tickMultiMob(dt);
+      return;
+    }
+
     const isWB = !!c.worldBoss;
     const monster = isWB ? (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster) : GAME_DATA.monsters[c.monster];
     if (!monster) { this.stopCombat(); this.emit('notification',{type:'warn',text:'Combat ended: monster data unavailable.'}); return; }
@@ -1326,43 +1337,191 @@ class GameEngine {
 
   // ── MULTI-MOB ENCOUNTERS ───────────────────────────────
   // Some areas/dungeons throw multiple mobs at you simultaneously
+  // ── MULTI-MOB ENCOUNTER SYSTEM ─────────────────────────
+  // Each mob has its own HP bar. Player targets one at a time.
+  // ALL living mobs attack simultaneously each tick.
+  // Inspired by Fight Cave — sequential targeting with full state tracking.
   startMultiMobCombat(mobIds) {
     this.stopSkill();
     if (!mobIds || mobIds.length === 0) return;
-    // Combine all mobs into one super-mob
-    let totalHp = 0, maxHit = 0, totalXp = 0;
-    const drops = [];
+    if (this.state.combat.active) this.stopCombat();
+
+    // Build encounter state
+    const mmState = {
+      active:    true,
+      mobs:      [],       // full monster data per mob
+      hp:        [],       // current HP per mob
+      alive:     [],       // bool per mob
+      targetIdx: 0,        // which mob player is currently hitting
+      attackTimers: [],    // each mob's independent attack timer
+      totalXp:   0,
+      totalGold: 0,
+    };
+
     const names = [];
     for (const mId of mobIds) {
       const m = GAME_DATA.monsters[mId];
       if (!m) continue;
-      totalHp += m.hp;
-      maxHit = Math.max(maxHit, m.maxHit);
-      totalXp += m.xp;
+      mmState.mobs.push({ ...m, _srcId: mId });
+      mmState.hp.push(m.hp);
+      mmState.alive.push(true);
+      mmState.attackTimers.push(0);
+      mmState.totalXp += m.xp || 0;
+      const g = m.gold || {min:0,max:0};
+      mmState.totalGold += this.randInt(g.min, g.max);
       names.push(m.name);
-      for (const d of (m.drops||[])) drops.push(d);
     }
-    // Multi-mob attacks faster and hits harder
-    const combined = {
-      id:'multi_mob', name:names.join(' + '),
-      hp: totalHp, maxHit: Math.floor(maxHit * 1.3),
-      attackSpeed: 1.6, // faster than normal
-      combatLevel: Math.max(...mobIds.map(id=>GAME_DATA.monsters[id]?.combatLevel||1)),
-      style: GAME_DATA.monsters[mobIds[0]]?.style || 'melee',
-      evasion: GAME_DATA.monsters[mobIds[0]]?.evasion || {melee:30,ranged:30,magic:30},
-      xp: totalXp, gold:{min:0,max:0}, alignment:'CE',
-      drops, _multiMob:true, _mobCount:mobIds.length,
-    };
-    GAME_DATA.monsters.multi_mob = combined;
-    this._setupCombat(combined, 'multi_mob');
-    this.state.combat._multiMob = true;
-    this.state.combat._requiresPrayer = mobIds.length >= 3; // 3+ mobs forces prayer use
-    this.emit('combatStart', { monster:'multi_mob' });
-    if (mobIds.length >= 3) {
-      this.emit('notification',{type:'danger',text:`${mobIds.length} enemies attack! Use Protection Prayers or you WILL die.`});
-    } else {
-      this.emit('notification',{type:'warn',text:`${mobIds.length} enemies attack simultaneously!`});
+
+    if (mmState.mobs.length === 0) return;
+
+    // Store on state
+    this.state.multiMob = mmState;
+
+    // Set combat active with a proxy "lead" monster for the base combat loop
+    // The lead monster is the current target
+    const lead = mmState.mobs[0];
+    this.stopSkill();
+    this.state.combat.active   = true;
+    this.state.combat.area     = null;
+    this.state.combat.monster  = lead._srcId;
+    this.state.combat.monsterHp= mmState.hp[0];
+    this.state.combat.playerHp = this.state.combat.playerHp || this.getMaxHp();
+    this.state.combat.playerAttackTimer  = 0;
+    this.state.combat.monsterAttackTimer = 0;
+    this.state.combat._multiMobMode = true;
+    this.state.combat.statusEffects = { player:{}, monster:{} };
+
+    const count = mmState.mobs.length;
+    const req = count >= 3 ? 'PRAYERS REQUIRED.' : '';
+    this.emit('notification', {type:'danger', text:`${count} enemies attack simultaneously! ${req}`});
+    this.emit('combatStart', { monster: lead._srcId, multiMob: true });
+    this.emit('multiMobStart', { mobs: mmState.mobs, names });
+  }
+
+  // Switch player attack target during multi-mob
+  multiMobSetTarget(idx) {
+    const mm = this.state.multiMob;
+    if (!mm?.active || !mm.alive[idx]) return;
+    mm.targetIdx = idx;
+    const m = mm.mobs[idx];
+    this.state.combat.monster   = m._srcId;
+    this.state.combat.monsterHp = mm.hp[idx];
+    this.state.combat.statusEffects.monster = {};
+    this.emit('notification', {type:'info', text:`Now targeting ${m.name}.`});
+    this.emit('multiMobChanged');
+  }
+
+  // Called every tickCombat in multi-mob mode
+  tickMultiMob(dt) {
+    const mm  = this.state.multiMob;
+    const c   = this.state.combat;
+    if (!mm?.active) return;
+
+    // ── PLAYER ATTACKS CURRENT TARGET ──────────────────────
+    const playerSpeed = this.getPlayerAttackSpeed();
+    c.playerAttackTimer += dt;
+    if (c.playerAttackTimer >= playerSpeed) {
+      c.playerAttackTimer -= playerSpeed;
+      const tgt = mm.mobs[mm.targetIdx];
+      if (tgt && mm.alive[mm.targetIdx]) {
+        // Sync monster HP to multi-mob hp array before attack
+        c.monsterHp = mm.hp[mm.targetIdx];
+        this.playerAttack(tgt);
+        this.drainPrayerPoints();
+        this.doPetCombatAction(tgt);
+        // Sync back
+        mm.hp[mm.targetIdx] = c.monsterHp;
+      }
     }
+
+    // ── EACH ALIVE MOB ATTACKS PLAYER ──────────────────────
+    for (let i = 0; i < mm.mobs.length; i++) {
+      if (!mm.alive[i]) continue;
+      const mob = mm.mobs[i];
+      mm.attackTimers[i] += dt;
+      const mobSpeed = (mob.attackSpeed || 3) * 0.7;
+      if (mm.attackTimers[i] >= mobSpeed) {
+        mm.attackTimers[i] -= mobSpeed;
+        // Auto-eat check before mob hits
+        if (c.autoEat && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
+        this.monsterAttack(mob);
+      }
+    }
+
+    // ── CHECK DEATHS ────────────────────────────────────────
+    for (let i = 0; i < mm.mobs.length; i++) {
+      if (!mm.alive[i]) continue;
+      if (mm.hp[i] <= 0) {
+        mm.alive[i] = false;
+        mm.hp[i] = 0;
+        const dead = mm.mobs[i];
+        // Loot this mob
+        const g = dead.gold || {min:0,max:0};
+        const gold = this.randInt(g.min, g.max);
+        this.state.gold += gold;
+        this.state.stats.goldEarned += gold;
+        this.state.stats.monstersKilled = (this.state.stats.monstersKilled||0)+1;
+        const loot = [];
+        for (const drop of (dead.drops||[])) {
+          if (Math.random() < drop.chance) {
+            this.addItem(drop.item, drop.qty);
+            loot.push({ item:drop.item, qty:drop.qty, rarity: GAME_DATA.items[drop.item]?.rarity });
+          }
+        }
+        this.addXp('hitpoints', Math.floor((dead.xp||0)*0.2));
+        this._addCombatXp(dead);
+        this.rollPetDrop(dead._srcId);
+        this.emit('notification', {type:'success', text:`${dead.name} defeated!`});
+        this.emit('lootDrop', { bag:loot, monster:dead.name, sessionLoot: this.state.combat._sessionLoot||{}, kills: this.state.combat._sessionKills||0 });
+        this.emit('multiMobChanged');
+
+        // If dead mob was target, auto-switch to next alive
+        if (mm.targetIdx === i) {
+          const nextAlive = mm.alive.findIndex((a,j) => a && j !== i);
+          if (nextAlive >= 0) {
+            mm.targetIdx = nextAlive;
+            c.monster    = mm.mobs[nextAlive]._srcId;
+            c.monsterHp  = mm.hp[nextAlive];
+            c.statusEffects.monster = {};
+            this.emit('notification', {type:'info', text:`Now targeting ${mm.mobs[nextAlive].name}.`});
+          }
+        }
+      }
+    }
+
+    // ── ALL DEAD? → END ENCOUNTER ───────────────────────────
+    const anyAlive = mm.alive.some(v => v);
+    if (!anyAlive) {
+      this._endMultiMobEncounter();
+      return;
+    }
+
+    // ── PLAYER DEATH ─────────────────────────────────────────
+    if (c.playerHp <= 0) {
+      this._playerDeathInMultiMob();
+    }
+
+    // Keep combat monsterHp in sync with current target
+    c.monsterHp = mm.hp[mm.targetIdx] || 0;
+    c.monster   = mm.mobs[mm.targetIdx]?._srcId || c.monster;
+  }
+
+  _endMultiMobEncounter() {
+    const mm = this.state.multiMob;
+    this.emit('notification', {type:'achievement', text:`Multi-mob encounter cleared! All enemies defeated.`});
+    this.state.multiMob = null;
+    this.stopCombat();
+    this.emit('multiMobEnd', { victory: true });
+  }
+
+  _playerDeathInMultiMob() {
+    this.state.stats.deaths = (this.state.stats.deaths||0)+1;
+    this.emit('notification', {type:'danger', text:'You were overwhelmed and killed...'});
+    this.state.multiMob = null;
+    this.stopCombat();
+    this.emit('multiMobEnd', { victory: false });
+    // Soft death: keep items, respawn at 10% HP
+    this.state.combat.playerHp = Math.floor(this.getMaxHp() * 0.1);
   }
 
   // ── HELPERS ────────────────────────────────────────────

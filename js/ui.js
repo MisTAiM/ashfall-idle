@@ -123,12 +123,15 @@ class UI {
     this.engine.on('skillStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatStart', () => { this.currentPage = 'combat'; this.renderTrainingBar(); this.renderSidebar(); this.renderPage('combat'); });
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
-    this.engine.on('combatHit', (d) => this.showHitSplat(d));
+    this.engine.on('combatHit', (d) => { this.showHitSplat(d); if (this.engine.state.combat._multiMobMode) this._updateMultiMobUI(); });
     this.engine.on('lootDrop', (d) => this.showLootBag(d));
     this.engine.on('petAction', (d) => this.showPetAction(d));
     this.engine.on('petChanged', () => { if (this.currentPage === 'combat') this.renderPage('combat'); if (this.currentPage === 'pets') this.renderPage('pets'); });
     this.engine.on('thievingStun', (d) => { if (this.currentPage === 'thieving') this._updateThievingHpBar(d.hp, d.maxHp); });
     this.engine.on('thievingHpChanged', (d) => { if (this.currentPage === 'thieving') this._updateThievingHpBar(d.hp, d.maxHp); });
+    this.engine.on('multiMobStart',   (d) => { if (this.currentPage === 'combat') this.renderPage('combat'); });
+    this.engine.on('multiMobChanged', ()  => { if (this.currentPage === 'combat') this._updateMultiMobUI(); });
+    this.engine.on('multiMobEnd',     ()  => { if (this.currentPage === 'combat') this.renderPage('combat'); });
     this.engine.on('xpGain', (d) => this.showXpGain(d));
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (['equipment','bank','combat'].includes(this.currentPage)) this.renderPage(this.currentPage); });
@@ -440,153 +443,141 @@ class UI {
 
   renderThievingPage(el) {
     const s = this.engine.state;
-    const thievLv   = s.skills.thieving?.level || 1;
-    const maxHp     = game.getMaxHp();
-    const thievHp   = s.thievingHp !== null && s.thievingHp !== undefined ? s.thievingHp : maxHp;
-    const hpPct     = Math.round((thievHp / maxHp) * 100);
-    const hpColor   = hpPct > 60 ? '#4abe6c' : hpPct > 30 ? '#d4a83a' : '#c44040';
+    const thievLv = s.skills.thieving?.level || 1;
+    const maxHp   = this.engine.getMaxHp();
+    const thievHp = (s.thievingHp !== null && s.thievingHp !== undefined) ? s.thievingHp : maxHp;
+    const hpPct   = Math.round((thievHp / maxHp) * 100);
+    const hpColor = hpPct > 60 ? '#4abe6c' : hpPct > 30 ? '#d4a83a' : '#c44040';
 
-    let html = this.header('Thieving','mask','Pickpocket NPCs and steal from market stalls for gold, items and XP. Beware: getting caught deals damage, and angry targets will attack you.','thieving');
+    let html = this.header('Thieving','mask','Pickpocket NPCs and steal from stalls. Getting caught deals damage. Anger your target enough and they will fight back.','thieving');
 
-    // ── STATUS BAR ─────────────────────────────────────────
-    html += `<div class="thiev-status-bar">
-      <div class="thiev-hp-wrap">
-        <span class="thiev-hp-label">HP</span>
-        <div class="thiev-hp-track"><div class="thiev-hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>
-        <span class="thiev-hp-val">${thievHp}/${maxHp}</span>
-      </div>
-      <div class="thiev-food-strip">
-        ${(s.foodBag||[]).length > 0
-          ? s.foodBag.map((f,i) => {
-              const it = GAME_DATA.items[f.id];
-              return `<button class="thiev-food-btn" onclick="game.thievingEatFood('${f.id}');ui.renderPage('thieving')" title="Eat ${it?.name||f.id} (+${it?.heals||0} HP)">${it?.name||f.id} x${f.qty}</button>`;
-            }).join('')
-          : '<span class="thiev-no-food">No food — add food from Bank</span>'
-        }
-      </div>
-    </div>`;
+    // ── HP + FOOD BAR ──────────────────────────────────────────────
+    const foodBag = s.foodBag || [];
+    let foodHtml = foodBag.length > 0
+      ? foodBag.map(function(f) {
+          var it = GAME_DATA.items[f.id];
+          var nm = it ? it.name : f.id;
+          var hl = it ? it.heals : 0;
+          return '<button class="thiev-food-btn" onclick="game.thievingEatFood(\'' + f.id + '\');ui.renderPage(\'thieving\')" title="Eat ' + nm + ' (+ ' + hl + ' HP)">' + nm + ' x' + f.qty + '</button>';
+        }).join('')
+      : '<span class="thiev-no-food">No food — add from Bank (auto-eat at 40% HP)</span>';
 
-    // ── ACTIVE ACTION ──────────────────────────────────────
+    html += '<div class="thiev-status-bar">'
+      + '<div class="thiev-hp-wrap">'
+      + '<span class="thiev-hp-label">HP</span>'
+      + '<div class="thiev-hp-track"><div class="thiev-hp-fill" id="thiev-hp-fill" style="width:' + hpPct + '%;background:' + hpColor + '"></div></div>'
+      + '<span class="thiev-hp-val" id="thiev-hp-val">' + thievHp + '/' + maxHp + '</span>'
+      + '</div>'
+      + '<div class="thiev-food-strip">' + foodHtml + '</div>'
+      + '</div>';
+
+    // ── ACTIVE ACTION ──────────────────────────────────────────────
     if (s.activeSkill === 'thieving' && s.activeAction) {
-      const a = GAME_DATA.thievingTargets.find(x=>x.id===s.activeAction);
+      const a = GAME_DATA.thievingTargets.find(function(x) { return x.id === s.activeAction; });
       if (a) {
         const p = Math.min(1, Math.max(0, s.actionProgress / a.time));
-        const anger = s.thievingAnger?.[a.id] || 0;
+        const anger    = s.thievingAnger ? (s.thievingAnger[a.id] || 0) : 0;
         const angerPct = Math.round(anger * 100);
-        const fightChance = game._calcThievingFightChance(a);
-        html += `<div class="thiev-active-bar">
-          <div class="tab-title">${a.portrait||'🗡️'} ${a.isStall?'Stealing from':'Pickpocketing'}: <strong>${a.name}</strong></div>
-          <div class="thiev-prog-row">
-            <span class="thiev-prog-label">Progress</span>
-            <div class="thiev-prog-track"><div class="thiev-prog-fill" style="width:${(p*100).toFixed(0)}%"></div></div>
-          </div>
-          <div class="thiev-anger-row">
-            <span class="thiev-anger-label">Anger ${angerPct}%</span>
-            <div class="thiev-anger-track"><div class="thiev-anger-fill" style="width:${angerPct}%"></div></div>
-            <span class="thiev-fight-chance" title="Chance target attacks you on next stun">Fight: ${(fightChance*100).toFixed(0)}%</span>
-          </div>
-          <button class="btn btn-danger btn-sm" onclick="ui.stopAction();ui.renderPage('thieving')">Stop</button>
-          ${angerPct > 30 ? `<button class="btn btn-xs" onclick="game.resetThievingAnger('${a.id}');ui.renderPage('thieving')" title="Wait and calm the target down">Calm Down</button>` : ''}
-        </div>`;
+        const lvFactor = (a.level || 1) / 90;
+        const baseChance = 0.02 + lvFactor * 0.08;
+        const fightChancePct = Math.round(Math.min(75, (baseChance + anger * 0.40) * 100));
+        html += '<div class="thiev-active-bar">'
+          + '<div class="tab-title">' + (a.portrait||'🗡️') + ' ' + (a.isStall ? 'Stealing from' : 'Pickpocketing') + ': <strong>' + a.name + '</strong></div>'
+          + '<div class="thiev-prog-row"><span class="thiev-prog-label">Progress</span><div class="thiev-prog-track"><div class="thiev-prog-fill" style="width:' + Math.round(p*100) + '%"></div></div></div>'
+          + '<div class="thiev-anger-row"><span class="thiev-anger-label">Anger ' + angerPct + '%</span><div class="thiev-anger-track"><div class="thiev-anger-fill" style="width:' + angerPct + '%"></div></div>'
+          + '<span class="thiev-fight-chance" title="Chance target attacks you">Fight: ' + fightChancePct + '%</span></div>'
+          + '<div style="display:flex;gap:6px;margin-top:6px">'
+          + '<button class="btn btn-danger btn-sm" onclick="ui.stopAction();ui.renderPage(\'thieving\')">Stop</button>'
+          + (angerPct > 30 ? '<button class="btn btn-xs" onclick="game.resetThievingAnger(\'' + a.id + '\');ui.renderPage(\'thieving\')">Calm Down</button>' : '')
+          + '</div></div>';
       }
     }
 
-    // ── SECTION: PICKPOCKET ────────────────────────────────
-    const pickpockets = GAME_DATA.thievingTargets.filter(t => !t.isStall);
+    // ── TARGET CARDS HELPER ────────────────────────────────────────
+    function renderTargetCard(t, isActive, thievLv, s) {
+      var locked = thievLv < t.level;
+      var anger  = s.thievingAnger ? (s.thievingAnger[t.id] || 0) : 0;
+      var angerPct = Math.round(anger * 100);
+      var lvFactor  = (t.level || 1) / 90;
+      var baseChance= 0.02 + lvFactor * 0.08;
+      var fightPct  = Math.round(Math.min(75, (baseChance + anger * 0.40) * 100));
+      var fightCol  = fightPct > 30 ? '#c44040' : fightPct > 15 ? '#d4a83a' : 'var(--text-dim)';
+      var mastery   = 0; // simplified since getMasteryLevel needs engine context
+      var effStunPct= Math.round(Math.max(3, t.stunChance * 100 - mastery * 0.3));
+      var stunDmgMax= (t.stunDmgBase||1) + Math.ceil((t.level||1)/10);
+
+      var lootHtml = (t.loot||[]).map(function(l) {
+        var it = GAME_DATA.items[l.item];
+        return '<span class="thiev-drop-sm" title="' + (l.chance*100).toFixed(1) + '%">' + (it ? it.name : l.item) + '</span>';
+      }).join('');
+
+      var angerBar = angerPct > 0
+        ? '<div class="thiev-anger-mini"><span>😡</span>'
+          + '<div class="thiev-anger-track-sm"><div class="thiev-anger-fill-sm" style="width:' + angerPct + '%;background:' + (angerPct > 60 ? '#c44040' : angerPct > 30 ? '#d4a83a' : '#c9873e') + '"></div></div>'
+          + '<span>' + angerPct + '%</span></div>'
+        : '';
+
+      var actionBtnHtml = '';
+      if (!locked) {
+        if (isActive) {
+          actionBtnHtml = '<button class="btn btn-sm btn-danger" onclick="ui.stopAction();ui.renderPage(\'thieving\')">Stop</button>';
+        } else {
+          actionBtnHtml = '<button class="btn btn-sm" onclick="ui.startAction(\'thieving\',\'' + t.id + '\')">&#x1F575; ' + (t.isStall ? 'Steal' : 'Pickpocket') + '</button>';
+        }
+      }
+
+      return '<div class="thiev-card ' + (locked ? 'locked' : '') + ' ' + (isActive ? 'thiev-active' : '') + '">'
+        + '<div class="thiev-card-header">'
+        + '<span class="thiev-portrait">' + (t.portrait||'👤') + '</span>'
+        + '<div class="thiev-card-info"><div class="thiev-card-name">' + t.name + '</div>'
+        + '<div class="thiev-card-desc">' + (t.desc||'') + '</div></div>'
+        + '<span class="thiev-lv-badge">Lv ' + t.level + '</span>'
+        + '</div>'
+        + (locked ? '<div class="locked-overlay">Thieving ' + t.level + '</div>' :
+          '<div class="thiev-stats-row">'
+          + '<span>💰 ' + t.gold.min + '–' + t.gold.max + 'gp</span>'
+          + '<span>⚡ ' + t.xp + 'xp</span>'
+          + '<span>⏱ ' + t.time + 's</span>'
+          + '</div>'
+          + '<div class="thiev-danger-row">'
+          + '<span title="Stun chance (mastery reduces)">😵 ' + effStunPct + '%</span>'
+          + '<span title="Damage on stun">💔 ' + (t.stunDmgBase||1) + '–' + stunDmgMax + '</span>'
+          + '<span style="color:' + fightCol + '" title="Chance to trigger a fight when stunned">⚔ Fight ' + fightPct + '%</span>'
+          + '</div>'
+          + angerBar
+          + '<div class="thiev-loot-row">' + lootHtml + '</div>'
+          + actionBtnHtml)
+        + '</div>';
+    }
+
+    // ── PICKPOCKET SECTION ─────────────────────────────────────────
+    const pickpockets = GAME_DATA.thievingTargets.filter(function(t) { return !t.isStall; });
     html += '<h2 class="section-title">Pickpocket Targets</h2><div class="thiev-target-grid">';
     for (const t of pickpockets) {
-      const locked   = thievLv < t.level;
       const isActive = s.activeSkill === 'thieving' && s.activeAction === t.id;
-      const anger    = s.thievingAnger?.[t.id] || 0;
-      const angerPct = Math.round(anger * 100);
-      const fightChance = game._calcThievingFightChance(t);
-      const mastLv   = game.getMasteryLevel?.('thieving', t.id) || 0;
-      const effStun  = Math.max(0.03, t.stunChance - mastLv * 0.003).toFixed(2);
-
-      html += `<div class="thiev-card ${locked?'locked':''} ${isActive?'thiev-active':''}">
-        <div class="thiev-card-header">
-          <span class="thiev-portrait">${t.portrait||'👤'}</span>
-          <div class="thiev-card-info">
-            <div class="thiev-card-name">${t.name}</div>
-            <div class="thiev-card-desc">${t.desc||''}</div>
-          </div>
-          <span class="thiev-lv-badge">Lv ${t.level}</span>
-        </div>
-        ${!locked ? `
-        <div class="thiev-stats-row">
-          <span>💰 ${t.gold.min}–${t.gold.max}gp</span>
-          <span>⚡ ${t.xp}xp</span>
-          <span>⏱ ${t.time}s</span>
-        </div>
-        <div class="thiev-danger-row">
-          <span title="Chance of being caught">😵 Stun ${Math.round(parseFloat(effStun)*100)}%</span>
-          <span title="Damage dealt when stunned">💔 Hit ${t.stunDmgBase||1}–${(t.stunDmgBase||1)+Math.ceil(t.level/10)}</span>
-          <span title="Chance target attacks you" style="color:${fightChance>0.2?'#c44040':fightChance>0.1?'#d4a83a':'var(--text-dim)'}">⚔ Fight ${(fightChance*100).toFixed(0)}%</span>
-        </div>
-        ${angerPct > 0 ? `<div class="thiev-anger-mini">
-          <span>😡 Anger:</span>
-          <div class="thiev-anger-track-sm"><div class="thiev-anger-fill-sm" style="width:${angerPct}%;background:${angerPct>60?'#c44040':angerPct>30?'#d4a83a':'#c9873e'}"></div></div>
-          <span>${angerPct}%</span>
-        </div>` : ''}
-        <div class="thiev-loot-row">${(t.loot||[]).map(l => {
-          const it = GAME_DATA.items[l.item];
-          return `<span class="thiev-drop-sm" title="${(l.chance*100).toFixed(1)}%">${it?.name||l.item}</span>`;
-        }).join('')}</div>
-        <button class="btn btn-sm ${isActive?'btn-danger':''}" onclick="${isActive?`ui.stopAction();ui.renderPage('thieving')`:`game.startSkillAction('thieving','${t.id}');ui.renderPage('thieving')`}">${isActive?'Stop':'Pickpocket'}</button>
-        ` : `<div class="locked-overlay">Thieving ${t.level}</div>`}
-      </div>`;
+      html += renderTargetCard(t, isActive, thievLv, s);
     }
     html += '</div>';
 
-    // ── SECTION: STALLS ────────────────────────────────────
-    const stalls = GAME_DATA.thievingTargets.filter(t => t.isStall);
+    // ── STALLS SECTION ─────────────────────────────────────────────
+    const stalls = GAME_DATA.thievingTargets.filter(function(t) { return t.isStall; });
     html += '<h2 class="section-title">Market Stalls</h2><div class="thiev-target-grid">';
     for (const t of stalls) {
-      const locked   = thievLv < t.level;
       const isActive = s.activeSkill === 'thieving' && s.activeAction === t.id;
-      const anger    = s.thievingAnger?.[t.id] || 0;
-      const angerPct = Math.round(anger * 100);
-      const fightChance = game._calcThievingFightChance(t);
-
-      html += `<div class="thiev-card ${locked?'locked':''} ${isActive?'thiev-active':''}">
-        <div class="thiev-card-header">
-          <span class="thiev-portrait">${t.portrait||'🏪'}</span>
-          <div class="thiev-card-info">
-            <div class="thiev-card-name">${t.name}</div>
-            <div class="thiev-card-desc">${t.desc||''}</div>
-          </div>
-          <span class="thiev-lv-badge">Lv ${t.level}</span>
-        </div>
-        ${!locked ? `
-        <div class="thiev-stats-row">
-          <span>⚡ ${t.xp}xp</span><span>⏱ ${t.time}s</span>
-          ${t.gold.max > 0 ? `<span>💰 ${t.gold.min}–${t.gold.max}gp</span>` : ''}
-        </div>
-        <div class="thiev-danger-row">
-          <span>😵 Stun ${Math.round(t.stunChance*100)}%</span>
-          <span>💔 Hit ${t.stunDmgBase||1}–${(t.stunDmgBase||1)+Math.ceil(t.level/10)}</span>
-          <span style="color:${fightChance>0.2?'#c44040':fightChance>0.1?'#d4a83a':'var(--text-dim)'}">⚔ Fight ${(fightChance*100).toFixed(0)}%</span>
-        </div>
-        ${angerPct > 0 ? `<div class="thiev-anger-mini"><span>😡</span><div class="thiev-anger-track-sm"><div class="thiev-anger-fill-sm" style="width:${angerPct}%"></div></div><span>${angerPct}%</span></div>` : ''}
-        <div class="thiev-loot-row">${(t.loot||[]).map(l => {
-          const it = GAME_DATA.items[l.item];
-          return `<span class="thiev-drop-sm">${it?.name||l.item} <small>${(l.chance*100).toFixed(0)}%</small></span>`;
-        }).join('')}</div>
-        <button class="btn btn-sm ${isActive?'btn-danger':''}" onclick="${isActive?`ui.stopAction();ui.renderPage('thieving')`:`game.startSkillAction('thieving','${t.id}');ui.renderPage('thieving')`}">${isActive?'Stop':'Steal'}</button>
-        ` : `<div class="locked-overlay">Thieving ${t.level}</div>`}
-      </div>`;
+      html += renderTargetCard(t, isActive, thievLv, s);
     }
     html += '</div>';
 
-    // ── MECHANICS NOTE ─────────────────────────────────────
-    html += `<div class="thiev-mechanics-note">
-      <h4>⚠ How it works</h4>
-      <p><strong>Stun:</strong> Getting caught pauses your action for ${'{stunTime}'}s and deals damage. Higher-level targets hit harder.</p>
-      <p><strong>Anger:</strong> Each stun increases your target's anger. At high anger, they may fight you directly instead.</p>
-      <p><strong>Fight Chance:</strong> Calculated as base(2%–10% by target level) + anger×40%. A very angry Knight can pull you into combat 50%+ of the time.</p>
-      <p><strong>Auto-eat:</strong> When HP drops below 40%, food is consumed from your food bag automatically. Add food from the Bank page.</p>
-      <p><strong>Mastery:</strong> Each mastery level in a target reduces their effective stun chance by 0.3%.</p>
-    </div>`;
+    // ── HOW IT WORKS ───────────────────────────────────────────────
+    html += '<div class="thiev-mechanics-note">'
+      + '<h4>⚠ How Thieving Works</h4>'
+      + '<p><strong>Stun:</strong> Getting caught pauses your action and deals damage. Stun damage scales with target level.</p>'
+      + '<p><strong>Anger:</strong> Each stun increases target anger. High anger raises fight chance significantly.</p>'
+      + '<p><strong>Fight Chance formula:</strong> (2%–10% base by level) + anger×40%. A very angry Knight → 30%+ fight chance per stun.</p>'
+      + '<p><strong>Auto-eat:</strong> Fires at 40% HP. Add food from the Bank page. You can also eat manually above.</p>'
+      + '<p><strong>Death:</strong> HP reaches 0 — you lose 50% gold, HP restores, action stops.</p>'
+      + '<p><strong>Mastery:</strong> Each mastery level on a target reduces stun chance by 0.3%.</p>'
+      + '</div>';
 
     el.innerHTML = html;
   }
@@ -843,8 +834,17 @@ class UI {
       if (!mon) { html += '<div class="bank-empty">Monster data missing. <button class="btn btn-sm" onclick="game.stopCombat();ui.renderPage(\'combat\')">Reset</button></div></div>'; el.innerHTML = html; return; }
       const max = this.engine.getMaxHp();
       const pHpPct = Math.max(0, Math.min(100, (c.playerHp||0) / max * 100));
-      const mHpPct = Math.max(0, Math.min(100, (c.monsterHp||0) / (mon.hp||1) * 100));
       const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
+
+      // ── MULTI-MOB ARENA ──────────────────────────────────
+      if (c._multiMobMode && this.engine.state.multiMob?.active) {
+        const mm = this.engine.state.multiMob;
+        html += this._renderMultiMobArena(mm, s, max, pHpPct, pHpColor);
+        el.innerHTML = html;
+        return;
+      }
+
+      const mHpPct = Math.max(0, Math.min(100, (c.monsterHp||0) / (mon.hp||1) * 100));
       const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
 
       // Player avatar
@@ -3697,6 +3697,101 @@ class UI {
     track.style.width  = pct + '%';
     track.style.background = col;
     val.textContent = `${hp}/${maxHp}`;
+  }
+
+  _renderMultiMobArena(mm, s, maxHp, pHpPct, pHpColor) {
+    const c = s.combat;
+    const aliveCount = mm.alive.filter(Boolean).length;
+    let html = `<div class="mm-encounter-arena" id="mm-arena">`;
+
+    // ── PLAYER HP BAR ──
+    html += `<div class="mm-player-bar">
+      <div class="mm-player-name">⚔ You <span style="color:var(--text-dim);font-size:11px">vs ${aliveCount} enemies</span></div>
+      <div class="mm-hp-track"><div class="mm-hp-fill" id="mm-php-fill" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
+      <div class="mm-hp-val" id="mm-php-val">${Math.max(0,Math.floor(c.playerHp||0))} / ${maxHp}</div>
+      <button class="btn btn-xs btn-danger mm-flee-btn" onclick="game.stopCombat();ui.renderPage('combat')">Flee</button>
+    </div>`;
+
+    // ── MOB ROWS ──
+    html += `<div class="mm-mob-list" id="mm-mob-list">`;
+    for (let i = 0; i < mm.mobs.length; i++) {
+      const mob  = mm.mobs[i];
+      const alive = mm.alive[i];
+      const hp   = mm.hp[i];
+      const maxH = mob.hp;
+      const hPct = alive ? Math.max(0, Math.min(100, (hp/maxH)*100)) : 0;
+      const hCol = hPct > 50 ? '#8a3a3a' : hPct > 25 ? '#c4a83a' : '#4a8a3e';
+      const isTarget = alive && mm.targetIdx === i;
+      const art  = GAME_DATA.monsterArt?.[mob._srcId] || '';
+
+      html += `<div class="mm-mob-row ${isTarget ? 'mm-target' : ''} ${!alive ? 'mm-dead' : ''}" id="mm-mob-${i}">
+        <div class="mm-mob-art">${art || `<div class="mm-no-art">💀</div>`}</div>
+        <div class="mm-mob-info">
+          <div class="mm-mob-name">${mob.name} <span class="mm-mob-lv">Lv ${mob.combatLevel||0}</span> ${isTarget ? '<span class="mm-targeting-badge">TARGET</span>' : ''} ${!alive ? '<span class="mm-dead-badge">DEAD</span>' : ''}</div>
+          <div class="mm-hp-track-mob"><div class="mm-hp-fill-mob" id="mm-mhp-${i}" style="width:${hPct.toFixed(1)}%;background:${hCol};${!alive?'opacity:0.2':''}"></div></div>
+          <div class="mm-hp-val-mob" id="mm-mhpv-${i}">${alive ? Math.ceil(hp) + ' / ' + maxH : 'DEAD'}</div>
+        </div>
+        ${alive && !isTarget ? `<button class="btn btn-xs mm-target-btn" onclick="game.multiMobSetTarget(${i})">Target</button>` : ''}
+        ${isTarget ? `<div class="mm-swords">⚔</div>` : ''}
+      </div>`;
+    }
+    html += `</div>`;
+
+    // ── LIVE COMBAT LOG STRIP ──
+    html += `<div class="mm-log" id="mm-log"><div class="mm-log-entry">Encounter started — all enemies attack simultaneously.</div></div>`;
+
+    // ── FOOD + PRAY BUTTONS ──
+    html += `<div class="mm-quick-actions">`;
+    const foods = (s.foodBag||[]).filter(f=>f.qty>0).slice(0,3);
+    for (const f of foods) {
+      const it = GAME_DATA.items[f.id];
+      html += `<button class="btn btn-xs mm-eat-btn" onclick="game.eatFood();ui._updateMultiMobUI()" title="${it?.name||f.id} +${it?.heals||0}hp">🍖 Eat ${it?.name||f.id}</button>`;
+    }
+    const pp = s.prayerPoints || 0;
+    if (pp > 0) {
+      html += `<span class="mm-prayer-pts">🙏 ${pp}pp</span>`;
+    }
+    html += `<button class="btn btn-xs mm-spec-btn" onclick="game.useSpecialAttack?.()" title="Use Special Attack (${s.specEnergy||0}% energy)">⚡ Spec ${s.specEnergy||0}%</button>`;
+    html += `</div>`;
+
+    html += `<div class="splat-area combat-arena" id="monster-splats" style="position:relative;height:0;overflow:visible"></div>`;
+    html += `</div>`;
+    return html;
+  }
+
+  _updateMultiMobUI() {
+    const mm = this.engine.state.multiMob;
+    const c  = this.engine.state.combat;
+    if (!mm?.active) return;
+
+    // Update each mob row
+    for (let i = 0; i < mm.mobs.length; i++) {
+      const hp   = mm.hp[i];
+      const maxH = mm.mobs[i].hp;
+      const alive = mm.alive[i];
+      const hPct = alive ? Math.max(0, Math.min(100, (hp/maxH)*100)) : 0;
+      const hCol = hPct > 50 ? '#8a3a3a' : hPct > 25 ? '#c4a83a' : '#4a8a3e';
+      const isTarget = alive && mm.targetIdx === i;
+
+      const row = document.getElementById('mm-mob-' + i);
+      if (row) {
+        row.className = 'mm-mob-row' + (isTarget ? ' mm-target' : '') + (!alive ? ' mm-dead' : '');
+      }
+      const fill = document.getElementById('mm-mhp-' + i);
+      if (fill) { fill.style.width = hPct.toFixed(1) + '%'; fill.style.background = hCol; fill.style.opacity = alive ? '1' : '0.2'; }
+      const val = document.getElementById('mm-mhpv-' + i);
+      if (val) val.textContent = alive ? Math.ceil(hp) + ' / ' + maxH : 'DEAD';
+    }
+
+    // Update player HP
+    const maxHp = this.engine.getMaxHp();
+    const pHp   = c.playerHp || 0;
+    const pPct  = Math.max(0, Math.min(100, (pHp/maxHp)*100));
+    const pCol  = pPct > 50 ? '#4a8a3e' : pPct > 25 ? '#c4a83a' : '#c44040';
+    const pFill = document.getElementById('mm-php-fill');
+    const pVal  = document.getElementById('mm-php-val');
+    if (pFill) { pFill.style.width = pPct.toFixed(1)+'%'; pFill.style.background = pCol; }
+    if (pVal)  pVal.textContent = Math.max(0,Math.floor(pHp)) + ' / ' + maxHp;
   }
 
   showPetAction(d) {
