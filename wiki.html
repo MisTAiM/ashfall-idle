@@ -3,292 +3,372 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ashfall Idle Wiki — Complete Encyclopedia</title>
+  <title>Ashfall Idle — Wiki</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#0a0b0f;--bg2:#0f1117;--bg3:#161822;--border:#252840;--text:#c8cad4;--dim:#7a7e94;--bright:#e8eaf2;--accent:#c9873e;--green:#3a9e5c;--blue:#4a7ec4;--purple:#8a5ec4;--red:#c44040;--yellow:#c4a83a}
+    :root{--bg:#080a0d;--bg2:#0d1018;--bg3:#12151c;--border:#1e2230;--text:#c0c4d4;--dim:#5a6080;--bright:#e8eaf2;--accent:#c9873e;--green:#3a9e5c;--blue:#4a7ec4;--purple:#8a5ec4;--red:#c44040;--gold:#c4a83a}
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:var(--bg);color:var(--text);font-family:'Crimson Text',Georgia,serif;font-size:16px;line-height:1.7}
-    .wiki-wrap{max-width:980px;margin:0 auto;padding:32px 24px 80px}
-    nav{position:sticky;top:0;background:rgba(10,11,15,0.97);backdrop-filter:blur(8px);padding:12px 24px;border-bottom:1px solid var(--border);z-index:100;display:flex;align-items:center;gap:12px;flex-wrap:wrap;max-width:980px;margin:0 auto}
-    .logo{font-family:'Cinzel',serif;font-size:20px;color:var(--accent);letter-spacing:3px;margin-right:8px}
-    .logo span{font-size:12px;color:var(--dim);letter-spacing:1px;margin-left:6px}
-    nav a{font-family:'Cinzel',serif;font-size:11px;color:var(--dim);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;white-space:nowrap}
-    nav a:hover{color:var(--accent);border-color:var(--accent)}
-    .back{color:var(--accent);font-size:14px;text-decoration:none;display:inline-block;margin:20px 0}
-    h1{font-family:'Cinzel',serif;font-size:26px;color:var(--accent);margin:36px 0 10px;padding-top:20px;border-top:1px solid var(--border)}
-    h1:first-of-type{border-top:none;margin-top:16px}
-    h2{font-family:'Cinzel',serif;font-size:18px;color:var(--bright);margin:22px 0 10px}
-    h3{font-family:'Cinzel',serif;font-size:14px;color:var(--blue);margin:14px 0 6px}
-    h4{font-family:'Cinzel',serif;font-size:13px;color:var(--yellow);margin:10px 0 5px}
-    p{margin-bottom:10px}
-    ul,ol{margin:8px 0 12px 20px}
-    li{margin-bottom:4px}
-    table{width:100%;border-collapse:collapse;margin:10px 0 20px;font-size:14px}
-    th{font-family:'Cinzel',serif;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);background:var(--bg2)}
-    td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:14px}
-    tr:hover td{background:rgba(201,135,62,0.03)}
-    .mech{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:14px 16px;margin:12px 0}
-    .mech h3{margin-top:0;color:var(--accent)}
-    .warn{background:rgba(196,64,64,0.08);border:1px solid rgba(196,64,64,0.25);border-radius:6px;padding:10px 14px;margin:10px 0;font-size:14px}
-    .tip{background:rgba(58,158,92,0.08);border:1px solid rgba(58,158,92,0.25);border-radius:6px;padding:10px 14px;margin:10px 0;font-size:14px}
-    code{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--blue)}
-    .tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;font-family:'JetBrains Mono',monospace;vertical-align:middle}
-    .tg{background:rgba(58,158,92,0.12);color:var(--green)}
-    .ta{background:rgba(74,126,196,0.12);color:var(--blue)}
-    .tc{background:rgba(196,64,64,0.12);color:var(--red)}
-    .ts{background:rgba(138,94,196,0.12);color:var(--purple)}
+    a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+    nav{position:sticky;top:0;z-index:100;background:rgba(8,10,13,0.97);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:0 24px}
+    .nav-inner{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0}
+    .nav-logo{font-family:'Cinzel',serif;font-size:16px;color:var(--accent);letter-spacing:2px;margin-right:8px;white-space:nowrap}
+    nav a{font-family:'Cinzel',serif;font-size:10px;color:var(--dim);padding:4px 10px;border:1px solid var(--border);border-radius:2px;transition:.15s;white-space:nowrap;letter-spacing:.5px}
+    nav a:hover{color:var(--accent);border-color:rgba(201,135,62,.4);text-decoration:none}
+    .wiki-body{max-width:1000px;margin:0 auto;padding:32px 24px 100px}
+    h1{font-family:'Cinzel',serif;font-size:28px;color:var(--accent);margin:48px 0 12px;padding-top:8px;border-bottom:1px solid rgba(201,135,62,.2);padding-bottom:12px}
+    h1:first-of-type{margin-top:20px}
+    h2{font-family:'Cinzel',serif;font-size:18px;color:var(--bright);margin:28px 0 10px}
+    h3{font-family:'Cinzel',serif;font-size:14px;color:var(--gold);margin:18px 0 7px}
+    h4{font-family:'Cinzel',serif;font-size:12px;color:var(--blue);margin:12px 0 5px;text-transform:uppercase;letter-spacing:1px}
+    p{margin-bottom:10px;color:var(--text)}
+    ul,ol{margin:8px 0 14px 22px}
+    li{margin-bottom:4px;color:var(--text)}
+    table{width:100%;border-collapse:collapse;margin:10px 0 22px;font-size:14px}
+    th{font-family:'Cinzel',serif;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);background:var(--bg2)}
+    td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:top;font-size:14px}
+    tr:hover td{background:rgba(201,135,62,.03)}
+    .box{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;padding:14px 18px;margin:12px 0}
+    .box.warn{border-left-color:var(--red)}
+    .box.tip{border-left-color:var(--green)}
+    .box.blue{border-left-color:var(--blue)}
+    .box h3{margin-top:0;color:inherit}
+    code{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 7px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--blue)}
+    .tag{display:inline-block;font-size:10px;padding:1px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;vertical-align:middle}
+    .tc{background:rgba(196,64,64,.1);color:var(--red)}
+    .tg{background:rgba(58,158,92,.1);color:var(--green)}
+    .ta{background:rgba(74,126,196,.1);color:var(--blue)}
+    .ts{background:rgba(138,94,196,.1);color:var(--purple)}
     .hi{color:var(--accent);font-weight:600}
     .mono{font-family:'JetBrains Mono',monospace;font-size:13px}
-    .pet-type{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:600}
-    @media(max-width:600px){.wiki-wrap,.wiki-nav{padding:12px}}
+    .back{color:var(--accent);display:inline-block;margin:20px 0;font-family:'Cinzel',serif;font-size:13px}
+    .ver{color:var(--dim);font-size:12px;margin-left:12px;font-family:'JetBrains Mono',monospace}
+    hr{border:none;border-top:1px solid var(--border);margin:48px 0}
+    @media(max-width:640px){.wiki-body{padding:16px}}
   </style>
 </head>
 <body>
 <nav>
-  <div class="logo">ASHFALL <span>WIKI v9.4</span></div>
-  <a href="#overview">Overview</a>
-  <a href="#skills">Skills</a>
-  <a href="#combat">Combat</a>
-  <a href="#pets">Pets</a>
-  <a href="#farming">Farming</a>
-  <a href="#thieving">Thieving</a>
-  <a href="#monsters">Monsters</a>
-  <a href="#items">Items</a>
-  <a href="#prayer">Prayer</a>
-  <a href="#spellbooks">Spellbooks</a>
-  <a href="#dungeons">Dungeons</a>
-  <a href="#formulas">Formulas</a>
-  <a href="./">← Play Game</a>
+  <div class="nav-inner">
+    <span class="nav-logo">ASHFALL WIKI</span>
+    <a href="#start">Getting Started</a>
+    <a href="#skills">Skills</a>
+    <a href="#combat">Combat</a>
+    <a href="#weapons">Weapons</a>
+    <a href="#armor">Armor</a>
+    <a href="#pets">Pets</a>
+    <a href="#farming">Farming</a>
+    <a href="#thieving">Thieving</a>
+    <a href="#prayer">Prayer</a>
+    <a href="#spells">Spellbooks</a>
+    <a href="#dungeons">Dungeons</a>
+    <a href="#formulas">Formulas</a>
+    <a href="./">← Play</a>
+  </div>
 </nav>
 
-<div class="wiki-wrap">
+<div class="wiki-body">
 <a class="back" href="./">← Back to Game</a>
+<span class="ver">v9.4</span>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<h1 id="overview">Ashfall Idle — Overview</h1>
-<p>Ashfall Idle is a dark fantasy idle RPG where you train 28+ skills, battle 59 monsters across 12 combat areas, conquer dungeons, craft hundreds of items, manage a farm, pickpocket NPCs, and raise combat pets that fight alongside you. The world of Ashfall is covered in a grey volcanic fallout — a dark, gritty setting where survival means constant growth.</p>
+<!-- ════════════════════════════════════ -->
+<h1 id="start">Getting Started</h1>
+<p>Ashfall Idle is a dark fantasy idle RPG set in a world buried beneath volcanic ash. Train 28 skills, battle 59 monsters, conquer 14 dungeons, collect 20 combat pets, and forge legendary weapons from the ruins of the old world.</p>
 
-<div class="mech">
-  <h3>Getting Started</h3>
+<div class="box tip">
+  <h3>New Player Path</h3>
   <ol>
-    <li>Begin with <span class="hi">Woodcutting</span>, <span class="hi">Mining</span>, or <span class="hi">Fishing</span> to gather raw materials.</li>
-    <li>Use <span class="hi">Smithing</span> to forge your first weapons and armor from ore. Use <span class="hi">Cooking</span> to prepare food for healing in combat.</li>
-    <li>Head to <span class="hi">Combat</span>, equip your gear from the Bank, and fight Chickens or Goblins first.</li>
-    <li>Use drops and XP to level combat skills. Upgrade weapons as you progress.</li>
-    <li>Unlock <span class="hi">Farming</span> early — plants grow passively while you do other activities.</li>
-    <li>Complete <span class="hi">Quests</span> for large XP rewards and faction reputation.</li>
-    <li>Collect <span class="hi">Combat Pets</span> from monster drops — they fight alongside you.</li>
+    <li><strong>Gather:</strong> Start Woodcutting and Mining — logs and ores fund everything else.</li>
+    <li><strong>Smith:</strong> Smelt ores into bars, forge your first Iron or Steel weapon and armor.</li>
+    <li><strong>Cook:</strong> Cook raw fish from Fishing — food is your combat lifeline.</li>
+    <li><strong>Fight:</strong> Enter Combat, equip your gear, and work up from Chickens → Goblins → Bandits.</li>
+    <li><strong>Farm:</strong> Plant seeds — they grow while you do other activities. Free XP and food.</li>
+    <li><strong>Unlock:</strong> Higher combat levels open better areas, dungeons, and world bosses.</li>
+    <li><strong>Collect:</strong> Pets drop from monsters. Equip one — it fights alongside you every battle.</li>
   </ol>
 </div>
 
-<h2>Version History</h2>
+<h2>Combat Level</h2>
+<p><code>CL = floor(0.25 × (defence + hitpoints + floor(prayer/2)) + 0.325 × max(attack+strength, ranged×2/3, magic×2/3))</code></p>
+
+<!-- ════════════════════════════════════ -->
+<h1 id="skills">Skills — All 28</h1>
 <table>
-  <tr><th>Version</th><th>Major Changes</th></tr>
-  <tr><td>v9.4</td><td>Farming v2 (watering, compost, disease, weeds, 4 plot types), Combat Pets v2 (20 pets, each with unique abilities and SVG art), Thieving v2 (HP damage, anger system, fight triggers, food auto-eat), Prayer overhaul (categories, bone SVGs, drain bar), Spellbook unlock items, Staff rune system fixes.</td></tr>
-  <tr><td>v9.3</td><td>Fight Cave (60 waves + Jad), ore bag system, slayer system, mastery system, weapon affixes, dungeon wave combat, social features (guild, bazaar, friends).</td></tr>
-  <tr><td>v9.2</td><td>5 spellbooks (Standard, Pyromancy, Cryomancy, Blood Magic, Void Magic, Necromancy), 50+ spells, magic rework, status effects.</td></tr>
-  <tr><td>v9.1</td><td>Full combat status system, spec bar, 11 monster attack animations, prayer system, prayer draining.</td></tr>
+  <tr><th>Skill</th><th>Type</th><th>Primary Use</th><th>Cap</th></tr>
+  <tr><td>Attack</td><td><span class="tag tc">Combat</span></td><td>Melee hit chance. Higher level = less misses.</td><td>99</td></tr>
+  <tr><td>Strength</td><td><span class="tag tc">Combat</span></td><td>Melee max damage. The primary damage stat.</td><td>99</td></tr>
+  <tr><td>Defence</td><td><span class="tag tc">Combat</span></td><td>Reduces incoming damage through evasion formula.</td><td>99</td></tr>
+  <tr><td>Hitpoints</td><td><span class="tag tc">Combat</span></td><td>Max HP = level × 10 + 10. Trained in all combat.</td><td>99</td></tr>
+  <tr><td>Ranged</td><td><span class="tag tc">Combat</span></td><td>Bow/crossbow accuracy and damage.</td><td>99</td></tr>
+  <tr><td>Magic</td><td><span class="tag tc">Combat</span></td><td>Spell accuracy and damage. Unlocks spellbooks.</td><td>99</td></tr>
+  <tr><td>Prayer</td><td><span class="tag tc">Combat</span></td><td>Bury bones for points. Activate prayers for combat buffs.</td><td>99</td></tr>
+  <tr><td>Slayer</td><td><span class="tag tc">Combat</span></td><td>Receive tasks from the Slayer master. Bonus XP on task kills.</td><td>99</td></tr>
+  <tr><td>Woodcutting</td><td><span class="tag tg">Gathering</span></td><td>Chop logs for Fletching and Firemaking.</td><td>99</td></tr>
+  <tr><td>Mining</td><td><span class="tag tg">Gathering</span></td><td>Mine ores + gems → Smithing. Uses Ore Bag.</td><td>99</td></tr>
+  <tr><td>Fishing</td><td><span class="tag tg">Gathering</span></td><td>Catch raw fish → Cooking → food for combat.</td><td>99</td></tr>
+  <tr><td>Foraging</td><td><span class="tag tg">Gathering</span></td><td>Wild herbs for potions and alchemy.</td><td>99</td></tr>
+  <tr><td>Farming</td><td><span class="tag ts">Support</span></td><td>Grow crops passively. 9 plot types, disease/weed mechanics.</td><td>99</td></tr>
+  <tr><td>Thieving</td><td><span class="tag ts">Support</span></td><td>Pickpocket NPCs and steal from stalls. Anger/fight risk system.</td><td>99</td></tr>
+  <tr><td>Smithing</td><td><span class="tag ta">Artisan</span></td><td>Smelt ores → bars, forge bars → weapons and armor.</td><td>99</td></tr>
+  <tr><td>Cooking</td><td><span class="tag ta">Artisan</span></td><td>Cook raw fish/meat → healing food.</td><td>99</td></tr>
+  <tr><td>Crafting</td><td><span class="tag ta">Artisan</span></td><td>Make jewelry, leather armor, gems → enchanting.</td><td>99</td></tr>
+  <tr><td>Alchemy</td><td><span class="tag ta">Artisan</span></td><td>Brew potions from herbs. Temporary stat boosts.</td><td>99</td></tr>
+  <tr><td>Fletching</td><td><span class="tag ta">Artisan</span></td><td>Make arrows, bows, bolts from logs and metals.</td><td>99</td></tr>
+  <tr><td>Enchanting</td><td><span class="tag ta">Artisan</span></td><td>Add magical properties to jewelry and weapons.</td><td>99</td></tr>
+  <tr><td>Incantation</td><td><span class="tag ta">Artisan</span></td><td>Craft runes from Rune Essence at altars.</td><td>99</td></tr>
+  <tr><td>Tactics</td><td><span class="tag ts">Support</span></td><td>Trained by all combat. Unlocks special abilities.</td><td>99</td></tr>
+  <tr><td>Trading</td><td><span class="tag ts">Support</span></td><td>Unlocks Bazaar features and better exchange rates.</td><td>99</td></tr>
+  <tr><td>Leadership</td><td><span class="tag ts">Support</span></td><td>Guild bonuses and leadership perks.</td><td>99</td></tr>
+  <tr><td>Diplomacy</td><td><span class="tag ts">Support</span></td><td>Faction reputation gains. Access to faction shops.</td><td>99</td></tr>
+  <tr><td>Summoning</td><td><span class="tag ts">Support</span></td><td>Summon familiars for temporary combat and skill boosts.</td><td>99</td></tr>
+  <tr><td>Necromancy</td><td><span class="tag tc">Combat</span></td><td>Unlocks undead-type spells and bone-based abilities.</td><td>99</td></tr>
+  <tr><td>Hunting</td><td><span class="tag tg">Gathering</span></td><td>Set traps for rare creatures and materials.</td><td>99</td></tr>
 </table>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<h1 id="skills">Skills</h1>
-<p>Ashfall has 28 skills, all capped at level 99. Total level is the sum of all skill levels. Each skill has its own mastery system — train individual actions for additional bonuses beyond the skill level.</p>
-
-<h2>Skill Categories</h2>
-<table>
-  <tr><th>Category</th><th>Skills</th><th>Description</th></tr>
-  <tr><td><span class="tag tg">Gathering</span></td><td>Woodcutting, Mining, Fishing, Foraging, Hunting</td><td>Collect raw resources passively</td></tr>
-  <tr><td><span class="tag ta">Artisan</span></td><td>Cooking, Smithing, Fletching, Crafting, Alchemy, Enchanting, Incantation</td><td>Transform resources into items</td></tr>
-  <tr><td><span class="tag tc">Combat</span></td><td>Attack, Strength, Defence, Hitpoints, Ranged, Magic, Prayer, Slayer, Necromancy</td><td>Fight monsters and bosses</td></tr>
-  <tr><td><span class="tag ts">Support</span></td><td>Tactics, Farming, Thieving, Trading, Leadership, Diplomacy, Summoning</td><td>Utility and passive income</td></tr>
-</table>
-
-<h2>Gathering Skills</h2>
-<h3>Woodcutting</h3>
-<p>Chop trees for logs used in Fletching and Firemaking. Unlock better axes to increase speed. At higher levels, trees yield more logs per chop. Mastery unlocks bonus log chance.</p>
-<table>
-  <tr><th>Tree</th><th>Level</th><th>Log</th><th>XP</th></tr>
-  <tr><td>Oak</td><td>1</td><td>Oak Logs</td><td>25</td></tr>
-  <tr><td>Willow</td><td>15</td><td>Willow Logs</td><td>67.5</td></tr>
-  <tr><td>Maple</td><td>30</td><td>Maple Logs</td><td>100</td></tr>
-  <tr><td>Yew</td><td>45</td><td>Yew Logs</td><td>175</td></tr>
-  <tr><td>Magic</td><td>60</td><td>Magic Logs</td><td>250</td></tr>
-  <tr><td>Ashwood</td><td>75</td><td>Ashwood Logs</td><td>380</td></tr>
-</table>
-
-<h3>Mining</h3>
-<p>Mine ores and gems. Uses the <span class="hi">Ore Bag</span> system — ores go directly into your ore bag (100 capacity), not your bank. Upgrade your ore bag for more capacity. Random gem drops from most rocks. <span class="hi">Random Events</span> can trigger: cave-ins (stop action), lucky veins (bonus ore), treasure pockets (gems).</p>
-<table>
-  <tr><th>Rock</th><th>Level</th><th>Ore</th><th>XP</th></tr>
-  <tr><td>Copper/Tin</td><td>1</td><td>Copper/Tin Ore</td><td>17.5</td></tr>
-  <tr><td>Iron</td><td>15</td><td>Iron Ore</td><td>35</td></tr>
-  <tr><td>Silver</td><td>20</td><td>Silver Ore</td><td>40</td></tr>
-  <tr><td>Coal</td><td>30</td><td>Coal</td><td>50</td></tr>
-  <tr><td>Mithril</td><td>45</td><td>Mithril Ore</td><td>80</td></tr>
-  <tr><td>Adamant</td><td>60</td><td>Adamant Ore</td><td>95</td></tr>
-  <tr><td>Runite</td><td>75</td><td>Runite Ore</td><td>125</td></tr>
-  <tr><td>Rune Essence</td><td>1</td><td>Rune Essence</td><td>5</td></tr>
-</table>
-
-<h3>Fishing</h3>
-<p>Catch raw fish for Cooking. Different fishing zones unlock at different levels, each offering different fish species. Higher-tier fish require level-appropriate rods.</p>
-
-<h3>Foraging</h3>
-<p>Gather wild herbs used in Alchemy (potions) and some cooking recipes. Higher-level herbs give more XP and are rarer.</p>
-
-<h2>Artisan Skills</h2>
-<h3>Smithing</h3>
-<p>Smelt ores into bars at a furnace, then smith bars into weapons and armor. Each bar tier unlocks a new set of equipment. Artisan skill — requires input materials. Uses a progressive recipe unlock system.</p>
-
-<h3>Cooking</h3>
-<p>Cook raw fish and meat into food for combat healing. Higher Cooking level reduces burn rate. Some cooked foods restore more HP. Burnt food has no healing value.</p>
-
-<h3>Crafting</h3>
-<p>Create jewelry (rings, amulets), leather armor, and other items from gems, leather, and bars. Jewelry can be enchanted via Enchanting for combat bonuses.</p>
-
-<h3>Alchemy</h3>
-<p>Brew potions from herbs and ingredients. Potions provide temporary skill boosts, healing, or combat advantages. Some potions require herblore secondaries (e.g. fish oil, ashes).</p>
-
-<h3>Enchanting</h3>
-<p>Add magical properties to jewelry and weapons using runes and enchant dust. Enchanted items have stat bonuses beyond the base item. Requires runes appropriate to the enchantment tier.</p>
-
-<h3>Fletching</h3>
-<p>Craft arrows, bows, and bolts from logs, feathers, and metal bars. Ranged ammunition is consumed in combat. Higher-level bows deal more damage and have higher requirements.</p>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════ -->
 <h1 id="combat">Combat System</h1>
-<p>Ashfall uses a tick-based combat system. Both the player and the monster attack on independent timers. Combat ends when either party reaches 0 HP.</p>
+<p>Ashfall uses a real-time tick-based combat system. Player and monster attack on independent timers. Damage, status effects, and pet actions all process each tick (~600ms). Both HP bars update every tick — you will see the fight happening in real time.</p>
 
-<h2>Combat Styles</h2>
+<h2>Combat Styles & XP Modes</h2>
 <table>
-  <tr><th>Style</th><th>Skills Gained</th><th>XP Modes</th></tr>
-  <tr><td>Melee</td><td>Attack, Strength, Defence, Hitpoints</td><td>Accurate (Attack), Aggressive (Strength), Defensive (Defence), Controlled (all 3)</td></tr>
-  <tr><td>Ranged</td><td>Ranged, Defence, Hitpoints</td><td>Accurate, Rapid, Long Range</td></tr>
-  <tr><td>Magic</td><td>Magic, Defence, Hitpoints</td><td>Standard (Magic + Defence)</td></tr>
+  <tr><th>Style</th><th>XP Modes</th><th>Skills Trained</th></tr>
+  <tr><td>Melee</td><td>Accurate (Atk+Def), Aggressive (Str+Def), Defensive (Def+Atk), Controlled (all 3)</td><td>Attack, Strength, Defence, Hitpoints, Tactics</td></tr>
+  <tr><td>Ranged</td><td>Accurate, Rapid, Long Range</td><td>Ranged, Defence, Hitpoints, Tactics</td></tr>
+  <tr><td>Magic</td><td>Standard (Magic + Defence)</td><td>Magic, Defence, Hitpoints, Tactics</td></tr>
 </table>
 
 <h2>Damage Formula</h2>
-<div class="mech">
-  <h3>How Damage is Calculated</h3>
-  <p><code>maxRoll = weapon.maxHit + floor(strengthBonus / 5)</code></p>
-  <p><code>damage = random(0, maxRoll)</code></p>
-  <p><code>evasionChance = monster.evasion[style] / (monster.evasion[style] + 100)</code></p>
-  <p>Prayer bonuses and equipment bonuses are applied multiplicatively. Critical hits deal 1.5× damage (rare chance). Special attacks override the normal formula.</p>
+<div class="box">
+  <p><code>accuracy = (effLevel + 8) × (attackBonus + 64)</code></p>
+  <p><code>defence  = (monsterCL + 8) × (evasion + 64)</code></p>
+  <p><code>hitChance = min(0.95, max(0.05, accuracy / (accuracy + defence)))</code></p>
+  <p><code>maxHit = (1 + strengthLevel/10) × (1 + strengthBonus/80) × 4</code></p>
+  <p><code>damage = random(maxHit × 0.1, maxHit)</code> × prayer bonuses × equipment bonuses</p>
+  <p>Critical hits (5% base chance + 1% per 10 levels above monster) deal ×1.5 damage.</p>
 </div>
 
 <h2>Status Effects</h2>
 <table>
-  <tr><th>Effect</th><th>Description</th><th>Source</th></tr>
-  <tr><td>Burn</td><td>Deals fire damage each tick. Stacks up to 5×.</td><td>Fire spells, fire attacks</td></tr>
-  <tr><td>Poison</td><td>Deals nature damage each tick. Stacks up to 8×.</td><td>Poison attacks, venom bites</td></tr>
-  <tr><td>Freeze</td><td>Slows monster attack speed by 10% per stack.</td><td>Ice spells</td></tr>
-  <tr><td>Bleed</td><td>Deals physical damage over time. Stacks.</td><td>Slashing weapons, some pets</td></tr>
-  <tr><td>Shock</td><td>15% chance to stun monster each tick per stack.</td><td>Lightning attacks</td></tr>
-  <tr><td>Stun</td><td>Monster cannot attack for duration.</td><td>Storm Cub pet, specific spells</td></tr>
-  <tr><td>Slow</td><td>Monster attack speed reduced (percentage).</td><td>Frost Sprite pet</td></tr>
+  <tr><th>Effect</th><th>Max Stacks</th><th>Damage Per Tick</th><th>Source</th></tr>
+  <tr><td>Burn</td><td>5</td><td>Scales with stacks</td><td>Fire weapons, spells, Dragon attacks</td></tr>
+  <tr><td>Poison</td><td>8</td><td>Nature damage</td><td>Spider bites, venomous monsters</td></tr>
+  <tr><td>Bleed</td><td>5</td><td>Physical damage</td><td>Slashing weapons, Blood Pup pet</td></tr>
+  <tr><td>Freeze</td><td>4</td><td>—</td><td>Slows monster attack speed 10% per stack</td></tr>
+  <tr><td>Shock</td><td>5</td><td>—</td><td>15% stun chance per stack per tick</td></tr>
+  <tr><td>Stun</td><td>1</td><td>—</td><td>Storm Cub pet, some spells. Blocks monster attack.</td></tr>
+  <tr><td>Slow</td><td>1</td><td>—</td><td>Frost Sprite pet. Increases monster attack interval.</td></tr>
+  <tr><td>Curse</td><td>5</td><td>—</td><td>Reduces player defence by 5% per stack</td></tr>
 </table>
 
 <h2>Special Attacks</h2>
-<p>Melee weapons can have special attacks costing <span class="hi">Spec Energy</span>. Energy regenerates at 10% per player attack (default). Equip special weapons and click the spec bar to trigger. Spec energy persists between fights.</p>
+<p>Spec energy regenerates at <span class="hi">10% per player attack</span>. Equip a spec weapon and click the spec bar. Each weapon has a unique animation.</p>
+<table>
+  <tr><th>Weapon</th><th>Cost</th><th>Effect</th></tr>
+  <tr><td>Dragon Dagger</td><td>25%</td><td>2 hits at 115% damage + 50% poison chance</td></tr>
+  <tr><td>Granite Maul</td><td>50%</td><td>160% hit ignoring 25% defence</td></tr>
+  <tr><td>Saradomin Sword</td><td>50%</td><td>145% hit + heal 20% of damage</td></tr>
+  <tr><td>Bandos Godsword</td><td>50%</td><td>110% hit + permanently reduce monster defence by 10</td></tr>
+  <tr><td>Armadyl Godsword</td><td>50%</td><td>150% damage ignoring 50% defence</td></tr>
+  <tr><td>Ashfire Blade</td><td>50%</td><td>140% damage + 3 guaranteed burn stacks</td></tr>
+  <tr><td>Dragonite Greataxe</td><td>75%</td><td>200% damage + 5 burn stacks + 30% def ignored</td></tr>
+  <tr><td>Voidreaper</td><td>100%</td><td>200% damage + heal 50% of damage dealt</td></tr>
+  <tr><td>Overlord's Greatblade</td><td>50%</td><td>180% damage + 8 burn stacks</td></tr>
+  <tr><td>Magic Shortbow</td><td>50%</td><td>3 arrows simultaneously</td></tr>
+  <tr><td>Dark Bow</td><td>50%</td><td>2 heavy arrows at 130% each</td></tr>
+  <tr><td>Armadyl Crossbow</td><td>25%</td><td>120% ignoring ALL defence</td></tr>
+  <tr><td>Twisted Bow</td><td>75%</td><td>3 rapid shots; scales with target magic level</td></tr>
+  <tr><td>Zaryte Crossbow</td><td>50%</td><td>150% + 75% def ignored + 80% poison chance</td></tr>
+  <tr><td>Toxic Trident</td><td>25%</td><td>Guaranteed 4-stack venom on target</td></tr>
+  <tr><td>Sanguinesti Staff</td><td>50%</td><td>140% magic + heal 30% of damage</td></tr>
+  <tr><td>Kodai Wand</td><td>25%</td><td>35% chance to restore all runes used this cast</td></tr>
+  <tr><td>Void Emperor's Staff</td><td>100%</td><td>300% magic damage, all defence ignored</td></tr>
+</table>
 
-<h2>Auto-Eat</h2>
-<p>When enabled (default ON), the game automatically eats your best food when your HP drops below <span class="hi">40%</span>. Food is stored in the Food Bag (4 slots, accessible from Combat page). Add food by clicking food items in the Bank.</p>
+<h2>Attack Animations</h2>
+<p>Each equipped weapon triggers a unique attack animation on hit. Scimitars show fast curved slashes, godswords show slow heavy arcs, the Voidreaper shows void cracks, fire weapons leave ember trails, and the Void Emperor's Staff opens a reality tear. The monster shakes and flashes on each hit received.</p>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Multi-Mob Encounters</h2>
+<p>Some combat areas trigger multi-mob encounters — 2 to 5 enemies attack you simultaneously, each on their own independent attack timer. Each mob has its own HP bar card. Click any card to switch your target. Auto-targeting switches to the next alive mob when your current target dies.</p>
+<div class="box warn">When multiple enemies are alive, all of them are attacking you every tick. Use protection prayers appropriately — a prayer hint banner tells you what attack types are active.</div>
+
+<!-- ════════════════════════════════════ -->
+<h1 id="weapons">Weapons — Complete List</h1>
+
+<h2>Melee — Scimitars (Fast, Smithable)</h2>
+<table>
+  <tr><th>Weapon</th><th>Lv</th><th>Atk Bonus</th><th>Str Bonus</th><th>Speed</th></tr>
+  <tr><td>Bronze Scimitar</td><td>1</td><td>8</td><td>7</td><td>2.2s</td></tr>
+  <tr><td>Iron Scimitar</td><td>10</td><td>16</td><td>14</td><td>2.2s</td></tr>
+  <tr><td>Steel Scimitar</td><td>20</td><td>27</td><td>23</td><td>2.0s</td></tr>
+  <tr><td>Mithril Scimitar</td><td>30</td><td>40</td><td>36</td><td>2.0s</td></tr>
+  <tr><td>Adamant Scimitar</td><td>40</td><td>55</td><td>50</td><td>1.8s</td></tr>
+  <tr><td>Rune Scimitar</td><td>50</td><td>70</td><td>64</td><td>1.8s</td></tr>
+</table>
+
+<h2>Melee — Longswords (Higher Str, Slower)</h2>
+<table>
+  <tr><th>Weapon</th><th>Lv</th><th>Atk Bonus</th><th>Str Bonus</th><th>Speed</th></tr>
+  <tr><td>Steel Longsword</td><td>20</td><td>24</td><td>30</td><td>2.8s</td></tr>
+  <tr><td>Mithril Longsword</td><td>30</td><td>36</td><td>44</td><td>2.6s</td></tr>
+  <tr><td>Adamant Longsword</td><td>40</td><td>50</td><td>60</td><td>2.4s</td></tr>
+  <tr><td>Rune Longsword</td><td>50</td><td>65</td><td>78</td><td>2.4s</td></tr>
+</table>
+
+<h2>Melee — Special Attack Weapons</h2>
+<table>
+  <tr><th>Weapon</th><th>Lv</th><th>Atk</th><th>Str</th><th>Special</th><th>Source</th></tr>
+  <tr><td>Dragon Dagger (p++)</td><td>60</td><td>62</td><td>60</td><td>25%</td><td>Drop / Shop</td></tr>
+  <tr><td>Granite Maul</td><td>50</td><td>55</td><td>80</td><td>50%</td><td>Monsters</td></tr>
+  <tr><td>Abyssal Whip</td><td>70</td><td>82</td><td>76</td><td>50%</td><td>Demon drop 1/200</td></tr>
+  <tr><td>Saradomin Sword</td><td>65</td><td>72</td><td>92</td><td>50%</td><td>World bosses</td></tr>
+  <tr><td>Bandos Godsword</td><td>75</td><td>88</td><td>108</td><td>50%</td><td>World bosses</td></tr>
+  <tr><td>Armadyl Godsword</td><td>75</td><td>100</td><td>115</td><td>50%</td><td>World bosses</td></tr>
+  <tr><td>Ashfire Blade</td><td>80</td><td>112</td><td>122</td><td>50%</td><td>Ashfall Titan</td></tr>
+  <tr><td>Dragonite Greataxe</td><td>85</td><td>122</td><td>140</td><td>75%</td><td>Boss drops</td></tr>
+  <tr><td>Voidreaper</td><td>90</td><td>132</td><td>152</td><td>100%</td><td>Void Emperor</td></tr>
+  <tr><td>Overlord's Greatblade</td><td>92</td><td>140</td><td>160</td><td>50%</td><td>Ashen Overlord</td></tr>
+</table>
+
+<h2>Ranged Weapons</h2>
+<table>
+  <tr><th>Weapon</th><th>Lv</th><th>Ranged Bonus</th><th>Special</th><th>Source</th></tr>
+  <tr><td>Maple Shortbow</td><td>30</td><td>30</td><td>—</td><td>Fletch</td></tr>
+  <tr><td>Yew Longbow</td><td>45</td><td>48</td><td>—</td><td>Fletch</td></tr>
+  <tr><td>Magic Shortbow</td><td>55</td><td>62</td><td>50% (3-shot)</td><td>Shop/Drop</td></tr>
+  <tr><td>Dark Bow</td><td>60</td><td>78</td><td>50% (2-shot)</td><td>Shadow Beast</td></tr>
+  <tr><td>Armadyl Crossbow</td><td>75</td><td>100</td><td>25% (pierce)</td><td>World bosses</td></tr>
+  <tr><td>Twisted Bow</td><td>85</td><td>122</td><td>75% (magic scale)</td><td>Boss drops</td></tr>
+  <tr><td>Zaryte Crossbow</td><td>90</td><td>140</td><td>50% (void+poison)</td><td>Void Emperor</td></tr>
+</table>
+
+<h2>Magic Weapons</h2>
+<table>
+  <tr><th>Weapon</th><th>Lv</th><th>Magic Bonus</th><th>Special</th><th>Provides</th></tr>
+  <tr><td>Master Wand</td><td>40</td><td>40</td><td>50%</td><td>—</td></tr>
+  <tr><td>Staff of the Dead</td><td>65</td><td>72</td><td>50%</td><td>Death runes</td></tr>
+  <tr><td>Toxic Trident</td><td>70</td><td>80</td><td>25%</td><td>—</td></tr>
+  <tr><td>Kodai Wand</td><td>80</td><td>95</td><td>25%</td><td>30% rune save</td></tr>
+  <tr><td>Sanguinesti Staff</td><td>82</td><td>108</td><td>50%</td><td>—</td></tr>
+  <tr><td>Void Emperor's Staff</td><td>90</td><td>130</td><td>100%</td><td>All runes unlimited</td></tr>
+</table>
+
+<!-- ════════════════════════════════════ -->
+<h1 id="armor">Armor — Full Progression</h1>
+
+<h2>Melee Armor (Defence + Strength bonus)</h2>
+<table>
+  <tr><th>Set</th><th>Lv</th><th>Body Def</th><th>Body Str</th><th>Body DR</th><th>Rarity</th></tr>
+  <tr><td>Bronze</td><td>1</td><td>9</td><td>2</td><td>—</td><td>Common</td></tr>
+  <tr><td>Iron</td><td>10</td><td>18</td><td>4</td><td>—</td><td>Common</td></tr>
+  <tr><td>Steel</td><td>20</td><td>28</td><td>8</td><td>—</td><td>Uncommon</td></tr>
+  <tr><td>Mithril</td><td>30</td><td>42</td><td>12</td><td>—</td><td>Uncommon</td></tr>
+  <tr><td>Adamant</td><td>40</td><td>60</td><td>18</td><td>—</td><td>Rare</td></tr>
+  <tr><td>Runite</td><td>50</td><td>82</td><td>24</td><td>—</td><td>Rare</td></tr>
+  <tr><td>Obsidian</td><td>60</td><td>110</td><td>32</td><td>DR2</td><td>Epic</td></tr>
+  <tr><td>Ashsteel</td><td>75</td><td>140</td><td>44</td><td>DR4</td><td>Legendary</td></tr>
+  <tr><td>Dragonite</td><td>85</td><td>175</td><td>60</td><td>DR6</td><td>Mythic</td></tr>
+</table>
+
+<h2>Ranged Armor</h2>
+<table>
+  <tr><th>Set</th><th>Lv</th><th>Body Ranged</th><th>Body Def</th><th>Rarity</th></tr>
+  <tr><td>Leather</td><td>1</td><td>10</td><td>5</td><td>Common</td></tr>
+  <tr><td>Hard Leather</td><td>20</td><td>26</td><td>12</td><td>Uncommon</td></tr>
+  <tr><td>Dragonhide</td><td>40</td><td>50</td><td>26</td><td>Rare</td></tr>
+  <tr><td>Void Stalker</td><td>60</td><td>78</td><td>40</td><td>Epic</td></tr>
+  <tr><td>Shadowscale</td><td>80</td><td>108</td><td>58</td><td>Legendary</td></tr>
+</table>
+
+<h2>Magic Robes</h2>
+<table>
+  <tr><th>Set</th><th>Lv</th><th>Robe Magic</th><th>Robe Def</th><th>DR</th><th>Rarity</th></tr>
+  <tr><td>Mystic</td><td>20</td><td>26</td><td>10</td><td>—</td><td>Uncommon</td></tr>
+  <tr><td>Adept</td><td>40</td><td>46</td><td>22</td><td>—</td><td>Rare</td></tr>
+  <tr><td>Archmage</td><td>65</td><td>78</td><td>40</td><td>—</td><td>Epic</td></tr>
+  <tr><td>Elder</td><td>80</td><td>106</td><td>58</td><td>DR4</td><td>Legendary</td></tr>
+  <tr><td>Void Emperor</td><td>90</td><td>138</td><td>76</td><td>DR6</td><td>Mythic</td></tr>
+</table>
+
+<h2>Accessories — Best in Slot</h2>
+<table>
+  <tr><th>Slot</th><th>Item</th><th>Stat</th><th>Source</th></tr>
+  <tr><td>Amulet (Str)</td><td>Amulet of Torture</td><td>+32 Str, +18 Atk</td><td>Ashfall Titan / Shop</td></tr>
+  <tr><td>Amulet (Rng)</td><td>Necklace of Anguish</td><td>+28 Rng, +12 Atk</td><td>Storm Reaver</td></tr>
+  <tr><td>Amulet (Mag)</td><td>Occult Necklace</td><td>+25 Magic, +10% magic dmg</td><td>Demon / Void Walker</td></tr>
+  <tr><td>Ring (Str)</td><td>Berserker Ring</td><td>+8 Str</td><td>Hollow Lord</td></tr>
+  <tr><td>Ring (Rng)</td><td>Archer's Ring</td><td>+8 Rng</td><td>Monster drops</td></tr>
+  <tr><td>Ring (Mag)</td><td>Seers' Ring</td><td>+8 Magic</td><td>Void Walker</td></tr>
+  <tr><td>Ring (Loot)</td><td>Ring of Wealth</td><td>+10% rare drop rate</td><td>Shop / Boss</td></tr>
+  <tr><td>Cape</td><td>Fire Cape</td><td>+25 Def, +10 Str/Mag/Rng</td><td>Fight Cave clear</td></tr>
+  <tr><td>Cape (BiS)</td><td>Infernal Cape</td><td>+35 Def, +18 Str, DR2</td><td>Endgame challenges</td></tr>
+</table>
+
+<!-- ════════════════════════════════════ -->
 <h1 id="pets">Combat Pets</h1>
-<p>Combat pets are companions that fight alongside you. Each pet has a <span class="hi">combat ability</span> that triggers every N player attacks, plus a <span class="hi">passive bonus</span> that is always active while the pet is equipped. Only one pet can be equipped at a time.</p>
+<p>Combat pets fight alongside you every battle. Each pet has an ability that fires every N player attacks, plus a permanent passive bonus. Only one pet can be equipped at a time. Pets drop from specific monster kills at fixed rates.</p>
 
-<div class="mech">
-  <h3>How Pet Combat Works</h3>
-  <p>After every player attack, the game checks if your pet's ability counter has reached its trigger threshold. When it does, the pet's ability fires automatically — dealing damage, healing you, applying a status effect, or debuffing the monster.</p>
-  <p>The combat arena shows a small flash when your pet acts. The pet strip above the prayer bar shows your active pet and how often it acts.</p>
-</div>
+<div class="box blue">Each equipped pet's ability counter increments after every player attack. When it reaches the trigger threshold, the ability fires automatically — the combat arena shows a brief flash of what the pet did.</div>
 
-<h2>Pet Types</h2>
 <table>
-  <tr><th>Type</th><th>Description</th></tr>
-  <tr><td><span style="color:#d67338">Damage</span></td><td>Deals direct damage on trigger. Scaling: magic or strength level.</td></tr>
-  <tr><td><span style="color:#b585e0">Debuff</span></td><td>Reduces monster stats temporarily.</td></tr>
-  <tr><td><span style="color:#4abe6c">Support</span></td><td>Heals the player or provides defensive value.</td></tr>
-  <tr><td><span style="color:#7ac4e8">Pierce</span></td><td>Ignores a portion of monster defence on hit.</td></tr>
-  <tr><td><span style="color:#d4a83a">Stun</span></td><td>Prevents the monster from attacking for a duration.</td></tr>
-  <tr><td><span style="color:#4a9ed4">Slow</span></td><td>Increases monster attack interval (fewer attacks per second).</td></tr>
-  <tr><td><span style="color:#7ab030">Poison/Bleed</span></td><td>Applies damage-over-time status effects.</td></tr>
+  <tr><th>Pet</th><th>Source</th><th>Drop Rate</th><th>Ability</th><th>Every</th><th>Passive</th></tr>
+  <tr><td>Baby Dragon</td><td>Dragon</td><td>1/500</td><td>Fire breath + burn chance</td><td>3 atk</td><td>+3% combat dmg</td></tr>
+  <tr><td>Shadow Imp</td><td>Demon</td><td>1/333</td><td>Curse monster defence -10</td><td>4 atk</td><td>+5% magic dmg</td></tr>
+  <tr><td>Void Wisp</td><td>Void Walker</td><td>1/200</td><td>Pierce 50% defence</td><td>5 atk</td><td>+5 evasion</td></tr>
+  <tr><td>Ash Sprite</td><td>Ashfall Titan</td><td>1/100</td><td>Heal 6% of max HP</td><td>4 atk</td><td>+2% all XP</td></tr>
+  <tr><td>Blight Pup</td><td>Blight Warden</td><td>1/50</td><td>Poison (2 stacks)</td><td>3 atk</td><td>+10% poison chance</td></tr>
+  <tr><td>Storm Cub</td><td>Storm Reaver</td><td>1/67</td><td>Thunder Strike (60% stun)</td><td>5 atk</td><td>+10% freeze chance</td></tr>
+  <tr><td>Ashen Shade</td><td>Ashen Overlord</td><td>1/100</td><td>Ashen Wrath (heavy fire)</td><td>6 atk</td><td>+10% burn chance</td></tr>
+  <tr><td>Blood Pup</td><td>Bloodfang Alpha</td><td>1/200</td><td>Bleed stack</td><td>3 atk</td><td>+8% bleed dmg</td></tr>
+  <tr><td>Tamed Ashling</td><td>Ashling</td><td>1/333</td><td>Ember Touch + burn</td><td>4 atk</td><td>+5 fire resist</td></tr>
+  <tr><td>Frost Sprite</td><td>Frost Wraith</td><td>1/333</td><td>Frost Slow</td><td>4 atk</td><td>+5 freeze resist</td></tr>
+  <tr><td>Void Hatchling</td><td>Void Emperor</td><td>1/200</td><td>Void Drain + poison</td><td>4 atk</td><td>+8% magic dmg</td></tr>
+  <tr><td>Stormy</td><td>Storm Reaver</td><td>1/67</td><td>Tiny Zap + shock</td><td>3 atk</td><td>+4% ranged dmg</td></tr>
+  <tr><td>Dungeon Rat</td><td>Rat</td><td>1/2000</td><td>Gnaw (bleed 60%)</td><td>2 atk</td><td>+2% Thieving spd</td></tr>
+  <tr><td>Spider Hatchling</td><td>Spider</td><td>1/1000</td><td>Venom Bite (3-stack poison)</td><td>4 atk</td><td>+15% poison chance</td></tr>
+  <tr><td>Magma Mite</td><td>Fire Giant</td><td>1/333</td><td>Magma Coat + 80% burn</td><td>5 atk</td><td>+12% burn chance</td></tr>
+  <tr><td>Ice Familiar</td><td>Frost Spirit</td><td>1/125</td><td>Deep Freeze (70%, 2s)</td><td>6 atk</td><td>+12% freeze chance</td></tr>
+  <tr><td>Aqua Spirit</td><td>Fishing</td><td>1/10000</td><td>Drench (magic debuff)</td><td>5 atk</td><td>+5% fishing speed</td></tr>
+  <tr><td>Phoenix Chick</td><td>Phoenix</td><td>1/333</td><td>Auto-heal at &lt;20% HP</td><td>Auto</td><td>+3% combat dmg</td></tr>
+  <tr><td>Beaver</td><td>Woodcutting</td><td>1/10000</td><td>Log Smack</td><td>6 atk</td><td>+3% WC speed</td></tr>
+  <tr><td>Golem Jr.</td><td>Mining</td><td>1/10000</td><td>Rock Throw</td><td>5 atk</td><td>+3% mining speed</td></tr>
 </table>
 
-<h2>Full Pet List</h2>
-<table>
-  <tr><th>Pet</th><th>Source</th><th>Rate</th><th>Ability</th><th>Trigger</th><th>Passive</th></tr>
-  <tr><td>Baby Dragon</td><td>Dragon</td><td>1/500</td><td>Breathes fire (burn chance)</td><td>Every 3</td><td>+3% combat dmg</td></tr>
-  <tr><td>Shadow Imp</td><td>Demon</td><td>1/333</td><td>Curses monster defence -10</td><td>Every 4</td><td>+5% magic dmg</td></tr>
-  <tr><td>Void Wisp</td><td>Void Walker</td><td>1/200</td><td>Void pierce (50% def ignored)</td><td>Every 5</td><td>+5 evasion</td></tr>
-  <tr><td>Ash Sprite</td><td>Ashfall Titan</td><td>1/100</td><td>Heals 6% of max HP</td><td>Every 4</td><td>+2% all XP</td></tr>
-  <tr><td>Blight Pup</td><td>Blight Warden</td><td>1/50</td><td>Poisons monster (2 stacks)</td><td>Every 3</td><td>+10% poison chance</td></tr>
-  <tr><td>Storm Cub</td><td>Storm Reaver</td><td>1/67</td><td>Thunder Strike (60% stun)</td><td>Every 5</td><td>+10% freeze chance</td></tr>
-  <tr><td>Ashen Shade</td><td>Ashen Overlord</td><td>1/100</td><td>Ashen Wrath (fire burst)</td><td>Every 6</td><td>+10% burn chance</td></tr>
-  <tr><td>Beaver</td><td>Woodcutting</td><td>1/10000</td><td>Log Smack (minor damage)</td><td>Every 6</td><td>+3% WC speed</td></tr>
-  <tr><td>Golem Jr.</td><td>Mining</td><td>1/10000</td><td>Rock Throw</td><td>Every 5</td><td>+3% Mining speed</td></tr>
-  <tr><td>Blood Pup</td><td>Bloodfang Alpha</td><td>1/200</td><td>Fang Bite (bleed stack)</td><td>Every 3</td><td>+8% bleed dmg</td></tr>
-  <tr><td>Tamed Ashling</td><td>Ashling</td><td>1/333</td><td>Ember Touch (burn 30%)</td><td>Every 4</td><td>+5 fire resist</td></tr>
-  <tr><td>Frost Sprite</td><td>Frost Wraith</td><td>1/333</td><td>Frost Slow</td><td>Every 4</td><td>+5 freeze resist</td></tr>
-  <tr><td>Void Hatchling</td><td>Void Emperor</td><td>1/200</td><td>Void Drain (poison 30%)</td><td>Every 4</td><td>+8% magic, +5 void resist</td></tr>
-  <tr><td>Stormy</td><td>Storm Reaver</td><td>1/67</td><td>Tiny Zap (shock 40%)</td><td>Every 3</td><td>+4% ranged dmg</td></tr>
-  <tr><td>Dungeon Rat</td><td>Rat</td><td>1/2000</td><td>Gnaw (bleed 60%)</td><td>Every 2</td><td>+2% thieving speed</td></tr>
-  <tr><td>Spider Hatchling</td><td>Spider</td><td>1/1000</td><td>Venom Bite (100% poison, 3 stacks)</td><td>Every 4</td><td>+15% poison chance</td></tr>
-  <tr><td>Magma Mite</td><td>Fire Giant</td><td>1/333</td><td>Magma Coat (fire burst, 80% burn)</td><td>Every 5</td><td>+12% burn chance</td></tr>
-  <tr><td>Ice Familiar</td><td>Frost Spirit</td><td>1/125</td><td>Deep Freeze (70% 2s stun)</td><td>Every 6</td><td>+12% freeze chance</td></tr>
-  <tr><td>Aqua Spirit</td><td>Fishing</td><td>1/10000</td><td>Drench (magic debuff)</td><td>Every 5</td><td>+5% fishing speed</td></tr>
-  <tr><td>Phoenix Chick</td><td>Phoenix</td><td>1/333</td><td>Phoenix Burst (auto at &lt;20% HP)</td><td>Auto</td><td>+10 burn resist, +3% combat dmg</td></tr>
-</table>
-
-<div class="tip">💡 The Phoenix Chick's ability is unique — it triggers automatically when you fall below 20% HP regardless of attack counter, acting as an emergency heal.</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════ -->
 <h1 id="farming">Farming</h1>
-<p>Farming lets you grow crops passively while doing other activities. Plants grow in real time — check back periodically to water, remove weeds, and harvest.</p>
+<p>Farming lets you grow crops passively in real time. Plants grow while you do other things — check back to water, de-weed, and harvest. Start early: even potatoes at level 1 provide free food for combat.</p>
 
 <h2>Plot Types</h2>
 <table>
   <tr><th>Type</th><th>Slots</th><th>Accepts</th><th>Disease Chance</th></tr>
-  <tr><td>Allotment</td><td>3</td><td>Vegetable & fruit seeds</td><td>10% base</td></tr>
+  <tr><td>Allotment</td><td>3</td><td>Vegetable/fruit seeds</td><td>10% base</td></tr>
   <tr><td>Herb Patch</td><td>4</td><td>Herb seeds only</td><td>7% base</td></tr>
   <tr><td>Tree Patch</td><td>1</td><td>Saplings only</td><td>4% base</td></tr>
   <tr><td>Special</td><td>1</td><td>Special seeds only</td><td>10% base</td></tr>
 </table>
 
-<h2>Mechanics</h2>
-<h3>Watering</h3>
-<p>Water a growing plot to <span class="hi">reduce remaining grow time</span>. Requires a Watering Can (buy from Shop → Farming). Each can has limited uses. Watered plots show a 💧 badge and cannot be watered again until the next plant.</p>
+<h2>Tools (Buy from Shop → Farming)</h2>
 <table>
-  <tr><th>Can</th><th>Growth Boost</th><th>Uses</th><th>Cost</th></tr>
-  <tr><td>Watering Can</td><td>-25%</td><td>30</td><td>150gp</td></tr>
-  <tr><td>Iron Watering Can</td><td>-40%</td><td>60</td><td>600gp</td></tr>
-  <tr><td>Mithril Watering Can</td><td>-60%</td><td>100</td><td>2,500gp</td></tr>
+  <tr><th>Tool</th><th>Cost</th><th>Use</th></tr>
+  <tr><td>Watering Can</td><td>150gp</td><td>-25% grow time. 30 uses.</td></tr>
+  <tr><td>Iron Watering Can</td><td>600gp</td><td>-40% grow time. 60 uses.</td></tr>
+  <tr><td>Mithril Watering Can</td><td>2,500gp</td><td>-60% grow time. 100 uses.</td></tr>
+  <tr><td>Spade</td><td>80gp</td><td>Clear dead or growing crops.</td></tr>
+  <tr><td>Rake</td><td>100gp</td><td>Remove weeds (also speeds growth 15%).</td></tr>
 </table>
 
-<h3>Compost</h3>
-<p>Apply compost to an <span class="hi">empty plot before planting</span> to boost yield and reduce disease chance. The game automatically applies the best compost you have when you click "Compost".</p>
+<h2>Compost</h2>
 <table>
-  <tr><th>Compost</th><th>Yield Bonus</th><th>Disease Reduction</th><th>Ultra Extra</th><th>Cost</th></tr>
+  <tr><th>Type</th><th>Yield Bonus</th><th>Disease Reduction</th><th>Extra Items</th><th>Cost</th></tr>
   <tr><td>Compost</td><td>+10%</td><td>-5%</td><td>—</td><td>30gp</td></tr>
   <tr><td>Supercompost</td><td>+20%</td><td>-12%</td><td>—</td><td>90gp</td></tr>
-  <tr><td>Ultracompost</td><td>+35%</td><td>-20%</td><td>+2 items</td><td>250gp</td></tr>
+  <tr><td>Ultracompost</td><td>+35%</td><td>-20%</td><td>+2 items guaranteed</td><td>250gp</td></tr>
 </table>
 
-<h3>Disease</h3>
-<p>At 50% growth, each plot rolls for disease. Base chance is 7-10% depending on plot type. Compost reduces this. A diseased plot turns dead and must be cleared with a <span class="hi">Spade</span> before replanting.</p>
-
-<h3>Weeds</h3>
-<p>Weeds randomly appear on growing plots. They slow growth. Use a <span class="hi">Rake</span> to remove them — this also speeds up remaining growth by 15%.</p>
-
-<h3>Yield Formula</h3>
-<p><code>qty = round(baseYield × compostMult × levelMult) + ultraExtra</code></p>
-<p>Where <code>levelMult = 1 + farmLevel/200</code> (up to +49.5% at 99). Seed return chance = 35% + compostTier×5%.</p>
+<p><strong>Yield formula:</strong> <code>qty = round(baseYield × (1+compostBonus) × (1+farmLv/200)) + ultraExtra</code></p>
 
 <h2>Seed List</h2>
 <table>
-  <tr><th>Seed</th><th>Level</th><th>Type</th><th>Yield</th><th>Base Qty</th><th>Grow Time</th></tr>
+  <tr><th>Seed</th><th>Level</th><th>Type</th><th>Yield</th><th>Base Qty</th><th>Time</th></tr>
   <tr><td>Potato Seed</td><td>1</td><td>Allotment</td><td>Potato</td><td>3</td><td>5 min</td></tr>
   <tr><td>Onion Seed</td><td>5</td><td>Allotment</td><td>Onion</td><td>3</td><td>10 min</td></tr>
   <tr><td>Sweetcorn Seed</td><td>20</td><td>Allotment</td><td>Sweetcorn</td><td>4</td><td>15 min</td></tr>
@@ -296,50 +376,32 @@
   <tr><td>Strawberry Seed</td><td>31</td><td>Allotment</td><td>Strawberry</td><td>4</td><td>26 min</td></tr>
   <tr><td>Watermelon Seed</td><td>47</td><td>Allotment</td><td>Watermelon</td><td>3</td><td>40 min</td></tr>
   <tr><td>Herb Seed</td><td>9</td><td>Herb</td><td>Silverleaf</td><td>5</td><td>15 min</td></tr>
-  <tr><td>Blood Seed</td><td>25</td><td>Herb</td><td>Bloodroot</td><td>5</td><td>30 min</td></tr>
   <tr><td>Ranarr Seed</td><td>32</td><td>Herb</td><td>Ranarr Weed</td><td>5</td><td>26 min</td></tr>
-  <tr><td>Moon Seed</td><td>50</td><td>Herb</td><td>Moonpetal</td><td>6</td><td>60 min</td></tr>
-  <tr><td>Snape Grass Seed</td><td>61</td><td>Herb</td><td>Snape Grass</td><td>6</td><td>20 min</td></tr>
   <tr><td>Torstol Seed</td><td>85</td><td>Herb</td><td>Torstol</td><td>4</td><td>46 min</td></tr>
   <tr><td>Oak Sapling</td><td>15</td><td>Tree</td><td>Oak Logs ×10</td><td>10</td><td>4 hr</td></tr>
   <tr><td>Willow Sapling</td><td>30</td><td>Tree</td><td>Willow Logs ×12</td><td>12</td><td>8 hr</td></tr>
   <tr><td>Yew Sapling</td><td>60</td><td>Tree</td><td>Yew Logs ×15</td><td>15</td><td>24 hr</td></tr>
   <tr><td>Magic Sapling</td><td>75</td><td>Tree</td><td>Magic Logs ×20</td><td>20</td><td>48 hr</td></tr>
-  <tr><td>Dragonbloom Seed</td><td>70</td><td>Special</td><td>Dragonbloom ×2</td><td>2</td><td>2 hr</td></tr>
 </table>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════ -->
 <h1 id="thieving">Thieving</h1>
-<p>Thieving lets you pickpocket NPCs and steal from market stalls for gold, XP, and rare items. It is <span class="hi">dangerous</span> — getting caught deals HP damage, and repeatedly failing angers your target until they fight back.</p>
+<p>Steal gold and items from NPCs and market stalls. This is the most <span class="hi">dangerous</span> non-combat skill — getting caught costs HP, and pushing your luck can trigger a full combat encounter.</p>
 
 <h2>Core Mechanics</h2>
-<div class="mech">
-  <h3>Stun System</h3>
-  <p>Each pickpocket attempt has a <span class="hi">stun chance</span> (5%–50% depending on target). Getting caught:</p>
-  <ul>
-    <li>Pauses your action for stunTime seconds</li>
-    <li>Deals HP damage: <code>random(1, stunDmgBase) + target.level/10</code></li>
-    <li>Increases the target's Anger by 10–35% depending on target type</li>
-  </ul>
+<div class="box">
+  <p><strong>Stun:</strong> Each attempt has a stun chance (3%–50%). Getting caught: pauses the action, deals HP damage, increases target Anger.</p>
+  <p><strong>Stun damage:</strong> <code>random(1, stunDmgBase) + targetLevel/10</code></p>
+  <p><strong>Anger:</strong> Builds per stun. Decays slowly on successes. Tracked per-target persistently.</p>
+  <p><strong>Fight trigger:</strong> <code>fightChance = (0.02 + level/90 × 0.08) + anger × 0.40</code></p>
+  <p>A max-anger level-90 King has a 75% chance to initiate combat on the next stun. When triggered, your HP carries over to the fight.</p>
 </div>
-<div class="mech">
-  <h3>Anger System</h3>
-  <p>Anger builds on each stun and decays slowly with successful pickpockets. High anger increases <span class="hi">fight chance</span>.</p>
-  <p><code>fightChance = (0.02 + targetLevel/90 × 0.08) + anger × 0.40</code></p>
-  <p>Example: A level 75 Knight at 50% anger has: (0.02 + 0.067) + 0.5×0.40 = ~29% fight chance per stun.</p>
-  <p>When a fight triggers, the target becomes a combat monster. Your HP is synced from thieving to combat — so if you were on low HP while thieving, you fight on low HP.</p>
-</div>
-<div class="warn">⚠ <strong>Death penalty:</strong> If your thieving HP reaches 0, you are knocked unconscious and lose 50% of your gold. HP restores to full after.</div>
-
-<h2>HP & Food</h2>
-<p>Thieving uses your <span class="hi">combat HP</span> pool (based on Hitpoints level). Your thieving HP bar is shown at the top of the Thieving page. Auto-eat triggers at 40% HP and uses food from your Food Bag. You can also manually eat by clicking food items in the Thieving status bar.</p>
-
-<h2>Mastery Bonus</h2>
-<p>Each mastery level in a specific pickpocket target reduces their effective stun chance by <strong>0.3%</strong>. Mastery level 99 = -29.7% stun chance reduction, effectively halving the stun rate on most targets.</p>
+<div class="box warn"><strong>Death:</strong> If your HP drops to 0 while thieving, you lose 50% of your gold and action stops. HP restores to full.</div>
+<p><strong>Auto-eat</strong> fires at 40% HP using food from your Food Bag. You can also eat manually from the status bar. <strong>Mastery</strong> reduces effective stun chance by 0.3% per level.</p>
 
 <h2>Pickpocket Targets</h2>
 <table>
-  <tr><th>Target</th><th>Level</th><th>Gold</th><th>Stun Chance</th><th>Stun Dmg</th><th>Fight Target</th></tr>
+  <tr><th>Target</th><th>Lv</th><th>Gold</th><th>Stun%</th><th>Stun Dmg</th><th>Combat Target</th></tr>
   <tr><td>Man</td><td>1</td><td>1–10</td><td>20%</td><td>1–2</td><td>Rat</td></tr>
   <tr><td>Farmer</td><td>10</td><td>5–25</td><td>25%</td><td>2–3</td><td>Bandit</td></tr>
   <tr><td>Warrior</td><td>25</td><td>15–60</td><td>30%</td><td>4–7</td><td>Hollow Soldier</td></tr>
@@ -353,160 +415,96 @@
 
 <h2>Market Stalls</h2>
 <table>
-  <tr><th>Stall</th><th>Level</th><th>Key Loot</th><th>Stun Chance</th></tr>
-  <tr><td>Cake Stall</td><td>5</td><td>Cooked Meat, Bread</td><td>15%</td></tr>
-  <tr><td>Silk Stall</td><td>20</td><td>Leather, Hard Leather</td><td>25%</td></tr>
-  <tr><td>Gem Stall</td><td>45</td><td>Gems (Topaz → Diamond)</td><td>40%</td></tr>
-  <tr><td>Magic Stall</td><td>65</td><td>Runes, Enchant Dust, Arcane Shard</td><td>45%</td></tr>
-  <tr><td>Dragon Stall</td><td>85</td><td>Dragon Bones, Dragonite, Dragon Scale</td><td>50%</td></tr>
+  <tr><th>Stall</th><th>Level</th><th>Key Loot</th></tr>
+  <tr><td>Cake Stall</td><td>5</td><td>Cooked Meat, Bread</td></tr>
+  <tr><td>Silk Stall</td><td>20</td><td>Leather, Hard Leather</td></tr>
+  <tr><td>Gem Stall</td><td>45</td><td>Topaz → Diamond</td></tr>
+  <tr><td>Magic Stall</td><td>65</td><td>Runes, Enchant Dust, Arcane Shard</td></tr>
+  <tr><td>Dragon Stall</td><td>85</td><td>Dragon Bones, Dragonite, Dragon Scale</td></tr>
 </table>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════ -->
 <h1 id="prayer">Prayer</h1>
-<p>Prayer points fuel combat prayers that provide passive bonuses. Points drain with each player attack while prayers are active. Restore points by burying bones found on monsters.</p>
-
-<h2>Bone Values</h2>
+<p>Prayer points fuel combat buffs. Points drain after each player attack. Restore by burying bones from monster drops.</p>
 <table>
-  <tr><th>Bone</th><th>Source</th><th>Prayer Points</th><th>XP</th></tr>
-  <tr><td>Bones</td><td>Most basic monsters</td><td>4</td><td>4.5</td></tr>
-  <tr><td>Big Bones</td><td>Trolls, Giants</td><td>15</td><td>15</td></tr>
-  <tr><td>Dragon Bones</td><td>Dragons</td><td>72</td><td>72</td></tr>
-  <tr><td>Frost Bones</td><td>Frost Wraith, Frost Drake</td><td>50</td><td>50</td></tr>
-  <tr><td>Ash Bones</td><td>Ashfall Titan, Ashen Overlord</td><td>60</td><td>60</td></tr>
-  <tr><td>Void Bones</td><td>Void Emperor</td><td>100</td><td>100</td></tr>
+  <tr><th>Bone</th><th>Points</th><th>XP</th><th>Best Source</th></tr>
+  <tr><td>Bones</td><td>4</td><td>4.5</td><td>Any basic monster</td></tr>
+  <tr><td>Big Bones</td><td>15</td><td>15</td><td>Giants, Trolls</td></tr>
+  <tr><td>Dragon Bones</td><td>72</td><td>72</td><td>Dragons</td></tr>
+  <tr><td>Frost Bones</td><td>50</td><td>50</td><td>Frost Wraith</td></tr>
+  <tr><td>Ash Bones</td><td>60</td><td>60</td><td>Ashfall Titan</td></tr>
+  <tr><td>Void Bones</td><td>100</td><td>100</td><td>Void Emperor</td></tr>
+</table>
+<h2>Best Prayers</h2>
+<table>
+  <tr><th>Prayer</th><th>Lv</th><th>Bonus</th><th>Drain/atk</th></tr>
+  <tr><td>Piety</td><td>70</td><td>+20% Atk, +23% Str, +25% Def</td><td>5</td></tr>
+  <tr><td>Rigour</td><td>74</td><td>+20% Rng, +23% Rng Str, +25% Def</td><td>5</td></tr>
+  <tr><td>Augury</td><td>77</td><td>+25% Magic, +25% Magic Def</td><td>5</td></tr>
+  <tr><td>Protect Melee/Ranged/Magic</td><td>40–44</td><td>-40% incoming damage of that type</td><td>3</td></tr>
 </table>
 
-<h2>Prayers by Category</h2>
-<h3>Protection Prayers</h3>
+<!-- ════════════════════════════════════ -->
+<h1 id="spells">Spellbooks</h1>
 <table>
-  <tr><th>Prayer</th><th>Level</th><th>Effect</th><th>Drain</th></tr>
-  <tr><td>Protect from Melee</td><td>43</td><td>Reduce melee damage taken by 40%</td><td>3/atk</td></tr>
-  <tr><td>Protect from Ranged</td><td>40</td><td>Reduce ranged damage taken by 40%</td><td>3/atk</td></tr>
-  <tr><td>Protect from Magic</td><td>44</td><td>Reduce magic damage taken by 40%</td><td>3/atk</td></tr>
+  <tr><th>Spellbook</th><th>Magic Lv</th><th>Unlock Item</th><th>Theme</th></tr>
+  <tr><td>Standard</td><td>1</td><td>None</td><td>Air/Water/Earth/Fire elements</td></tr>
+  <tr><td>Pyromancy</td><td>40</td><td>Tome of Pyromancy</td><td>Devastating fire, burn stacks</td></tr>
+  <tr><td>Cryomancy</td><td>50</td><td>Tome of Cryomancy</td><td>Ice control, freeze, slow</td></tr>
+  <tr><td>Blood Magic</td><td>65</td><td>Grimoire of Blood</td><td>Life drain, bleed</td></tr>
+  <tr><td>Void Magic</td><td>75</td><td>Codex of the Void</td><td>Defence pierce, reality damage</td></tr>
+  <tr><td>Necromancy</td><td>70</td><td>Necromantic Tome</td><td>Undead damage, bone use</td></tr>
 </table>
-<h3>Offensive Prayers</h3>
+<h2>Staff Rune System</h2>
 <table>
-  <tr><th>Prayer</th><th>Level</th><th>Effect</th><th>Drain</th></tr>
-  <tr><td>Burst of Strength</td><td>4</td><td>+5% strength damage</td><td>1/atk</td></tr>
-  <tr><td>Superhuman Strength</td><td>13</td><td>+10% strength damage</td><td>2/atk</td></tr>
-  <tr><td>Ultimate Strength</td><td>31</td><td>+15% strength damage</td><td>3/atk</td></tr>
-  <tr><td>Piety</td><td>70</td><td>+20% attack, +23% strength, +25% defence</td><td>5/atk</td></tr>
-  <tr><td>Rigour</td><td>74</td><td>+20% ranged, +23% ranged str, +25% defence</td><td>5/atk</td></tr>
-  <tr><td>Augury</td><td>77</td><td>+25% magic, +25% magic defence</td><td>5/atk</td></tr>
-</table>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<h1 id="spellbooks">Spellbooks & Magic</h1>
-<p>The Magic skill uses spellbooks. Each spellbook contains different spells unlocked at different Magic levels. Only one spellbook can be active at a time.</p>
-
-<h2>Spellbook Unlocking</h2>
-<table>
-  <tr><th>Spellbook</th><th>Requirements</th><th>Unlock Item</th><th>Theme</th></tr>
-  <tr><td>Standard</td><td>None</td><td>None</td><td>Air, Water, Earth, Fire elemental spells</td></tr>
-  <tr><td>Pyromancy</td><td>Magic 40</td><td>Tome of Pyromancy</td><td>Devastating fire damage, burn stacks</td></tr>
-  <tr><td>Cryomancy</td><td>Magic 50</td><td>Tome of Cryomancy</td><td>Ice control, freeze, slow</td></tr>
-  <tr><td>Blood Magic</td><td>Magic 65</td><td>Grimoire of Blood</td><td>Life steal, drain, bleed</td></tr>
-  <tr><td>Void Magic</td><td>Magic 75</td><td>Codex of the Void</td><td>Defence pierce, reality damage</td></tr>
-  <tr><td>Necromancy</td><td>Magic 70</td><td>Necromantic Tome</td><td>Undead damage, bone use, life drain</td></tr>
-</table>
-
-<div class="tip">💡 Unlock tomes drop from appropriate monsters (dark mage, void walker) or can be purchased from the shop with high Ashen Guild reputation.</div>
-
-<h2>Staff System</h2>
-<p>Staffs provide <span class="hi">unlimited runes</span> of specific types, eliminating the need to carry those runes.</p>
-<table>
-  <tr><th>Staff</th><th>Level</th><th>Free Runes</th></tr>
-  <tr><td>Staff of Air/Fire/Water/Earth</td><td>1–10</td><td>Corresponding elemental rune</td></tr>
+  <tr><th>Staff</th><th>Lv</th><th>Free Runes</th></tr>
+  <tr><td>Elemental Staffs (Air/Water/Earth/Fire)</td><td>1–10</td><td>Corresponding element</td></tr>
   <tr><td>Mystic Staff</td><td>30</td><td>Unlimited Chaos Runes</td></tr>
-  <tr><td>Void Staff</td><td>55</td><td>Unlimited Death + Chaos Runes</td></tr>
+  <tr><td>Void Staff</td><td>55</td><td>Unlimited Death + Chaos</td></tr>
   <tr><td>Elder Staff</td><td>75</td><td>All runes unlimited</td></tr>
+  <tr><td>Void Emperor's Staff</td><td>90</td><td>All runes unlimited</td></tr>
 </table>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<h1 id="monsters">Monsters</h1>
-<p>Monsters are encountered in Combat Areas. Each area has a set of monsters that can appear. Higher combat level areas yield better XP and loot.</p>
-
-<h2>Notable Monsters</h2>
+<!-- ════════════════════════════════════ -->
+<h1 id="dungeons">Dungeons & Fight Cave</h1>
 <table>
-  <tr><th>Monster</th><th>CL</th><th>HP</th><th>Max Hit</th><th>Style</th><th>Notable Drop</th></tr>
-  <tr><td>Chicken</td><td>1</td><td>3</td><td>1</td><td>Melee</td><td>Feathers</td></tr>
-  <tr><td>Goblin</td><td>2</td><td>5</td><td>2</td><td>Melee</td><td>Bones</td></tr>
-  <tr><td>Wolf</td><td>14</td><td>64</td><td>8</td><td>Melee</td><td>Wolf Bones</td></tr>
-  <tr><td>Demon</td><td>60</td><td>1,500</td><td>80</td><td>Magic</td><td>Grimoire of Blood, 1/100</td></tr>
-  <tr><td>Dragon</td><td>70</td><td>2,200</td><td>95</td><td>Melee</td><td>Dragon Bones, Dragon Longsword</td></tr>
-  <tr><td>Void Walker</td><td>75</td><td>2,800</td><td>100</td><td>Magic</td><td>Void Equipment, Codex of the Void 1/100</td></tr>
-  <tr><td>Hollow Lord</td><td>82</td><td>7,500</td><td>110</td><td>Melee</td><td>Hollow Set, Ashfall gear</td></tr>
+  <tr><th>Dungeon</th><th>CL Rec.</th><th>Waves</th><th>Boss</th><th>Key Reward</th></tr>
+  <tr><td>Ashen Crypts</td><td>20</td><td>5</td><td>Hollow Soldier</td><td>Crypt Key</td></tr>
+  <tr><td>Bloodfang Den</td><td>35</td><td>6</td><td>Bloodfang Alpha</td><td>Blood Pup pet</td></tr>
+  <tr><td>Frozen Spire</td><td>50</td><td>8</td><td>Frost Drake</td><td>Ice equipment</td></tr>
+  <tr><td>Void Rift</td><td>65</td><td>10</td><td>Void Walker Elite</td><td>Void equipment</td></tr>
+  <tr><td>Shadow Sanctum</td><td>75</td><td>12</td><td>Hollow Lord</td><td>Shadow Blade</td></tr>
+  <tr><td>Infernal Forge</td><td>85</td><td>15</td><td>Ashen Guardian</td><td>Dragon gear</td></tr>
 </table>
+<h2>Fight Cave</h2>
+<p>62 waves of escalating monsters. Final boss: <strong>TzTok-Jad</strong> (Combat Level 702, hits 97 per attack). Jad telegraphs his attack — watch his animation and switch between Protect from Magic and Protect from Ranged. Reward: <span class="hi">Fire Cape</span>.</p>
 
 <h2>World Bosses</h2>
 <table>
   <tr><th>Boss</th><th>CL</th><th>HP</th><th>Respawn</th><th>Key Drops</th></tr>
-  <tr><td>Blight Warden</td><td>80</td><td>12,000</td><td>6 hr</td><td>Blight Pup pet, blight armour</td></tr>
-  <tr><td>Storm Reaver</td><td>90</td><td>18,000</td><td>8 hr</td><td>Storm Cub pet, Stormy pet, storm gear</td></tr>
-  <tr><td>Ashen Overlord</td><td>110</td><td>35,000</td><td>12 hr</td><td>Ashen Shade pet, ashfire blade</td></tr>
-  <tr><td>Void Emperor</td><td>120</td><td>60,000</td><td>6 hr</td><td>Void Hatchling pet, occult necklace</td></tr>
+  <tr><td>Blight Warden</td><td>80</td><td>12,000</td><td>6 hr</td><td>Blight Pup, Dragonite gear</td></tr>
+  <tr><td>Storm Reaver</td><td>90</td><td>18,000</td><td>8 hr</td><td>Storm Cub, Stormy, Shadowscale</td></tr>
+  <tr><td>Ashen Overlord</td><td>110</td><td>35,000</td><td>12 hr</td><td>Ashen Shade, Overlord's Greatblade</td></tr>
+  <tr><td>Void Emperor</td><td>120</td><td>60,000</td><td>6 hr</td><td>Voidreaper, Void Emperor staff+set</td></tr>
 </table>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<h1 id="dungeons">Dungeons</h1>
-<p>Dungeons contain sequential waves of monsters with boss encounters. Completing a dungeon rewards unique items and large XP drops.</p>
-<table>
-  <tr><th>Dungeon</th><th>CL Rec.</th><th>Waves</th><th>Boss</th><th>Key Reward</th></tr>
-  <tr><td>Ashen Crypts</td><td>20</td><td>5</td><td>Hollow Soldier</td><td>Crypts Key, bone armour</td></tr>
-  <tr><td>Bloodfang Den</td><td>35</td><td>6</td><td>Bloodfang Alpha</td><td>Blood Pup pet, wolfslayer ring</td></tr>
-  <tr><td>Frozen Spire</td><td>50</td><td>8</td><td>Frost Drake</td><td>Ice staff, frost equipment</td></tr>
-  <tr><td>Void Rift</td><td>65</td><td>10</td><td>Void Walker Elite</td><td>Void set, arcane shard</td></tr>
-  <tr><td>Shadow Sanctum</td><td>75</td><td>12</td><td>Hollow Lord</td><td>Shadow blade, hollow equipment</td></tr>
-  <tr><td>Infernal Forge</td><td>85</td><td>15</td><td>Ashen Guardian</td><td>Ashfire blade, dragon equipment</td></tr>
-  <tr><td>Fight Cave</td><td>80+</td><td>62</td><td>TzTok-Jad</td><td>Fire Cape, Jad pet</td></tr>
-</table>
-
-<h2>Fight Cave</h2>
-<p>The Fight Cave is a solo endgame challenge — 62 waves of increasingly dangerous monsters culminating in TzTok-Jad. Jad hits 97 per attack. Watch his animation to use the correct protection prayer. A Cape of Fire is the reward for first completion.</p>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<h1 id="items">Items & Equipment</h1>
-<h2>Rarity Tiers</h2>
-<table>
-  <tr><th>Rarity</th><th>Color</th><th>Description</th></tr>
-  <tr><td>Common</td><td style="color:#c8cad4">Grey</td><td>Basic craftable and drop items</td></tr>
-  <tr><td>Uncommon</td><td style="color:#3a9e5c">Green</td><td>Better drops, mid-tier crafts</td></tr>
-  <tr><td>Rare</td><td style="color:#4a7ec4">Blue</td><td>Notable drops, useful bonuses</td></tr>
-  <tr><td>Epic</td><td style="color:#8a5ec4">Purple</td><td>Significant items, dungeon rewards</td></tr>
-  <tr><td>Legendary</td><td style="color:#c4a83a">Gold</td><td>Best-in-slot, boss exclusives</td></tr>
-  <tr><td>Mythic</td><td style="color:#c44040">Red</td><td>Rarest items in the game</td></tr>
-</table>
-
-<h2>Equipment Slots</h2>
-<p>Head, Body, Legs, Boots, Gloves, Cape, Ring, Amulet, Weapon, Shield/Off-hand.</p>
-
-<h2>Weapon Affixes</h2>
-<p>Weapons obtained from monster drops can randomly receive affixes — prefix and/or suffix modifiers that change the weapon's stats. 14 prefixes and 12 suffixes exist. Affix quality scales with monster difficulty.</p>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════ -->
 <h1 id="formulas">Key Formulas</h1>
+<table>
+  <tr><th>Formula</th><th>Expression</th></tr>
+  <tr><td>Max HP</td><td><code>hitpoints × 10 + 10</code></td></tr>
+  <tr><td>Combat Level</td><td><code>0.25×(def+hp+floor(pray/2)) + 0.325×max(atk+str, rng×2/3, mag×2/3)</code></td></tr>
+  <tr><td>XP to Level 99</td><td><code>13,034,431 XP</code></td></tr>
+  <tr><td>Melee Max Hit</td><td><code>(1+strLv/10)×(1+strBonus/80)×4</code></td></tr>
+  <tr><td>Spec Energy Regen</td><td><code>+10% per player attack (default)</code></td></tr>
+  <tr><td>Thieving Fight Chance</td><td><code>min(0.75, (0.02 + level/90×0.08) + anger×0.40)</code></td></tr>
+  <tr><td>Farming Yield</td><td><code>round(base × (1+compost) × (1+farmLv/200)) + ultraExtra</code></td></tr>
+  <tr><td>Prayer Drain</td><td>Sum of active prayer drain costs per player attack</td></tr>
+  <tr><td>Critical Hit Chance</td><td><code>min(30%, 5% + 1% per 10 levels above monster CL)</code></td></tr>
+</table>
 
-<h2>XP to Level</h2>
-<p><code>XP_for_level_L = floor(sum(i=1 to L-1, floor(i + 300 × 2^(i/7))) / 4)</code></p>
-<p>Level 99 = 13,034,431 XP.</p>
-
-<h2>Combat Level</h2>
-<p><code>CL = floor(0.25 × (defence + hitpoints + floor(prayer/2)) + 0.325 × max(attack+strength, ranged×2/3, magic×2/3))</code></p>
-
-<h2>Thieving Fight Chance</h2>
-<p><code>fightChance = min(0.75, (0.02 + targetLevel/90×0.08) + anger×0.40)</code></p>
-
-<h2>Farming Yield</h2>
-<p><code>qty = round(baseYield × (1+compostBonus) × (1+farmingLevel/200)) + ultraExtra</code></p>
-
-<h2>Pet Drop Rate</h2>
-<p>Pet drops are rolled after every kill/action. Rate varies by pet (listed in pet table). Mastery in the source skill does not affect drop rate — only volume of actions increases expected drops.</p>
-
-<h2>Prayer Drain</h2>
-<p>Prayer points drain after each <span class="hi">player attack</span>. Total drain = sum of all active prayers' pointCost values. At drain rate D, you last <code>floor(prayerPoints / D)</code> attacks on your prayer points pool.</p>
-
-<hr style="border:none;border-top:1px solid var(--border);margin:40px 0">
-<p style="color:var(--dim);font-size:13px;text-align:center">Ashfall Idle Wiki • v9.4 • Last updated with Farming v2, Combat Pets, Thieving v2</p>
+<hr>
+<p style="color:var(--dim);font-size:12px;text-align:center">Ashfall Idle Wiki · v9.4 · Last updated: Farming v2, Combat Pets, Thieving v2, Equipment Overhaul, Weapon-Specific Animations</p>
 </div>
 </body>
 </html>

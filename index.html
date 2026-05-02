@@ -3,55 +3,349 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ashfall Idle - Dark Fantasy Idle RPG</title>
-  <meta name="description" content="Ashfall Idle - A dark fantasy idle RPG with 28 skills, 551+ items, 59 monsters, PvP, guilds, and deep progression systems.">
-  <meta property="og:title" content="Ashfall Idle - Dark Fantasy Idle RPG">
-  <meta property="og:description" content="Train 28 skills, fight 59 monsters, craft 396 recipes, and forge your legend in a world buried beneath endless ash.">
+  <title>Ashfall Idle — Dark Fantasy Idle RPG</title>
+  <meta name="description" content="A dark fantasy idle RPG. Train 28 skills, master 6 spellbooks, battle 59 monsters, forge legendary weapons and conquer the Ashfall.">
+  <meta property="og:title" content="Ashfall Idle — Dark Fantasy Idle RPG">
+  <meta property="og:description" content="The world is buried in ash. Forge your legend from the ruins.">
   <meta property="og:image" content="logo.png">
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%94</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       ASHFALL IDLE — LANDING PAGE
+       Dark, cinematic, built like a real game's title screen.
+    ══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .af-landing {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #050408;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      transition: opacity 0.8s ease;
+    }
+
+    /* ── BACKGROUND LAYERS ── */
+    .af-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 100%, rgba(180,60,10,0.18) 0%, transparent 65%),
+                  radial-gradient(ellipse at 30% 40%, rgba(100,30,10,0.10) 0%, transparent 50%),
+                  radial-gradient(ellipse at 70% 20%, rgba(10,5,30,0.40) 0%, transparent 60%),
+                  linear-gradient(180deg, #050408 0%, #0c0608 40%, #100806 70%, #060304 100%);
+    }
+    .af-horizon {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 35%;
+      background: linear-gradient(180deg, transparent 0%, rgba(160,50,10,0.06) 40%, rgba(200,80,15,0.12) 100%);
+    }
+    .af-vignette {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(2,1,4,0.7) 100%);
+    }
+
+    /* ── ASH PARTICLES ── */
+    .af-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .af-ash {
+      position: absolute;
+      background: rgba(200,190,180,0.25);
+      border-radius: 50%;
+      animation: ashDrift linear infinite;
+    }
+    @keyframes ashDrift {
+      0%   { transform: translateY(110vh) translateX(0) rotate(0deg); opacity: 0; }
+      5%   { opacity: 1; }
+      95%  { opacity: 0.4; }
+      100% { transform: translateY(-10vh) translateX(var(--drift)) rotate(360deg); opacity: 0; }
+    }
+    /* Ember sparks */
+    .af-ember {
+      position: absolute;
+      width: 2px; height: 2px;
+      background: #d67338;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(214,115,56,0.8);
+      animation: emberFloat linear infinite;
+    }
+    @keyframes emberFloat {
+      0%   { transform: translateY(0) translateX(0); opacity: 0; }
+      10%  { opacity: 1; }
+      85%  { opacity: 0.6; }
+      100% { transform: translateY(calc(-60vh - 100px)) translateX(var(--edrift)); opacity: 0; }
+    }
+
+    /* ── MAIN CONTENT ── */
+    .af-content {
+      position: relative; z-index: 10;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; max-width: 680px; padding: 40px 24px;
+      animation: contentRise 1.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes contentRise {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── LOGO ── */
+    .af-logo-wrap {
+      margin-bottom: 6px;
+      filter: drop-shadow(0 0 40px rgba(201,135,62,0.4)) drop-shadow(0 0 80px rgba(201,135,62,0.15));
+      animation: logoPulse 4s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+      0%,100% { filter: drop-shadow(0 0 30px rgba(201,135,62,0.35)) drop-shadow(0 0 60px rgba(201,135,62,0.1)); }
+      50%     { filter: drop-shadow(0 0 50px rgba(201,135,62,0.55)) drop-shadow(0 0 100px rgba(201,135,62,0.2)); }
+    }
+    .af-logo { width: 380px; max-width: 90vw; height: auto; }
+
+    /* ── WORDMARK (if no logo image) ── */
+    .af-wordmark {
+      font-family: 'Cinzel', 'Georgia', serif;
+      font-size: clamp(36px, 8vw, 72px);
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: #c9873e;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .af-wordmark span { color: #d4a83a; }
+
+    /* ── TAGLINE ── */
+    .af-tagline {
+      font-family: 'Crimson Text', 'Georgia', serif;
+      font-size: clamp(13px, 2.5vw, 17px);
+      color: #7a6050;
+      letter-spacing: 3px;
+      font-style: italic;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+    }
+
+    /* ── LORE LINE ── */
+    .af-lore {
+      font-family: 'Crimson Text', 'Georgia', serif;
+      font-size: clamp(14px, 2.2vw, 16px);
+      color: #5a4a3a;
+      line-height: 1.7;
+      max-width: 520px;
+      margin-bottom: 36px;
+      font-style: italic;
+    }
+    .af-lore strong { color: #8a6a4a; font-style: normal; }
+
+    /* ── ENTER BUTTON ── */
+    .af-enter {
+      position: relative; display: flex; flex-direction: column; align-items: center;
+      padding: 18px 56px 16px;
+      background: transparent;
+      border: 1px solid rgba(201,135,62,0.45);
+      cursor: pointer; outline: none;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+    .af-enter::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(201,135,62,0.12) 0%, rgba(201,135,62,0.04) 100%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .af-enter::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(201,135,62,0.6), transparent);
+      transform: scaleX(0); transition: transform 0.4s ease;
+    }
+    .af-enter:hover { border-color: rgba(212,168,58,0.7); transform: translateY(-2px); }
+    .af-enter:hover::before { opacity: 1; }
+    .af-enter:hover::after  { transform: scaleX(1); }
+    .af-enter:hover .af-enter-icon { animation: swordPulse 0.4s ease; }
+    @keyframes swordPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+    .af-enter-icon {
+      font-size: 22px; margin-bottom: 6px;
+      filter: drop-shadow(0 0 8px rgba(201,135,62,0.6));
+    }
+    .af-enter-text {
+      font-family: 'Cinzel', 'Georgia', serif;
+      font-size: clamp(14px, 3vw, 18px);
+      font-weight: 600; letter-spacing: 4px;
+      color: #c9873e; text-transform: uppercase;
+      position: relative; z-index: 1;
+    }
+    .af-enter-sub {
+      font-family: 'Crimson Text', 'Georgia', serif;
+      font-size: 11px; letter-spacing: 1px;
+      color: #4a3a2a; margin-top: 3px;
+      position: relative; z-index: 1;
+    }
+
+    /* ── STATS ROW ── */
+    .af-stats {
+      display: flex; gap: 0; margin-bottom: 36px;
+      border: 1px solid rgba(201,135,62,0.12);
+      overflow: hidden;
+    }
+    .af-stat {
+      padding: 14px 22px;
+      border-right: 1px solid rgba(201,135,62,0.12);
+      min-width: 90px;
+    }
+    .af-stat:last-child { border-right: none; }
+    .af-stat-n {
+      font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700;
+      color: #c9873e; line-height: 1; display: block;
+    }
+    .af-stat-l {
+      font-size: 9px; letter-spacing: 1.5px; color: #4a3a2a;
+      text-transform: uppercase; display: block; margin-top: 3px;
+    }
+
+    /* ── FEATURE PILLS ── */
+    .af-pills {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      justify-content: center; margin-bottom: 28px;
+    }
+    .af-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 1px;
+      color: #5a4a3a; border: 1px solid rgba(201,135,62,0.15);
+      padding: 4px 12px; text-transform: uppercase;
+    }
+
+    /* ── BOTTOM STRIP ── */
+    .af-bottom {
+      display: flex; gap: 24px; align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      padding-top: 20px;
+    }
+    .af-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 1px;
+      color: #3a2a1a; text-transform: uppercase;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .af-badge::before { content: '—'; color: #c9873e; margin-right: 2px; font-size: 10px; }
+    .af-version {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; color: #2a1a0a; letter-spacing: 1px;
+      margin-left: auto;
+    }
+
+    /* ── SIDE RUNES (decorative) ── */
+    .af-rune-left, .af-rune-right {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 60px; opacity: 0.06;
+      animation: runeFloat 8s ease-in-out infinite;
+    }
+    .af-rune-left  { left: 40px; }
+    .af-rune-right { right: 40px; animation-delay: -4s; }
+    @keyframes runeFloat {
+      0%,100% { opacity: 0.06; transform: translateY(-50%) translateY(0); }
+      50%     { opacity: 0.10; transform: translateY(-50%) translateY(-12px); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .af-stat { padding: 10px 14px; min-width: 70px; }
+      .af-stat-n { font-size: 18px; }
+      .af-rune-left, .af-rune-right { display: none; }
+      .af-bottom { flex-wrap: wrap; gap: 12px; }
+    }
+  </style>
 </head>
 <body>
-  <!-- LANDING PAGE OVERLAY -->
-  <div id="landing" class="landing-overlay">
-    <div class="landing-bg"></div>
-    <div class="landing-content">
-      <div class="landing-logo">
-        <img src="logo.png" alt="Ashfall Idle" class="landing-logo-img">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ASHFALL IDLE — LANDING SCREEN
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="af-landing" class="af-landing">
+    <div class="af-bg"></div>
+    <div class="af-horizon"></div>
+    <div class="af-vignette"></div>
+    <div class="af-particles" id="af-particles"></div>
+
+    <!-- Decorative rune columns -->
+    <svg class="af-rune-left" viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="30" y1="0" x2="30" y2="400" stroke="#c9873e" stroke-width="1"/>
+      <circle cx="30" cy="50" r="8" stroke="#c9873e" stroke-width="1"/>
+      <rect x="22" y="100" width="16" height="16" stroke="#c9873e" stroke-width="1"/>
+      <circle cx="30" cy="180" r="5" stroke="#c9873e" stroke-width="1"/>
+      <polygon points="30,240 22,260 38,260" stroke="#c9873e" stroke-width="1" fill="none"/>
+      <circle cx="30" cy="320" r="10" stroke="#c9873e" stroke-width="1"/>
+      <rect x="24" y="350" width="12" height="12" stroke="#c9873e" stroke-width="1" transform="rotate(45 30 356)"/>
+    </svg>
+    <svg class="af-rune-right" viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="30" y1="0" x2="30" y2="400" stroke="#c9873e" stroke-width="1"/>
+      <rect x="22" y="40" width="16" height="16" stroke="#c9873e" stroke-width="1" transform="rotate(45 30 48)"/>
+      <circle cx="30" cy="120" r="8" stroke="#c9873e" stroke-width="1"/>
+      <polygon points="30,180 22,200 38,200" stroke="#c9873e" stroke-width="1" fill="none"/>
+      <circle cx="30" cy="260" r="5" stroke="#c9873e" stroke-width="1"/>
+      <rect x="22" y="310" width="16" height="16" stroke="#c9873e" stroke-width="1"/>
+      <circle cx="30" cy="370" r="10" stroke="#c9873e" stroke-width="1"/>
+    </svg>
+
+    <div class="af-content">
+      <!-- Logo / Wordmark -->
+      <div class="af-logo-wrap">
+        <img src="logo.png" alt="Ashfall Idle" class="af-logo"
+             onerror="this.style.display='none';document.getElementById('af-wordmark').style.display='block'">
+        <div class="af-wordmark" id="af-wordmark" style="display:none">
+          ASH<span>FALL</span><br><span style="font-size:0.5em;letter-spacing:12px;color:#4a3a2a">IDLE</span>
+        </div>
       </div>
-      <p class="landing-tagline">A Dark Fantasy Idle RPG</p>
-      <div class="landing-features">
-        <span class="feature-badge">28 Skills</span><span class="feature-badge">551+ Items</span><span class="feature-badge">59 Monsters</span><span class="feature-badge">396 Recipes</span><span class="feature-badge">PvP Arena</span><span class="feature-badge">Guilds</span>
-      </div>
-      <p class="landing-desc">Train, fight, enchant, and forge your legend in a world buried beneath endless ash. Craft 8 tiers of weapons and armor, master 6 spellbooks, summon familiars, explore 28 combat zones, conquer 14 dungeons, and challenge 4 world bosses.</p>
-      <button class="landing-btn" onclick="enterGame()">
-        <span class="lb-text">Enter the Ashfall</span>
-        <span class="lb-sub">Click to begin your journey</span>
+
+      <p class="af-tagline">Dark Fantasy Idle RPG</p>
+
+      <p class="af-lore">
+        The world is <strong>buried beneath endless volcanic ash</strong>. Ancient kingdoms crumble.
+        Monsters pour from the rifts. You are the last ember — train, forge, and fight your way
+        from the ruins to <strong>forge a legend that outlasts the Ashfall</strong>.
+      </p>
+
+      <button class="af-enter" onclick="enterAshfall()">
+        <span class="af-enter-icon">⚔</span>
+        <span class="af-enter-text">Enter the Ashfall</span>
+        <span class="af-enter-sub">Free to play · No download · Cloud saves</span>
       </button>
-      <div class="landing-stats">
-        <div class="ls-col"><span class="ls-num">551+</span><span class="ls-label">Items</span></div>
-        <div class="ls-col"><span class="ls-num">396</span><span class="ls-label">Recipes</span></div>
-        <div class="ls-col"><span class="ls-num">59</span><span class="ls-label">Monsters</span></div>
-        <div class="ls-col"><span class="ls-num">28</span><span class="ls-label">Skills</span></div>
-        <div class="ls-col"><span class="ls-num">14</span><span class="ls-label">Dungeons</span></div>
+
+      <div class="af-stats">
+        <div class="af-stat"><span class="af-stat-n">28</span><span class="af-stat-l">Skills</span></div>
+        <div class="af-stat"><span class="af-stat-n">600+</span><span class="af-stat-l">Items</span></div>
+        <div class="af-stat"><span class="af-stat-n">59</span><span class="af-stat-l">Monsters</span></div>
+        <div class="af-stat"><span class="af-stat-n">14</span><span class="af-stat-l">Dungeons</span></div>
+        <div class="af-stat"><span class="af-stat-n">20</span><span class="af-stat-l">Pets</span></div>
       </div>
-      <div class="landing-footer">
-        <span>Free to Play</span><span>No Downloads</span><span>Cloud Saves</span><span>Cross-Device</span>
+
+      <div class="af-pills">
+        <span class="af-pill">6 Spellbooks</span>
+        <span class="af-pill">Combat Pets</span>
+        <span class="af-pill">Multi-Mob Encounters</span>
+        <span class="af-pill">Fight Cave</span>
+        <span class="af-pill">Guild System</span>
+        <span class="af-pill">PvP Arena</span>
+        <span class="af-pill">Bazaar</span>
+        <span class="af-pill">World Bosses</span>
+        <span class="af-pill">Special Attacks</span>
+        <span class="af-pill">Cloud Saves</span>
       </div>
-      <div class="landing-contact">
-        <a href="https://discord.gg/theblackbullsden" target="_blank" class="discord-link">Join Discord: The Black Bulls Den</a>
+
+      <div class="af-bottom">
+        <span class="af-badge">Free to Play</span>
+        <span class="af-badge">Cross-Device</span>
+        <span class="af-badge">No Ads</span>
+        <span class="af-version">v9.4</span>
       </div>
     </div>
-    <div class="landing-embers" id="landing-embers"></div>
   </div>
 
-  <!-- GAME -->
+  <!-- ═══════════════════════════════════════════════════════════
+       GAME APP
+  ═══════════════════════════════════════════════════════════ -->
   <div class="app" id="game-app" style="display:none">
     <nav id="sidebar"></nav>
     <main id="main-area">
@@ -63,36 +357,56 @@
   <div id="toast-container"></div>
 
   <script>
-    // Landing page ember particles
-    (function(){
-      const c = document.getElementById('landing-embers');
+    // ── PARTICLE SYSTEM ──
+    (function buildParticles() {
+      const c = document.getElementById('af-particles');
       if (!c) return;
-      for (let i = 0; i < 30; i++) {
+      // Ash particles (larger, slow)
+      for (let i = 0; i < 40; i++) {
+        const a = document.createElement('div');
+        a.className = 'af-ash';
+        a.style.cssText = `
+          left:${Math.random()*110-5}%;
+          bottom:${Math.random()*-20}%;
+          width:${1+Math.random()*4}px;
+          height:${1+Math.random()*4}px;
+          animation-duration:${10+Math.random()*18}s;
+          animation-delay:${Math.random()*15}s;
+          --drift:${(Math.random()-0.5)*120}px;
+          opacity:${0.1+Math.random()*0.3};
+        `;
+        c.appendChild(a);
+      }
+      // Ember sparks (small, faster)
+      for (let i = 0; i < 18; i++) {
         const e = document.createElement('div');
-        e.className = 'ember';
-        e.style.left = Math.random()*100 + '%';
-        e.style.animationDuration = (3 + Math.random()*5) + 's';
-        e.style.animationDelay = Math.random()*5 + 's';
-        e.style.width = e.style.height = (2 + Math.random()*4) + 'px';
-        e.style.opacity = 0.3 + Math.random()*0.7;
+        e.className = 'af-ember';
+        e.style.cssText = `
+          left:${20+Math.random()*60}%;
+          bottom:${Math.random()*30}%;
+          animation-duration:${4+Math.random()*8}s;
+          animation-delay:${Math.random()*8}s;
+          --edrift:${(Math.random()-0.5)*80}px;
+          width:${1+Math.random()*2}px;
+          height:${1+Math.random()*2}px;
+        `;
         c.appendChild(e);
       }
     })();
 
-    function enterGame() {
-      const landing = document.getElementById('landing');
+    // ── ENTER GAME ──
+    function enterAshfall() {
+      const landing = document.getElementById('af-landing');
       landing.style.opacity = '0';
       landing.style.pointerEvents = 'none';
       setTimeout(() => {
         landing.style.display = 'none';
         document.getElementById('game-app').style.display = '';
         document.getElementById('sidebar-toggle').style.display = '';
-      }, 600);
+      }, 800);
     }
-
-    // Skip landing if returning player
-    // Landing always shows for professionalism - click to enter
   </script>
+
   <script src="js/data.js"></script>
   <script src="js/items-expand.js"></script>
   <script src="js/items-combat.js"></script>

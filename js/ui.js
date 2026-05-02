@@ -3810,18 +3810,76 @@ class UI {
     if (!combatArena) return;
     const anim = document.createElement('div');
     if (d.who === 'player') {
-      // Player attacks monster
-      const style = this.engine.state.combat.combatStyle;
-      if (style === 'melee') {
-        anim.className = 'atk-anim atk-slash';
-        anim.innerHTML = `<svg viewBox="0 0 80 80"><path d="M10 70 Q40 20 70 10" stroke="${d.crit?'#d4a83a':'#c8cad4'}" stroke-width="${d.crit?4:2.5}" fill="none" stroke-linecap="round" opacity="0.8"><animate attributeName="stroke-dasharray" from="0 200" to="200 0" dur="0.3s" fill="freeze"/></path>${d.crit?'<circle cx="40" cy="40" r="0" fill="none" stroke="#d4a83a" stroke-width="2" opacity="0.6"><animate attributeName="r" from="5" to="35" dur="0.4s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.4s" fill="freeze"/></circle>':''}</svg>`;
-      } else if (style === 'ranged') {
-        anim.className = 'atk-anim atk-arrow';
-        anim.innerHTML = `<svg viewBox="0 0 80 40"><line x1="0" y1="20" x2="80" y2="20" stroke="#8a6a3a" stroke-width="2"><animate attributeName="x1" from="-20" to="80" dur="0.25s" fill="freeze"/></line><polygon points="75,15 85,20 75,25" fill="#8a6a3a"><animate attributeName="opacity" from="1" to="0" dur="0.3s" begin="0.2s" fill="freeze"/></polygon></svg>`;
-      } else {
-        anim.className = 'atk-anim atk-spell';
-        anim.innerHTML = `<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="3" fill="#6a8ae8" opacity="0.9"><animate attributeName="r" from="3" to="25" dur="0.35s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></circle><circle cx="40" cy="40" r="1" fill="#a0c0ff"><animate attributeName="r" from="1" to="15" dur="0.25s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.3s" fill="freeze"/></circle></svg>`;
-      }
+      // ── WEAPON-SPECIFIC PLAYER ATTACK ANIMATIONS ─────────────
+      const style    = this.engine.state.combat.combatStyle;
+      const weaponId = this.engine.state.equipment?.weapon || '';
+      const crit     = d.crit;
+      const cc       = crit ? '#d4a83a' : '#c8cad4';
+      const cd       = crit ? 4 : 2.5;
+
+      // Map weapon ID → animation type
+      const weapAnim = {
+        // Scimitars — fast curved slash
+        bronze_scimitar:'slash_fast', iron_scimitar:'slash_fast', steel_scimitar:'slash_fast',
+        mithril_scimitar:'slash_fast', adamant_scimitar:'slash_fast', runite_scimitar:'slash_fast',
+        // Longswords — wide overhead swing
+        steel_longsword:'slash_wide', mithril_longsword:'slash_wide',
+        adamant_longsword:'slash_wide', runite_longsword:'slash_wide',
+        // Godswords — massive slow arc
+        armadyl_godsword:'slash_god', bandos_godsword:'slash_god',
+        saradomin_sword:'slash_holy',
+        // Dagger — double stab
+        dragon_dagger:'stab_double',
+        // Whip — whip lash arc
+        abyssal_whip:'whip',
+        // Maul — crush downward
+        granite_maul:'crush',
+        // Greataxe — wide cleave
+        dragonite_greataxe:'cleave',
+        // Void/dark blades
+        voidreaper:'void_slash', ashen_overlord_blade:'fire_slash',
+        ashfire_blade:'fire_slash',
+        // Ranged
+        dark_bow:'arrow_heavy', armadyl_crossbow:'bolt', zaryte_crossbow:'bolt_void',
+        maple_shortbow:'arrow', yew_longbow:'arrow', magic_shortbow:'arrow_rapid',
+        twisted_bow:'arrow_golden',
+        // Magic
+        master_wand:'spell_gold', kodai_wand:'spell_void', toxic_staff:'spell_poison',
+        sanguinesti_staff:'spell_blood', staff_of_the_dead:'spell_dark',
+        void_emperor_staff:'spell_reality',
+      };
+
+      const wType = weapAnim[weaponId] || (style === 'melee' ? 'slash_fast' : style === 'ranged' ? 'arrow' : 'spell_blue');
+
+      const PLAYER_ANIMS = {
+        slash_fast: `<svg viewBox="0 0 80 80"><path d="M15 65 Q40 30 65 15" stroke="${cc}" stroke-width="${cd}" fill="none" stroke-linecap="round" opacity="0.85"><animate attributeName="stroke-dasharray" from="0 120" to="120 0" dur="0.22s" fill="freeze"/></path>${crit?`<path d="M18 62 Q38 40 62 18" stroke="#d4a83a" stroke-width="1.5" fill="none" opacity="0.4"><animate attributeName="stroke-dasharray" from="0 120" to="120 0" dur="0.26s" fill="freeze"/></path>`:''}</svg>`,
+        slash_wide: `<svg viewBox="0 0 90 80"><path d="M5 70 Q30 20 85 10" stroke="${cc}" stroke-width="${cd+0.5}" fill="none" stroke-linecap="round" opacity="0.85"><animate attributeName="stroke-dasharray" from="0 150" to="150 0" dur="0.30s" fill="freeze"/></path><path d="M5 72 Q28 30 82 14" stroke="${cc}" stroke-width="1" fill="none" opacity="0.3"><animate attributeName="stroke-dasharray" from="0 150" to="150 0" dur="0.35s" fill="freeze"/></path></svg>`,
+        slash_god:  `<svg viewBox="0 0 90 90"><path d="M5 80 Q45 25 85 5" stroke="${crit?'#d4a83a':'#b0b8c4'}" stroke-width="${cd+1}" fill="none" stroke-linecap="round" opacity="0.9"><animate attributeName="stroke-dasharray" from="0 160" to="160 0" dur="0.35s" fill="freeze"/></path><path d="M10 78 Q42 30 82 8" stroke="#d4a83a" stroke-width="1" fill="none" opacity="0.3"><animate attributeName="stroke-dasharray" from="0 155" to="155 0" dur="0.4s" fill="freeze"/></path>${crit?`<circle cx="45" cy="44" r="0" fill="none" stroke="#d4a83a" stroke-width="2"><animate attributeName="r" from="5" to="40" dur="0.4s" fill="freeze"/><animate attributeName="opacity" from="0.7" to="0" dur="0.4s" fill="freeze"/></circle>`:''}</svg>`,
+        slash_holy: `<svg viewBox="0 0 80 80"><path d="M10 70 Q40 30 70 10" stroke="#c4d4e8" stroke-width="${cd+0.5}" fill="none" stroke-linecap="round" opacity="0.85"><animate attributeName="stroke-dasharray" from="0 130" to="130 0" dur="0.28s" fill="freeze"/></path><circle cx="40" cy="40" r="0" fill="none" stroke="#c4d4ff" stroke-width="1.5"><animate attributeName="r" from="4" to="30" dur="0.38s" fill="freeze"/><animate attributeName="opacity" from="0.5" to="0" dur="0.38s" fill="freeze"/></circle></svg>`,
+        stab_double:`<svg viewBox="0 0 80 60"><line x1="0" y1="20" x2="70" y2="30" stroke="${cc}" stroke-width="2" stroke-linecap="round"><animate attributeName="x1" from="-30" to="0" dur="0.12s" fill="freeze"/><animate attributeName="x1" values="0;60;0" dur="0.22s" fill="freeze" begin="0.05s"/></line><line x1="0" y1="38" x2="65" y2="30" stroke="${cc}" stroke-width="2" stroke-linecap="round"><animate attributeName="x1" from="-30" to="0" dur="0.12s" begin="0.08s" fill="freeze"/><animate attributeName="x1" values="0;55;0" dur="0.22s" fill="freeze" begin="0.13s"/></line><polygon points="68,28 78,30 68,32" fill="${cc}" opacity="0.7"><animate attributeName="opacity" from="0" to="0.7" dur="0.1s" fill="freeze"/><animate attributeName="opacity" from="0.7" to="0" dur="0.1s" begin="0.22s" fill="freeze"/></polygon></svg>`,
+        whip:       `<svg viewBox="0 0 90 80"><path d="M5 20 Q30 5 55 35 Q70 55 80 70" stroke="${cc}" stroke-width="2" fill="none" stroke-linecap="round"><animate attributeName="stroke-dasharray" from="0 160" to="160 0" dur="0.28s" fill="freeze"/></path><path d="M8 22 Q32 8 56 36 Q70 54 78 68" stroke="${cc}" stroke-width="0.8" fill="none" opacity="0.3"><animate attributeName="stroke-dasharray" from="0 155" to="155 0" dur="0.30s" fill="freeze"/></path></svg>`,
+        crush:      `<svg viewBox="0 0 80 80"><rect x="30" y="5" width="20" height="12" rx="3" fill="${cc}" opacity="0.8"><animate attributeName="y" from="5" to="55" dur="0.18s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.15s" begin="0.18s" fill="freeze"/></rect><circle cx="40" cy="60" r="0" fill="none" stroke="${cc}" stroke-width="2"><animate attributeName="r" from="5" to="28" dur="0.22s" begin="0.17s" fill="freeze"/><animate attributeName="opacity" from="0.7" to="0" dur="0.22s" begin="0.17s" fill="freeze"/></circle></svg>`,
+        cleave:     `<svg viewBox="0 0 90 80"><path d="M5 10 Q50 50 85 75" stroke="#d67338" stroke-width="${cd+1}" fill="none" stroke-linecap="round" opacity="0.9"><animate attributeName="stroke-dasharray" from="0 150" to="150 0" dur="0.32s" fill="freeze"/></path><path d="M8 12 Q52 48 82 72" stroke="#ff8040" stroke-width="1" fill="none" opacity="0.4"><animate attributeName="stroke-dasharray" from="0 148" to="148 0" dur="0.36s" fill="freeze"/></path>${crit?`<circle cx="45" cy="42" r="0" fill="#d67338" opacity="0.4"><animate attributeName="r" from="5" to="35" dur="0.35s" fill="freeze"/><animate attributeName="opacity" from="0.4" to="0" dur="0.35s" fill="freeze"/></circle>`:''}</svg>`,
+        void_slash: `<svg viewBox="0 0 80 80"><path d="M10 70 Q40 35 70 10" stroke="#8a2ae0" stroke-width="${cd+0.5}" fill="none" stroke-linecap="round" opacity="0.9"><animate attributeName="stroke-dasharray" from="0 130" to="130 0" dur="0.25s" fill="freeze"/></path><path d="M12 68 Q38 38 68 12" stroke="#d080ff" stroke-width="1" fill="none" opacity="0.5"><animate attributeName="stroke-dasharray" from="0 125" to="125 0" dur="0.28s" fill="freeze"/></path><circle cx="40" cy="40" r="0" fill="none" stroke="#6010c0" stroke-width="1.5"><animate attributeName="r" from="5" to="35" dur="0.38s" fill="freeze"/><animate attributeName="opacity" from="0.5" to="0" dur="0.38s" fill="freeze"/></circle></svg>`,
+        fire_slash: `<svg viewBox="0 0 80 80"><path d="M10 70 Q40 35 70 10" stroke="#d63a1a" stroke-width="${cd+1}" fill="none" stroke-linecap="round" opacity="0.9"><animate attributeName="stroke-dasharray" from="0 130" to="130 0" dur="0.26s" fill="freeze"/></path><path d="M12 68 Q38 38 68 12" stroke="#ff6020" stroke-width="1.5" fill="none" opacity="0.5"><animate attributeName="stroke-dasharray" from="0 125" to="125 0" dur="0.30s" fill="freeze"/></path><circle cx="42" cy="42" r="1" fill="#ff8040"><animate attributeName="r" from="1" to="4" dur="0.1s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.2s" begin="0.2s" fill="freeze"/></circle></svg>`,
+        arrow:      `<svg viewBox="0 0 80 40"><line x1="5" y1="20" x2="70" y2="20" stroke="#9a7a4a" stroke-width="2" stroke-linecap="round"><animate attributeName="x1" from="5" to="75" dur="0.22s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.2s" fill="freeze"/></line><polygon points="70,16 80,20 70,24" fill="#9a7a4a"><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.2s" fill="freeze"/></polygon></svg>`,
+        arrow_rapid:`<svg viewBox="0 0 80 50"><line x1="5" y1="12" x2="68" y2="15" stroke="#4a9ed4" stroke-width="1.5"><animate attributeName="x1" from="5" to="72" dur="0.16s" fill="freeze"/></line><line x1="5" y1="25" x2="68" y2="25" stroke="#4a9ed4" stroke-width="1.5" begin="0.06s"><animate attributeName="x1" from="5" to="72" dur="0.16s" begin="0.05s" fill="freeze"/></line><line x1="5" y1="38" x2="68" y2="35" stroke="#4a9ed4" stroke-width="1.5"><animate attributeName="x1" from="5" to="72" dur="0.16s" begin="0.10s" fill="freeze"/></line></svg>`,
+        arrow_heavy:`<svg viewBox="0 0 80 50"><line x1="5" y1="15" x2="68" y2="18" stroke="#8a5a1a" stroke-width="2.5"><animate attributeName="x1" from="5" to="72" dur="0.28s" fill="freeze"/></line><line x1="5" y1="35" x2="68" y2="32" stroke="#8a5a1a" stroke-width="2.5"><animate attributeName="x1" from="5" to="72" dur="0.28s" begin="0.04s" fill="freeze"/></line><polygon points="68,13 78,16 68,19" fill="#8a5a1a"/><polygon points="68,30 78,33 68,36" fill="#8a5a1a"/></svg>`,
+        arrow_golden:`<svg viewBox="0 0 80 40"><line x1="5" y1="20" x2="68" y2="20" stroke="#d4a83a" stroke-width="2.5"><animate attributeName="x1" from="5" to="72" dur="0.24s" fill="freeze"/></line><polygon points="68,16 80,20 68,24" fill="#d4a83a"/><path d="M10 18 Q20 12 30 18 Q40 24 50 18" stroke="#d4a83a" stroke-width="0.8" fill="none" opacity="0.4"><animate attributeName="opacity" from="0.4" to="0" dur="0.3s" begin="0.2s" fill="freeze"/></path></svg>`,
+        bolt:       `<svg viewBox="0 0 80 40"><rect x="5" y="18" width="64" height="4" rx="2" fill="#c4a83a"><animate attributeName="x" from="5" to="74" dur="0.18s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.16s" fill="freeze"/></rect><circle cx="70" cy="20" r="0" fill="#d4a83a"><animate attributeName="r" from="2" to="10" dur="0.12s" begin="0.16s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.12s" begin="0.16s" fill="freeze"/></circle></svg>`,
+        bolt_void:  `<svg viewBox="0 0 80 40"><rect x="5" y="18" width="64" height="4" rx="2" fill="#8a3ab0"><animate attributeName="x" from="5" to="74" dur="0.18s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.16s" fill="freeze"/></rect><circle cx="70" cy="20" r="0" fill="#d080ff"><animate attributeName="r" from="2" to="14" dur="0.15s" begin="0.14s" fill="freeze"/><animate attributeName="opacity" from="0.9" to="0" dur="0.15s" begin="0.14s" fill="freeze"/></circle></svg>`,
+        spell_blue: `<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="3" fill="#6a8ae8" opacity="0.9"><animate attributeName="r" from="3" to="28" dur="0.35s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></circle></svg>`,
+        spell_gold: `<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="4" fill="#c4a83a"><animate attributeName="r" from="4" to="26" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="0.9" to="0" dur="0.3s" fill="freeze"/></circle><circle cx="40" cy="40" r="1" fill="#ffd080"><animate attributeName="r" from="1" to="14" dur="0.22s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.25s" fill="freeze"/></circle></svg>`,
+        spell_void: `<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="4" fill="#6010c0"><animate attributeName="r" from="4" to="28" dur="0.32s" fill="freeze"/><animate attributeName="opacity" from="0.9" to="0" dur="0.32s" fill="freeze"/></circle><circle cx="40" cy="40" r="2" fill="#d080ff"><animate attributeName="r" from="2" to="14" dur="0.24s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.28s" fill="freeze"/></circle></svg>`,
+        spell_poison:`<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="4" fill="#2a7a1a"><animate attributeName="r" from="4" to="26" dur="0.32s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.32s" fill="freeze"/></circle><circle cx="40" cy="40" r="2" fill="#6acc2a"><animate attributeName="r" from="2" to="12" dur="0.24s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.28s" fill="freeze"/></circle></svg>`,
+        spell_blood:`<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="4" fill="#8a0a0a"><animate attributeName="r" from="4" to="26" dur="0.32s" fill="freeze"/><animate attributeName="opacity" from="0.9" to="0" dur="0.32s" fill="freeze"/></circle><circle cx="40" cy="40" r="2" fill="#ff4040"><animate attributeName="r" from="2" to="14" dur="0.24s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.28s" fill="freeze"/></circle></svg>`,
+        spell_dark: `<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="4" fill="#1a1a1a"><animate attributeName="r" from="4" to="28" dur="0.32s" fill="freeze"/><animate attributeName="opacity" from="0.85" to="0" dur="0.32s" fill="freeze"/></circle><circle cx="40" cy="40" r="2" fill="#a0a0a0"><animate attributeName="r" from="2" to="12" dur="0.24s" fill="freeze"/><animate attributeName="opacity" from="0.9" to="0" dur="0.28s" fill="freeze"/></circle></svg>`,
+        spell_reality:`<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="6" fill="#3a0a6a"><animate attributeName="r" from="6" to="38" dur="0.38s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.38s" fill="freeze"/></circle><circle cx="40" cy="40" r="3" fill="#9030d0"><animate attributeName="r" from="3" to="20" dur="0.28s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.32s" fill="freeze"/></circle><circle cx="40" cy="40" r="1" fill="#e0a0ff"><animate attributeName="r" from="1" to="8" dur="0.18s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.22s" fill="freeze"/></circle></svg>`,
+      };
+
+      anim.className = 'atk-anim atk-player';
+      anim.innerHTML = PLAYER_ANIMS[wType] || PLAYER_ANIMS.slash_fast;
+
     } else {
       // Monster attacks player - pick animation based on monster type
       const mId = this.engine.state.combat.monster;
@@ -3951,88 +4009,97 @@ class UI {
     const lvDisp = document.querySelector('.sh-level');
     if (lvDisp && s.skills[this.currentPage]) lvDisp.textContent = `Level ${s.skills[this.currentPage].level}`;
 
-    // ── COMBAT PAGE live updates ──
+    // ── COMBAT PAGE LIVE UPDATES ── (every tick, not just on hit)
     if (s.combat.active && s.combat.monster) {
-      const mon = GAME_DATA.monsters[s.combat.monster] || GAME_DATA.worldBosses.find(b=>b.id===s.combat.monster);
-      if (mon) {
-        const max = this.engine.getMaxHp();
-        // HP bars
-        const phpBar = document.getElementById('php-bar');
-        const mhpBar = document.getElementById('mhp-bar');
-        const phpText = document.getElementById('php-text');
-        const mhpText = document.getElementById('mhp-text');
-        if (phpBar) phpBar.style.width = Math.max(0, s.combat.playerHp / max * 100).toFixed(1) + '%';
-        if (mhpBar) mhpBar.style.width = Math.max(0, s.combat.monsterHp / mon.hp * 100).toFixed(1) + '%';
-        if (phpText) phpText.textContent = `${Math.max(0,Math.floor(s.combat.playerHp))} / ${max}`;
-        if (mhpText) mhpText.textContent = `${Math.max(0,Math.ceil(s.combat.monsterHp))} / ${mon.hp}`;
-        // Prayer points
-        const ppEl = document.getElementById('pp-live');
-        if (ppEl) ppEl.textContent = s.prayerPoints;
-        // Food bag quantities
-        for (let i = 0; i < (s.foodBag||[]).length; i++) {
-          const el = document.getElementById('fb-qty-' + i);
-          if (el && s.foodBag[i]) el.textContent = 'x' + s.foodBag[i].qty;
-        }
-        // Combat XP bars (live updating)
-        for (const sId of ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer']) {
-          const sk = s.skills[sId]; if (!sk) continue;
-          const lvEl = document.getElementById('cxp-lv-' + sId);
-          const fillEl = document.getElementById('cxp-fill-' + sId);
-          const xpEl = document.getElementById('cxp-xp-' + sId);
-          if (lvEl) {
-            if (lvEl.textContent !== String(sk.level)) { lvEl.textContent = sk.level; lvEl.classList.add('cxp-flash'); setTimeout(()=>lvEl.classList.remove('cxp-flash'), 800); }
+      const isMM = s.combat._multiMobMode && this.engine.state.multiMob?.active;
+      if (isMM) {
+        this._updateMultiMobUI();
+      } else {
+        const mon = GAME_DATA.monsters[s.combat.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===s.combat.monster);
+        if (mon) {
+          const max = this.engine.getMaxHp();
+          // Player HP
+          const phpBar = document.getElementById('php-bar');
+          const phpText = document.getElementById('php-text');
+          const pHp = Math.max(0, s.combat.playerHp || 0);
+          if (phpBar)  phpBar.style.width  = (pHp / max * 100).toFixed(1) + '%';
+          if (phpText) phpText.textContent = Math.floor(pHp) + ' / ' + max;
+          // Monster HP
+          const mhpBar = document.getElementById('mhp-bar');
+          const mhpText = document.getElementById('mhp-text');
+          const mHp = Math.max(0, s.combat.monsterHp || 0);
+          if (mhpBar)  mhpBar.style.width  = (mHp / (mon.hp||1) * 100).toFixed(1) + '%';
+          if (mhpText) mhpText.textContent = Math.ceil(mHp) + ' / ' + (mon.hp||0);
+          // HP bar colors live
+          if (phpBar) {
+            const pPct = pHp / max * 100;
+            phpBar.style.background = pPct > 50 ? '#4a8a3e' : pPct > 25 ? '#c4a83a' : '#c44040';
           }
-          if (fillEl) fillEl.style.width = (this.engine.getXpProgress(sId) * 100).toFixed(1) + '%';
-          if (xpEl) xpEl.textContent = this.fmt(sk.xp);
-        }
-        // Kill counter
-        const killEl = document.getElementById('kill-count');
-        if (killEl) killEl.textContent = s.stats.monstersKilled;
-        // Spec bar
-        const specFill = document.getElementById('spec-fill');
-        const specPct = document.getElementById('spec-pct');
-        if (specFill) specFill.style.width = (s.specEnergy||0) + '%';
-        if (specPct) specPct.textContent = (s.specEnergy||0) + '%';
-
-        // ── LIVE STATUS EFFECTS ──
-        const playerFx = document.getElementById('player-status-live');
-        if (playerFx) {
-          const pe = s.combat.statusEffects?.player || {};
-          const peEntries = Object.entries(pe).filter(([k,v]) => v.stacks > 0 && v.duration > 0);
-          if (peEntries.length > 0) {
-            playerFx.innerHTML = peEntries.map(([k,fx]) => {
-              const def = GAME_DATA.statusEffectDefs?.[k] || GAME_DATA.statusEffects?.[k];
-              const name = def?.name || k;
-              return `<span class="pse-chip pse-${k}">${name} x${fx.stacks} (${Math.ceil(fx.duration)}s)</span>`;
+          if (mhpBar) {
+            const mPct = mHp / (mon.hp||1) * 100;
+            mhpBar.style.background = mPct > 50 ? '#8a3a3a' : mPct > 25 ? '#c4a83a' : '#4a8a3e';
+          }
+          // Prayer points
+          const ppEl = document.getElementById('pp-live');
+          if (ppEl) ppEl.textContent = s.prayerPoints;
+          // Food bag quantities
+          for (let i = 0; i < (s.foodBag||[]).length; i++) {
+            const el = document.getElementById('fb-qty-' + i);
+            if (el && s.foodBag[i]) el.textContent = 'x' + s.foodBag[i].qty;
+          }
+          // Combat XP bars
+          for (const sId of ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer']) {
+            const sk = s.skills[sId]; if (!sk) continue;
+            const lvEl   = document.getElementById('cxp-lv-' + sId);
+            const fillEl = document.getElementById('cxp-fill-' + sId);
+            const xpEl   = document.getElementById('cxp-xp-' + sId);
+            if (lvEl && lvEl.textContent !== String(sk.level)) {
+              lvEl.textContent = sk.level;
+              lvEl.classList.add('cxp-flash');
+              setTimeout(()=>lvEl.classList.remove('cxp-flash'), 800);
+            }
+            if (fillEl) fillEl.style.width = (this.engine.getXpProgress(sId)*100).toFixed(1)+'%';
+            if (xpEl)   xpEl.textContent   = this.fmt(sk.xp);
+          }
+          const killEl = document.getElementById('kill-count');
+          if (killEl) killEl.textContent = s.stats.monstersKilled;
+          // Spec bar
+          const specFill = document.getElementById('spec-fill');
+          const specPct  = document.getElementById('spec-pct');
+          if (specFill) specFill.style.width = (s.specEnergy||0)+'%';
+          if (specPct)  specPct.textContent  = (s.specEnergy||0)+'%';
+          // Status effects
+          const playerFx = document.getElementById('player-status-live');
+          if (playerFx) {
+            const pe = s.combat.statusEffects?.player || {};
+            const peArr = Object.entries(pe).filter(([,v])=>v.stacks>0&&v.duration>0);
+            playerFx.innerHTML = peArr.map(([k,fx])=>{
+              const def = GAME_DATA.statusEffectDefs?.[k]||GAME_DATA.statusEffects?.[k];
+              return `<span class="pse-chip pse-${k}">${def?.name||k} x${fx.stacks}</span>`;
             }).join('');
-          } else { playerFx.innerHTML = ''; }
-        }
-        const monsterFx = document.getElementById('monster-status-live');
-        if (monsterFx) {
-          const me = s.combat.statusEffects?.monster || {};
-          const meEntries = Object.entries(me).filter(([k,v]) => v.stacks > 0 && v.duration > 0);
-          if (meEntries.length > 0) {
-            monsterFx.innerHTML = meEntries.map(([k,fx]) => {
-              const def = GAME_DATA.statusEffectDefs?.[k] || GAME_DATA.statusEffects?.[k];
-              const name = def?.name || k;
-              return `<span class="pse-chip pse-${k}">${name} x${fx.stacks} (${Math.ceil(fx.duration)}s)</span>`;
+          }
+          const monsterFx = document.getElementById('monster-status-live');
+          if (monsterFx) {
+            const me = s.combat.statusEffects?.monster || {};
+            const meArr = Object.entries(me).filter(([,v])=>v.stacks>0&&v.duration>0);
+            monsterFx.innerHTML = meArr.map(([k,fx])=>{
+              const def = GAME_DATA.statusEffectDefs?.[k]||GAME_DATA.statusEffects?.[k];
+              return `<span class="pse-chip pse-${k}">${def?.name||k} x${fx.stacks}</span>`;
             }).join('');
-          } else { monsterFx.innerHTML = ''; }
-        }
-        // Ability cooldown overlays (real-time)
-        for (let i = 0; i < 4; i++) {
-          const aid = s.equippedAbilities[i];
-          if (!aid) continue;
-          const ab = GAME_DATA.abilities.find(a=>a.id===aid);
-          if (!ab) continue;
-          const cd = s.combat.abilityCooldowns[aid] || 0;
-          const slotEl = document.querySelectorAll('.ab-slot-v2')[i];
-          if (slotEl) {
-            const overlay = slotEl.querySelector('.ab-cd-overlay');
-            const timer = slotEl.querySelector('.ab-timer');
-            if (overlay) overlay.style.height = (cd > 0 ? Math.min(100, (cd / ab.cooldown) * 100) : 0) + '%';
-            if (timer) timer.textContent = cd > 0 ? Math.ceil(cd) + 's' : 'Ready';
-            if (cd > 0) slotEl.classList.add('ab-cd'); else slotEl.classList.remove('ab-cd');
+          }
+          // Ability cooldowns
+          for (let i = 0; i < 4; i++) {
+            const aid = s.equippedAbilities[i]; if (!aid) continue;
+            const ab = GAME_DATA.abilities.find(a=>a.id===aid); if (!ab) continue;
+            const cd = s.combat.abilityCooldowns[aid]||0;
+            const slotEl = document.querySelectorAll('.ab-slot-v2')[i];
+            if (slotEl) {
+              const overlay = slotEl.querySelector('.ab-cd-overlay');
+              const timer   = slotEl.querySelector('.ab-timer');
+              if (overlay) overlay.style.height = (cd>0?Math.min(100,(cd/ab.cooldown)*100):0)+'%';
+              if (timer)   timer.textContent    = cd>0?Math.ceil(cd)+'s':'Ready';
+              if (cd>0) slotEl.classList.add('ab-cd'); else slotEl.classList.remove('ab-cd');
+            }
           }
         }
       }
