@@ -848,6 +848,91 @@ class GameEngine {
       c.playerHp = Math.min(this.getMaxHp(), c.playerHp + heal);
       this.emit('combatHit', { who:'player', dmg, crit:true });
       this.emit('notification',{type:'info',text:`Healed ${heal} HP from Voidreaper!`});
+    } else if (spec.type === 'instaSmash') {
+      // Granite Maul - ignore partial def
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.3), specMaxHit);
+      c.monsterHp -= dmg;
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.emit('notification',{type:'info',text:`Granite Maul smashes! ${dmg} damage.`});
+    } else if (spec.type === 'holyStrike') {
+      // Saradomin Sword - hit + heal
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.2), specMaxHit);
+      c.monsterHp -= dmg;
+      const heal = Math.floor(dmg * (spec.healPct||20) / 100);
+      c.playerHp = Math.min(this.getMaxHp(), c.playerHp + heal);
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.emit('notification',{type:'info',text:`Holy Strike! ${dmg} dmg, healed ${heal} HP.`});
+    } else if (spec.type === 'warcry') {
+      // Bandos Godsword - hit + permanent defence reduction
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.2), specMaxHit);
+      c.monsterHp -= dmg;
+      if (!c._permDebuffs) c._permDebuffs = {};
+      c._permDebuffs.defenceReduction = (c._permDebuffs.defenceReduction||0) + (spec.defReduce||10);
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.emit('notification',{type:'info',text:`War Cry! ${dmg} dmg. Target defence -${c._permDebuffs.defenceReduction} total.`});
+    } else if (spec.type === 'dragonFury') {
+      // Dragonite Greataxe - big hit + many burns + pierce
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.3), specMaxHit);
+      c.monsterHp -= dmg;
+      this.applyStatus('monster', 'burn', spec.burnStacks||5, 20);
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.emit('notification',{type:'achievement',text:`Dragon Fury! ${dmg} damage + ${spec.burnStacks||5} burn stacks!`});
+    } else if (spec.type === 'infernoSlam') {
+      // Overlord's Greatblade
+      let dmg = this.randInt(Math.floor(specMaxHit * 0.3), specMaxHit);
+      c.monsterHp -= dmg;
+      this.applyStatus('monster', 'burn', spec.burnStacks||8, 25);
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.emit('notification',{type:'achievement',text:`Inferno Slam! ${dmg} damage + ${spec.burnStacks||8} burn stacks!`});
+    } else if (spec.type === 'rapidFire') {
+      // Magic Shortbow - 3 rapid shots
+      const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
+      const rMaxHit = Math.floor((1 + this.state.skills.ranged.level / 10) * (1 + rB / 80) * 4);
+      for (let i = 0; i < 3; i++) {
+        let dmg = this.randInt(Math.floor(rMaxHit * 0.15), rMaxHit);
+        c.monsterHp -= dmg;
+        this.emit('combatHit', { who:'player', dmg, crit:i===0 });
+        this.consumeAmmo();
+      }
+      this.emit('notification',{type:'info',text:'Rapid Fire — 3 arrows!'});
+    } else if (spec.type === 'voidShot') {
+      // Zaryte Crossbow
+      const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
+      const rMaxHit = Math.floor((1 + this.state.skills.ranged.level / 10) * (1 + rB / 80) * 4 * (spec.mult||1.5));
+      let dmg = this.randInt(Math.floor(rMaxHit * 0.3), rMaxHit);
+      c.monsterHp -= dmg;
+      if (Math.random() < (spec.poisonChance||0.8)) this.applyStatus('monster','poison',3,12);
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.consumeAmmo();
+    } else if (spec.type === 'manaFlood') {
+      // Master Wand
+      const mB = this.getStatTotal('magicBonus');
+      const mMaxHit = Math.floor((this.state.skills.magic.level * 0.3 + mB * 0.5) * (spec.mult||1.3));
+      let dmg = this.randInt(Math.floor(mMaxHit * 0.2), mMaxHit);
+      c.monsterHp -= dmg;
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+    } else if (spec.type === 'venomCoat') {
+      // Toxic Trident - guaranteed heavy poison
+      this.applyStatus('monster', 'poison', spec.poisonStacks||4, 20);
+      this.emit('notification',{type:'info',text:`Toxic Trident: ${spec.poisonStacks||4}-stack venom applied!`});
+    } else if (spec.type === 'bloodSurge') {
+      // Sanguinesti
+      const mB = this.getStatTotal('magicBonus');
+      const mMaxHit = Math.floor((this.state.skills.magic.level * 0.3 + mB * 0.5) * (spec.mult||1.4));
+      let dmg = this.randInt(Math.floor(mMaxHit * 0.3), mMaxHit);
+      c.monsterHp -= dmg;
+      const heal = Math.floor(dmg * (spec.healPct||30)/100);
+      c.playerHp = Math.min(this.getMaxHp(), c.playerHp + heal);
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.emit('notification',{type:'info',text:`Blood Surge: ${dmg} dmg, healed ${heal} HP!`});
+    } else if (spec.type === 'realityRend') {
+      // Void Emperor's Staff - full spec ignores all defence
+      const mB = this.getStatTotal('magicBonus');
+      const mMaxHit = Math.floor((this.state.skills.magic.level * 0.3 + mB * 0.5) * 3.0);
+      let dmg = this.randInt(Math.floor(mMaxHit * 0.5), mMaxHit);
+      c.monsterHp -= dmg;
+      this.emit('combatHit', { who:'player', dmg, crit:true });
+      this.emit('notification',{type:'achievement',text:`Reality Rend — ${dmg} void damage, all defence ignored!`});
     } else if (spec.type === 'magicShield') {
       c.activeBuffs.push({ stat:'damageReduction', value:spec.reduceDmg, remaining:spec.duration*2 });
       this.emit('notification',{type:'success',text:`Magic shield active! -${spec.reduceDmg}% damage for ${spec.duration} attacks.`});

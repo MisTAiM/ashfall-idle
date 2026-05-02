@@ -2340,3 +2340,189 @@ GAME_DATA.combatPets.push(
 // Keep GAME_DATA.pets in sync
 GAME_DATA.pets = GAME_DATA.combatPets;
 console.log('[Ashfall] Total combat pets:', GAME_DATA.combatPets.length);
+
+// ================================================================
+// DROP TABLE OVERHAUL + NEW ENDGAME ITEMS
+// ================================================================
+
+// ── ENDGAME BAR ──────────────────────────────────────────────────
+if (!GAME_DATA.items.dragonite_bar) {
+  GAME_DATA.items.dragonite_bar = {id:'dragonite_bar',name:'Dragonite Bar',type:'resource',subtype:'bar',sellPrice:800,rarity:'epic',desc:'A dense bar of dragon-infused metal. Required for Dragonite armour.'};
+  GAME_DATA.items.obsidian_bar   = {id:'obsidian_bar',  name:'Obsidian Bar',  type:'resource',subtype:'bar',sellPrice:250,rarity:'rare', desc:'A bar of forged obsidian. Used in Obsidian armour crafting.'};
+  GAME_DATA.items.void_dust      = {id:'void_dust',     name:'Void Dust',     type:'resource',sellPrice:150,rarity:'rare', desc:'Crystallised void energy. Used in enchanting and high-level crafting.'};
+  GAME_DATA.items.celestial_fragment={id:'celestial_fragment',name:'Celestial Fragment',type:'resource',rarity:'epic',sellPrice:400,desc:'A fragment of divine energy. Used in mythic-tier crafting.'};
+}
+
+// ── NEW ACCESSORIES ───────────────────────────────────────────────
+const _newAccessories = [
+  // Amulets — progression chain
+  {id:'amulet_of_strength',  name:'Amulet of Strength',  slot:'amulet',stats:{strengthBonus:10},levelReq:{attack:30}, rarity:'uncommon',sellPrice:2500, desc:'+10 Strength bonus.'},
+  {id:'amulet_of_fury',      name:'Amulet of Fury',      slot:'amulet',stats:{strengthBonus:20,attackBonus:10,defenceBonus:15,magicBonus:10,rangedBonus:10},levelReq:{attack:50}, rarity:'epic',sellPrice:15000, desc:'A powerful onyx amulet infused with fire.'},
+  {id:'amulet_of_torture',   name:'Amulet of Torture',   slot:'amulet',stats:{strengthBonus:32,attackBonus:18,defenceBonus:8},levelReq:{attack:75}, rarity:'legendary',sellPrice:50000, desc:'Best-in-slot melee amulet. +32 Strength.'},
+  {id:'occult_necklace',     name:'Occult Necklace',      slot:'amulet',stats:{magicBonus:25,defenceBonus:10},levelReq:{magic:60}, rarity:'epic',sellPrice:20000, desc:'Best mid-game magic amulet. +25 Magic bonus, +10% magic damage.'},
+  {id:'necklace_of_anguish', name:'Necklace of Anguish',  slot:'amulet',stats:{rangedBonus:28,attackBonus:12,defenceBonus:5},levelReq:{ranged:75}, rarity:'legendary',sellPrice:55000, desc:'Best-in-slot ranged amulet.'},
+  // Rings
+  {id:'ring_of_wealth',      name:'Ring of Wealth',       slot:'ring',  stats:{},levelReq:{},rarity:'rare',   sellPrice:8000,  desc:'Slightly increases chance of rare drops from all monsters.', onKill:{lootBonus:10}},
+  {id:'berserker_ring',      name:'Berserker Ring',       slot:'ring',  stats:{strengthBonus:8},levelReq:{strength:60},rarity:'epic',sellPrice:25000, desc:'+8 Strength bonus. The best melee damage ring.'},
+  {id:'archers_ring',        name:"Archer's Ring",        slot:'ring',  stats:{rangedBonus:8}, levelReq:{ranged:60}, rarity:'epic',sellPrice:25000, desc:'+8 Ranged bonus. The best ranged damage ring.'},
+  {id:'seers_ring',          name:"Seers' Ring",          slot:'ring',  stats:{magicBonus:8},  levelReq:{magic:60},  rarity:'epic',sellPrice:25000, desc:'+8 Magic bonus. The best magic damage ring.'},
+  // Capes — progression chain
+  {id:'team_cape',           name:'Team Cape',             slot:'cape',  stats:{defenceBonus:6},levelReq:{},rarity:'common',sellPrice:500, desc:'A basic cape.'},
+  {id:'obsidian_cape',       name:'Obsidian Cape',         slot:'cape',  stats:{defenceBonus:18,strengthBonus:4},levelReq:{defence:40},rarity:'rare',sellPrice:8000, desc:'A tough obsidian cape.'},
+  {id:'fire_cape',           name:'Fire Cape',             slot:'cape',  stats:{defenceBonus:25,strengthBonus:10,magicBonus:5,rangedBonus:5},levelReq:{},rarity:'epic',sellPrice:30000, desc:'Earned by completing the Fight Cave. The best general-purpose cape.'},
+  {id:'infernal_cape',       name:'Infernal Cape',         slot:'cape',  stats:{defenceBonus:35,strengthBonus:18,magicBonus:8,rangedBonus:8,damageReduction:2},levelReq:{},rarity:'legendary',sellPrice:100000, desc:'Near-mythic power. Earned from the hardest challenges.'},
+];
+for (const acc of _newAccessories) {
+  if (!GAME_DATA.items[acc.id]) {
+    GAME_DATA.items[acc.id] = {
+      id:acc.id, name:acc.name, type:'armor', slot:acc.slot, stats:acc.stats,
+      levelReq:acc.levelReq||{}, rarity:acc.rarity, sellPrice:acc.sellPrice, desc:acc.desc,
+      ...(acc.onKill ? {onKill:acc.onKill} : {}),
+    };
+  }
+}
+
+// ── DROP TABLE OVERHAUL ───────────────────────────────────────────
+// Add meaningful mid/endgame drops to monsters
+const _dropPatches = {
+  dragon: [
+    {item:'amulet_of_fury',     qty:1, chance:0.003},
+    {item:'dragonite_bar',      qty:3, chance:0.15},
+    {item:'dragon_bones',       qty:1, chance:1.0},
+    {item:'dragon_scale',       qty:2, chance:0.50},
+    {item:'runite_scimitar',    qty:1, chance:0.05},
+    {item:'dragonhide_body',    qty:1, chance:0.08},
+  ],
+  demon: [
+    {item:'abyssal_whip',       qty:1, chance:0.005},
+    {item:'occult_necklace',    qty:1, chance:0.008},
+    {item:'death_rune',         qty:15, chance:0.40},
+    {item:'chaos_rune',         qty:20, chance:0.50},
+    {item:'berserker_ring',     qty:1,  chance:0.003},
+  ],
+  void_walker: [
+    {item:'occult_necklace',    qty:1, chance:0.010},
+    {item:'archers_ring',       qty:1, chance:0.003},
+    {item:'seers_ring',         qty:1, chance:0.003},
+    {item:'void_dust',          qty:5, chance:0.40},
+    {item:'wrath_rune',         qty:5, chance:0.25},
+    {item:'kodai_wand',         qty:1, chance:0.002},
+  ],
+  hollow_lord: [
+    {item:'obsidian_plate',     qty:1, chance:0.04},
+    {item:'obsidian_legs',      qty:1, chance:0.04},
+    {item:'obsidian_helm',      qty:1, chance:0.04},
+    {item:'amulet_of_fury',     qty:1, chance:0.005},
+    {item:'berserker_ring',     qty:1, chance:0.006},
+    {item:'armadyl_godsword',   qty:1, chance:0.002},
+  ],
+  ashfall_titan: [
+    {item:'ashsteel_bar',       qty:5, chance:0.30},
+    {item:'amulet_of_torture',  qty:1, chance:0.003},
+    {item:'fire_cape',          qty:1, chance:0.010},
+    {item:'ashfire_blade',      qty:1, chance:0.005},
+  ],
+  steel_dragon: [
+    {item:'runite_bar',         qty:2, chance:0.20},
+    {item:'runite_scimitar',    qty:1, chance:0.06},
+    {item:'obsidian_bar',       qty:2, chance:0.15},
+    {item:'dragon_scale',       qty:3, chance:0.40},
+    {item:'armadyl_crossbow',   qty:1, chance:0.002},
+  ],
+  frost_wraith: [
+    {item:'void_stalker_body',  qty:1, chance:0.05},
+    {item:'void_stalker_chaps', qty:1, chance:0.05},
+    {item:'void_stalker_coif',  qty:1, chance:0.05},
+    {item:'death_rune',         qty:10, chance:0.50},
+  ],
+  black_knight: [
+    {item:'adamant_plate',      qty:1, chance:0.05},
+    {item:'runite_helm',        qty:1, chance:0.04},
+    {item:'runite_longsword',   qty:1, chance:0.03},
+    {item:'berserker_ring',     qty:1, chance:0.002},
+  ],
+  ice_warrior: [
+    {item:'mithril_plate',      qty:1, chance:0.06},
+    {item:'adamant_scimitar',   qty:1, chance:0.04},
+    {item:'death_rune',         qty:5, chance:0.25},
+  ],
+  moss_giant: [
+    {item:'mithril_longsword',  qty:1, chance:0.05},
+    {item:'nature_rune',        qty:15, chance:0.40},
+    {item:'big_bones',          qty:1, chance:1.0},
+    {item:'adamant_scimitar',   qty:1, chance:0.03},
+  ],
+  shadow_beast: [
+    {item:'dark_bow',           qty:1, chance:0.004},
+    {item:'shadow_stalker_ring',qty:1, chance:0.002},
+    {item:'death_rune',         qty:12, chance:0.40},
+    {item:'void_dust',          qty:3, chance:0.25},
+  ],
+};
+
+for (const [monsterId, drops] of Object.entries(_dropPatches)) {
+  const m = GAME_DATA.monsters[monsterId];
+  if (!m) continue;
+  if (!m.drops) m.drops = [];
+  for (const drop of drops) {
+    // Only add if item exists and drop not already present
+    if (!GAME_DATA.items[drop.item]) continue;
+    if (!m.drops.find(d => d.item === drop.item)) {
+      m.drops.push(drop);
+    }
+  }
+}
+
+// ── WORLD BOSS DROP PATCHES ───────────────────────────────────────
+const _wbDropPatches = {
+  blight_warden: [
+    {item:'dragonite_bar',      qty:8, chance:0.30},
+    {item:'celestial_fragment', qty:2, chance:0.20},
+    {item:'ring_of_wealth',     qty:1, chance:0.05},
+    {item:'dragonite_plate',    qty:1, chance:0.04},
+    {item:'dragonite_legs',     qty:1, chance:0.04},
+  ],
+  storm_reaver: [
+    {item:'zaryte_crossbow',    qty:1, chance:0.003},
+    {item:'necklace_of_anguish',qty:1, chance:0.004},
+    {item:'celestial_fragment', qty:3, chance:0.25},
+    {item:'shadowscale_body',   qty:1, chance:0.05},
+  ],
+  ashen_overlord: [
+    {item:'ashen_overlord_blade',qty:1,chance:0.008},
+    {item:'infernal_cape',      qty:1, chance:0.005},
+    {item:'amulet_of_torture',  qty:1, chance:0.006},
+    {item:'dragonite_greataxe', qty:1, chance:0.010},
+    {item:'celestial_fragment', qty:5, chance:0.30},
+  ],
+  void_emperor: [
+    {item:'void_emperor_staff', qty:1, chance:0.005},
+    {item:'voidreaper',         qty:1, chance:0.008},
+    {item:'void_emperor_robe',  qty:1, chance:0.04},
+    {item:'void_emperor_hat',   qty:1, chance:0.04},
+    {item:'void_emperor_robe_legs',qty:1,chance:0.04},
+    {item:'celestial_essence',  qty:10, chance:0.40},
+  ],
+};
+
+for (const [bossId, drops] of Object.entries(_wbDropPatches)) {
+  const wb = (GAME_DATA.worldBosses||[]).find(b => b.id === bossId);
+  if (!wb) continue;
+  if (!wb.drops) wb.drops = [];
+  for (const drop of drops) {
+    if (!GAME_DATA.items[drop.item]) continue;
+    if (!wb.drops.find(d => d.item === drop.item)) wb.drops.push(drop);
+  }
+}
+
+// ── SHOP ADDITIONS ────────────────────────────────────────────────
+GAME_DATA.shop.push(
+  {item:'amulet_of_strength',  price:6000,  category:'equipment'},
+  {item:'amulet_of_fury',      price:50000, category:'equipment'},
+  {item:'ring_of_wealth',      price:20000, category:'equipment'},
+  {item:'obsidian_cape',       price:15000, category:'equipment'},
+  {item:'magic_shortbow',      price:8000,  category:'weapons'},
+  {item:'master_wand',         price:25000, category:'weapons'},
+);
+
+console.log('[Ashfall] Equipment overhaul applied. New weapons:', Object.keys(GAME_DATA.items).filter(k=>GAME_DATA.items[k].type==='weapon').length, '| Accessories:', _newAccessories.length);

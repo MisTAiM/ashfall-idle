@@ -526,7 +526,7 @@ class UI {
         }
       }
 
-      return '<div class="thiev-card ' + (locked ? 'locked' : '') + ' ' + (isActive ? 'thiev-active' : '') + '">'
+      return '<div class="thiev-card ' + (locked ? 'locked' : '') + ' ' + (isActive ? 'thiev-active' : '') + '" data-anger-id="' + t.id + '">'
         + '<div class="thiev-card-header">'
         + '<span class="thiev-portrait">' + (t.portrait||'👤') + '</span>'
         + '<div class="thiev-card-info"><div class="thiev-card-name">' + t.name + '</div>'
@@ -4115,6 +4115,44 @@ class UI {
     for (const cId of ['gold_charm','green_charm','crimson_charm','blue_charm','spirit_shards']) {
       const el = document.getElementById('charm-' + cId);
       if (el) el.textContent = s.bank[cId] || 0;
+    }
+
+    // ── THIEVING LIVE UPDATES ──
+    if (this.currentPage === 'thieving' && s.activeSkill === 'thieving') {
+      // Progress bar
+      const tAction = GAME_DATA.thievingTargets?.find(t => t.id === s.activeAction);
+      const tProg = document.querySelector('.thiev-prog-fill');
+      if (tProg && tAction) {
+        const pct = Math.min(100, Math.max(0, (s.actionProgress / tAction.time) * 100));
+        tProg.style.width = pct.toFixed(0) + '%';
+      }
+      // HP bar (updates from thievingHp state)
+      const maxHpT = this.engine.getMaxHp();
+      const curHpT = (s.thievingHp !== null && s.thievingHp !== undefined) ? s.thievingHp : maxHpT;
+      const hFill = document.getElementById('thiev-hp-fill');
+      const hVal  = document.getElementById('thiev-hp-val');
+      if (hFill) {
+        const pct = Math.round(curHpT / maxHpT * 100);
+        hFill.style.width = pct + '%';
+        hFill.style.background = pct > 60 ? '#4abe6c' : pct > 30 ? '#d4a83a' : '#c44040';
+      }
+      if (hVal) hVal.textContent = curHpT + '/' + maxHpT;
+      // Anger bars — update each target card's anger bar in DOM
+      if (s.thievingAnger) {
+        for (const [targetId, anger] of Object.entries(s.thievingAnger)) {
+          const pct = Math.round(anger * 100);
+          // anger track in active bar
+          const angerFill = document.querySelector('.thiev-anger-fill');
+          if (angerFill && s.activeAction === targetId) {
+            angerFill.style.width = pct + '%';
+          }
+          // anger in mini bars per card
+          const miniBar = document.querySelector(`[data-anger-id="${targetId}"] .thiev-anger-fill-sm`);
+          if (miniBar) miniBar.style.width = pct + '%';
+          const miniVal = document.querySelector(`[data-anger-id="${targetId}"] .thiev-anger-pct`);
+          if (miniVal) miniVal.textContent = pct + '%';
+        }
+      }
     }
 
     // ── ORE BAG LIVE UPDATE ──
