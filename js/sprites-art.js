@@ -1101,3 +1101,269 @@ Object.assign(GAME_DATA.petArt, {
 
 });
 console.log('[Ashfall] Total pet art entries:', Object.keys(GAME_DATA.petArt).length);
+
+// ══════════════════════════════════════════════════════════════════
+// ITEM SPRITES — New weapons, armor sets, accessories
+// All 32×32 viewBox. Each has a distinct silhouette readable at 20px.
+// ══════════════════════════════════════════════════════════════════
+
+(function assignNewItemSprites() {
+  const S = {}; // sprite map
+
+  // ── MELEE WEAPONS ──────────────────────────────────────────────
+
+  // Longswords — longer blade, crossguard, pommel
+  const longswordSVG = (blade, guard, hilt) => `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="16,2 18,5 18,22 14,22 14,5" fill="${blade}" stroke="#1a1a1f" stroke-width="0.8"/>
+    <line x1="16" y1="2" x2="16" y2="22" stroke="#ffffff" stroke-width="0.5" opacity="0.3"/>
+    <rect x="10" y="22" width="12" height="2.5" rx="1" fill="${guard}"/>
+    <rect x="14.5" y="24.5" width="3" height="6" rx="1" fill="${hilt}"/>
+    <circle cx="16" cy="30" r="1.5" fill="${guard}"/>
+  </svg>`;
+  S['steel_longsword']   = longswordSVG('#c8cad4','#7a8294','#5a3a1a');
+  S['mithril_longsword'] = longswordSVG('#7ab4c8','#5a8aa8','#4a3a2a');
+  S['adamant_longsword'] = longswordSVG('#4a8a5a','#3a6a4a','#5a3a1a');
+  S['runite_longsword']  = longswordSVG('#4a6a9a','#3a5a8a','#c4a83a');
+
+  // Granite Maul — squat, massive hammerhead
+  S['granite_maul'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="6" width="24" height="14" rx="3" fill="#9a9080" stroke="#1a1a1f" stroke-width="1"/>
+    <rect x="8" y="8" width="16" height="4" rx="1" fill="#b4a898" opacity="0.5"/>
+    <path d="M6 10 L8 12 L6 14" stroke="#6a6050" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M26 10 L24 12 L26 14" stroke="#6a6050" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <rect x="14" y="20" width="4" height="11" rx="1.5" fill="#7a5a2a" stroke="#1a1a1f" stroke-width="0.8"/>
+    <rect x="14" y="20" width="4" height="3" fill="#9a7a4a"/>
+  </svg>`;
+
+  // Saradomin Sword — holy cross-blade style
+  S['saradomin_sword'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="16,1 18.5,5 18.5,21 13.5,21 13.5,5" fill="#d4d8e0" stroke="#1a1a1f" stroke-width="0.8"/>
+    <line x1="16" y1="1" x2="16" y2="21" stroke="#c4a83a" stroke-width="0.8" opacity="0.6"/>
+    <polygon points="14,10 18,10 20,8 18,6 14,6 12,8" fill="#c4a83a" opacity="0.6"/>
+    <rect x="9" y="21" width="14" height="2.5" rx="1" fill="#c4a83a" stroke="#a08820" stroke-width="0.5"/>
+    <rect x="14.5" y="23.5" width="3" height="7" rx="1" fill="#c4a83a"/>
+    <circle cx="16" cy="30" r="1.8" fill="#d4d8e0"/>
+    <circle cx="16" cy="30" r="0.8" fill="#c4a83a"/>
+  </svg>`;
+
+  // Bandos Godsword — huge two-handed, war-god aesthetic
+  S['bandos_godsword'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="16,1 20,4 20,23 12,23 12,4" fill="#8a6a3a" stroke="#1a1a1f" stroke-width="1"/>
+    <path d="M12 4 Q16 1 20 4" fill="#c4a83a" opacity="0.5"/>
+    <line x1="16" y1="2" x2="16" y2="22" stroke="#d4a83a" stroke-width="1" opacity="0.4"/>
+    <rect x="7" y="22" width="18" height="3" rx="1.5" fill="#c4a83a" stroke="#8a6a20" stroke-width="0.8"/>
+    <polygon points="7,22 4,19 7,25" fill="#c4a83a"/>
+    <polygon points="25,22 28,19 25,25" fill="#c4a83a"/>
+    <rect x="14" y="25" width="4" height="6" rx="1.5" fill="#5a3a1a"/>
+    <circle cx="16" cy="31" r="1.5" fill="#c4a83a"/>
+  </svg>`;
+
+  // Dragonite Greataxe — massive axe head with dragon-scale texture
+  S['dragonite_greataxe'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 6 Q28 4 28 14 Q28 22 18 22 L16 14Z" fill="#d67338" stroke="#1a1a1f" stroke-width="1"/>
+    <path d="M18 6 Q24 8 24 14 Q24 20 18 22" fill="#ff8040" opacity="0.4"/>
+    <path d="M19 9 L23 11" stroke="#c9873e" stroke-width="1" opacity="0.5"/>
+    <path d="M19 13 L25 13" stroke="#c9873e" stroke-width="1" opacity="0.5"/>
+    <path d="M19 17 L23 19" stroke="#c9873e" stroke-width="1" opacity="0.5"/>
+    <rect x="10" y="5" width="4" height="22" rx="2" fill="#5a3a1a" stroke="#1a1a1f" stroke-width="0.8"/>
+    <circle cx="12" cy="28" r="2" fill="#d67338"/>
+  </svg>`;
+
+  // Voidreaper — dark blade with void cracks
+  S['voidreaper'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="16,1 19,4 19,22 13,22 13,4" fill="#1a0a2a" stroke="#8a3ab0" stroke-width="1"/>
+    <path d="M13 4 L16 1 L19 4 L17 8 L19 14 L15 18 L13 14 L15 8Z" fill="#3a0a6a" opacity="0.7"/>
+    <line x1="16" y1="1" x2="14" y2="12" stroke="#8a3ab0" stroke-width="1.5" opacity="0.8"/>
+    <line x1="14" y1="12" x2="18" y2="18" stroke="#6a0aaa" stroke-width="1" opacity="0.7"/>
+    <circle cx="16" cy="8" r="1.5" fill="#d080ff" opacity="0.8"/>
+    <rect x="10" y="22" width="12" height="2.5" rx="1" fill="#3a0a5a" stroke="#8a3ab0" stroke-width="0.8"/>
+    <rect x="14.5" y="24.5" width="3" height="6" rx="1" fill="#2a0a4a"/>
+    <circle cx="16" cy="30" r="1.5" fill="#8a3ab0"/>
+  </svg>`;
+
+  // Ashen Overlord's Greatblade
+  S['ashen_overlord_blade'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="16,1 21,4 21,23 11,23 11,4" fill="#1a1a2a" stroke="#d63a1a" stroke-width="1"/>
+    <path d="M13 6 L14 12 L16 15 L18 12 L19 6" fill="#d63a1a" opacity="0.4"/>
+    <line x1="16" y1="1" x2="16" y2="22" stroke="#d63a1a" stroke-width="1.5" opacity="0.7"/>
+    <path d="M11 10 L14 12" stroke="#ff6020" stroke-width="1.2" opacity="0.6"/>
+    <path d="M21 10 L18 12" stroke="#ff6020" stroke-width="1.2" opacity="0.6"/>
+    <rect x="7" y="23" width="18" height="3" rx="1.5" fill="#2a1000" stroke="#d63a1a" stroke-width="0.8"/>
+    <polygon points="7,23 4,20 7,26" fill="#d63a1a" opacity="0.6"/>
+    <polygon points="25,23 28,20 25,26" fill="#d63a1a" opacity="0.6"/>
+    <rect x="14" y="26" width="4" height="5" rx="1" fill="#1a0a00"/>
+    <circle cx="16" cy="31" r="1.5" fill="#d63a1a"/>
+  </svg>`;
+
+  // ── RANGED WEAPONS ─────────────────────────────────────────────
+
+  // Maple Shortbow
+  S['maple_shortbow'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 4 Q22 4 22 16 Q22 28 10 28" fill="none" stroke="#9a7a4a" stroke-width="2.5"/>
+    <line x1="10" y1="4" x2="10" y2="28" stroke="#d4b080" stroke-width="1.2"/>
+    <line x1="16" y1="14" x2="18" y2="18" stroke="#d4b080" stroke-width="1" opacity="0.5"/>
+  </svg>`;
+
+  // Yew Longbow
+  S['yew_longbow'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2 Q24 6 24 16 Q24 26 12 30" fill="none" stroke="#7a5a2a" stroke-width="3"/>
+    <line x1="12" y1="2" x2="12" y2="30" stroke="#b08040" stroke-width="1.5"/>
+    <path d="M18 14 L20 12 L22 16 L20 20 L18 18" fill="#9a7a3a" opacity="0.4"/>
+  </svg>`;
+
+  // Magic Shortbow — glowing blue
+  S['magic_shortbow'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 4 Q22 4 22 16 Q22 28 10 28" fill="none" stroke="#4a9ed4" stroke-width="2.5"/>
+    <path d="M10 4 Q20 6 20 16 Q20 26 10 28" fill="none" stroke="#7ac4e8" stroke-width="1" opacity="0.5"/>
+    <line x1="10" y1="4" x2="10" y2="28" stroke="#c8e8f8" stroke-width="1.2"/>
+    <circle cx="16" cy="16" r="2" fill="#4a9ed4" opacity="0.5"/>
+  </svg>`;
+
+  // Twisted Bow — ornate, multiple curves
+  S['twisted_bow'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 4 Q22 4 22 16 Q22 28 10 28" fill="none" stroke="#c4a83a" stroke-width="2.5"/>
+    <path d="M12 6 Q20 8 20 16 Q20 24 12 26" fill="none" stroke="#d4b84a" stroke-width="1.5"/>
+    <path d="M14 8 Q18 12 18 16 Q18 20 14 24" fill="none" stroke="#e4c850" stroke-width="1" opacity="0.5"/>
+    <line x1="10" y1="4" x2="10" y2="28" stroke="#d4b84a" stroke-width="1.2"/>
+    <circle cx="10" cy="4" r="2" fill="#c4a83a"/>
+    <circle cx="10" cy="28" r="2" fill="#c4a83a"/>
+  </svg>`;
+
+  // Zaryte Crossbow — mechanical, heavy
+  S['zaryte_crossbow'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect x="13" y="8" width="6" height="18" rx="2" fill="#2a0a4a" stroke="#1a1a1f" stroke-width="0.8"/>
+    <path d="M8 12 Q10 10 13 12" fill="none" stroke="#8a3ab0" stroke-width="2.5"/>
+    <path d="M19 12 Q22 10 24 12" fill="none" stroke="#8a3ab0" stroke-width="2.5"/>
+    <line x1="10" y1="11" x2="22" y2="11" stroke="#d080ff" stroke-width="1"/>
+    <rect x="12" y="11" width="8" height="3" rx="1" fill="#1a0a2a"/>
+    <circle cx="16" cy="12" r="1" fill="#d080ff"/>
+    <line x1="15" y1="15" x2="17" y2="21" stroke="#8a3ab0" stroke-width="1" opacity="0.6"/>
+    <circle cx="16" cy="8" r="2.5" fill="#3a0a5a" stroke="#8a3ab0" stroke-width="1"/>
+    <circle cx="16" cy="8" r="1" fill="#d080ff"/>
+  </svg>`;
+
+  // ── MAGIC WEAPONS ──────────────────────────────────────────────
+
+  const wandSVG = (shaft, orb, orbGlow) => `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <line x1="22" y1="10" x2="8" y2="26" stroke="${shaft}" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="23" cy="8" r="5" fill="#1a1a2a" stroke="${orb}" stroke-width="1.5"/>
+    <circle cx="23" cy="8" r="3" fill="${orb}" opacity="0.7"/>
+    <circle cx="23" cy="8" r="1.5" fill="${orbGlow}"/>
+  </svg>`;
+
+  S['master_wand']        = wandSVG('#7a5a2a','#c4a83a','#ffd080');
+  S['kodai_wand']         = wandSVG('#3a2a4a','#8a3ab0','#d080ff');
+  S['toxic_staff']        = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <line x1="16" y1="8" x2="16" y2="30" stroke="#3a5a1a" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="16" cy="6" r="6" fill="#1a2a0a" stroke="#4a8a1a" stroke-width="1.5"/>
+    <circle cx="16" cy="6" r="3.5" fill="#4a8a1a" opacity="0.7"/>
+    <circle cx="16" cy="6" r="1.5" fill="#8acc2a"/>
+    <path d="M14 18 Q16 14 18 18" stroke="#4a8a1a" stroke-width="1.2" fill="none" opacity="0.6"/>
+    <circle cx="16" cy="14" r="1" fill="#6aaa2a" opacity="0.5"/>
+  </svg>`;
+  S['sanguinesti_staff']  = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <line x1="16" y1="8" x2="16" y2="30" stroke="#3a0a0a" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="16" cy="6" r="6" fill="#1a0000" stroke="#c44040" stroke-width="1.5"/>
+    <circle cx="16" cy="6" r="3.5" fill="#c44040" opacity="0.7"/>
+    <circle cx="16" cy="6" r="1.5" fill="#ff8080"/>
+    <path d="M16 12 Q16 18 15 20" stroke="#c44040" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <circle cx="15" cy="21" r="1.5" fill="#c44040" opacity="0.8"/>
+  </svg>`;
+  S['staff_of_the_dead']  = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <line x1="16" y1="8" x2="16" y2="30" stroke="#2a2a3a" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="16" cy="6" r="6" fill="#1a1a2a" stroke="#7a8294" stroke-width="1.5"/>
+    <circle cx="16" cy="4" r="1.5" fill="#c8cad4"/>
+    <circle cx="13" cy="7" r="1" fill="#c8cad4" opacity="0.7"/>
+    <circle cx="19" cy="7" r="1" fill="#c8cad4" opacity="0.7"/>
+    <path d="M13 9 Q16 10 19 9" fill="none" stroke="#7a8294" stroke-width="0.8"/>
+  </svg>`;
+  S['void_emperor_staff'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <line x1="16" y1="8" x2="16" y2="30" stroke="#1a0a2a" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="16" cy="14" r="2" fill="#5a0a9a" opacity="0.4"/>
+    <circle cx="16" cy="20" r="1.5" fill="#5a0a9a" opacity="0.3"/>
+    <circle cx="16" cy="6" r="7" fill="#0a0014" stroke="#8a3ab0" stroke-width="2"/>
+    <circle cx="16" cy="3" r="2" fill="#0a0014"/><circle cx="16" cy="3" r="1.2" fill="#9030d0"/><circle cx="16" cy="3" r="0.5" fill="#fff" opacity="0.8"/>
+    <circle cx="13" cy="7" r="1.5" fill="#0a0014"/><circle cx="13" cy="7" r="0.9" fill="#7020b0"/><circle cx="13" cy="7" r="0.4" fill="#e0a0ff"/>
+    <circle cx="19" cy="7" r="1.5" fill="#0a0014"/><circle cx="19" cy="7" r="0.9" fill="#7020b0"/><circle cx="19" cy="7" r="0.4" fill="#e0a0ff"/>
+  </svg>`;
+
+  // ── ARMOR SETS ─────────────────────────────────────────────────
+
+  // Dragonite — orange-amber scale pattern
+  const dragoniteColor = '#d67338';
+  S['dragonite_helm']  = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M8 18 Q8 8 16 6 Q24 8 24 18 L22 22 L10 22Z" fill="${dragoniteColor}" stroke="#1a1a1f" stroke-width="1"/><path d="M10 14 Q12 10 16 10 Q20 10 22 14" fill="none" stroke="#ff8040" stroke-width="1" opacity="0.5"/><path d="M9 15 L8 10 L11 12" fill="#c9873e"/><path d="M23 15 L24 10 L21 12" fill="#c9873e"/><rect x="12" y="18" width="8" height="4" rx="1" fill="#1a0a00" opacity="0.4"/></svg>`;
+  S['dragonite_plate'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="6" width="16" height="22" rx="4" fill="${dragoniteColor}" stroke="#1a1a1f" stroke-width="1"/><path d="M10 10 Q12 8 16 8 Q20 8 22 10" fill="none" stroke="#ff8040" stroke-width="1" opacity="0.4"/><line x1="16" y1="8" x2="16" y2="26" stroke="#c9873e" stroke-width="1" opacity="0.4"/><path d="M10 14 L14 16" stroke="#ff8040" stroke-width="1" opacity="0.3"/><path d="M18 14 L22 16" stroke="#ff8040" stroke-width="1" opacity="0.3"/></svg>`;
+
+  // Void Stalker — dark teal ranger set
+  const vsColor = '#2a5a5a';
+  S['void_stalker_coif']   = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M8 18 Q8 8 16 6 Q24 8 24 18 L22 22 L10 22Z" fill="${vsColor}" stroke="#1a1a1f" stroke-width="1"/><circle cx="13" cy="14" r="2" fill="#0a1a1a"/><circle cx="19" cy="14" r="2" fill="#0a1a1a"/><circle cx="13" cy="14" r="1" fill="#4a9a9a" opacity="0.8"/><circle cx="19" cy="14" r="1" fill="#4a9a9a" opacity="0.8"/></svg>`;
+  S['void_stalker_body']   = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="6" width="16" height="22" rx="4" fill="${vsColor}" stroke="#1a1a1f" stroke-width="1"/><rect x="10" y="8" width="4" height="10" rx="2" fill="#1a3a3a" opacity="0.6"/><rect x="18" y="8" width="4" height="10" rx="2" fill="#1a3a3a" opacity="0.6"/><path d="M10 14 Q16 18 22 14" fill="none" stroke="#4a9a9a" stroke-width="1" opacity="0.4"/></svg>`;
+
+  // Shadowscale — near-black with silver scale sheen
+  const ssColor = '#1a1a2a';
+  S['shadowscale_coif'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M8 18 Q8 8 16 6 Q24 8 24 18 L22 22 L10 22Z" fill="${ssColor}" stroke="#4a5264" stroke-width="1"/><path d="M10 12 Q12 10 14 12 Q12 14 10 12Z" fill="#4a5264" opacity="0.5"/><path d="M14 10 Q16 8 18 10 Q16 12 14 10Z" fill="#4a5264" opacity="0.5"/><path d="M18 12 Q20 10 22 12 Q20 14 18 12Z" fill="#4a5264" opacity="0.5"/></svg>`;
+  S['shadowscale_body'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="6" width="16" height="22" rx="4" fill="${ssColor}" stroke="#4a5264" stroke-width="1"/><path d="M10 10 Q12 8 14 10 Q12 12 10 10Z" fill="#4a5264" opacity="0.4"/><path d="M14 8 Q16 6 18 8 Q16 10 14 8Z" fill="#4a5264" opacity="0.4"/><path d="M18 10 Q20 8 22 10 Q20 12 18 10Z" fill="#4a5264" opacity="0.4"/><path d="M10 16 Q12 14 14 16 Q12 18 10 16Z" fill="#4a5264" opacity="0.3"/><path d="M18 16 Q20 14 22 16 Q20 18 18 16Z" fill="#4a5264" opacity="0.3"/></svg>`;
+
+  // Void Emperor magic set — deep purple with void eye motifs
+  S['void_emperor_hat']       = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M8 18 Q8 8 16 5 Q24 8 24 18 L22 22 L10 22Z" fill="#1a0a2a" stroke="#8a3ab0" stroke-width="1"/><circle cx="16" cy="10" r="3" fill="#0a0014"/><circle cx="16" cy="10" r="2" fill="#9030d0" opacity="0.8"/><circle cx="16" cy="10" r="0.8" fill="#e0a0ff"/><polygon points="16,5 14,2 18,2" fill="#3a0a5a" opacity="0.8"/></svg>`;
+  S['void_emperor_robe']      = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="6" width="16" height="22" rx="4" fill="#1a0a2a" stroke="#8a3ab0" stroke-width="1"/><circle cx="16" cy="14" r="3.5" fill="#0a0014"/><circle cx="16" cy="14" r="2.5" fill="#9030d0" opacity="0.7"/><circle cx="16" cy="14" r="1" fill="#e0a0ff"/><path d="M10 8 L12 12" stroke="#5a0a9a" stroke-width="1.2" opacity="0.5"/><path d="M22 8 L20 12" stroke="#5a0a9a" stroke-width="1.2" opacity="0.5"/></svg>`;
+  S['void_emperor_robe_legs'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M8 6 L24 6 L26 28 L18 28 L16 22 L14 28 L6 28Z" fill="#1a0a2a" stroke="#8a3ab0" stroke-width="1"/><circle cx="12" cy="14" r="2" fill="#0a0014"/><circle cx="12" cy="14" r="1.2" fill="#7020b0" opacity="0.7"/><circle cx="20" cy="14" r="2" fill="#0a0014"/><circle cx="20" cy="14" r="1.2" fill="#7020b0" opacity="0.7"/></svg>`;
+
+  // ── ACCESSORIES ────────────────────────────────────────────────
+
+  // Amulets — distinct shapes per tier
+  S['amulet_of_strength']  = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M6 6 Q16 4 26 6" fill="none" stroke="#c8cad4" stroke-width="1.5"/><polygon points="16,12 22,18 16,28 10,18" fill="#d4a83a" stroke="#1a1a1f" stroke-width="1"/><circle cx="16" cy="18" r="2" fill="#ffd080"/></svg>`;
+  S['amulet_of_fury']      = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M6 5 Q16 3 26 5" fill="none" stroke="#c4a83a" stroke-width="1.5"/><polygon points="16,10 23,17 16,29 9,17" fill="#d63a1a" stroke="#1a1a1f" stroke-width="1"/><polygon points="16,10 21,17 16,24 11,17" fill="#ff6020" opacity="0.5"/><circle cx="16" cy="17" r="2.5" fill="#ffd080"/><circle cx="16" cy="17" r="1" fill="#ffffff" opacity="0.8"/></svg>`;
+  S['amulet_of_torture']   = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M6 5 Q16 2 26 5" fill="none" stroke="#d4a83a" stroke-width="2"/><polygon points="16,9 24,16 16,29 8,16" fill="#c4a83a" stroke="#1a1a1f" stroke-width="1"/><polygon points="16,9 22,16 16,26 10,16" fill="#ffd080" opacity="0.5"/><circle cx="16" cy="16" r="3" fill="#d4a83a"/><circle cx="16" cy="16" r="1.5" fill="#ffffff" opacity="0.9"/><path d="M16 9 L16 12" stroke="#ffd080" stroke-width="1.5"/></svg>`;
+  S['occult_necklace']     = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M6 5 Q16 3 26 5" fill="none" stroke="#8a3ab0" stroke-width="1.5"/><circle cx="16" cy="19" r="9" fill="#1a0a2a" stroke="#8a3ab0" stroke-width="1.5"/><circle cx="16" cy="16" r="2.5" fill="#0a0014"/><circle cx="16" cy="16" r="1.5" fill="#9030d0" opacity="0.8"/><circle cx="16" cy="16" r="0.6" fill="#e0a0ff"/><circle cx="13" cy="21" r="1" fill="#5a0a9a" opacity="0.6"/><circle cx="19" cy="21" r="1" fill="#5a0a9a" opacity="0.6"/></svg>`;
+  S['necklace_of_anguish'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M6 5 Q16 2 26 5" fill="none" stroke="#6ab4e8" stroke-width="2"/><polygon points="16,10 22,17 20,26 12,26 10,17" fill="#4a9ed4" stroke="#1a1a1f" stroke-width="1"/><line x1="16" y1="10" x2="16" y2="26" stroke="#7ac4e8" stroke-width="1" opacity="0.5"/><circle cx="16" cy="16" r="2" fill="#c8e8f8"/></svg>`;
+
+  // Rings — distinct gem shapes
+  S['ring_of_wealth']    = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="18" r="8" fill="none" stroke="#c4a83a" stroke-width="2.5"/><polygon points="16,8 18,11 16,14 14,11" fill="#c4a83a" stroke="#1a1a1f" stroke-width="0.8"/><circle cx="16" cy="11" r="1.5" fill="#ffd080"/></svg>`;
+  S['berserker_ring']    = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="18" r="8" fill="none" stroke="#c44040" stroke-width="2.5"/><polygon points="16,8 18,11 16,15 14,11" fill="#c44040" stroke="#1a1a1f" stroke-width="0.8"/><circle cx="16" cy="11" r="1.5" fill="#ff8080"/></svg>`;
+  S['archers_ring']      = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="18" r="8" fill="none" stroke="#4a8a3e" stroke-width="2.5"/><polygon points="16,8 18,11 16,15 14,11" fill="#4a8a3e" stroke="#1a1a1f" stroke-width="0.8"/><circle cx="16" cy="11" r="1.5" fill="#a0e080"/></svg>`;
+  S['seers_ring']        = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="18" r="8" fill="none" stroke="#4a7ec4" stroke-width="2.5"/><polygon points="16,8 18,11 16,15 14,11" fill="#4a7ec4" stroke="#1a1a1f" stroke-width="0.8"/><circle cx="16" cy="11" r="1.5" fill="#90c0ff"/></svg>`;
+
+  // Capes — silhouette + motif
+  S['obsidian_cape'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M10 4 L22 4 L26 28 L6 28Z" fill="#2a2a3a" stroke="#4a4a5a" stroke-width="1"/><line x1="16" y1="4" x2="16" y2="28" stroke="#4a4a5a" stroke-width="1" opacity="0.5"/><path d="M10 14 Q16 18 22 14" fill="none" stroke="#7a8294" stroke-width="1" opacity="0.4"/></svg>`;
+  S['fire_cape']     = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M10 4 L22 4 L26 28 L6 28Z" fill="#d63a1a" stroke="#1a1a1f" stroke-width="1"/><path d="M12 28 Q11 22 14 18 Q12 24 16 20 Q14 26 18 22 Q16 27 20 24 Q18 28 21 28" fill="#ff8040" opacity="0.5"/><line x1="16" y1="4" x2="16" y2="28" stroke="#ff6020" stroke-width="1" opacity="0.4"/></svg>`;
+  S['infernal_cape'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M10 4 L22 4 L26 28 L6 28Z" fill="#1a0a00" stroke="#d63a1a" stroke-width="1.5"/><path d="M10 24 Q9 18 12 14 Q10 20 14 16 Q12 22 17 17 Q15 23 20 18 Q18 24 22 22 Q20 27 22 28" fill="#d63a1a" opacity="0.6"/><line x1="16" y1="4" x2="16" y2="28" stroke="#d63a1a" stroke-width="1.5" opacity="0.5"/><path d="M13 8 Q16 4 19 8" fill="#ff6020" opacity="0.4"/></svg>`;
+
+  // ── ASSIGN ALL ──────────────────────────────────────────────────
+  for (const [itemId, svg] of Object.entries(S)) {
+    if (GAME_DATA.items[itemId]) {
+      GAME_DATA.items[itemId]._customSprite = svg;
+    }
+  }
+
+  // Also set sprite type strings for the generic renderer fallback
+  const spriteTypes = {
+    // longswords
+    steel_longsword:'sword', mithril_longsword:'sword', adamant_longsword:'sword', runite_longsword:'sword',
+    // new weapons
+    granite_maul:'mace', saradomin_sword:'sword', bandos_godsword:'sword',
+    dragonite_greataxe:'axe', voidreaper:'sword', ashen_overlord_blade:'sword',
+    maple_shortbow:'bow', yew_longbow:'bow', magic_shortbow:'bow',
+    twisted_bow:'bow', zaryte_crossbow:'bow',
+    master_wand:'wand', toxic_staff:'staff', sanguinesti_staff:'staff',
+    staff_of_the_dead:'staff', void_emperor_staff:'staff',
+    // armor
+    dragonite_helm:'helm', dragonite_plate:'body', dragonite_legs:'legs',
+    dragonite_boots:'boots', dragonite_gloves:'gloves', dragonite_shield:'shield',
+    void_stalker_coif:'cowl', void_stalker_body:'body', void_stalker_chaps:'chaps',
+    shadowscale_coif:'cowl', shadowscale_body:'body', shadowscale_chaps:'chaps',
+    void_emperor_hat:'hat', void_emperor_robe:'robe', void_emperor_robe_legs:'skirt',
+    // accessories
+    amulet_of_strength:'amulet', amulet_of_fury:'amulet',
+    amulet_of_torture:'amulet', occult_necklace:'amulet', necklace_of_anguish:'amulet',
+    ring_of_wealth:'ring', berserker_ring:'ring', archers_ring:'ring', seers_ring:'ring',
+    team_cape:'cape', obsidian_cape:'cape', fire_cape:'cape', infernal_cape:'cape',
+  };
+  for (const [itemId, sprite] of Object.entries(spriteTypes)) {
+    if (GAME_DATA.items[itemId] && !GAME_DATA.items[itemId].sprite) {
+      GAME_DATA.items[itemId].sprite = sprite;
+    }
+  }
+
+  console.log('[Ashfall] Item sprites assigned:', Object.keys(S).length, 'custom SVGs');
+})();
