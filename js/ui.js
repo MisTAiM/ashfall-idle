@@ -125,6 +125,48 @@ class UI {
     this.engine.on('combatStart', () => { this.currentPage = 'combat'; this.renderTrainingBar(); this.renderSidebar(); this.renderPage('combat'); });
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this._initTheatreListeners();
+
+    // ── ABILITY ANIMATIONS ──────────────────────────────────────
+    this.engine.on('abilityUsed', (d) => {
+      const ab = d.ability;
+      const arena = document.querySelector('.combat-arena');
+      if (!arena) return;
+
+      // Flash the ability slot that was used
+      const slots = document.querySelectorAll('.ab-slot-v2');
+      const slotIdx = (this.engine.state.equippedAbilities||[]).indexOf(ab.id);
+      if (slotIdx >= 0 && slots[slotIdx]) {
+        slots[slotIdx].classList.add('ab-used-flash');
+        setTimeout(() => slots[slotIdx]?.classList.remove('ab-used-flash'), 600);
+      }
+
+      // Create the ability animation overlay on the arena
+      const overlay = document.createElement('div');
+      overlay.className = 'ability-anim-overlay';
+      overlay.innerHTML = this._getAbilityAnimSvg(ab.id, ab.effect?.type);
+      arena.appendChild(overlay);
+      setTimeout(() => overlay.remove(), 1000);
+
+      // Also shake/flash the monster art for damage abilities
+      const damagingTypes = ['buff','combat_buff','spell_burst','nuke','multi'];
+      if (damagingTypes.includes(ab.effect?.type)) {
+        const monArt = document.querySelector('.monster-art');
+        if (monArt) {
+          monArt.classList.add('hit-shake');
+          setTimeout(() => monArt?.classList.remove('hit-shake'), 300);
+        }
+      }
+
+      // For defensive abilities, flash the player side
+      const defTypes = ['defence_buff','dodge_buff'];
+      if (defTypes.includes(ab.effect?.type)) {
+        const pSide = document.querySelector('.player-side');
+        if (pSide) {
+          pSide.classList.add('ability-shield-flash');
+          setTimeout(() => pSide?.classList.remove('ability-shield-flash'), 500);
+        }
+      }
+    });
     this.engine.on('combatHit', (d) => { this.showHitSplat(d); if (this.engine.state.combat._multiMobMode) this._updateMultiMobUI(); });
     this.engine.on('lootDrop', (d) => this.showLootBag(d));
     this.engine.on('petAction', (d) => this.showPetAction(d));
@@ -884,13 +926,17 @@ class UI {
         const cd = ab ? (c.abilityCooldowns[aid] || 0) : 0;
         if (ab) {
           const cdPct = cd > 0 ? Math.min(100, (cd / ab.cooldown) * 100) : 0;
-          html += `<button class="ab-slot-v2 ${cd>0?'ab-cd':''}" onclick="game.useAbility(${i})" title="${ab.desc}">
+          const canUse = c.active && cd <= 0;
+          html += `<button class="ab-slot-v2 ${cd>0?'ab-cd':''} ${!c.active?'ab-inactive':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}${!c.active?' (must be in combat)':''}">
             <div class="ab-cd-overlay" style="height:${cdPct}%"></div>
-            <div class="ab-content"><div class="ab-name">${ab.name}</div>
-            <div class="ab-timer">${cd>0?Math.ceil(cd)+'s':'Ready'}</div></div>
+            <div class="ab-content">
+              <div class="ab-icon">${ab.icon||'⚡'}</div>
+              <div class="ab-name">${ab.name}</div>
+              <div class="ab-timer">${cd>0?Math.ceil(cd)+'s':c.active?'Ready':'—'}</div>
+            </div>
           </button>`;
         } else {
-          html += `<div class="ab-slot-v2 ab-empty"><div class="ab-content">Slot ${i+1}</div></div>`;
+          html += `<div class="ab-slot-v2 ab-empty"><div class="ab-content"><div class="ab-icon" style="opacity:0.2">⬡</div><div class="ab-name" style="color:#3a3a4a">Slot ${i+1}</div><div class="ab-timer" style="color:#2a2a3a">Empty</div></div></div>`;
         }
       }
       html += '</div>';
@@ -4250,6 +4296,129 @@ class UI {
       const statsEl = obSection.querySelector('.ob-stats');
       if (statsEl) statsEl.innerHTML = `<span>Total Mined: ${this.fmt(s.miningStats?.totalMined||0)}</span><span>Events: ${s.miningStats?.eventsTriggered||0}</span>`;
     }
+  }
+
+  _getAbilityAnimSvg(abilityId, effectType) {
+    // Per-ability unique animations
+    const ABILITY_ANIMS = {
+      power_strike: `<svg viewBox="0 0 160 160" class="ab-anim-svg"><defs><radialGradient id="ps-g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#d4a83a" stop-opacity="0.9"/><stop offset="100%" stop-color="#d4a83a" stop-opacity="0"/></radialGradient></defs>
+        <!-- Golden shockwave rings -->
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#d4a83a" stroke-width="4"><animate attributeName="r" from="0" to="70" dur="0.5s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.5s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#ffd080" stroke-width="2"><animate attributeName="r" from="0" to="50" dur="0.35s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.35s" fill="freeze"/></circle>
+        <!-- Power slash lines -->
+        <path d="M20 140 L80 80 L140 20" stroke="#d4a83a" stroke-width="4" stroke-linecap="round" fill="none"><animate attributeName="stroke-dasharray" from="0 200" to="200 0" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.4s" begin="0.2s" fill="freeze"/></path>
+        <path d="M30 120 L80 80 L130 30" stroke="#ffd080" stroke-width="2" fill="none"><animate attributeName="stroke-dasharray" from="0 180" to="180 0" dur="0.28s" fill="freeze"/><animate attributeName="opacity" from="0.7" to="0" dur="0.35s" begin="0.25s" fill="freeze"/></path>
+        <!-- Impact center -->
+        <circle cx="80" cy="80" r="0" fill="url(#ps-g)"><animate attributeName="r" from="0" to="30" dur="0.2s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.3s" begin="0.1s" fill="freeze"/></circle>
+      </svg>`,
+
+      rapid_shot: `<svg viewBox="0 0 160 80" class="ab-anim-svg ab-anim-wide"><g>
+        <!-- 3 arrows rapid fire -->
+        <line x1="0" y1="15" x2="150" y2="20" stroke="#4a9ed4" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" fill="freeze"/></line>
+        <polygon points="148,16 158,20 148,24" fill="#4a9ed4"><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.2s" fill="freeze"/></polygon>
+
+        <line x1="0" y1="40" x2="150" y2="40" stroke="#6ab4e8" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" begin="0.08s" fill="freeze"/></line>
+        <polygon points="148,36 158,40 148,44" fill="#6ab4e8"><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.28s" fill="freeze"/></polygon>
+
+        <line x1="0" y1="65" x2="150" y2="60" stroke="#4a9ed4" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" begin="0.16s" fill="freeze"/></line>
+        <polygon points="148,56 158,60 148,64" fill="#4a9ed4"><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.36s" fill="freeze"/></polygon>
+
+        <!-- Impact burst at target -->
+        <circle cx="155" cy="40" r="0" fill="none" stroke="#4a9ed4" stroke-width="2"><animate attributeName="r" from="2" to="20" dur="0.25s" begin="0.2s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.25s" begin="0.2s" fill="freeze"/></circle>
+      </g></svg>`,
+
+      arcane_burst: `<svg viewBox="0 0 160 160" class="ab-anim-svg"><defs><radialGradient id="ab-g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9b30d0" stop-opacity="0.7"/><stop offset="100%" stop-color="#9b30d0" stop-opacity="0"/></radialGradient></defs>
+        <!-- Purple void rings expanding -->
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#9b30d0" stroke-width="5"><animate attributeName="r" from="0" to="75" dur="0.6s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.6s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#c050f0" stroke-width="3"><animate attributeName="r" from="0" to="55" dur="0.45s" fill="freeze"/><animate attributeName="opacity" from="0.9" to="0" dur="0.45s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#e090ff" stroke-width="2"><animate attributeName="r" from="0" to="35" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.3s" fill="freeze"/></circle>
+        <!-- Void core fill -->
+        <circle cx="80" cy="80" r="0" fill="url(#ab-g)"><animate attributeName="r" from="0" to="40" dur="0.35s" fill="freeze"/><animate attributeName="opacity" from="0.7" to="0" dur="0.4s" begin="0.1s" fill="freeze"/></circle>
+        <!-- Rune sparks -->
+        <circle cx="80" cy="20" r="0" fill="#c050f0"><animate attributeName="r" from="0" to="5" dur="0.15s" fill="freeze"/><animate attributeName="cy" from="20" to="10" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></circle>
+        <circle cx="140" cy="80" r="0" fill="#9b30d0"><animate attributeName="r" from="0" to="4" dur="0.15s" fill="freeze"/><animate attributeName="cx" from="140" to="155" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></circle>
+        <circle cx="80" cy="140" r="0" fill="#c050f0"><animate attributeName="r" from="0" to="5" dur="0.15s" fill="freeze"/><animate attributeName="cy" from="140" to="155" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></circle>
+        <circle cx="20" cy="80" r="0" fill="#9b30d0"><animate attributeName="r" from="0" to="4" dur="0.15s" fill="freeze"/><animate attributeName="cx" from="20" to="5" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></circle>
+      </svg>`,
+
+      shield_wall: `<svg viewBox="0 0 160 160" class="ab-anim-svg"><defs><radialGradient id="sw-g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4a7ec4" stop-opacity="0.4"/><stop offset="100%" stop-color="#4a7ec4" stop-opacity="0"/></radialGradient></defs>
+        <!-- Shield shimmer fill -->
+        <circle cx="80" cy="80" r="0" fill="url(#sw-g)"><animate attributeName="r" from="0" to="75" dur="0.4s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.6s" begin="0.2s" fill="freeze"/></circle>
+        <!-- Hex shield pattern -->
+        <path d="M80 20 L130 50 L130 110 L80 140 L30 110 L30 50Z" fill="none" stroke="#4a7ec4" stroke-width="3"><animate attributeName="opacity" from="0" to="0.8" dur="0.2s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.5s" begin="0.3s" fill="freeze"/></path>
+        <path d="M80 35 L115 55 L115 105 L80 125 L45 105 L45 55Z" fill="none" stroke="#6a9ee4" stroke-width="1.5"><animate attributeName="opacity" from="0" to="0.6" dur="0.2s" fill="freeze"/><animate attributeName="opacity" from="0.6" to="0" dur="0.5s" begin="0.3s" fill="freeze"/></path>
+        <!-- Blue shimmer lines -->
+        <line x1="30" y1="80" x2="130" y2="80" stroke="#4a7ec4" stroke-width="1"><animate attributeName="opacity" from="0" to="0.5" dur="0.15s" fill="freeze"/><animate attributeName="opacity" from="0.5" to="0" dur="0.4s" begin="0.25s" fill="freeze"/></line>
+        <line x1="80" y1="20" x2="80" y2="140" stroke="#4a7ec4" stroke-width="1"><animate attributeName="opacity" from="0" to="0.5" dur="0.15s" fill="freeze"/><animate attributeName="opacity" from="0.5" to="0" dur="0.4s" begin="0.25s" fill="freeze"/></line>
+      </svg>`,
+
+      battle_cry: `<svg viewBox="0 0 160 160" class="ab-anim-svg"><defs><radialGradient id="bc-g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#c44040" stop-opacity="0.6"/><stop offset="100%" stop-color="#c44040" stop-opacity="0"/></radialGradient></defs>
+        <!-- Red explosion rings -->
+        <circle cx="80" cy="80" r="0" fill="url(#bc-g)"><animate attributeName="r" from="0" to="80" dur="0.4s" fill="freeze"/><animate attributeName="opacity" from="0.7" to="0" dur="0.5s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#c44040" stroke-width="5"><animate attributeName="r" from="0" to="75" dur="0.45s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.45s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#ff6040" stroke-width="3"><animate attributeName="r" from="0" to="55" dur="0.32s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.32s" fill="freeze"/></circle>
+        <!-- Burst lines outward -->
+        <line x1="80" y1="80" x2="80" y2="10"><animate attributeName="y2" from="80" to="8" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/> stroke="#c44040" stroke-width="2.5"/></line>
+        <line x1="80" y1="80" x2="150" y2="80" stroke="#c44040" stroke-width="2.5"><animate attributeName="x2" from="80" to="152" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></line>
+        <line x1="80" y1="80" x2="80" y2="150" stroke="#c44040" stroke-width="2.5"><animate attributeName="y2" from="80" to="152" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></line>
+        <line x1="80" y1="80" x2="10" y2="80" stroke="#c44040" stroke-width="2.5"><animate attributeName="x2" from="80" to="8" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="freeze"/></line>
+      </svg>`,
+
+      void_step: `<svg viewBox="0 0 160 160" class="ab-anim-svg"><defs><radialGradient id="vs-g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1a0a2a" stop-opacity="0.9"/><stop offset="60%" stop-color="#5a0a9a" stop-opacity="0.4"/><stop offset="100%" stop-color="#9b30d0" stop-opacity="0"/></radialGradient></defs>
+        <!-- Void collapse inward -->
+        <circle cx="80" cy="80" r="75" fill="none" stroke="#9b30d0" stroke-width="3"><animate attributeName="r" from="75" to="5" dur="0.35s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.4s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="60" fill="none" stroke="#6a0aaa" stroke-width="2"><animate attributeName="r" from="60" to="3" dur="0.28s" fill="freeze"/><animate attributeName="opacity" from="0.6" to="0" dur="0.32s" fill="freeze"/></circle>
+        <!-- Void center flash -->
+        <circle cx="80" cy="80" r="0" fill="url(#vs-g)"><animate attributeName="r" from="0" to="60" dur="0.2s" begin="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.3s" begin="0.3s" fill="freeze"/></circle>
+        <!-- Afterimage lines -->
+        <path d="M30 40 L80 80 L130 120" stroke="#9b30d0" stroke-width="1.5" stroke-dasharray="4 4" fill="none"><animate attributeName="opacity" from="0.6" to="0" dur="0.5s" fill="freeze"/></path>
+        <path d="M130 40 L80 80 L30 120" stroke="#9b30d0" stroke-width="1.5" stroke-dasharray="4 4" fill="none"><animate attributeName="opacity" from="0.6" to="0" dur="0.5s" fill="freeze"/></path>
+      </svg>`,
+
+      blood_frenzy: `<svg viewBox="0 0 160 160" class="ab-anim-svg"><defs><radialGradient id="bf-g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#8a0a0a" stop-opacity="0.6"/><stop offset="100%" stop-color="#c44040" stop-opacity="0"/></radialGradient></defs>
+        <!-- Blood splatter -->
+        <circle cx="80" cy="80" r="0" fill="url(#bf-g)"><animate attributeName="r" from="0" to="70" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.5s" begin="0.1s" fill="freeze"/></circle>
+        <!-- Drip lines -->
+        <path d="M80 80 L60 30"><animate attributeName="d" from="M80 80 L80 80" to="M80 80 L60 20" dur="0.3s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.4s" fill="freeze"/> stroke="#c44040" stroke-width="2"/></path>
+        <path d="M80 80 L120 50" stroke="#c44040" stroke-width="2"><animate attributeName="d" from="M80 80 L80 80" to="M80 80 L130 40" dur="0.28s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.4s" fill="freeze"/></path>
+        <path d="M80 80 L40 110" stroke="#8a0a0a" stroke-width="2"><animate attributeName="d" from="M80 80 L80 80" to="M80 80 L30 120" dur="0.32s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.4s" fill="freeze"/></path>
+        <path d="M80 80 L110 130" stroke="#c44040" stroke-width="2"><animate attributeName="d" from="M80 80 L80 80" to="M80 80 L120 145" dur="0.25s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.4s" fill="freeze"/></path>
+        <!-- Blood drops -->
+        <circle cx="80" cy="80" r="6" fill="#c44040"><animate attributeName="r" from="6" to="2" dur="0.2s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.3s" begin="0.15s" fill="freeze"/></circle>
+      </svg>`,
+
+      ash_nova: `<svg viewBox="0 0 160 160" class="ab-anim-svg"><defs>
+        <radialGradient id="an-g" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff4000" stop-opacity="0.8"/><stop offset="60%" stop-color="#c9873e" stop-opacity="0.4"/><stop offset="100%" stop-color="#c9873e" stop-opacity="0"/></radialGradient>
+      </defs>
+        <!-- Massive nova explosion -->
+        <circle cx="80" cy="80" r="0" fill="url(#an-g)"><animate attributeName="r" from="0" to="80" dur="0.5s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.6s" begin="0.1s" fill="freeze"/></circle>
+        <!-- Multiple rings -->
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#ff6020" stroke-width="6"><animate attributeName="r" from="0" to="78" dur="0.55s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.55s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#c9873e" stroke-width="4"><animate attributeName="r" from="0" to="60" dur="0.42s" fill="freeze"/><animate attributeName="opacity" from="0.9" to="0" dur="0.42s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="0" fill="none" stroke="#ffd080" stroke-width="2"><animate attributeName="r" from="0" to="40" dur="0.28s" fill="freeze"/><animate attributeName="opacity" from="0.8" to="0" dur="0.28s" fill="freeze"/></circle>
+        <!-- Ember sparks burst outward -->
+        <circle cx="80" cy="80" r="3" fill="#ffd080"><animate attributeName="cy" from="80" to="10" dur="0.45s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.5s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="3" fill="#ff6020"><animate attributeName="cx" from="80" to="150" dur="0.42s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.5s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="3" fill="#ffd080"><animate attributeName="cy" from="80" to="150" dur="0.45s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.5s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="3" fill="#ff6020"><animate attributeName="cx" from="80" to="10" dur="0.42s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.5s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="2" fill="#c9873e"><animate attributeName="cx" from="80" to="145" dur="0.38s" fill="freeze"/><animate attributeName="cy" from="80" to="15" dur="0.38s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.4s" fill="freeze"/></circle>
+        <circle cx="80" cy="80" r="2" fill="#c9873e"><animate attributeName="cx" from="80" to="15" dur="0.38s" fill="freeze"/><animate attributeName="cy" from="80" to="145" dur="0.38s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.4s" fill="freeze"/></circle>
+      </svg>`,
+    };
+
+    // Fallback by effect type
+    const FALLBACKS = {
+      buff: ABILITY_ANIMS.power_strike,
+      defence_buff: ABILITY_ANIMS.shield_wall,
+      dodge_buff: ABILITY_ANIMS.void_step,
+      combat_buff: ABILITY_ANIMS.battle_cry,
+      spell_burst: ABILITY_ANIMS.arcane_burst,
+      nuke: ABILITY_ANIMS.ash_nova,
+      multi: ABILITY_ANIMS.rapid_shot,
+      on_kill_heal: ABILITY_ANIMS.blood_frenzy,
+    };
+
+    return ABILITY_ANIMS[abilityId] || FALLBACKS[effectType] || ABILITY_ANIMS.power_strike;
   }
 
   fmt(n) {
