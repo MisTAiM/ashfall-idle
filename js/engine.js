@@ -585,7 +585,17 @@ class GameEngine {
     this._tickStatusEffects(c.statusEffects.player, dt, 'player');
     const playerSpeed = this.getPlayerAttackSpeed();
     c.playerAttackTimer += dt;
-    if (c.playerAttackTimer >= playerSpeed) { c.playerAttackTimer -= playerSpeed; this.playerAttack(monster); this.drainPrayerPoints(); this.doPetCombatAction(monster); }
+    if (c.playerAttackTimer >= playerSpeed) {
+      c.playerAttackTimer -= playerSpeed;
+      try {
+        this.playerAttack(monster);
+      } catch(err) {
+        console.error('[Combat] playerAttack crashed:', err.message, err.stack?.split('\n')[1]);
+        this.emit('notification', { type:'danger', text:'Combat error: ' + err.message.slice(0,60) });
+      }
+      this.drainPrayerPoints();
+      this.doPetCombatAction(monster);
+    }
     c.monsterAttackTimer += dt;
     let monsterSpeed = monster.attackSpeed * 0.7;
     // Freeze slows monster attack speed
