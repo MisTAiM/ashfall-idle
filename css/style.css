@@ -5482,3 +5482,148 @@ html, body {
   animation:mmWarnPulse 2s ease-in-out infinite;
 }
 @keyframes mmWarnPulse { 0%,100%{opacity:0.8} 50%{opacity:1} }
+
+/* ================================================================
+   THEATRE OF ASH — Full Styles
+   ================================================================ */
+
+/* ── LOCK SCREEN ── */
+.toa-locked { text-align:center; padding:60px 24px; }
+.toa-lock-icon { font-size:48px; margin-bottom:16px; }
+.toa-lock-title { font-family:'Cinzel',serif; font-size:22px; color:var(--text-dim); margin-bottom:8px; }
+.toa-lock-desc { color:#5a4a3a; margin-bottom:8px; }
+.toa-lock-tip { font-style:italic; color:#3a2a1a; font-size:13px; }
+
+/* ── ENTRY SCREEN ── */
+.toa-entry-screen { display:flex; flex-direction:column; align-items:center; gap:20px; padding:16px; }
+.toa-header-art { margin-bottom:8px; }
+.toa-entry-stats { display:flex; gap:0; border:1px solid rgba(155,48,208,0.2); }
+.toa-stat { text-align:center; padding:10px 18px; border-right:1px solid rgba(155,48,208,0.15); }
+.toa-stat:last-child { border-right:none; }
+.toa-stat-n { display:block; font-family:'Cinzel',serif; font-size:18px; color:#9b30d0; }
+.toa-stat-l { display:block; font-size:9px; color:#5a4a5a; letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+
+.toa-tier-table { width:100%; max-width:480px; display:flex; flex-direction:column; gap:6px; }
+.toa-tier-row { display:flex; align-items:center; gap:12px; padding:6px 12px; background:rgba(155,48,208,0.05); border:1px solid rgba(155,48,208,0.1); font-size:13px; color:#7a6a7a; }
+
+.toa-tier-badge { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:1px; padding:2px 8px; border-radius:2px; }
+.toa-tier-bronze { background:rgba(205,127,50,0.2); color:#cd7f32; border:1px solid rgba(205,127,50,0.4); }
+.toa-tier-silver { background:rgba(192,192,192,0.15); color:#c0c0c0; border:1px solid rgba(192,192,192,0.4); }
+.toa-tier-gold   { background:rgba(212,168,58,0.15); color:#d4a83a; border:1px solid rgba(212,168,58,0.4); }
+.toa-tier-purple { background:rgba(155,48,208,0.15); color:#c060f0; border:1px solid rgba(155,48,208,0.4); }
+
+.toa-rooms-list { width:100%; max-width:580px; display:flex; flex-direction:column; gap:4px; }
+.toa-room-preview { display:grid; grid-template-columns:24px 140px 140px 1fr; gap:8px; align-items:center; padding:7px 10px; background:rgba(20,8,28,0.4); border:1px solid rgba(155,48,208,0.1); font-size:12px; }
+.toa-room-num { font-family:'Cinzel',serif; color:#9b30d0; font-size:14px; text-align:center; }
+.toa-room-name { color:#8a7a8a; }
+.toa-boss-name { color:#d4a83a; }
+.toa-boss-info { color:#4a3a4a; font-size:10px; }
+.toa-boss-mechanic { color:#5a4a5a; font-size:10px; font-style:italic; grid-column:2 / span 3; }
+
+.toa-unique-preview { width:100%; max-width:580px; }
+.toa-unique-title { font-family:'Cinzel',serif; font-size:13px; color:#9b30d0; margin-bottom:10px; text-transform:uppercase; letter-spacing:2px; }
+.toa-unique-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; }
+.toa-unique-item { text-align:center; padding:8px 4px; background:rgba(155,48,208,0.06); border:1px solid rgba(155,48,208,0.15); cursor:default; transition:border-color 0.2s; }
+.toa-unique-item:hover { border-color:rgba(155,48,208,0.4); }
+.toa-ui-icon { display:flex; align-items:center; justify-content:center; height:36px; margin-bottom:4px; }
+.toa-ui-name { font-size:10px; color:#7a6a7a; line-height:1.3; }
+
+.toa-entry-warning { font-size:12px; color:#6a4a3a; text-align:center; max-width:480px; padding:8px 16px; border:1px solid rgba(196,64,64,0.15); background:rgba(196,64,64,0.05); }
+.toa-enter-btn { font-family:'Cinzel',serif; letter-spacing:2px; font-size:14px; padding:14px 36px; background:rgba(155,48,208,0.1); border:2px solid #9b30d0; color:#9b30d0; cursor:pointer; transition:all 0.2s; }
+.toa-enter-btn:hover { background:rgba(155,48,208,0.2); box-shadow:0 0 20px rgba(155,48,208,0.3); transform:translateY(-2px); }
+
+/* ── PROGRESS MAP ── */
+.toa-progress-map { display:flex; gap:2px; margin-bottom:8px; overflow-x:auto; }
+.toa-prog-room { flex:1; min-width:70px; padding:6px 4px; text-align:center; background:rgba(20,8,28,0.4); border:1px solid rgba(155,48,208,0.1); transition:all 0.2s; }
+.toa-prog-cleared { background:rgba(58,158,92,0.1); border-color:rgba(58,158,92,0.3); }
+.toa-prog-current { background:rgba(155,48,208,0.15); border-color:#9b30d0; animation:toaRoomPulse 1.5s ease-in-out infinite; }
+.toa-prog-next { border-color:rgba(212,168,58,0.3); }
+@keyframes toaRoomPulse { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 10px rgba(155,48,208,0.4)} }
+.toa-prog-num { display:block; font-family:'Cinzel',serif; font-size:16px; color:#9b30d0; }
+.toa-prog-name { display:block; font-size:9px; color:#5a4a5a; margin:2px 0; }
+.toa-prog-status { display:block; font-size:14px; color:#9b30d0; }
+.toa-prog-cleared .toa-prog-num, .toa-prog-cleared .toa-prog-status { color:#3a9e5c; }
+
+/* ── PERF BAR ── */
+.toa-perf-bar { display:flex; gap:8px; align-items:center; padding:6px 12px; background:rgba(10,5,20,0.5); border:1px solid rgba(155,48,208,0.12); margin-bottom:10px; flex-wrap:wrap; }
+.toa-perf-item { display:flex; flex-direction:column; align-items:center; min-width:50px; }
+.toa-perf-label { font-size:9px; color:#4a3a4a; letter-spacing:1px; text-transform:uppercase; }
+.toa-perf-val { font-family:'Cinzel',serif; font-size:14px; color:#9b30d0; }
+.toa-deaths-bad { color:#c44040 !important; }
+.toa-flee-btn { margin-left:auto; font-size:10px; padding:3px 8px; }
+
+/* ── BETWEEN ROOMS ── */
+.toa-between-rooms { text-align:center; padding:30px 24px; background:rgba(10,5,20,0.5); border:1px solid rgba(155,48,208,0.15); margin:8px 0; }
+.toa-between-title { font-family:'Cinzel',serif; font-size:16px; color:#d4a83a; margin-bottom:8px; }
+.toa-between-next { color:#9b30d0; margin-bottom:8px; }
+.toa-between-next strong { font-family:'Cinzel',serif; }
+.toa-between-timer { font-family:'JetBrains Mono',monospace; font-size:22px; color:#c9873e; margin:10px 0; }
+.toa-hp-bar { height:10px; background:rgba(255,255,255,0.06); border-radius:5px; overflow:hidden; margin:6px 0; }
+.toa-hp-fill { height:100%; border-radius:5px; transition:width 0.3s; }
+.toa-hp-text { font-size:11px; color:#5a4a5a; }
+
+/* ── BOSS ARENA ── */
+.toa-boss-arena { display:flex; flex-direction:column; gap:10px; }
+.toa-boss-info-bar { display:flex; align-items:center; gap:14px; padding:14px; background:rgba(5,0,20,0.6); border:2px solid rgba(155,48,208,0.25); border-radius:4px; }
+.toa-boss-art { flex-shrink:0; width:80px; display:flex; align-items:center; justify-content:center; }
+.toa-boss-art svg { width:80px; height:100px; }
+.toa-boss-center { flex:1; }
+.toa-boss-name-big { font-family:'Cinzel',serif; font-size:18px; color:#d4a83a; margin-bottom:4px; }
+.toa-boss-phase { font-size:11px; color:#7a5a8a; margin-bottom:8px; }
+.toa-boss-hp-wrap { display:flex; flex-direction:column; }
+.toa-boss-hp-bar { height:14px; }
+.toa-boss-hp-fill { height:100%; border-radius:5px; transition:width 0.3s; }
+.toa-player-hp-col { flex-shrink:0; width:160px; display:flex; flex-direction:column; }
+
+/* ── MECHANIC ZONE ── */
+.toa-mechanic-zone { padding:12px; background:rgba(10,5,20,0.5); border:1px solid rgba(155,48,208,0.15); border-radius:4px; }
+.toa-mechanic-alert { animation:toaMechPulse 0.8s ease-in-out infinite; }
+@keyframes toaMechPulse { 0%,100%{border-color:rgba(196,64,64,0.1)} 50%{border-color:rgba(196,64,64,0.5)} }
+.toa-mech-name { font-family:'Cinzel',serif; font-size:14px; color:#c44040; margin-bottom:4px; }
+.toa-mech-desc { font-size:12px; color:#7a5a5a; margin-bottom:8px; }
+.toa-mech-timer-bar { height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+.toa-mech-fill { height:100%; border-radius:4px; transition:width 0.2s, background 0.2s; }
+.toa-handle-btn { font-family:'Cinzel',serif; letter-spacing:1px; padding:8px 20px; background:rgba(196,64,64,0.1); border:2px solid #c44040; color:#c44040; cursor:pointer; width:100%; font-size:13px; transition:all 0.2s; }
+.toa-handle-btn:hover { background:rgba(196,64,64,0.2); box-shadow:0 0 15px rgba(196,64,64,0.3); }
+.toa-no-mechanic { color:#3a2a3a; font-size:12px; text-align:center; padding:8px; }
+.toa-splat-row { display:flex; gap:8px; }
+.toa-splat-row .splat-area { flex:1; min-height:22px; }
+
+/* ── FOOD STRIP ── */
+.toa-food-strip { display:flex; gap:4px; flex-wrap:wrap; margin-top:6px; }
+.toa-food-btn { font-size:10px; padding:3px 6px; background:rgba(58,158,92,0.1); border:1px solid rgba(58,158,92,0.3); color:#5ab04b; cursor:pointer; border-radius:2px; transition:background 0.15s; }
+.toa-food-btn:hover { background:rgba(58,158,92,0.25); }
+.toa-no-food { font-size:11px; color:#4a3a4a; }
+
+/* ── CHEST SCREEN ── */
+.toa-chest-screen { display:flex; flex-direction:column; align-items:center; gap:16px; padding:20px; }
+.toa-complete-banner { padding:20px 32px; text-align:center; border:2px solid; border-radius:4px; background:rgba(5,0,20,0.5); }
+.toa-complete-title { font-family:'Cinzel',serif; font-size:22px; margin-bottom:8px; }
+.toa-complete-tier { margin:10px 0; font-size:20px; }
+.toa-complete-stats { display:flex; gap:20px; justify-content:center; font-size:12px; color:#5a4a5a; margin-top:10px; }
+.toa-chest-container { cursor:pointer; transition:transform 0.2s; }
+.toa-chest-container:hover { transform:translateY(-4px); }
+.toa-chest-prompt { text-align:center; font-family:'Cinzel',serif; font-size:12px; color:#7a5a8a; margin-top:8px; letter-spacing:1px; }
+.toa-chest-art { margin:8px auto; display:block; }
+.toa-chest-open { margin:8px auto; display:block; }
+.toa-chest-bronze { filter:drop-shadow(0 0 8px rgba(205,127,50,0.4)); }
+.toa-chest-silver { filter:drop-shadow(0 0 8px rgba(192,192,192,0.4)); }
+.toa-chest-gold   { filter:drop-shadow(0 0 12px rgba(212,168,58,0.6)); }
+.toa-chest-purple { filter:drop-shadow(0 0 16px rgba(155,48,208,0.7)); animation:chestGlow 1.5s ease-in-out infinite; }
+@keyframes chestGlow { 0%,100%{filter:drop-shadow(0 0 12px rgba(155,48,208,0.5))} 50%{filter:drop-shadow(0 0 24px rgba(155,48,208,0.9))} }
+
+/* ── UNIQUE DROP BANNER ── */
+.toa-unique-drop-banner { position:relative; text-align:center; padding:20px; border:2px solid #9b30d0; background:rgba(5,0,20,0.8); overflow:hidden; width:100%; max-width:400px; animation:uniqueFlash 0.6s ease 3; }
+@keyframes uniqueFlash { 0%,100%{background:rgba(5,0,20,0.8)} 50%{background:rgba(155,48,208,0.2)} }
+.toa-unique-glow { position:absolute; inset:0; background:radial-gradient(ellipse at center, rgba(155,48,208,0.2) 0%, transparent 70%); pointer-events:none; }
+.toa-unique-text { font-family:'Cinzel',serif; font-size:22px; color:#d4a83a; letter-spacing:4px; text-shadow:0 0 20px rgba(212,168,58,0.8); }
+.toa-unique-item-name { font-family:'Cinzel',serif; font-size:16px; color:#c060f0; margin:8px 0; }
+.toa-unique-icon { display:flex; justify-content:center; margin-top:8px; }
+
+/* ── LOOT GRID ── */
+.toa-loot-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:8px; width:100%; max-width:560px; }
+.toa-loot-item { text-align:center; padding:10px 6px; background:rgba(10,5,20,0.5); border:1px solid; border-radius:3px; }
+.toa-li-icon { display:flex; justify-content:center; margin-bottom:4px; height:42px; align-items:center; }
+.toa-li-name { font-size:11px; line-height:1.3; margin-bottom:2px; }
+.toa-li-qty { font-family:'JetBrains Mono',monospace; font-size:12px; color:#5a4a5a; }
+.toa-no-loot { color:#4a3a4a; font-size:13px; text-align:center; padding:16px; }

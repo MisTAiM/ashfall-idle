@@ -175,8 +175,9 @@ class GameEngine {
     }
     // Pet combat counter
     if (!s.combat._petAttackCounter) s.combat._petAttackCounter = 0;
-    // Always reset combat mode flags that shouldn't persist across sessions
-    s.combat._multiMobMode = false;
+    // Theatre of Ash — always reset active raid state on load
+    if (!s.theatre) s.theatre = { active:false };
+    if (s.theatre.active) s.theatre = { active:false }; // never load mid-raid
     if (s.multiMob) s.multiMob = null;
     s.combat._permDebuffs = s.combat._permDebuffs || {};
     // Thieving v2

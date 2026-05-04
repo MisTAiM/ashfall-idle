@@ -97,3 +97,93 @@ _shopAdd('anglerfish',           1100,  'food');
 _shopAdd('dark_crab',             950,  'food');
 
 console.log('[Ashfall] items-new.js loaded. New items added:', ['blade_of_saeldor','scythe_of_vitur','tumeken_shadow','dharoks_greataxe','prayer_potion','shark','anglerfish'].filter(id=>GAME_DATA.items[id]).length);
+
+// ================================================================
+// THEATRE OF ASH — Exclusive Items
+// ================================================================
+
+// ── WEAPONS ──────────────────────────────────────────────────────
+_item('veriax_scythe', {
+  name:"Veriax's Scythe", type:'weapon', slot:'weapon', style:'melee',
+  attackSpeed:2.0, stats:{attackBonus:135, strengthBonus:155}, levelReq:{attack:85, strength:85},
+  rarity:'mythic', sellPrice:0,
+  passiveEffect:{ type:'triple_hit', desc:'Hits 3 times per attack (100%/50%/25% damage).' },
+  specCost:50, specEffect:{type:'void_reap', mult:1.0, hits:3, healPct:20},
+  desc:"Lady Veriax's scythe. Passive: hits 3 targets. Spec: 3-hit with 20% lifesteal. Unsellable.",
+});
+_item('bloodfire_staff', {
+  name:'Bloodfire Staff', type:'weapon', slot:'weapon', style:'magic',
+  attackSpeed:2.2, stats:{magicBonus:148, attackBonus:30}, levelReq:{magic:85},
+  rarity:'mythic', sellPrice:0, providesAllRunes:true,
+  specCost:50, specEffect:{type:'blood_torrent', mult:1.80, healPct:50, drain:true},
+  desc:'Staff of blood and fire. Unlimited all runes. Spec: 180% damage + heal 50% dealt. Unsellable.',
+});
+_item('ashen_rapier', {
+  name:'Ashen Rapier', type:'weapon', slot:'weapon', style:'melee',
+  attackSpeed:1.6, stats:{attackBonus:138, strengthBonus:130}, levelReq:{attack:80},
+  rarity:'mythic', sellPrice:0,
+  specCost:25, specEffect:{type:'quadStab', mult:0.90, hits:4},
+  desc:'A needle-thin rapier of concentrated ash. Spec: 4 rapid stabs at 90% each. 25% spec. Unsellable.',
+});
+
+// ── ARMOUR — Judicator Set ────────────────────────────────────────
+_item('judicator_helm', {
+  name:'Judicator Helm', type:'armor', slot:'head', rarity:'mythic', sellPrice:0,
+  stats:{defenceBonus:110, strengthBonus:15, damageReduction:3},
+  levelReq:{defence:85},
+  desc:'Helm of the Theatre Judicator. +110 Def, +15 Str, DR3. Unsellable.',
+});
+_item('judicator_plate', {
+  name:'Judicator Plate', type:'armor', slot:'body', rarity:'mythic', sellPrice:0,
+  stats:{defenceBonus:220, strengthBonus:25, damageReduction:6},
+  levelReq:{defence:85},
+  desc:'Body of the Theatre Judicator. +220 Def, +25 Str, DR6 — highest defence in the game. Unsellable.',
+});
+_item('judicator_legs', {
+  name:'Judicator Legs', type:'armor', slot:'legs', rarity:'mythic', sellPrice:0,
+  stats:{defenceBonus:175, strengthBonus:20, damageReduction:4},
+  levelReq:{defence:85},
+  desc:'Legs of the Theatre Judicator. +175 Def, +20 Str, DR4. Unsellable.',
+});
+
+// ── ACCESSORIES ───────────────────────────────────────────────────
+_item('hollow_ward', {
+  name:'Hollow Ward', type:'armor', slot:'shield', rarity:'mythic', sellPrice:0,
+  stats:{defenceBonus:80, strengthBonus:8, magicBonus:8, rangedBonus:8, damageReduction:4},
+  levelReq:{defence:75},
+  desc:'A shield infused with hollow energy. Best-in-slot shield. Unsellable.',
+});
+_item('void_tear', {
+  name:'Void Tear', type:'armor', slot:'ring', rarity:'legendary', sellPrice:0,
+  stats:{attackBonus:6, strengthBonus:6, rangedBonus:6, magicBonus:6},
+  levelReq:{},
+  desc:'A ring shaped like a tear in reality. All-style bonus. Unsellable.',
+});
+_item('veriax_eye', {
+  name:"Veriax's Eye", type:'armor', slot:'amulet', rarity:'mythic', sellPrice:0,
+  stats:{attackBonus:15, strengthBonus:20, rangedBonus:15, magicBonus:20, defenceBonus:10},
+  levelReq:{},
+  desc:"The amulet form of Lady Veriax's true eye. Best-in-slot amulet. Unsellable.",
+});
+
+// ── PET ───────────────────────────────────────────────────────────
+_item('lil_veriax', {
+  name:"Lil' Veriax", type:'pet_token', rarity:'mythic', sellPrice:0,
+  desc:"A miniature Lady Veriax. Equip to bring her into battle as your companion. Rarest Theatre drop.",
+});
+
+// Register as combat pet
+if (!GAME_DATA.combatPets) GAME_DATA.combatPets = [];
+if (!GAME_DATA.combatPets.find(p => p.id === 'lil_veriax')) {
+  GAME_DATA.combatPets.push({
+    id:'lil_veriax', name:"Lil' Veriax", itemId:'lil_veriax',
+    source:'theatre_of_ash', dropRate:'Theatre exclusive (purple chest)',
+    passiveBonus:'All combat damage +8%',
+    action:{ every:3, type:'void_strike', damage:0.25, desc:'Casts a void bolt for 25% of your max hit' },
+    stats:{ damageMult:1.08 },
+  });
+}
+
+console.log('[Ashfall] Theatre of Ash items registered:', 
+  ['veriax_scythe','bloodfire_staff','ashen_rapier','judicator_helm','judicator_plate',
+   'judicator_legs','hollow_ward','void_tear','veriax_eye','lil_veriax'].filter(id=>GAME_DATA.items[id]).length);

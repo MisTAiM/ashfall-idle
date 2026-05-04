@@ -72,6 +72,7 @@ const NAV = [
     {id:'wilderness',label:'Wilderness',icon:'combat'},
     {id:'dungeons',label:'Dungeons',icon:'dungeon'},
     {id:'fight_cave',label:'Fight Cave',icon:'combat'},
+    {id:'theatre',label:'Theatre of Ash',icon:'combat'},
     {id:'world_bosses',label:'World Bosses',icon:'worldboss'},
     {id:'abilities',label:'Abilities',icon:'banner'},
     {id:'prayer',label:'Prayer',icon:'sparkle'},
@@ -123,6 +124,7 @@ class UI {
     this.engine.on('skillStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatStart', () => { this.currentPage = 'combat'; this.renderTrainingBar(); this.renderSidebar(); this.renderPage('combat'); });
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
+    this._initTheatreListeners();
     this.engine.on('combatHit', (d) => { this.showHitSplat(d); if (this.engine.state.combat._multiMobMode) this._updateMultiMobUI(); });
     this.engine.on('lootDrop', (d) => this.showLootBag(d));
     this.engine.on('petAction', (d) => this.showPetAction(d));
@@ -248,6 +250,7 @@ class UI {
     else if (pageId === 'wilderness') this.renderWildernessPage(main);
     else if (pageId === 'dungeons') this.renderDungeonsPage(main);
     else if (pageId === 'fight_cave') this.renderFightCavePage(main);
+    else if (pageId === 'theatre')    this.renderTheatreOfAshPage(main);
     else if (pageId === 'world_bosses') this.renderWorldBossesPage(main);
     else if (pageId === 'abilities') this.renderAbilitiesPage(main);
     else if (pageId === 'farming') this.renderFarmingPage(main);

@@ -1367,3 +1367,163 @@ console.log('[Ashfall] Total pet art entries:', Object.keys(GAME_DATA.petArt).le
 
   console.log('[Ashfall] Item sprites assigned:', Object.keys(S).length, 'custom SVGs');
 })();
+
+// ================================================================
+// THEATRE OF ASH — Item Sprites
+// ================================================================
+(function assignToaSprites() {
+  const T = {};
+
+  // ── WEAPONS ──────────────────────────────────────────────────
+  T['veriax_scythe'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <!-- Pole -->
+    <rect x="14" y="4" width="3" height="24" rx="1.5" fill="#1a0028" stroke="#9b30d0" stroke-width="0.8"/>
+    <!-- Blade - sweeping curve -->
+    <path d="M17 4 Q28 2 30 10 Q28 18 16 16 Q20 10 17 4Z" fill="#9b30d0" stroke="#6a0a8a" stroke-width="0.8"/>
+    <path d="M17 4 Q24 4 26 10 Q24 14 18 14 Q20 9 17 4Z" fill="#c050f0" opacity="0.5"/>
+    <!-- Counter-blade small -->
+    <path d="M16 16 Q8 20 6 16 Q10 14 16 16Z" fill="#7020b0" stroke="#9b30d0" stroke-width="0.5"/>
+    <!-- Orb at base -->
+    <circle cx="15.5" cy="28" r="2.5" fill="#050010" stroke="#9b30d0" stroke-width="1"/>
+    <circle cx="15.5" cy="28" r="1.2" fill="#9b30d0"/>
+    <!-- Glow hint -->
+    <circle cx="23" cy="8" r="2" fill="#d080ff" opacity="0.3"/>
+  </svg>`;
+
+  T['bloodfire_staff'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <!-- Shaft -->
+    <line x1="16" y1="8" x2="16" y2="30" stroke="#2a0a08" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Orb -->
+    <circle cx="16" cy="6" r="7" fill="#0a0000" stroke="#c44040" stroke-width="1.5"/>
+    <circle cx="16" cy="6" r="5" fill="#8a0a0a" opacity="0.8"/>
+    <circle cx="16" cy="6" r="3" fill="#c44040" opacity="0.9"/>
+    <circle cx="16" cy="6" r="1.5" fill="#ff8080"/>
+    <!-- Fire wisps -->
+    <path d="M12 14 Q10 18 12 22 Q14 18 12 14Z" fill="#c44040" opacity="0.4"/>
+    <path d="M20 14 Q22 18 20 22 Q18 18 20 14Z" fill="#c44040" opacity="0.4"/>
+    <!-- Blood drops -->
+    <circle cx="14" cy="24" r="1.5" fill="#8a0a0a" opacity="0.7"/>
+    <circle cx="18" cy="27" r="1" fill="#8a0a0a" opacity="0.6"/>
+    <!-- Purple void mixing -->
+    <circle cx="19" cy="3" r="2" fill="#5a0a9a" opacity="0.4"/>
+  </svg>`;
+
+  T['ashen_rapier'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <!-- Blade — very thin, long -->
+    <polygon points="16,1 17,2 17,24 15,24 15,2" fill="#c8cad4" stroke="#8a8a9a" stroke-width="0.5"/>
+    <line x1="16" y1="1" x2="16" y2="24" stroke="#e8eaf0" stroke-width="0.5" opacity="0.6"/>
+    <!-- Crossguard — ornate -->
+    <path d="M8 24 Q12 22 16 24 Q20 22 24 24 Q20 26 16 24 Q12 26 8 24Z" fill="#c9873e" stroke="#8a6020" stroke-width="0.5"/>
+    <circle cx="8" cy="24" r="1.5" fill="#d4a83a"/>
+    <circle cx="24" cy="24" r="1.5" fill="#d4a83a"/>
+    <!-- Grip -->
+    <rect x="14.5" y="24" width="3" height="6" rx="1.5" fill="#1a0a00" stroke="#6a4010" stroke-width="0.5"/>
+    <circle cx="16" cy="30" r="1.8" fill="#c9873e"/>
+    <!-- Ash particles -->
+    <circle cx="12" cy="10" r="0.8" fill="#888" opacity="0.4"/>
+    <circle cx="20" cy="16" r="0.6" fill="#888" opacity="0.3"/>
+  </svg>`;
+
+  // ── JUDICATOR ARMOR ───────────────────────────────────────────
+  T['judicator_helm'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 20 Q6 8 16 6 Q26 8 26 20 L24 24 L8 24Z" fill="#0a1a2a" stroke="#9b30d0" stroke-width="1.5"/>
+    <path d="M8 16 Q10 10 16 10 Q22 10 24 16" fill="none" stroke="#d4a83a" stroke-width="1" opacity="0.6"/>
+    <!-- Void eye visor -->
+    <path d="M10 17 Q16 14 22 17 Q22 20 16 22 Q10 20 10 17Z" fill="#050010" stroke="#9b30d0" stroke-width="1"/>
+    <circle cx="16" cy="18" r="3" fill="#9b30d0" opacity="0.8"/>
+    <circle cx="16" cy="18" r="1.5" fill="#e0a0ff"/>
+    <!-- Crown spikes -->
+    <path d="M10 8 L9 4 M16 6 L16 2 M22 8 L23 4" stroke="#d4a83a" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Sigil on brow -->
+    <path d="M13 13 L16 11 L19 13 L16 15Z" fill="#d4a83a" opacity="0.4"/>
+  </svg>`;
+
+  T['judicator_plate'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="6" width="20" height="24" rx="5" fill="#0a1a2a" stroke="#9b30d0" stroke-width="1.5"/>
+    <!-- Center void eye -->
+    <circle cx="16" cy="15" r="5" fill="#050010" stroke="#9b30d0" stroke-width="1"/>
+    <circle cx="16" cy="15" r="3.5" fill="#9b30d0" opacity="0.8"/>
+    <circle cx="16" cy="15" r="1.5" fill="#e0a0ff"/>
+    <circle cx="16" cy="15" r="0.6" fill="#fff" opacity="0.8"/>
+    <!-- Gold trim lines -->
+    <path d="M8 10 Q16 8 24 10" fill="none" stroke="#d4a83a" stroke-width="0.8" opacity="0.5"/>
+    <path d="M8 20 L10 24" stroke="#6a10a0" stroke-width="1" opacity="0.4"/>
+    <path d="M24 20 L22 24" stroke="#6a10a0" stroke-width="1" opacity="0.4"/>
+    <!-- Shoulder wings -->
+    <path d="M6 10 Q2 12 3 16 Q5 12 6 14" fill="#0a0818" stroke="#9b30d0" stroke-width="0.8"/>
+    <path d="M26 10 Q30 12 29 16 Q27 12 26 14" fill="#0a0818" stroke="#9b30d0" stroke-width="0.8"/>
+  </svg>`;
+
+  T['judicator_legs'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 6 L26 6 L28 20 L20 28 L16 22 L12 28 L4 20Z" fill="#0a1a2a" stroke="#9b30d0" stroke-width="1.5"/>
+    <!-- Knee void eyes -->
+    <circle cx="12" cy="16" r="3" fill="#050010" stroke="#9b30d0" stroke-width="0.8"/>
+    <circle cx="12" cy="16" r="1.8" fill="#9b30d0" opacity="0.7"/>
+    <circle cx="20" cy="16" r="3" fill="#050010" stroke="#9b30d0" stroke-width="0.8"/>
+    <circle cx="20" cy="16" r="1.8" fill="#9b30d0" opacity="0.7"/>
+    <path d="M8 10 Q16 8 24 10" fill="none" stroke="#d4a83a" stroke-width="0.8" opacity="0.5"/>
+  </svg>`;
+
+  // ── ACCESSORIES ───────────────────────────────────────────────
+  T['hollow_ward'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <!-- Shield shape -->
+    <path d="M6 6 L26 6 L28 20 Q28 28 16 30 Q4 28 4 20Z" fill="#0a1a2a" stroke="#9b30d0" stroke-width="1.5"/>
+    <!-- Hollow sigil -->
+    <circle cx="16" cy="17" r="7" fill="#050010" stroke="#8a3ab0" stroke-width="1"/>
+    <circle cx="16" cy="17" r="5" fill="none" stroke="#9b30d0" stroke-width="1" stroke-dasharray="2 2"/>
+    <circle cx="16" cy="17" r="2.5" fill="#9b30d0" opacity="0.8"/>
+    <circle cx="16" cy="17" r="1" fill="#e0a0ff"/>
+    <!-- Rim detail -->
+    <path d="M6 10 Q16 7 26 10" fill="none" stroke="#d4a83a" stroke-width="0.8" opacity="0.5"/>
+    <path d="M8 22 Q16 25 24 22" fill="none" stroke="#6a10a0" stroke-width="0.6" opacity="0.4"/>
+  </svg>`;
+
+  T['void_tear'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="19" r="8" fill="none" stroke="#9b30d0" stroke-width="2.5"/>
+    <!-- Teardrop gem -->
+    <path d="M16 9 Q20 14 20 18 Q20 22 16 24 Q12 22 12 18 Q12 14 16 9Z" fill="#050010" stroke="#9b30d0" stroke-width="1"/>
+    <path d="M16 10 Q18 14 18 18 Q18 21 16 22" fill="#6a10a0" opacity="0.6"/>
+    <circle cx="16" cy="16" r="2" fill="#9b30d0" opacity="0.9"/>
+    <circle cx="16" cy="16" r="0.8" fill="#e0a0ff"/>
+  </svg>`;
+
+  T['veriax_eye'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 5 Q16 3 26 5" fill="none" stroke="#d4a83a" stroke-width="2"/>
+    <!-- Eye gem -->
+    <path d="M8 12 Q16 8 24 12 Q24 20 16 26 Q8 20 8 12Z" fill="#050010" stroke="#9b30d0" stroke-width="1.5"/>
+    <!-- Iris -->
+    <ellipse cx="16" cy="16" rx="5" ry="6" fill="#3a0050" stroke="#8a3ab0" stroke-width="0.8"/>
+    <ellipse cx="16" cy="16" rx="3" ry="4" fill="#9b30d0" opacity="0.9"/>
+    <ellipse cx="16" cy="16" rx="1.5" ry="2" fill="#e0a0ff"/>
+    <circle cx="14" cy="14" r="0.8" fill="#fff" opacity="0.7"/>
+    <!-- Gold chain -->
+    <path d="M8 12 Q6 8 8 5 M24 12 Q26 8 24 5" stroke="#d4a83a" stroke-width="0.8" fill="none"/>
+  </svg>`;
+
+  T['lil_veriax'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <!-- Mini gown -->
+    <path d="M11 18 Q16 16 21 18 L23 30 Q16 32 9 30Z" fill="#1a0028" stroke="#9b30d0" stroke-width="1"/>
+    <!-- Mini body -->
+    <ellipse cx="16" cy="12" rx="6" ry="7" fill="#140020" stroke="#9b30d0" stroke-width="1"/>
+    <!-- Crown -->
+    <path d="M11 7 L12 4 L14 6 L16 3 L18 6 L20 4 L21 7" stroke="#d4a83a" stroke-width="1.2" fill="none"/>
+    <!-- Tiny eyes -->
+    <circle cx="14" cy="11" r="2" fill="#050010"/>
+    <circle cx="14" cy="11" r="1.2" fill="#d4a83a" opacity="0.9"/>
+    <circle cx="14" cy="11" r="0.5" fill="#fff" opacity="0.8"/>
+    <circle cx="18" cy="11" r="2" fill="#050010"/>
+    <circle cx="18" cy="11" r="1.2" fill="#d4a83a" opacity="0.9"/>
+    <circle cx="18" cy="11" r="0.5" fill="#fff" opacity="0.8"/>
+    <!-- Orb hands -->
+    <circle cx="8" cy="20" r="2.5" fill="#050010" stroke="#9b30d0" stroke-width="0.8"/>
+    <circle cx="8" cy="20" r="1.2" fill="#9b30d0" opacity="0.8"/>
+    <circle cx="24" cy="20" r="2.5" fill="#050010" stroke="#9b30d0" stroke-width="0.8"/>
+    <circle cx="24" cy="20" r="1.2" fill="#9b30d0" opacity="0.8"/>
+  </svg>`;
+
+  // Assign all
+  for (const [id, svg] of Object.entries(T)) {
+    if (GAME_DATA.items[id]) GAME_DATA.items[id]._customSprite = svg;
+  }
+  console.log('[Ashfall] Theatre SVGs assigned:', Object.keys(T).length);
+})();
