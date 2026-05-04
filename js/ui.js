@@ -3877,9 +3877,9 @@ class UI {
     area.appendChild(splat);
     setTimeout(() => splat.remove(), 900);
 
-    // Attack animation overlay
+    // Attack animation overlay — SKIP for ability/spec hits (they have their own anim)
     const combatArena = document.querySelector('.combat-arena');
-    if (!combatArena) return;
+    if (!combatArena || d.source === 'ability' || d.source === 'spec') return;
     const anim = document.createElement('div');
     if (d.who === 'player') {
       // ── WEAPON-SPECIFIC PLAYER ATTACK ANIMATIONS ─────────────
