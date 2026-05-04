@@ -500,3 +500,352 @@ GameEngine.prototype.emit = function(event, data) {
 };
 
 console.log('[Ashfall] Theatre of Ash loaded. Bosses:', Object.keys(TOA_BOSSES).length, '| Rooms:', GAME_DATA.theatreOfAsh.rooms.length);
+
+// ── REGISTER BOSS ART IN GAME_DATA.monsterArt ─────────────────────
+// Run after DOM ready so GAME_DATA.monsterArt is fully initialized
+(function registerToaBossArt() {
+  if (!GAME_DATA.monsterArt) GAME_DATA.monsterArt = {};
+
+  GAME_DATA.monsterArt.ashen_maiden = `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="am-aura" cx="50%" cy="70%" r="60%">
+        <stop offset="0%" stop-color="#8a0a3a" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#8a0a3a" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- Aura -->
+    <ellipse cx="60" cy="110" rx="55" ry="35" fill="url(#am-aura)"/>
+    <!-- Flowing gown -->
+    <path d="M35 62 Q60 55 85 62 L95 130 Q60 145 25 130Z" fill="#1a040c" stroke="#7a0a2a" stroke-width="1.5"/>
+    <path d="M35 62 Q60 57 85 62 L88 80 Q60 75 32 80Z" fill="#2a0816" opacity="0.7"/>
+    <path d="M38 90 Q60 86 82 90 M34 108 Q60 104 86 108" stroke="#5a0a1a" stroke-width="0.8" fill="none" opacity="0.5"/>
+    <!-- Torso / bodice -->
+    <path d="M38 40 Q60 34 82 40 L85 65 Q60 70 35 65Z" fill="#1a040c" stroke="#aa1a4a" stroke-width="1.5"/>
+    <path d="M50 42 Q60 39 70 42 L72 58 Q60 62 48 58Z" fill="#2a0816"/>
+    <!-- Arms with flowing sleeves -->
+    <path d="M35 45 Q20 55 15 70 Q12 80 20 85" stroke="#1a040c" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M85 45 Q100 55 105 70 Q108 80 100 85" stroke="#1a040c" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M14 72 Q8 80 12 88" stroke="#7a0a2a" stroke-width="1.5" fill="none"/>
+    <path d="M106 72 Q112 80 108 88" stroke="#7a0a2a" stroke-width="1.5" fill="none"/>
+    <!-- Blood orbs in hands -->
+    <circle cx="12" cy="88" r="7" fill="#0a0004" stroke="#c44040" stroke-width="1.5"/>
+    <circle cx="12" cy="88" r="4" fill="#c44040" opacity="0.8"/>
+    <circle cx="12" cy="88" r="2" fill="#ff8080"/>
+    <circle cx="108" cy="88" r="7" fill="#0a0004" stroke="#c44040" stroke-width="1.5"/>
+    <circle cx="108" cy="88" r="4" fill="#c44040" opacity="0.8"/>
+    <circle cx="108" cy="88" r="2" fill="#ff8080"/>
+    <!-- Head -->
+    <ellipse cx="60" cy="22" rx="20" ry="22" fill="#1a040c" stroke="#aa1a4a" stroke-width="2"/>
+    <!-- Hair tendrils -->
+    <path d="M42 14 Q35 4 28 2" stroke="#5a0a1a" stroke-width="2.5" fill="none"/>
+    <path d="M50 8  Q46 -2 42 -4" stroke="#5a0a1a" stroke-width="2" fill="none"/>
+    <path d="M78 14 Q85 4 92 2" stroke="#5a0a1a" stroke-width="2.5" fill="none"/>
+    <path d="M70 8  Q74 -2 78 -4" stroke="#5a0a1a" stroke-width="2" fill="none"/>
+    <!-- Eyes — glowing red -->
+    <ellipse cx="51" cy="20" rx="5" ry="5.5" fill="#050002"/>
+    <ellipse cx="69" cy="20" rx="5" ry="5.5" fill="#050002"/>
+    <circle cx="51" cy="20" r="3.5" fill="#c44040" opacity="0.95"/>
+    <circle cx="69" cy="20" r="3.5" fill="#c44040" opacity="0.95"/>
+    <circle cx="51" cy="20" r="1.5" fill="#ff8080"/>
+    <circle cx="69" cy="20" r="1.5" fill="#ff8080"/>
+    <!-- Crown of thorns -->
+    <path d="M40 10 Q43 2 46 4 Q49 -2 52 2 Q56 -4 60 0 Q64 -4 68 2 Q71 -2 74 4 Q77 2 80 10" stroke="#aa1a4a" stroke-width="2" fill="none"/>
+    <!-- Blood drips from gown hem -->
+    <path d="M35 132 Q36 138 35 144" stroke="#c44040" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M55 135 Q56 142 54 148" stroke="#8a0a0a" stroke-width="1.2" fill="none" opacity="0.5"/>
+    <path d="M80 133 Q81 140 80 146" stroke="#c44040" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <!-- Blood pool -->
+    <ellipse cx="60" cy="148" rx="35" ry="6" fill="#5a0a0a" opacity="0.5"/>
+  </svg>`;
+
+  GAME_DATA.monsterArt.plague_golem = `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="pg-aura" cx="50%" cy="80%" r="50%">
+        <stop offset="0%" stop-color="#2a4a0a" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="#2a4a0a" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="60" cy="130" rx="50" ry="18" fill="url(#pg-aura)"/>
+    <!-- Massive legs -->
+    <rect x="20" y="105" width="28" height="40" rx="6" fill="#141208" stroke="#3a5a0a" stroke-width="1.5"/>
+    <rect x="72" y="105" width="28" height="40" rx="6" fill="#141208" stroke="#3a5a0a" stroke-width="1.5"/>
+    <!-- Body torso — huge, rounded -->
+    <rect x="12" y="45" width="96" height="68" rx="16" fill="#1a1a08" stroke="#4a6a1a" stroke-width="2.5"/>
+    <!-- Plague pustules -->
+    <circle cx="30" cy="65" r="8" fill="#2a3a04" stroke="#4a6a0a" stroke-width="1"/>
+    <circle cx="30" cy="65" r="4" fill="#6a8a10" opacity="0.7"/>
+    <circle cx="54" cy="80" r="10" fill="#1e2c04" stroke="#4a6a0a" stroke-width="1.5"/>
+    <circle cx="54" cy="80" r="5" fill="#7a9a14" opacity="0.7"/>
+    <circle cx="80" cy="58" r="7" fill="#2a3a04" stroke="#4a6a0a" stroke-width="1"/>
+    <circle cx="80" cy="58" r="3.5" fill="#6a8a10" opacity="0.7"/>
+    <circle cx="95" cy="85" r="9" fill="#1e2c04" stroke="#3a5a0a" stroke-width="1"/>
+    <circle cx="95" cy="85" r="4.5" fill="#6a8a10" opacity="0.6"/>
+    <circle cx="40" cy="98" r="6" fill="#2a3a04" stroke="#4a6a0a" stroke-width="1"/>
+    <circle cx="74" cy="100" r="7" fill="#1e2c04" stroke="#3a5a0a" stroke-width="1"/>
+    <!-- Arms — thick, hanging -->
+    <rect x="-4" y="50" width="22" height="55" rx="10" fill="#141208" stroke="#3a5a0a" stroke-width="1.5"/>
+    <rect x="102" y="50" width="22" height="55" rx="10" fill="#141208" stroke="#3a5a0a" stroke-width="1.5"/>
+    <!-- Claws -->
+    <path d="M0 103 Q-6 110 -2 116 M8 105 Q4 113 6 120 M16 104 Q14 112 16 119" stroke="#3a5a0a" stroke-width="2" fill="none"/>
+    <path d="M120 103 Q126 110 122 116 M112 105 Q116 113 114 120 M104 104 Q106 112 104 119" stroke="#3a5a0a" stroke-width="2" fill="none"/>
+    <!-- Head — wide, menacing -->
+    <rect x="22" y="18" width="76" height="32" rx="12" fill="#1a1a08" stroke="#4a6a1a" stroke-width="2"/>
+    <!-- Eyes — yellow-green sick glow -->
+    <ellipse cx="41" cy="34" rx="9" ry="9" fill="#0a0c02"/>
+    <ellipse cx="79" cy="34" rx="9" ry="9" fill="#0a0c02"/>
+    <circle cx="41" cy="34" r="6" fill="#8aaa1a" opacity="0.9"/>
+    <circle cx="79" cy="34" r="6" fill="#8aaa1a" opacity="0.9"/>
+    <circle cx="41" cy="34" r="3" fill="#aada2a"/>
+    <circle cx="79" cy="34" r="3" fill="#aada2a"/>
+    <!-- Teeth / mouth grill -->
+    <path d="M35 44 L40 50 L46 44 L52 50 L58 44 L64 50 L70 44 L76 50 L82 44 L87 50" stroke="#2a3a04" stroke-width="2" fill="none"/>
+    <!-- Flies orbiting -->
+    <circle cx="8" cy="40" r="2.5" fill="#1a1a04" stroke="#2a2a04" stroke-width="0.5"/>
+    <circle cx="112" cy="60" r="2" fill="#1a1a04"/>
+    <circle cx="15" cy="75" r="2.5" fill="#1a1a04"/>
+    <circle cx="105" cy="30" r="2" fill="#1a1a04"/>
+    <!-- Ground poison puddle -->
+    <ellipse cx="60" cy="146" rx="42" ry="8" fill="#1a2a04" opacity="0.6"/>
+  </svg>`;
+
+  GAME_DATA.monsterArt.ashling_queen = `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="aq-glow" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="#c9873e" stop-opacity="0.2"/>
+        <stop offset="100%" stop-color="#c9873e" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="60" cy="120" rx="50" ry="25" fill="url(#aq-glow)"/>
+    <!-- Wing membrane left -->
+    <path d="M28 50 Q5 20 2 55 Q5 75 28 68" fill="#1a1208" stroke="#c9873e" stroke-width="1.5" opacity="0.85"/>
+    <path d="M28 50 Q10 35 8 50 Q10 62 28 60" fill="#241a08" opacity="0.5"/>
+    <!-- Wing membrane right -->
+    <path d="M92 50 Q115 20 118 55 Q115 75 92 68" fill="#1a1208" stroke="#c9873e" stroke-width="1.5" opacity="0.85"/>
+    <path d="M92 50 Q110 35 112 50 Q110 62 92 60" fill="#241a08" opacity="0.5"/>
+    <!-- Wing veins -->
+    <path d="M28 55 Q18 42 10 38" stroke="#c9873e" stroke-width="0.8" fill="none" opacity="0.4"/>
+    <path d="M28 60 Q14 55 8 58" stroke="#c9873e" stroke-width="0.8" fill="none" opacity="0.4"/>
+    <path d="M92 55 Q102 42 110 38" stroke="#c9873e" stroke-width="0.8" fill="none" opacity="0.4"/>
+    <path d="M92 60 Q106 55 112 58" stroke="#c9873e" stroke-width="0.8" fill="none" opacity="0.4"/>
+    <!-- Gown flowing -->
+    <path d="M34 68 Q60 62 86 68 L90 130 Q60 142 30 130Z" fill="#0e1006" stroke="#6a5a08" stroke-width="1"/>
+    <path d="M36 85 Q60 80 84 85 M32 105 Q60 100 88 105" stroke="#4a4008" stroke-width="0.8" fill="none" opacity="0.4"/>
+    <!-- Insect-like abdomen / torso -->
+    <path d="M38 46 Q60 40 82 46 L85 70 Q60 76 35 70Z" fill="#0e1006" stroke="#c9873e" stroke-width="1.5"/>
+    <!-- Segmented chitin markings -->
+    <path d="M40 52 Q60 48 80 52" stroke="#c9873e" stroke-width="1" fill="none" opacity="0.4"/>
+    <path d="M42 60 Q60 56 78 60" stroke="#c9873e" stroke-width="0.8" fill="none" opacity="0.3"/>
+    <!-- Mantis arms -->
+    <path d="M36 52 Q22 58 18 68 Q14 76 20 80" stroke="#0e1006" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M84 52 Q98 58 102 68 Q106 76 100 80" stroke="#0e1006" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M20 78 Q12 84 14 92" stroke="#c9873e" stroke-width="2" fill="none"/>
+    <path d="M100 78 Q108 84 106 92" stroke="#c9873e" stroke-width="2" fill="none"/>
+    <!-- Head — insectoid -->
+    <ellipse cx="60" cy="24" rx="22" ry="20" fill="#0e1006" stroke="#c9873e" stroke-width="2"/>
+    <!-- Compound eyes -->
+    <ellipse cx="46" cy="20" rx="8" ry="8" fill="#060802"/>
+    <ellipse cx="74" cy="20" rx="8" ry="8" fill="#060802"/>
+    <circle cx="43" cy="18" r="3" fill="#c9873e" opacity="0.9"/>
+    <circle cx="47" cy="22" r="2.5" fill="#d4a83a" opacity="0.8"/>
+    <circle cx="71" cy="18" r="3" fill="#c9873e" opacity="0.9"/>
+    <circle cx="75" cy="22" r="2.5" fill="#d4a83a" opacity="0.8"/>
+    <!-- Antennae -->
+    <path d="M50 8 Q44 0 36 -4" stroke="#c9873e" stroke-width="1.5" fill="none"/>
+    <path d="M70 8 Q76 0 84 -4" stroke="#c9873e" stroke-width="1.5" fill="none"/>
+    <circle cx="36" cy="-4" r="2.5" fill="#c9873e"/>
+    <circle cx="84" cy="-4" r="2.5" fill="#c9873e"/>
+    <!-- Crown of chitin spines -->
+    <path d="M42 8 L40 0 M52 5 L50 -3 M60 4 L60 -4 M68 5 L70 -3 M78 8 L80 0" stroke="#c9873e" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Swarm dots orbiting -->
+    <circle cx="5"  cy="50" r="3" fill="#c9873e" opacity="0.5"/>
+    <circle cx="115" cy="45" r="3" fill="#c9873e" opacity="0.5"/>
+    <circle cx="3"  cy="80" r="2" fill="#c9873e" opacity="0.4"/>
+    <circle cx="117" cy="75" r="2" fill="#c9873e" opacity="0.4"/>
+    <circle cx="10" cy="100" r="2.5" fill="#c9873e" opacity="0.3"/>
+    <!-- Ground shadow -->
+    <ellipse cx="60" cy="147" rx="38" ry="7" fill="#1a1500" opacity="0.5"/>
+  </svg>`;
+
+  GAME_DATA.monsterArt.hollowed_titan = `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="ht-glow" cx="50%" cy="60%" r="55%">
+        <stop offset="0%" stop-color="#4a5264" stop-opacity="0.2"/>
+        <stop offset="100%" stop-color="#4a5264" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="60" cy="138" rx="52" ry="14" fill="url(#ht-glow)"/>
+    <!-- Massive armored legs -->
+    <rect x="14" y="108" width="34" height="38" rx="5" fill="#101018" stroke="#3a4254" stroke-width="2"/>
+    <rect x="72" y="108" width="34" height="38" rx="5" fill="#101018" stroke="#3a4254" stroke-width="2"/>
+    <!-- Knee plates -->
+    <ellipse cx="31" cy="110" rx="14" ry="7" fill="#1a1a2a" stroke="#4a5264" stroke-width="1.5"/>
+    <ellipse cx="89" cy="110" rx="14" ry="7" fill="#1a1a2a" stroke="#4a5264" stroke-width="1.5"/>
+    <!-- Torso — imposing plate armor -->
+    <rect x="8" y="42" width="104" height="72" rx="10" fill="#101018" stroke="#4a5264" stroke-width="2.5"/>
+    <!-- Armor plate lines -->
+    <path d="M8 70 L112 70 M8 90 L112 90" stroke="#3a4254" stroke-width="1" opacity="0.5"/>
+    <path d="M60 42 L60 114" stroke="#3a4254" stroke-width="0.8" opacity="0.4"/>
+    <!-- Void rune on chest -->
+    <circle cx="60" cy="78" r="14" fill="#060610" stroke="#8a3ab0" stroke-width="2"/>
+    <circle cx="60" cy="78" r="10" fill="none" stroke="#6a1a8a" stroke-width="1" stroke-dasharray="3 2"/>
+    <circle cx="60" cy="78" r="5" fill="#8a3ab0" opacity="0.7"/>
+    <circle cx="60" cy="78" r="2.5" fill="#e0a0ff"/>
+    <!-- Battle damage cracks -->
+    <path d="M18 50 L28 65 L22 75" stroke="#4a5264" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M100 55 L92 70 L98 80" stroke="#4a5264" stroke-width="1.2" fill="none" opacity="0.5"/>
+    <!-- Shoulders — massive pauldrons -->
+    <path d="M8 50 Q0 42 2 56 Q4 68 8 64" fill="#0c0c1a" stroke="#4a5264" stroke-width="1.5"/>
+    <path d="M112 50 Q120 42 118 56 Q116 68 112 64" fill="#0c0c1a" stroke="#4a5264" stroke-width="1.5"/>
+    <!-- Arms — armored, holding greatweapon -->
+    <rect x="-2" y="52" width="18" height="55" rx="8" fill="#101018" stroke="#3a4254" stroke-width="1.5"/>
+    <rect x="104" y="52" width="18" height="55" rx="8" fill="#101018" stroke="#3a4254" stroke-width="1.5"/>
+    <!-- Gauntlet spikes -->
+    <path d="M2 104 L-2 112 M8 106 L6 114 M14 105 L14 113" stroke="#4a5264" stroke-width="2" stroke-linecap="round"/>
+    <path d="M118 104 L122 112 M112 106 L114 114 M106 105 L106 113" stroke="#4a5264" stroke-width="2" stroke-linecap="round"/>
+    <!-- Head — angular great helm -->
+    <rect x="26" y="14" width="68" height="32" rx="8" fill="#101018" stroke="#4a5264" stroke-width="2.5"/>
+    <!-- Helm visor — glowing void eyes -->
+    <rect x="32" y="20" width="22" height="12" rx="3" fill="#060610"/>
+    <rect x="66" y="20" width="22" height="12" rx="3" fill="#060610"/>
+    <rect x="34" y="22" width="18" height="8" rx="2" fill="#8a3ab0" opacity="0.8"/>
+    <rect x="68" y="22" width="18" height="8" rx="2" fill="#8a3ab0" opacity="0.8"/>
+    <rect x="36" y="23" width="14" height="6" rx="1" fill="#d080ff"/>
+    <rect x="70" y="23" width="14" height="6" rx="1" fill="#d080ff"/>
+    <!-- Helm crest -->
+    <path d="M30 14 L28 8 M60 12 L60 5 M90 14 L92 8" stroke="#4a5264" stroke-width="2" stroke-linecap="round"/>
+    <!-- Vertical void crack down armor -->
+    <path d="M58 42 Q56 60 58 78 Q60 95 58 114" stroke="#8a3ab0" stroke-width="1" fill="none" opacity="0.4"/>
+  </svg>`;
+
+  GAME_DATA.monsterArt.void_remnant = `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="vr-core" cx="50%" cy="40%" r="55%">
+        <stop offset="0%" stop-color="#9b30d0" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#050010" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="vr-outer" cx="50%" cy="40%" r="50%">
+        <stop offset="0%" stop-color="#9b30d0" stop-opacity="0.1"/>
+        <stop offset="100%" stop-color="#9b30d0" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- Outer void aura -->
+    <ellipse cx="60" cy="65" rx="55" ry="60" fill="url(#vr-outer)"/>
+    <!-- Main void sphere body -->
+    <circle cx="60" cy="60" r="48" fill="#040008" stroke="#8a3ab0" stroke-width="2.5"/>
+    <circle cx="60" cy="60" r="42" fill="#060010" stroke="#5a0a9a" stroke-width="1" stroke-dasharray="4 3"/>
+    <circle cx="60" cy="60" r="32" fill="url(#vr-core)"/>
+    <!-- Void crack patterns -->
+    <path d="M30 30 Q40 45 35 60 Q30 75 40 85" stroke="#6a0aaa" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M90 30 Q80 45 85 60 Q90 75 80 85" stroke="#6a0aaa" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M25 60 Q40 55 55 60" stroke="#9b30d0" stroke-width="1" fill="none" opacity="0.4"/>
+    <path d="M65 60 Q80 55 95 60" stroke="#9b30d0" stroke-width="1" fill="none" opacity="0.4"/>
+    <!-- Three void eyes cluster -->
+    <circle cx="60" cy="42" r="10" fill="#020004"/><circle cx="60" cy="42" r="7" fill="#9b30d0" opacity="0.9"/><circle cx="60" cy="42" r="4" fill="#c060f0"/><circle cx="60" cy="42" r="2" fill="#fff" opacity="0.9"/>
+    <circle cx="44" cy="62" r="8" fill="#020004"/><circle cx="44" cy="62" r="5.5" fill="#7020b0" opacity="0.9"/><circle cx="44" cy="62" r="3" fill="#b050e0"/><circle cx="44" cy="62" r="1.5" fill="#fff" opacity="0.8"/>
+    <circle cx="76" cy="62" r="8" fill="#020004"/><circle cx="76" cy="62" r="5.5" fill="#7020b0" opacity="0.9"/><circle cx="76" cy="62" r="3" fill="#b050e0"/><circle cx="76" cy="62" r="1.5" fill="#fff" opacity="0.8"/>
+    <!-- Void tendrils extending downward -->
+    <path d="M35 95 Q28 110 30 125 Q32 135 38 140" stroke="#6a0aaa" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M50 100 Q45 115 46 130" stroke="#8a3ab0" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M70 100 Q75 115 74 130" stroke="#8a3ab0" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M85 95 Q92 110 90 125 Q88 135 82 140" stroke="#6a0aaa" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Tendril tips -->
+    <circle cx="38" cy="140" r="4" fill="#9b30d0" opacity="0.7"/>
+    <circle cx="46" cy="130" r="3" fill="#8a3ab0" opacity="0.6"/>
+    <circle cx="74" cy="130" r="3" fill="#8a3ab0" opacity="0.6"/>
+    <circle cx="82" cy="140" r="4" fill="#9b30d0" opacity="0.7"/>
+    <!-- Orbiting void fragments -->
+    <ellipse cx="10" cy="45" rx="5" ry="8" fill="#1a0030" stroke="#8a3ab0" stroke-width="1" transform="rotate(-20 10 45)"/>
+    <ellipse cx="110" cy="40" rx="4" ry="7" fill="#1a0030" stroke="#8a3ab0" stroke-width="1" transform="rotate(15 110 40)"/>
+    <ellipse cx="8" cy="80" rx="3" ry="5" fill="#1a0028" stroke="#6a0a8a" stroke-width="0.8" transform="rotate(30 8 80)"/>
+    <ellipse cx="112" cy="75" rx="3" ry="5" fill="#1a0028" stroke="#6a0a8a" stroke-width="0.8" transform="rotate(-25 112 75)"/>
+  </svg>`;
+
+  GAME_DATA.monsterArt.lady_veriax = `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="lv-aura" cx="50%" cy="60%" r="70%">
+        <stop offset="0%" stop-color="#9b30d0" stop-opacity="0.25"/>
+        <stop offset="60%" stop-color="#d4a83a" stop-opacity="0.08"/>
+        <stop offset="100%" stop-color="#9b30d0" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="lv-crown" cx="50%" cy="0%" r="100%">
+        <stop offset="0%" stop-color="#d4a83a" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#d4a83a" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- Grand aura -->
+    <ellipse cx="60" cy="80" rx="58" ry="65" fill="url(#lv-aura)"/>
+    <!-- Outer rune circles -->
+    <circle cx="60" cy="80" r="56" fill="none" stroke="#5a0a9a" stroke-width="0.8" stroke-dasharray="3 4" opacity="0.3"/>
+    <circle cx="60" cy="80" r="48" fill="none" stroke="#8a6020" stroke-width="0.5" stroke-dasharray="2 5" opacity="0.2"/>
+    <!-- Flowing dark gown — elaborate -->
+    <path d="M30 70 Q60 62 90 70 L100 140 Q60 152 20 140Z" fill="#140020" stroke="#9b30d0" stroke-width="1.5"/>
+    <!-- Gown layers -->
+    <path d="M32 85  Q60 78  88 85"  fill="none" stroke="#7020a0" stroke-width="1" opacity="0.5"/>
+    <path d="M28 100 Q60 94  92 100" fill="none" stroke="#5a0a80" stroke-width="0.8" opacity="0.4"/>
+    <path d="M24 115 Q60 110 96 115" fill="none" stroke="#3a0060" stroke-width="0.6" opacity="0.3"/>
+    <!-- Void orbs on gown -->
+    <circle cx="40" cy="95"  r="4" fill="#0a0012" stroke="#9b30d0" stroke-width="1"/><circle cx="40" cy="95"  r="2" fill="#9b30d0" opacity="0.8"/>
+    <circle cx="80" cy="95"  r="4" fill="#0a0012" stroke="#9b30d0" stroke-width="1"/><circle cx="80" cy="95"  r="2" fill="#9b30d0" opacity="0.8"/>
+    <circle cx="50" cy="118" r="3" fill="#0a0012" stroke="#8a3ab0" stroke-width="0.8"/><circle cx="50" cy="118" r="1.5" fill="#8a3ab0" opacity="0.7"/>
+    <circle cx="70" cy="118" r="3" fill="#0a0012" stroke="#8a3ab0" stroke-width="0.8"/><circle cx="70" cy="118" r="1.5" fill="#8a3ab0" opacity="0.7"/>
+    <!-- Torso / bodice — ornate -->
+    <path d="M34 46 Q60 38 86 46 L90 72 Q60 78 30 72Z" fill="#1a0028" stroke="#9b30d0" stroke-width="2"/>
+    <!-- Chest void eye -->
+    <circle cx="60" cy="60" r="8" fill="#060010" stroke="#9b30d0" stroke-width="1.5"/>
+    <circle cx="60" cy="60" r="5.5" fill="#9b30d0" opacity="0.8"/>
+    <circle cx="60" cy="60" r="3" fill="#e0a0ff"/>
+    <circle cx="60" cy="60" r="1.2" fill="#fff" opacity="0.9"/>
+    <!-- Arms — long, elegant with orb weapons -->
+    <path d="M32 52 Q16 62 10 78 Q6 88 12 95" stroke="#1a0028" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M88 52 Q104 62 110 78 Q114 88 108 95" stroke="#1a0028" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <!-- Arm veins -->
+    <path d="M22 68 Q16 74 14 82" stroke="#9b30d0" stroke-width="1.2" fill="none" opacity="0.4"/>
+    <path d="M98 68 Q104 74 106 82" stroke="#9b30d0" stroke-width="1.2" fill="none" opacity="0.4"/>
+    <!-- Orb weapons in hands -->
+    <circle cx="12" cy="97" r="10" fill="#040008" stroke="#9b30d0" stroke-width="2"/>
+    <circle cx="12" cy="97" r="7" fill="#6a0aaa" opacity="0.8"/>
+    <circle cx="12" cy="97" r="4" fill="#c060f0"/>
+    <circle cx="12" cy="97" r="1.5" fill="#fff" opacity="0.9"/>
+    <circle cx="108" cy="97" r="10" fill="#040008" stroke="#d4a83a" stroke-width="2"/>
+    <circle cx="108" cy="97" r="7" fill="#8a6020" opacity="0.8"/>
+    <circle cx="108" cy="97" r="4" fill="#d4a83a"/>
+    <circle cx="108" cy="97" r="1.5" fill="#fff" opacity="0.9"/>
+    <!-- Head — royal, imperious -->
+    <ellipse cx="60" cy="24" rx="22" ry="20" fill="#140020" stroke="#9b30d0" stroke-width="2"/>
+    <!-- Face structure -->
+    <path d="M46 24 Q60 20 74 24" fill="#1a0030" opacity="0.5"/>
+    <!-- Elaborate crown -->
+    <path d="M38 12 L40 4 M46 8  L48 0 M54 6 L56 -2 M60 5 L60 -3 M66 6 L64 -2 M72 8 L74 0 M82 12 L80 4" stroke="#d4a83a" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Crown gems -->
+    <circle cx="40" cy="4"  r="2.5" fill="#d4a83a"/>
+    <circle cx="48" cy="0"  r="2"   fill="#9b30d0"/>
+    <circle cx="60" cy="-3" r="3"   fill="#d4a83a"/>
+    <circle cx="72" cy="0"  r="2"   fill="#9b30d0"/>
+    <circle cx="80" cy="4"  r="2.5" fill="#d4a83a"/>
+    <!-- Crown glow -->
+    <ellipse cx="60" cy="4" rx="30" ry="8" fill="url(#lv-crown)"/>
+    <!-- Eyes — golden divine -->
+    <ellipse cx="49" cy="22" rx="6" ry="6.5" fill="#060008"/>
+    <ellipse cx="71" cy="22" rx="6" ry="6.5" fill="#060008"/>
+    <circle cx="49" cy="22" r="4.5" fill="#d4a83a" opacity="0.95"/>
+    <circle cx="71" cy="22" r="4.5" fill="#d4a83a" opacity="0.95"/>
+    <circle cx="49" cy="22" r="2.5" fill="#ffe080"/>
+    <circle cx="71" cy="22" r="2.5" fill="#ffe080"/>
+    <circle cx="48" cy="20" r="1" fill="#fff" opacity="0.8"/>
+    <circle cx="70" cy="20" r="1" fill="#fff" opacity="0.8"/>
+    <!-- Hair tendrils with void energy -->
+    <path d="M40 12 Q28 4 22 8"  stroke="#3a0050" stroke-width="3" fill="none"/>
+    <path d="M80 12 Q92 4 98 8"  stroke="#3a0050" stroke-width="3" fill="none"/>
+    <path d="M38 18 Q26 14 20 20" stroke="#3a0050" stroke-width="2" fill="none"/>
+    <path d="M82 18 Q94 14 100 20" stroke="#3a0050" stroke-width="2" fill="none"/>
+    <!-- Floating void shards around her -->
+    <polygon points="2,30 6,20 10,30" fill="#9b30d0" opacity="0.3"/>
+    <polygon points="110,28 114,18 118,28" fill="#d4a83a" opacity="0.3"/>
+    <polygon points="5,110 9,100 13,110" fill="#9b30d0" opacity="0.2"/>
+    <polygon points="107,108 111,98 115,108" fill="#d4a83a" opacity="0.2"/>
+  </svg>`;
+
+  console.log('[Ashfall] Theatre boss art registered:', 
+    ['ashen_maiden','plague_golem','ashling_queen','hollowed_titan','void_remnant','lady_veriax']
+    .filter(id => GAME_DATA.monsterArt[id]).length, '/ 6');
+})();

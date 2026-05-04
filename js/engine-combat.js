@@ -29,13 +29,17 @@
     const fx = ab.effect;
     if (fx.type === 'buff') {
       c.activeBuffs.push({ stat:fx.stat, value:fx.value, remaining:fx.hits||1, type:'hits' });
-      this.emit('notification',{type:'success',text:`${ab.name} activated!`});
+      this.emit('notification',{type:'success',text:`${ab.name}: Next hit deals ×${fx.value} damage!`});
     } else if (fx.type === 'defence_buff') {
-      c.activeBuffs.push({ stat:'damageReduction', value:fx.reducePct, remaining:fx.duration, type:'time' });
+      c.activeBuffs.push({ stat:'damageReduction', value:fx.reducePct, remaining:fx.duration, _maxDuration:fx.duration, type:'time' });
       this.emit('notification',{type:'success',text:`${ab.name}: -${fx.reducePct}% damage for ${fx.duration}s!`});
     } else if (fx.type === 'combat_buff') {
-      if (fx.dmgBonus) c.activeBuffs.push({ stat:'damageMult', value:1+fx.dmgBonus/100, remaining:fx.duration, type:'time' });
-      this.emit('notification',{type:'success',text:`${ab.name}: +${fx.dmgBonus}% dmg for ${fx.duration}s!`});
+      if (fx.dmgBonus) c.activeBuffs.push({ stat:'damageMult', value:1+fx.dmgBonus/100, remaining:fx.duration, _maxDuration:fx.duration, type:'time' });
+      if (fx.speedBonus) c.activeBuffs.push({ stat:'speedBonus', value:fx.speedBonus, remaining:fx.duration, _maxDuration:fx.duration, type:'time' });
+      this.emit('notification',{type:'success',text:`${ab.name}: +${fx.dmgBonus||0}% damage${fx.speedBonus?', +'+fx.speedBonus+'% speed':''} for ${fx.duration}s!`});
+    } else if (fx.type === 'dodge_buff') {
+      c.activeBuffs.push({ stat:'dodgeCharges', value:fx.dodges, remaining:fx.duration, _maxDuration:fx.duration, type:'time', _dodges:fx.dodges });
+      this.emit('notification',{type:'success',text:`${ab.name}: Next ${fx.dodges} attacks dodged!`});
     } else if (fx.type === 'spell_burst' && monster) {
       const mB = this.getStatTotal('magicBonus');
       const mL = this.state.skills.magic?.level || 1;

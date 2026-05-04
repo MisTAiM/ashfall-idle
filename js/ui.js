@@ -824,14 +824,37 @@ class UI {
     html += '</div></div></div>';
 
     // ── ACTIVE BUFFS DISPLAY ──
+    // Always render the container so onTick can update it
+    html += '<div class="active-buffs-bar" id="active-buffs">';
     if (c.activeBuffs.length > 0) {
-      html += '<div class="active-buffs-bar" id="active-buffs">';
       for (const buff of c.activeBuffs) {
-        const label = buff.stat === 'damageMult' ? 'Dmg x'+buff.value.toFixed(1) : buff.stat.replace('Bonus','') + ' +' + buff.value;
-        html += `<span class="buff-chip">${label} <small>${Math.ceil(buff.remaining)}s</small></span>`;
+        const isTime = buff.type === 'time';
+        const isHits = buff.type === 'hits';
+        let label = '', icon = '', color = '';
+        if (buff.stat === 'damageMult')      { label = `Dmg ×${buff.value.toFixed(2)}`; icon = '⚔'; color = '#c44040'; }
+        else if (buff.stat === 'damageReduction') { label = `-${buff.value}% Dmg Taken`; icon = '🛡'; color = '#4a7ec4'; }
+        else if (buff.stat === 'attackBonus')    { label = `+${buff.value} Attack`; icon = '⚡'; color = '#d4a83a'; }
+        else if (buff.stat === 'strengthBonus')  { label = `+${buff.value} Str`; icon = '💪'; color = '#c44040'; }
+        else if (buff.stat === 'defenceBonus')   { label = `+${buff.value} Def`; icon = '🛡'; color = '#4a7ec4'; }
+        else if (buff.stat === 'rangedBonus')    { label = `+${buff.value} Rng`; icon = '🏹'; color = '#4a8a3e'; }
+        else if (buff.stat === 'magicBonus')     { label = `+${buff.value} Mag`; icon = '🔮'; color = '#8a5ec4'; }
+        else if (buff.stat === 'speedBonus')     { label = `+${buff.value}% Speed`; icon = '⚡'; color = '#c9873e'; }
+        else { label = buff.stat.replace(/([A-Z])/g,' $1').replace('Bonus','').trim() + ' +' + buff.value; icon = '✦'; color = '#c9873e'; }
+
+        const durText = isTime ? `${Math.ceil(buff.remaining)}s` : isHits ? `${buff.remaining} hit${buff.remaining!==1?'s':''}` : '';
+        const pct = isTime && buff._maxDuration ? Math.max(0, (buff.remaining / buff._maxDuration) * 100) : 100;
+
+        html += `<div class="buff-chip-v2" style="border-color:${color}20;background:${color}10" title="${label} — ${durText} remaining">
+          <span class="buff-chip-icon" style="color:${color}">${icon}</span>
+          <div class="buff-chip-body">
+            <span class="buff-chip-label" style="color:${color}">${label}</span>
+            <span class="buff-chip-dur">${durText}</span>
+          </div>
+          ${isTime && buff._maxDuration ? `<div class="buff-chip-bar"><div class="buff-chip-fill" style="width:${pct.toFixed(0)}%;background:${color}"></div></div>` : ''}
+        </div>`;
       }
-      html += '</div>';
     }
+    html += '</div>';
 
     // ── ACTIVE COMBAT ──
     if (c.active && c.monster) {
@@ -926,17 +949,15 @@ class UI {
         const cd = ab ? (c.abilityCooldowns[aid] || 0) : 0;
         if (ab) {
           const cdPct = cd > 0 ? Math.min(100, (cd / ab.cooldown) * 100) : 0;
-          const canUse = c.active && cd <= 0;
-          html += `<button class="ab-slot-v2 ${cd>0?'ab-cd':''} ${!c.active?'ab-inactive':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}${!c.active?' (must be in combat)':''}">
+          html += `<button class="ab-slot-v2 ${cd>0?'ab-cd':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}">
             <div class="ab-cd-overlay" style="height:${cdPct}%"></div>
             <div class="ab-content">
-              <div class="ab-icon">${ab.icon||'⚡'}</div>
               <div class="ab-name">${ab.name}</div>
-              <div class="ab-timer">${cd>0?Math.ceil(cd)+'s':c.active?'Ready':'—'}</div>
+              <div class="ab-timer">${cd>0?Math.ceil(cd)+'s':'Ready'}</div>
             </div>
           </button>`;
         } else {
-          html += `<div class="ab-slot-v2 ab-empty"><div class="ab-content"><div class="ab-icon" style="opacity:0.2">⬡</div><div class="ab-name" style="color:#3a3a4a">Slot ${i+1}</div><div class="ab-timer" style="color:#2a2a3a">Empty</div></div></div>`;
+          html += `<div class="ab-slot-v2 ab-empty"><div class="ab-content">Slot ${i+1}</div></div>`;
         }
       }
       html += '</div>';
@@ -4171,10 +4192,35 @@ class UI {
     // ── ACTIVE BUFFS (live) ──
     const buffsEl = document.getElementById('active-buffs');
     if (buffsEl && s.combat.activeBuffs) {
-      buffsEl.innerHTML = s.combat.activeBuffs.map(buff => {
-        const label = buff.stat === 'damageMult' ? 'Dmg x'+buff.value.toFixed(1) : buff.stat.replace('Bonus','') + ' +' + buff.value;
-        return `<span class="buff-chip">${label} <small>${Math.ceil(buff.remaining)}s</small></span>`;
-      }).join('');
+      if (s.combat.activeBuffs.length === 0) {
+        buffsEl.innerHTML = '';
+      } else {
+        buffsEl.innerHTML = s.combat.activeBuffs.map(buff => {
+          const isTime = buff.type === 'time';
+          const isHits = buff.type === 'hits';
+          let label = '', ic = '', color = '';
+          if (buff.stat === 'damageMult')      { label = `Dmg ×${buff.value.toFixed(2)}`; ic = '⚔'; color = '#c44040'; }
+          else if (buff.stat === 'damageReduction') { label = `-${buff.value}% Dmg Taken`; ic = '🛡'; color = '#4a7ec4'; }
+          else if (buff.stat === 'attackBonus')    { label = `+${buff.value} Atk`; ic = '⚡'; color = '#d4a83a'; }
+          else if (buff.stat === 'strengthBonus')  { label = `+${buff.value} Str`; ic = '💪'; color = '#c44040'; }
+          else if (buff.stat === 'defenceBonus')   { label = `+${buff.value} Def`; ic = '🛡'; color = '#4a7ec4'; }
+          else if (buff.stat === 'rangedBonus')    { label = `+${buff.value} Rng`; ic = '🏹'; color = '#4a8a3e'; }
+          else if (buff.stat === 'magicBonus')     { label = `+${buff.value} Mag`; ic = '🔮'; color = '#8a5ec4'; }
+          else if (buff.stat === 'speedBonus')     { label = `+${buff.value}% Spd`; ic = '⚡'; color = '#c9873e'; }
+          else if (buff.stat === 'dodgeCharges')   { label = `${buff._dodges||buff.value} Dodge${(buff._dodges||buff.value)!==1?'s':''}`; ic = '✦'; color = '#9b30d0'; }
+          else { label = buff.stat.replace(/([A-Z])/g,' $1').replace('Bonus','').trim() + ' +' + buff.value; ic = '✦'; color = '#c9873e'; }
+          const durText = isTime ? `${Math.ceil(buff.remaining)}s` : isHits ? `${buff.remaining} hit${buff.remaining!==1?'s':''}` : '';
+          const pct = isTime && buff._maxDuration ? Math.max(0, (buff.remaining / buff._maxDuration) * 100) : 100;
+          return `<div class="buff-chip-v2" style="border-color:${color}20;background:${color}10">
+            <span class="buff-chip-icon" style="color:${color}">${ic}</span>
+            <div class="buff-chip-body">
+              <span class="buff-chip-label" style="color:${color}">${label}</span>
+              <span class="buff-chip-dur">${durText}</span>
+            </div>
+            ${isTime && buff._maxDuration ? `<div class="buff-chip-bar"><div class="buff-chip-fill" style="width:${pct.toFixed(0)}%;background:${color}"></div></div>` : ''}
+          </div>`;
+        }).join('');
+      }
     }
 
     // ── LEVEL TRACKER in sidebar (live) ──

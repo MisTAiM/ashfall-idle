@@ -80,20 +80,23 @@ function applyAdminPanel() {
     const tab = this._admTab || 'dashboard';
 
     const TABS = [
-      { id:'dashboard',  label:'Dashboard',  icon:'⚡' },
-      { id:'players',    label:'Players',    icon:'👤' },
-      { id:'items',      label:'Items',      icon:'⚔' },
-      { id:'monsters',   label:'Monsters',   icon:'💀' },
-      { id:'skills',     label:'Skills',     icon:'📊' },
-      { id:'gold',       label:'Gold',       icon:'💰' },
-      { id:'leaderboard',label:'Leaderboard',icon:'🏆' },
-      { id:'content',    label:'Content',    icon:'📢' },
-      { id:'settings',   label:'Settings',  icon:'🔧' },
-      { id:'logs',       label:'Logs',       icon:'📋' },
-      { id:'combat',     label:'Combat',     icon:'⚔' },
-      { id:'quests',     label:'Quests',     icon:'📜' },
-      { id:'state',      label:'State',      icon:'🔍' },
-      { id:'tools',      label:'Tools',      icon:'🛠' },
+      { id:'dashboard',  label:'Dashboard',   icon:'⚡' },
+      { id:'players',    label:'Players',     icon:'👤' },
+      { id:'items',      label:'Items',       icon:'⚔' },
+      { id:'monsters',   label:'Monsters',    icon:'💀' },
+      { id:'theatre',    label:'Theatre',     icon:'🎭' },
+      { id:'abilities',  label:'Abilities',   icon:'✦' },
+      { id:'npcs',       label:'NPCs',        icon:'💬' },
+      { id:'skills',     label:'Skills',      icon:'📊' },
+      { id:'gold',       label:'Gold',        icon:'💰' },
+      { id:'leaderboard',label:'Leaderboard', icon:'🏆' },
+      { id:'content',    label:'Content',     icon:'📢' },
+      { id:'settings',   label:'Settings',    icon:'🔧' },
+      { id:'logs',       label:'Logs',        icon:'📋' },
+      { id:'combat',     label:'Combat',      icon:'⚔' },
+      { id:'quests',     label:'Quests',      icon:'📜' },
+      { id:'state',      label:'State',       icon:'🔍' },
+      { id:'tools',      label:'Tools',       icon:'🛠' },
     ];
 
     let html = `<div class="admin-panel">
@@ -623,6 +626,119 @@ function applyAdminPanel() {
     }
 
     // ── TOOLS ─────────────────────────────────────────────
+    // ── THEATRE OF ASH ────────────────────────────────────
+    if (tab === 'theatre') {
+      const toa = GAME_DATA.theatreOfAsh;
+      const t = s.theatre || {};
+      html += `<div class="adm-section"><h3>Theatre State</h3><div class="adm-grid">
+        <div class="adm-stat">Active: <strong>${t.active?'Yes':'No'}</strong></div>
+        <div class="adm-stat">Room: <strong>${t.active?t.room+1+'/6':'—'}</strong></div>
+        <div class="adm-stat">Deaths: <strong>${t.performance?.deaths||0}</strong></div>
+        <div class="adm-stat">Completions: <strong>${s.stats?.theatreCompletions||0}</strong></div>
+        <div class="adm-stat">Best Tier: <strong>${s.stats?.theatreBestTier||'—'}</strong></div>
+      </div></div>
+      <div class="adm-section"><h3>Theatre Actions</h3><div class="adm-btn-grid">
+        <button class="btn btn-sm" onclick="game.startTheatreOfAsh();ui.renderPage('theatre')">Start Theatre</button>
+        <button class="btn btn-sm" onclick="game.leaveTheatre();ui.renderPage('admin')">Force Leave</button>
+        <button class="btn btn-sm" onclick="if(game.state.theatre?.active&&game.state.theatre.room<6){game._clearTheatreRoom(game.state.theatre.room);ui.renderPage('admin')}">Skip Room</button>
+        <button class="btn btn-sm" onclick="game.state.theatre={active:false};s.stats.theatreCompletions=0;s.stats.theatreBestTier=undefined;ui.renderPage('admin')">Reset Theatre Stats</button>
+        <button class="btn btn-sm" onclick="['veriax_scythe','bloodfire_staff','ashen_rapier','judicator_helm','judicator_plate','judicator_legs','hollow_ward','void_tear','veriax_eye'].forEach(id=>game.addItem(id,1));ui.toast({type:'success',text:'All Theatre items given'})">Give All Unique Items</button>
+      </div></div>
+      <div class="adm-section"><h3>Boss Editor</h3>`;
+      for (const [bossId, boss] of Object.entries(typeof TOA_BOSSES!=='undefined'?TOA_BOSSES:{})) {
+        html += `<div class="adm-monster-row"><div class="adm-monster-header" onclick="ui._admToggle('toa-${bossId}')">
+          <strong>${boss.name}</strong> <span class="adm-m-meta">Lv${boss.combatLevel} · ${boss.hp.toLocaleString()}HP · ${boss.style}</span>
+        </div><div id="toa-${bossId}" style="display:none;padding:8px">
+          <div class="adm-edit-grid">
+            <label>HP</label><input type="number" value="${boss.hp}" id="tb-${bossId}-hp" class="bank-search-input">
+            <label>Max Hit</label><input type="number" value="${boss.maxHit}" id="tb-${bossId}-maxhit" class="bank-search-input">
+            <label>Attack Speed</label><input type="number" step="0.1" value="${boss.attackSpeed}" id="tb-${bossId}-spd" class="bank-search-input">
+            <label>Mechanic Interval (s)</label><input type="number" value="${boss.mechanic.interval}" id="tb-${bossId}-minterv" class="bank-search-input">
+            <label>Mechanic Window (s)</label><input type="number" value="${boss.mechanic.windowSecs}" id="tb-${bossId}-mwindow" class="bank-search-input">
+            <label>Miss Damage</label><input type="number" value="${boss.mechanic.missedDmg}" id="tb-${bossId}-mdmg" class="bank-search-input">
+          </div>
+          <button class="btn btn-sm" onclick="ui._admSaveToaBoss('${bossId}')">Save Changes (runtime)</button>
+        </div></div>`;
+      }
+      html += `</div>`;
+    }
+
+    // ── ABILITIES ─────────────────────────────────────────
+    if (tab === 'abilities') {
+      html += `<div class="adm-section"><h3>Ability Manager</h3>
+        <div class="adm-btn-grid">
+          <button class="btn btn-sm" onclick="game.state.equippedAbilities=['power_strike','rapid_shot','arcane_burst','shield_wall'];ui.renderPage('admin')">Equip First 4</button>
+          <button class="btn btn-sm" onclick="game.state.equippedAbilities=[null,null,null,null];ui.renderPage('admin')">Clear All Slots</button>
+          <button class="btn btn-sm" onclick="game.state.combat.abilityCooldowns={};ui.renderPage('admin')">Reset All Cooldowns</button>
+          <button class="btn btn-sm" onclick="game.state.skills.tactics={level:99,xp:13034431};ui.renderPage('admin')">Max Tactics (99)</button>
+        </div>
+      </div>
+      <div class="adm-section"><h3>All Abilities (${GAME_DATA.abilities.length})</h3>`;
+      for (const ab of GAME_DATA.abilities) {
+        const cd = s.combat?.abilityCooldowns?.[ab.id] || 0;
+        const equipped = (s.equippedAbilities||[]).indexOf(ab.id);
+        html += `<div class="adm-ability-row">
+          <div class="adm-ab-info">
+            <strong>${ab.icon||'⚡'} ${ab.name}</strong>
+            <span class="adm-m-meta">Tactics Lv${ab.tacticsReq} · ${ab.cooldown}s CD · ${ab.effect.type}</span>
+            <span style="color:#5a4a5a;font-size:11px">${ab.desc}</span>
+          </div>
+          <div class="adm-ab-controls">
+            ${cd>0?`<button class="btn btn-xs" onclick="delete game.state.combat.abilityCooldowns['${ab.id}'];ui.renderPage('admin')">Clear CD (${Math.ceil(cd)}s)</button>`:'<span style="color:#3a9e5c;font-size:10px">Ready</span>'}
+            ${equipped>=0?`<span class="adm-m-meta">Slot ${equipped+1}</span>`:`<button class="btn btn-xs" onclick="for(let i=0;i<4;i++){if(!game.state.equippedAbilities[i]){game.state.equippedAbilities[i]='${ab.id}';break;}}ui.renderPage('admin')">Equip</button>`}
+          </div>
+        </div>`;
+      }
+      html += `</div>
+      <div class="adm-section"><h3>Equipped Slots</h3>`;
+      for (let i=0;i<4;i++) {
+        const aid = (s.equippedAbilities||[])[i];
+        const ab = aid ? GAME_DATA.abilities.find(a=>a.id===aid) : null;
+        html += `<div class="adm-ab-slot-row">
+          <strong>Slot ${i+1}:</strong>
+          <span style="color:${ab?'#c9873e':'#3a2a3a'}">${ab?ab.name:'Empty'}</span>
+          ${ab?`<button class="btn btn-xs btn-danger" onclick="game.state.equippedAbilities[${i}]=null;ui.renderPage('admin')">Unequip</button>`:''}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // ── NPCs ──────────────────────────────────────────────
+    if (tab === 'npcs') {
+      const npcs = GAME_DATA.npcs || {};
+      html += `<div class="adm-section"><h3>NPC Manager (${Object.keys(npcs).length} NPCs)</h3>`;
+      for (const [npcId, npc] of Object.entries(npcs)) {
+        html += `<div class="adm-monster-row">
+          <div class="adm-monster-header" onclick="ui._admToggle('npc-${npcId}')">
+            <strong>${npc.name}</strong> <span class="adm-m-meta">${npc.role} · ${npc.location}</span>
+          </div>
+          <div id="npc-${npcId}" style="display:none;padding:10px">
+            <div class="adm-edit-grid">
+              <label>Name</label><input type="text" value="${npc.name}" id="npc-name-${npcId}" class="bank-search-input">
+              <label>Role</label><input type="text" value="${npc.role}" id="npc-role-${npcId}" class="bank-search-input">
+              <label>Location</label><input type="text" value="${npc.location}" id="npc-loc-${npcId}" class="bank-search-input">
+              <label>Greeting</label><textarea id="npc-greet-${npcId}" class="bank-search-input" rows="2" style="grid-column:2">${npc.dialogue?.greeting||''}</textarea>
+            </div>
+            <button class="btn btn-sm" onclick="ui._admSaveNpc('${npcId}')">Save NPC</button>
+            <div class="adm-section" style="margin-top:8px"><h4>Shop Inventory (${npc.shop?.length||0} items)</h4>
+              ${(npc.shop||[]).map((entry,i)=>`<div class="adm-drop-row">
+                <span>${GAME_DATA.items[entry.item]?.name||entry.item}</span>
+                <input type="number" value="${entry.price}" id="npc-price-${npcId}-${i}" class="bank-search-input" style="width:80px">
+                <button class="btn btn-xs" onclick="ui._admUpdateNpcShopPrice('${npcId}',${i})">Update</button>
+                <button class="btn btn-xs btn-danger" onclick="GAME_DATA.npcs['${npcId}'].shop.splice(${i},1);ui.renderPage('admin')">✕</button>
+              </div>`).join('')}
+              <div class="adm-row-flex" style="margin-top:6px">
+                <input type="text" id="npc-add-item-${npcId}" class="bank-search-input" placeholder="Item ID" style="flex:1">
+                <input type="number" id="npc-add-price-${npcId}" class="bank-search-input" placeholder="Price" style="width:80px" value="100">
+                <button class="btn btn-xs" onclick="ui._admAddNpcShopItem('${npcId}')">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
     if (tab === 'tools') {
       html+=`<div class="adm-section"><h3>Testing Tools</h3><div class="adm-btn-grid">
         <button class="btn btn-sm" onclick="game.startFightCave()">Start Fight Cave</button>
@@ -689,6 +805,59 @@ function applyAdminPanel() {
   UI.prototype._admTakeXp = function(skillId,amt){const sk=game.state.skills[skillId];if(!sk)return;sk.xp=Math.max(0,sk.xp-amt);let lv=1;for(let i=1;i<=99;i++){let n=0;for(let j=1;j<i;j++)n+=Math.floor(j+300*Math.pow(2,j/7));if(sk.xp>=Math.floor(n/4))lv=i;else break;}sk.level=lv;this.toast({type:'info',text:`-${amt} ${GAME_DATA.skills[skillId]?.name||skillId} XP`});this.renderPage('admin');};
   UI.prototype._admGiveCustomXp = function(){const sk=document.getElementById('adm-xp-skill')?.value,amt=parseInt(document.getElementById('adm-xp-amt')?.value)||0;if(!sk||!amt)return;game.addXp(sk,amt);this.toast({type:'success',text:`+${amt} ${GAME_DATA.skills[sk]?.name||sk} XP`});this.renderPage('admin');};
   UI.prototype._admTakeCustomXp = function(){const sk=document.getElementById('adm-xp-skill')?.value,amt=parseInt(document.getElementById('adm-xp-amt')?.value)||0;if(!sk||!amt)return;this._admTakeXp(sk,amt);};
+
+  // Toggle expand/collapse for admin accordion rows
+  UI.prototype._admToggle = function(elId) {
+    const el = document.getElementById(elId);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  // Theatre of Ash
+  UI.prototype._admSaveToaBoss = function(bossId) {
+    const boss = typeof TOA_BOSSES !== 'undefined' ? TOA_BOSSES[bossId] : null;
+    const monster = GAME_DATA.monsters[bossId];
+    if (!boss || !monster) return;
+    const hp = parseInt(document.getElementById(`tb-${bossId}-hp`)?.value) || boss.hp;
+    const maxHit = parseInt(document.getElementById(`tb-${bossId}-maxhit`)?.value) || boss.maxHit;
+    const spd = parseFloat(document.getElementById(`tb-${bossId}-spd`)?.value) || boss.attackSpeed;
+    const minterv = parseInt(document.getElementById(`tb-${bossId}-minterv`)?.value) || boss.mechanic.interval;
+    const mwindow = parseInt(document.getElementById(`tb-${bossId}-mwindow`)?.value) || boss.mechanic.windowSecs;
+    const mdmg = parseInt(document.getElementById(`tb-${bossId}-mdmg`)?.value) ?? boss.mechanic.missedDmg;
+    boss.hp = hp; boss.maxHit = maxHit; boss.attackSpeed = spd;
+    boss.mechanic.interval = minterv; boss.mechanic.windowSecs = mwindow; boss.mechanic.missedDmg = mdmg;
+    monster.hp = hp; monster.maxHit = maxHit; monster.attackSpeed = spd;
+    this.toast({ type:'success', text:`${boss.name} updated (runtime)` });
+    this.renderPage('admin');
+  };
+
+  // NPC
+  UI.prototype._admSaveNpc = function(npcId) {
+    const npc = GAME_DATA.npcs?.[npcId]; if (!npc) return;
+    npc.name     = document.getElementById(`npc-name-${npcId}`)?.value?.trim() || npc.name;
+    npc.role     = document.getElementById(`npc-role-${npcId}`)?.value?.trim() || npc.role;
+    npc.location = document.getElementById(`npc-loc-${npcId}`)?.value?.trim()  || npc.location;
+    const greet  = document.getElementById(`npc-greet-${npcId}`)?.value?.trim();
+    if (greet && npc.dialogue) npc.dialogue.greeting = greet;
+    this.toast({ type:'success', text:`${npc.name} saved (runtime)` });
+    this.renderPage('admin');
+  };
+  UI.prototype._admUpdateNpcShopPrice = function(npcId, idx) {
+    const npc = GAME_DATA.npcs?.[npcId]; if (!npc?.shop?.[idx]) return;
+    const price = parseInt(document.getElementById(`npc-price-${npcId}-${idx}`)?.value) || npc.shop[idx].price;
+    npc.shop[idx].price = price;
+    this.toast({ type:'success', text:'Price updated' });
+    this.renderPage('admin');
+  };
+  UI.prototype._admAddNpcShopItem = function(npcId) {
+    const npc = GAME_DATA.npcs?.[npcId]; if (!npc) return;
+    const item = document.getElementById(`npc-add-item-${npcId}`)?.value?.trim();
+    const price = parseInt(document.getElementById(`npc-add-price-${npcId}`)?.value) || 0;
+    if (!item || !GAME_DATA.items[item]) { this.toast({ type:'warn', text:`"${item}" not found` }); return; }
+    if (!npc.shop) npc.shop = [];
+    npc.shop.push({ item, price });
+    this.toast({ type:'success', text:`Added ${GAME_DATA.items[item].name}` });
+    this.renderPage('admin');
+  };
 
   // Monsters
   UI.prototype._admSaveMonsterEdit = function(mId){const m=GAME_DATA.monsters[mId];if(!m)return;m.name=document.getElementById('em-name')?.value?.trim()||m.name;m.hp=parseInt(document.getElementById('em-hp')?.value)||m.hp;m.maxHit=parseInt(document.getElementById('em-maxhit')?.value)||m.maxHit;m.combatLevel=parseInt(document.getElementById('em-cl')?.value)||m.combatLevel;m.attackSpeed=parseFloat(document.getElementById('em-spd')?.value)||m.attackSpeed;m.xp=parseInt(document.getElementById('em-xp')?.value)||m.xp;m.gold={min:parseInt(document.getElementById('em-goldmin')?.value)||0,max:parseInt(document.getElementById('em-goldmax')?.value)||0};m.style=document.getElementById('em-style')?.value||m.style;m.evasion={melee:parseInt(document.getElementById('em-evm')?.value)||0,ranged:parseInt(document.getElementById('em-evr')?.value)||0,magic:parseInt(document.getElementById('em-evmg')?.value)||0};online?.adminLog?.('monster_edit',{mId,name:m.name});this.toast({type:'success',text:`${m.name} saved (runtime)`});this.renderPage('admin');};
