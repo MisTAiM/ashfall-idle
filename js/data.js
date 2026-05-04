@@ -491,8 +491,12 @@ const GAME_DATA = {
   statusEffects: {
     burn:   {id:'burn',   name:'Burn',   color:'#d67338',desc:'Damage over time. Stacks multiplicatively.',tick:2.0,baseDmg:5},
     poison: {id:'poison', name:'Poison', color:'#5ab04b',desc:'Minor damage. Explodes at 7 stacks.',tick:2.0,baseDmg:3,explodeStacks:7,explodeDmg:80},
-    freeze: {id:'freeze', name:'Freeze', color:'#4a9ed4',desc:'Triples damage on next hit.',tick:2.0,baseDmg:2},
+    freeze: {id:'freeze', name:'Freeze', color:'#4a9ed4',desc:'Triples damage on next hit.',tick:2.0,baseDmg:0},
     bleed:  {id:'bleed',  name:'Bleed',  color:'#a02a2a',desc:'Damage over time from crits.',tick:1.5,baseDmg:4},
+    shock:  {id:'shock',  name:'Shock',  color:'#d4c83a',desc:'Chance to stun each tick.',tick:1.5,baseDmg:0},
+    stun:   {id:'stun',   name:'Stun',   color:'#d4a83a',desc:'Cannot attack while stunned.',tick:0.5,baseDmg:0},
+    slow:   {id:'slow',   name:'Slow',   color:'#4a9ed4',desc:'Monster attack speed reduced.',tick:0.5,baseDmg:0},
+    curse:  {id:'curse',  name:'Curse',  color:'#8a5ec4',desc:'Reduces defence per stack.',tick:3.0,baseDmg:0},
   },
 
   monsters: {

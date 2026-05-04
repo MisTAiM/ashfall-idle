@@ -1551,6 +1551,8 @@ class UI {
           ${item.slot ? `<button class="btn btn-xs" onclick="game.equipItem('${id}')">Equip</button>` : ''}
           ${item.type==='food' ? `<button class="btn btn-xs" onclick="game.equipFood('${id}')">Add to Bag</button>` : ''}
           ${item.type==='potion' ? `<button class="btn btn-xs" onclick="ui.showPotionBeltSelect('${id}')">Belt</button>` : ''}
+          ${item.subtype==='ore_bag' ? `<button class="btn btn-xs" onclick="game.upgradeOreBag('${id}');ui.renderPage('bank')">Apply</button>` : ''}
+          ${item.type==='compost' ? `<button class="btn btn-xs" onclick="game.compostPlot(0);ui.renderPage('bank')">Apply</button>` : ''}
           ${GAME_DATA.boneValues && GAME_DATA.boneValues[id] ? `<button class="btn btn-xs" onclick="game.buryBones('${id}',${q})">Bury All</button>` : ''}
           ${item.sellPrice>0 ? `<div class="bi-sell-row">
             <button class="btn btn-xs btn-sell" onclick="game.sellItem('${id}',1)">1</button>
@@ -4072,19 +4074,19 @@ class UI {
           const playerFx = document.getElementById('player-status-live');
           if (playerFx) {
             const pe = s.combat.statusEffects?.player || {};
-            const peArr = Object.entries(pe).filter(([,v])=>v.stacks>0&&v.duration>0);
+            const peArr = Object.entries(pe).filter(([,v])=>(v.stacks||0)>0);
             playerFx.innerHTML = peArr.map(([k,fx])=>{
-              const def = GAME_DATA.statusEffectDefs?.[k]||GAME_DATA.statusEffects?.[k];
-              return `<span class="pse-chip pse-${k}">${def?.name||k} x${fx.stacks}</span>`;
+              const def = GAME_DATA.statusEffects?.[k];
+              return `<span class="pse-chip pse-${k}" style="${def?.color?'color:'+def.color:''}">${def?.name||k} x${fx.stacks}</span>`;
             }).join('');
           }
           const monsterFx = document.getElementById('monster-status-live');
           if (monsterFx) {
             const me = s.combat.statusEffects?.monster || {};
-            const meArr = Object.entries(me).filter(([,v])=>v.stacks>0&&v.duration>0);
+            const meArr = Object.entries(me).filter(([,v])=>(v.stacks||0)>0||(v.timer||0)>0);
             monsterFx.innerHTML = meArr.map(([k,fx])=>{
-              const def = GAME_DATA.statusEffectDefs?.[k]||GAME_DATA.statusEffects?.[k];
-              return `<span class="pse-chip pse-${k}">${def?.name||k} x${fx.stacks}</span>`;
+              const def = GAME_DATA.statusEffects?.[k];
+              return `<span class="pse-chip pse-${k}" style="${def?.color?'color:'+def.color:''}">${def?.name||k}${fx.stacks>1?' x'+fx.stacks:''}</span>`;
             }).join('');
           }
           // Ability cooldowns

@@ -175,6 +175,10 @@ class GameEngine {
     }
     // Pet combat counter
     if (!s.combat._petAttackCounter) s.combat._petAttackCounter = 0;
+    // Always reset combat mode flags that shouldn't persist across sessions
+    s.combat._multiMobMode = false;
+    if (s.multiMob) s.multiMob = null;
+    s.combat._permDebuffs = s.combat._permDebuffs || {};
     // Thieving v2
     if (s.thievingHp === undefined) s.thievingHp = null; // null = full HP (init lazily)
     if (!s.thievingAnger) s.thievingAnger = {};
@@ -537,6 +541,10 @@ class GameEngine {
     c.playerHp = this.getMaxHp();
     c.playerAttackTimer = 0; c.monsterAttackTimer = 0;
     c.statusEffects = { player:{}, monster:{} };
+    c._multiMobMode = false;          // always reset — prevents saved multi-mob state from blocking normal combat
+    c._petAttackCounter = 0;          // reset pet ability counter per fight
+    c._permDebuffs = {};              // reset permanent debuffs (War Cry stacks)
+    if (this.state.multiMob) this.state.multiMob = null;
   }
 
   stopCombat() {
@@ -588,8 +596,8 @@ class GameEngine {
     if (mSlow && mSlow.timer > 0) monsterSpeed *= (1 + (mSlow.amount||0.20));
     // Shock stun on monster
     const mShock = c.statusEffects?.monster?.shock;
-    let monsterStunned = false;
-    if (mShock && mShock.stacks > 0 && Math.random() < 0.05 * mShock.stacks) monsterStunned = true;
+    let monsterStunned = !!(c.statusEffects?.monster?.stun?.timer > 0);
+    if (!monsterStunned && mShock && mShock.stacks > 0 && Math.random() < 0.05 * mShock.stacks) monsterStunned = true;
     if (c.monsterAttackTimer >= monsterSpeed && !monsterStunned) { c.monsterAttackTimer -= monsterSpeed; this.monsterAttack(monster); }
     // Auto-eat AFTER monster attack (critical - eat before death check)
     if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
@@ -599,38 +607,55 @@ class GameEngine {
 
   _tickStatusEffects(effects, dt, target) {
     for (const [key, fx] of Object.entries(effects)) {
+      const def = GAME_DATA.statusEffects[key];
+      if (!def) { delete effects[key]; continue; }
+
+      // Decrement duration (used by stun, slow, shock — no damage)
+      if (fx.timer !== undefined) {
+        fx.timer -= dt;
+        if (fx.timer <= 0) { delete effects[key]; }
+        continue;
+      }
+
+      // Tick-based damage effects (burn, poison, bleed)
       fx.elapsed = (fx.elapsed || 0) + dt;
-      const def = GAME_DATA.statusEffects[key]; if (!def) { delete effects[key]; continue; }
       if (fx.elapsed >= def.tick) {
         fx.elapsed = 0;
-        let dmg = def.baseDmg * fx.stacks;
-        if (key === 'burn') dmg = def.baseDmg * Math.pow(1.3, fx.stacks - 1);
-        dmg = Math.floor(dmg);
-        if (target === 'monster') this.state.combat.monsterHp -= dmg;
-        else this.state.combat.playerHp -= dmg;
-        if (key === 'poison' && fx.stacks >= def.explodeStacks) {
-          if (target === 'monster') this.state.combat.monsterHp -= def.explodeDmg;
-          else this.state.combat.playerHp -= def.explodeDmg;
-          delete effects[key]; continue;
+        if (def.baseDmg > 0) {
+          let dmg = def.baseDmg * fx.stacks;
+          if (key === 'burn') dmg = def.baseDmg * Math.pow(1.3, fx.stacks - 1);
+          dmg = Math.floor(dmg);
+          if (dmg > 0) {
+            if (target === 'monster') this.state.combat.monsterHp -= dmg;
+            else this.state.combat.playerHp -= dmg;
+          }
+          if (key === 'poison' && fx.stacks >= def.explodeStacks) {
+            if (target === 'monster') this.state.combat.monsterHp -= def.explodeDmg;
+            else this.state.combat.playerHp -= def.explodeDmg;
+            delete effects[key]; continue;
+          }
         }
         fx.duration -= def.tick;
-        if (fx.duration <= 0) delete effects[key];
+        if (fx.duration <= 0) { delete effects[key]; }
       }
     }
   }
 
   applyStatus(target, type, stacks, duration = 8) {
     const e = target === 'monster' ? this.state.combat.statusEffects.monster : this.state.combat.statusEffects.player;
+    const wasEmpty = !e[type] || e[type].stacks <= 0;
     if (!e[type]) e[type] = { stacks:0, duration:0, elapsed:0 };
-    const def = GAME_DATA.statusEffectDefs?.[type];
+    const def = GAME_DATA.statusEffectDefs?.[type] || GAME_DATA.statusEffects?.[type];
     const maxStacks = def?.maxStacks || 10;
-    e[type].stacks = Math.min((e[type].stacks||0) + stacks, maxStacks);
+    const prevStacks = e[type].stacks || 0;
+    e[type].stacks = Math.min(prevStacks + stacks, maxStacks);
     e[type].duration = Math.max(e[type].duration, duration);
-    // Emit status applied event for UI
-    if (stacks > 0) {
+    // Only notify when: first application, or significant stack increase (every 2+)
+    const added = e[type].stacks - prevStacks;
+    if (added > 0 && (wasEmpty || added >= 2)) {
       const who = target === 'player' ? 'You' : 'Enemy';
       const name = def?.name || type;
-      this.emit('notification', {type: target==='player'?'danger':'info', text:`${who}: ${name} x${e[type].stacks}!`});
+      this.emit('notification', { type: target === 'player' ? 'danger' : 'info', text: `${who}: ${name} x${e[type].stacks}` });
     }
   }
 
@@ -3111,16 +3136,13 @@ class GameEngine {
       }
       case 'stun': {
         if (Math.random() < (action.stunChance||0.50)) {
-          if (!c.statusEffects.monster.stun) c.statusEffects.monster.stun = {};
-          c.statusEffects.monster.stun.timer = (action.stunDuration||1)*1000;
-          c.statusEffects.monster.stun.stacks = 1;
+          c.statusEffects.monster.stun = { stacks:1, timer:(action.stunDuration||1.5), duration:999 };
           this.emit('petAction', { pet, action:action.desc||'stuns', type:'stun' });
         }
         break;
       }
       case 'slow': {
-        if (!c.statusEffects.monster.slow) c.statusEffects.monster.slow = {};
-        c.statusEffects.monster.slow = { amount:action.amount||0.20, timer:(action.duration||2)*1000, stacks:1 };
+        c.statusEffects.monster.slow = { amount:action.amount||0.20, timer:(action.duration||2.5), stacks:1, duration:999 };
         this.emit('petAction', { pet, action:action.desc||'slows', type:'slow' });
         break;
       }
