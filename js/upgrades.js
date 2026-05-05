@@ -1,16 +1,27 @@
 // ================================================================
-// ASHFALL IDLE — upgrades.js v1.0
+// ASHFALL IDLE — upgrades.js v1.1
 // Combat Log, XP/hr Tracker, Item Comparison, Keyboard Shortcuts,
 // Notification History, Settings Expansion
-// Loads AFTER all other scripts. Hooks into existing game/ui globals.
+// Loads AFTER all other scripts.
+// CRITICAL: game.init() and window.ui are created inside ui.js's
+// DOMContentLoaded listener. This file MUST also defer to
+// DOMContentLoaded so game.state exists and ui methods are patchable.
 // ================================================================
 
-(function () {
+window.addEventListener('DOMContentLoaded', () => {
   'use strict';
-  if (typeof game === 'undefined' || typeof ui === 'undefined') {
-    console.error('[Upgrades] game or ui not found — load upgrades.js last.');
+
+  // ── Guard: both game + ui must be ready ──
+  if (typeof game === 'undefined' || !window.ui) {
+    console.error('[Upgrades] game or ui not initialised. Aborting.');
     return;
   }
+  if (!game.state) {
+    console.error('[Upgrades] game.state is null — init not called. Aborting.');
+    return;
+  }
+
+  const ui = window.ui;
 
   // ══════════════════════════════════════════════════════════
   // 1. COMBAT LOG
@@ -26,308 +37,256 @@
                String(now.getSeconds()).padStart(2, '0');
     combatLog.push({ type, text, color, ts });
     if (combatLog.length > MAX_LOG) combatLog.shift();
-    renderCombatLogLive();
+    _renderCombatLogLive();
   }
 
-  // Hook into engine events
-  game.on('combatHit', (d) => {
-    if (d.who === 'player') {
-      if (d.miss) {
-        logEntry('miss', 'You miss.', '#666');
-      } else {
-        const critTag = d.crit ? ' (CRIT)' : '';
-        logEntry('hit', `You hit ${d.dmg}${critTag}`, d.crit ? '#ffd700' : '#4a8a3e');
-      }
-    } else {
-      if (d.miss || d.dodge) {
-        logEntry('dodge', d.dodge ? 'You dodge the attack.' : 'Monster misses.', '#60c0e0');
-      } else {
-        logEntry('hit', `Monster hits you for ${d.dmg}`, '#c44040');
-      }
-    }
-  });
-
-  game.on('lootDrop', (d) => {
-    for (const drop of d.bag) {
-      const item = GAME_DATA.items[drop.item];
-      const rColor = drop.rarity === 'legendary' || drop.rarity === 'mythic' ? '#ffd700'
-        : drop.rarity === 'epic' ? '#a855f7' : drop.rarity === 'rare' ? '#60c0e0' : '#aaa';
-      logEntry('loot', `Loot: ${item?.name || drop.item} x${drop.qty}`, rColor);
-    }
-  });
-
-  game.on('levelup', (d) => {
-    const name = GAME_DATA.skills[d.skill]?.name || d.skill;
-    logEntry('levelup', `${name} leveled up to ${d.level}!`, '#ffd700');
-  });
-
-  game.on('notification', (n) => {
-    if (n.type === 'danger' && n.text.includes('defeated')) {
-      logEntry('death', n.text, '#ff4040');
-    }
-  });
-
-  // Clear log on new fight
-  game.on('combatStart', () => {
-    combatLog.length = 0;
-    logEntry('system', 'Combat started.', '#c9873e');
-  });
-
-  function renderCombatLogLive() {
+  function _renderCombatLogLive() {
     const el = document.getElementById('combat-log-entries');
-    if (!el) return;
+    if (!el || combatLogCollapsed) return;
     let html = '';
     const start = Math.max(0, combatLog.length - 40);
     for (let i = start; i < combatLog.length; i++) {
       const e = combatLog[i];
-      html += `<div class="clog-entry clog-${e.type}"><span class="clog-ts">${e.ts}</span><span class="clog-text" style="color:${e.color}">${e.text}</span></div>`;
+      html += '<div class="clog-entry clog-' + e.type + '"><span class="clog-ts">' + e.ts + '</span><span class="clog-text" style="color:' + e.color + '">' + e.text + '</span></div>';
     }
     el.innerHTML = html;
     el.scrollTop = el.scrollHeight;
   }
 
-  // Build combat log HTML
-  function buildCombatLogHTML() {
+  function _buildCombatLogHTML() {
     const vis = combatLogCollapsed ? 'none' : 'block';
     const arrow = combatLogCollapsed ? '&#9654;' : '&#9660;';
-    let html = `<div class="combat-log-panel">
-      <div class="clog-header" onclick="window._toggleCombatLog()">
-        <span class="clog-arrow">${arrow}</span>
-        <span class="clog-title">Combat Log</span>
-        <button class="clog-clear-btn" onclick="event.stopPropagation();window._clearCombatLog()">Clear</button>
-      </div>
-      <div class="clog-body" id="combat-log-entries" style="display:${vis}">`;
+    let html = '<div class="combat-log-panel" id="combat-log-panel">';
+    html += '<div class="clog-header" onclick="window._toggleCombatLog()">';
+    html += '<span class="clog-arrow">' + arrow + '</span>';
+    html += '<span class="clog-title">Combat Log</span>';
+    html += '<button class="clog-clear-btn" onclick="event.stopPropagation();window._clearCombatLog()">Clear</button>';
+    html += '</div>';
+    html += '<div class="clog-body" id="combat-log-entries" style="display:' + vis + '">';
     const start = Math.max(0, combatLog.length - 40);
     for (let i = start; i < combatLog.length; i++) {
       const e = combatLog[i];
-      html += `<div class="clog-entry clog-${e.type}"><span class="clog-ts">${e.ts}</span><span class="clog-text" style="color:${e.color}">${e.text}</span></div>`;
+      html += '<div class="clog-entry clog-' + e.type + '"><span class="clog-ts">' + e.ts + '</span><span class="clog-text" style="color:' + e.color + '">' + e.text + '</span></div>';
     }
     html += '</div></div>';
     return html;
   }
 
-  window._toggleCombatLog = () => {
+  window._toggleCombatLog = function() {
     combatLogCollapsed = !combatLogCollapsed;
-    const body = document.getElementById('combat-log-entries');
+    var body = document.getElementById('combat-log-entries');
     if (body) body.style.display = combatLogCollapsed ? 'none' : 'block';
-    const arrow = document.querySelector('.clog-arrow');
+    var arrow = document.querySelector('.clog-arrow');
     if (arrow) arrow.innerHTML = combatLogCollapsed ? '&#9654;' : '&#9660;';
   };
+  window._clearCombatLog = function() { combatLog.length = 0; _renderCombatLogLive(); };
 
-  window._clearCombatLog = () => {
+  // ── Engine event listeners for combat log ──
+  game.on('combatHit', function(d) {
+    if (d.who === 'player') {
+      if (d.miss) {
+        logEntry('miss', 'You miss.', '#666');
+      } else {
+        var tag = d.crit ? ' (CRIT)' : '';
+        logEntry('hit', 'You hit ' + d.dmg + tag, d.crit ? '#ffd700' : '#4a8a3e');
+      }
+    } else {
+      if (d.miss || d.dodge) {
+        logEntry('dodge', d.dodge ? 'You dodge the attack.' : 'Monster misses.', '#60c0e0');
+      } else {
+        logEntry('hit', 'Monster hits you for ' + d.dmg, '#c44040');
+      }
+    }
+  });
+
+  game.on('lootDrop', function(d) {
+    if (!d.bag) return;
+    for (var idx = 0; idx < d.bag.length; idx++) {
+      var drop = d.bag[idx];
+      var item = GAME_DATA.items[drop.item];
+      var rc = (drop.rarity === 'legendary' || drop.rarity === 'mythic') ? '#ffd700'
+        : drop.rarity === 'epic' ? '#a855f7' : drop.rarity === 'rare' ? '#60c0e0' : '#aaa';
+      logEntry('loot', 'Loot: ' + (item ? item.name : drop.item) + ' x' + drop.qty, rc);
+    }
+  });
+
+  game.on('levelup', function(d) {
+    var sk = GAME_DATA.skills[d.skill];
+    logEntry('levelup', (sk ? sk.name : d.skill) + ' leveled up to ' + d.level + '!', '#ffd700');
+  });
+
+  game.on('notification', function(n) {
+    if (n.type === 'danger' && n.text && n.text.indexOf('defeated') !== -1) {
+      logEntry('death', n.text, '#ff4040');
+    }
+  });
+
+  game.on('combatStart', function() {
     combatLog.length = 0;
-    renderCombatLogLive();
-  };
+    logEntry('system', 'Combat started.', '#c9873e');
+  });
 
   // ══════════════════════════════════════════════════════════
   // 2. XP/HR & DPS TRACKER
   // ══════════════════════════════════════════════════════════
-  const sessionTracker = {
+  var tracker = {
     startTime: Date.now(),
-    startXp: {},       // { skillId: xpAtStart }
-    totalDmgDealt: 0,
-    totalDmgTaken: 0,
-    killCount: 0,
+    startXp: {},
+    dmgDealt: 0,
+    dmgTaken: 0,
+    kills: 0,
   };
 
-  // Capture starting XP for all skills
   function snapshotXp() {
-    for (const [sId, sk] of Object.entries(game.state.skills)) {
-      sessionTracker.startXp[sId] = sk.xp;
+    if (!game.state || !game.state.skills) return;
+    var keys = Object.keys(game.state.skills);
+    for (var i = 0; i < keys.length; i++) {
+      tracker.startXp[keys[i]] = game.state.skills[keys[i]].xp;
     }
   }
   snapshotXp();
 
-  // Track damage
-  game.on('combatHit', (d) => {
-    if (d.who === 'player' && !d.miss) {
-      sessionTracker.totalDmgDealt += d.dmg;
-    } else if (d.who === 'monster' && !d.miss && !d.dodge) {
-      sessionTracker.totalDmgTaken += d.dmg;
-    }
+  game.on('combatHit', function(d) {
+    if (d.who === 'player' && !d.miss) tracker.dmgDealt += (d.dmg || 0);
+    if (d.who === 'monster' && !d.miss && !d.dodge) tracker.dmgTaken += (d.dmg || 0);
   });
 
-  // Track kills
-  const _origOnMonsterKill = game.state.stats;
-  game.on('lootDrop', () => { sessionTracker.killCount++; });
+  game.on('lootDrop', function() { tracker.kills++; });
 
-  function getSessionSeconds() {
-    return Math.max(1, (Date.now() - sessionTracker.startTime) / 1000);
-  }
+  function sessionSecs() { return Math.max(1, (Date.now() - tracker.startTime) / 1000); }
 
-  function getXpPerHour(skillId) {
-    const sk = game.state.skills[skillId];
-    if (!sk) return 0;
-    const gained = sk.xp - (sessionTracker.startXp[skillId] || 0);
+  function xpPerHour(sId) {
+    var sk = game.state.skills[sId]; if (!sk) return 0;
+    var gained = sk.xp - (tracker.startXp[sId] || 0);
     if (gained <= 0) return 0;
-    const hours = getSessionSeconds() / 3600;
-    return Math.floor(gained / hours);
+    return Math.floor(gained / (sessionSecs() / 3600));
   }
 
-  function getDPS() {
-    const secs = getSessionSeconds();
-    return (sessionTracker.totalDmgDealt / secs).toFixed(1);
+  function getDps() { return (tracker.dmgDealt / sessionSecs()).toFixed(1); }
+
+  function getKph() {
+    var h = sessionSecs() / 3600;
+    return h > 0 ? Math.floor(tracker.kills / h) : 0;
   }
 
-  function getKillsPerHour() {
-    const hours = getSessionSeconds() / 3600;
-    if (hours <= 0) return 0;
-    return Math.floor(sessionTracker.killCount / hours);
-  }
+  function _buildTrackerHTML() {
+    var secs = sessionSecs();
+    var m = Math.floor(secs / 60);
+    var h = Math.floor(m / 60);
+    var tStr = h > 0 ? h + 'h ' + (m % 60) + 'm' : m + 'm';
 
-  function buildTrackerHTML() {
-    const elapsed = getSessionSeconds();
-    const mins = Math.floor(elapsed / 60);
-    const hrs = Math.floor(mins / 60);
-    const timeStr = hrs > 0 ? `${hrs}h ${mins % 60}m` : `${mins}m`;
-    const dps = getDPS();
-    const kph = getKillsPerHour();
+    var html = '<div class="tracker-panel" id="tracker-panel">';
+    html += '<div class="tracker-header">';
+    html += '<span class="tracker-title">Session Tracker</span>';
+    html += '<span class="tracker-time">' + tStr + '</span>';
+    html += '<button class="clog-clear-btn" onclick="window._resetTracker()">Reset</button>';
+    html += '</div>';
+    html += '<div class="tracker-stats">';
+    html += '<div class="tracker-stat"><span class="ts-label">DPS</span><span class="ts-val">' + getDps() + '</span></div>';
+    html += '<div class="tracker-stat"><span class="ts-label">Kills/hr</span><span class="ts-val">' + ui.fmt(getKph()) + '</span></div>';
+    html += '<div class="tracker-stat"><span class="ts-label">Dmg Dealt</span><span class="ts-val">' + ui.fmt(tracker.dmgDealt) + '</span></div>';
+    html += '<div class="tracker-stat"><span class="ts-label">Dmg Taken</span><span class="ts-val">' + ui.fmt(tracker.dmgTaken) + '</span></div>';
+    html += '</div>';
 
-    let html = `<div class="tracker-panel">
-      <div class="tracker-header">
-        <span class="tracker-title">Session Tracker</span>
-        <span class="tracker-time">${timeStr}</span>
-        <button class="clog-clear-btn" onclick="window._resetTracker()">Reset</button>
-      </div>
-      <div class="tracker-stats">
-        <div class="tracker-stat"><span class="ts-label">DPS</span><span class="ts-val">${dps}</span></div>
-        <div class="tracker-stat"><span class="ts-label">Kills/hr</span><span class="ts-val">${ui.fmt(kph)}</span></div>
-        <div class="tracker-stat"><span class="ts-label">Dmg Dealt</span><span class="ts-val">${ui.fmt(sessionTracker.totalDmgDealt)}</span></div>
-        <div class="tracker-stat"><span class="ts-label">Dmg Taken</span><span class="ts-val">${ui.fmt(sessionTracker.totalDmgTaken)}</span></div>
-      </div>`;
-
-    // XP rates for active combat skills
-    const combatSkills = ['attack', 'strength', 'defence', 'hitpoints', 'ranged', 'magic', 'prayer', 'slayer'];
-    let hasXpGain = false;
-    let xpRows = '';
-    for (const sId of combatSkills) {
-      const rate = getXpPerHour(sId);
-      if (rate > 0) {
-        hasXpGain = true;
-        const name = GAME_DATA.skills[sId]?.name || sId;
-        xpRows += `<div class="tracker-xp-row"><span class="txr-name">${name}</span><span class="txr-rate">${ui.fmt(rate)} xp/hr</span></div>`;
+    // XP/hr rows
+    var skills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer'];
+    var rows = '';
+    for (var i = 0; i < skills.length; i++) {
+      var r = xpPerHour(skills[i]);
+      if (r > 0) {
+        var name = GAME_DATA.skills[skills[i]] ? GAME_DATA.skills[skills[i]].name : skills[i];
+        rows += '<div class="tracker-xp-row"><span class="txr-name">' + name + '</span><span class="txr-rate">' + ui.fmt(r) + ' xp/hr</span></div>';
       }
     }
-    if (hasXpGain) {
-      html += `<div class="tracker-xp">${xpRows}</div>`;
-    }
+    if (rows) html += '<div class="tracker-xp">' + rows + '</div>';
     html += '</div>';
     return html;
   }
 
-  window._resetTracker = () => {
-    sessionTracker.startTime = Date.now();
-    sessionTracker.totalDmgDealt = 0;
-    sessionTracker.totalDmgTaken = 0;
-    sessionTracker.killCount = 0;
+  window._resetTracker = function() {
+    tracker.startTime = Date.now();
+    tracker.dmgDealt = 0;
+    tracker.dmgTaken = 0;
+    tracker.kills = 0;
     snapshotXp();
-    ui.renderPage(ui.currentPage);
+    if (ui.currentPage === 'combat') ui.renderPage('combat');
   };
 
   // ══════════════════════════════════════════════════════════
-  // 3. ITEM COMPARISON (inject into bank rendering)
+  // 3. ITEM COMPARISON
   // ══════════════════════════════════════════════════════════
-  function getStatDelta(itemId) {
-    const item = GAME_DATA.items[itemId];
-    if (!item || !item.slot || !item.stats) return null;
-    const equippedId = game.state.equipment[item.slot];
-    const equipped = equippedId ? GAME_DATA.items[equippedId] : null;
-    const eqStats = equipped?.stats || {};
-    const deltas = {};
-    const allKeys = new Set([...Object.keys(item.stats), ...Object.keys(eqStats)]);
-    let hasDelta = false;
-    for (const k of allKeys) {
-      const newVal = item.stats[k] || 0;
-      const oldVal = eqStats[k] || 0;
-      const diff = newVal - oldVal;
-      if (diff !== 0) {
-        deltas[k] = diff;
-        hasDelta = true;
-      }
+  function _buildComparisonBadge(itemId) {
+    var item = GAME_DATA.items[itemId];
+    if (!item || !item.slot || !item.stats) return '';
+    var eqId = game.state.equipment[item.slot];
+    var eqItem = eqId ? GAME_DATA.items[eqId] : null;
+    var eqStats = (eqItem && eqItem.stats) ? eqItem.stats : {};
+    var eqName = eqItem ? eqItem.name : 'Nothing';
+    var allKeys = {};
+    var k;
+    for (k in item.stats) allKeys[k] = true;
+    for (k in eqStats) allKeys[k] = true;
+    var parts = [];
+    for (k in allKeys) {
+      var diff = (item.stats[k] || 0) - (eqStats[k] || 0);
+      if (diff === 0) continue;
+      var label = k.replace('Bonus', '').replace(/([A-Z])/g, ' $1').trim();
+      var color = diff > 0 ? '#4a8a3e' : '#c44040';
+      var sign = diff > 0 ? '+' : '';
+      parts.push('<span style="color:' + color + '">' + sign + diff + ' ' + label + '</span>');
     }
-    return hasDelta ? { deltas, equippedName: equipped?.name || 'Nothing' } : null;
-  }
-
-  function buildComparisonBadge(itemId) {
-    const result = getStatDelta(itemId);
-    if (!result) return '';
-    let parts = [];
-    for (const [k, v] of Object.entries(result.deltas)) {
-      const label = k.replace('Bonus', '').replace(/([A-Z])/g, ' $1').trim();
-      const color = v > 0 ? '#4a8a3e' : '#c44040';
-      const sign = v > 0 ? '+' : '';
-      parts.push(`<span style="color:${color}">${sign}${v} ${label}</span>`);
-    }
-    return `<div class="bi-compare"><span class="bi-compare-vs">vs ${result.equippedName}</span>${parts.join(' ')}</div>`;
+    if (parts.length === 0) return '';
+    return '<div class="bi-compare"><span class="bi-compare-vs">vs ' + eqName + ':</span>' + parts.join(' ') + '</div>';
   }
 
   // ══════════════════════════════════════════════════════════
   // 4. KEYBOARD SHORTCUTS
   // ══════════════════════════════════════════════════════════
-  const shortcuts = {
-    '1': () => { if (game.state.combat.active) game.useAbility(0); },
-    '2': () => { if (game.state.combat.active) game.useAbility(1); },
-    '3': () => { if (game.state.combat.active) game.useAbility(2); },
-    '4': () => { if (game.state.combat.active) game.useAbility(3); },
-    'Escape': () => {
-      if (game.state.combat.active) {
-        game.stopCombat();
-        ui.renderPage('combat');
-      }
-    },
-    'f': () => {
-      if (game.state.combat.active && game.state.foodBag?.length > 0) {
-        game.eatFoodSlot(0);
-      }
-    },
-    's': () => {
-      if (game.state.combat.active) {
-        const weapon = GAME_DATA.items[game.state.equipment.weapon];
-        if (weapon?.specCost && game.state.specEnergy >= weapon.specCost) {
-          game.useSpecialAttack();
-        }
-      }
-    },
-  };
-
-  document.addEventListener('keydown', (e) => {
-    // Don't trigger when typing in inputs
-    const tag = e.target.tagName;
+  document.addEventListener('keydown', function(e) {
+    var tag = (e.target.tagName || '').toUpperCase();
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!game.state.combat.active) return;
 
-    const fn = shortcuts[e.key];
-    if (fn) {
-      e.preventDefault();
-      fn();
+    switch (e.key) {
+      case '1': e.preventDefault(); game.useAbility(0); break;
+      case '2': e.preventDefault(); game.useAbility(1); break;
+      case '3': e.preventDefault(); game.useAbility(2); break;
+      case '4': e.preventDefault(); game.useAbility(3); break;
+      case 'f': case 'F':
+        e.preventDefault();
+        if (game.state.foodBag && game.state.foodBag.length > 0) game.eatFoodSlot(0);
+        break;
+      case 's': case 'S':
+        e.preventDefault(); game.useSpecialAttack(); break;
+      case 'Escape':
+        e.preventDefault(); game.stopCombat(); ui.renderPage('combat'); break;
     }
   });
 
   // ══════════════════════════════════════════════════════════
   // 5. NOTIFICATION HISTORY
   // ══════════════════════════════════════════════════════════
-  const MAX_HISTORY = 60;
-  const notifHistory = [];
-  let notifPanelOpen = false;
+  var MAX_HISTORY = 60;
+  var notifHistory = [];
+  var notifPanelOpen = false;
 
-  // Wrap toast to also store history
-  const _origToast = ui.toast.bind(ui);
-  ui.toast = function (n) {
+  var _origToast = ui.toast.bind(ui);
+  ui.toast = function(n) {
     _origToast(n);
-    const now = new Date();
-    const ts = String(now.getHours()).padStart(2, '0') + ':' +
-               String(now.getMinutes()).padStart(2, '0') + ':' +
-               String(now.getSeconds()).padStart(2, '0');
-    notifHistory.unshift({ ...n, ts });
+    var now = new Date();
+    var ts = String(now.getHours()).padStart(2, '0') + ':' +
+             String(now.getMinutes()).padStart(2, '0') + ':' +
+             String(now.getSeconds()).padStart(2, '0');
+    notifHistory.unshift({ type: n.type || 'info', text: n.text || '', ts: ts });
     if (notifHistory.length > MAX_HISTORY) notifHistory.pop();
-    // Update badge
-    const badge = document.getElementById('notif-history-badge');
-    if (badge) badge.style.display = 'block';
+    var badge = document.getElementById('notif-history-badge');
+    if (badge && !notifPanelOpen) badge.style.display = 'block';
   };
 
-  window._toggleNotifHistory = () => {
+  window._toggleNotifHistory = function() {
     notifPanelOpen = !notifPanelOpen;
-    let panel = document.getElementById('notif-history-panel');
+    var panel = document.getElementById('notif-history-panel');
     if (notifPanelOpen) {
       if (!panel) {
         panel = document.createElement('div');
@@ -335,20 +294,19 @@
         panel.className = 'notif-history-panel';
         document.body.appendChild(panel);
       }
-      let html = '<div class="nh-header"><span>Activity Log</span><button class="clog-clear-btn" onclick="window._toggleNotifHistory()">Close</button></div>';
-      html += '<div class="nh-entries">';
+      var html = '<div class="nh-header"><span>Activity Log</span><button class="clog-clear-btn" onclick="window._toggleNotifHistory()">Close</button></div><div class="nh-entries">';
       if (notifHistory.length === 0) {
         html += '<div class="nh-empty">No activity yet.</div>';
       } else {
-        for (const n of notifHistory) {
-          html += `<div class="nh-entry nh-${n.type || 'info'}"><span class="nh-ts">${n.ts}</span><span class="nh-text">${n.text}</span></div>`;
+        for (var i = 0; i < notifHistory.length; i++) {
+          var n = notifHistory[i];
+          html += '<div class="nh-entry nh-' + n.type + '"><span class="nh-ts">' + n.ts + '</span><span class="nh-text">' + n.text + '</span></div>';
         }
       }
       html += '</div>';
       panel.innerHTML = html;
       panel.style.display = 'block';
-      // Hide badge
-      const badge = document.getElementById('notif-history-badge');
+      var badge = document.getElementById('notif-history-badge');
       if (badge) badge.style.display = 'none';
     } else {
       if (panel) panel.style.display = 'none';
@@ -356,218 +314,169 @@
   };
 
   // ══════════════════════════════════════════════════════════
-  // 6. XP/HR ON SKILL PAGES
+  // 6. XP/HR BADGE ON SKILL PAGES
   // ══════════════════════════════════════════════════════════
-  // Show XP/hr next to XP text on skill pages (via tick update)
-  function updateSkillXpRate() {
-    const page = ui.currentPage;
-    if (!page || !GAME_DATA.skills[page]) return;
-    const rate = getXpPerHour(page);
-    let el = document.getElementById('xphr-display');
+  function _updateSkillXpRate() {
+    var page = ui.currentPage;
+    if (!page || !GAME_DATA.skills[page] || !game.state.skills[page]) return;
+    var rate = xpPerHour(page);
+    var el = document.getElementById('xphr-display');
     if (!el) {
-      const xpText = document.querySelector('.sh-xp-text');
-      if (!xpText) return;
+      var xpText = document.querySelector('.sh-xp-text');
+      if (!xpText || !xpText.parentElement) return;
       el = document.createElement('span');
       el.id = 'xphr-display';
       el.className = 'xphr-badge';
       xpText.parentElement.appendChild(el);
     }
-    el.textContent = rate > 0 ? `${ui.fmt(rate)} xp/hr` : '';
+    el.textContent = rate > 0 ? ui.fmt(rate) + ' xp/hr' : '';
   }
 
   // ══════════════════════════════════════════════════════════
-  // 7. PATCH: Inject combat log + tracker into combat page
+  // 7. PATCH: renderCombatPage — append tracker + log
   // ══════════════════════════════════════════════════════════
-  const _origRenderCombatPage = ui.renderCombatPage.bind(ui);
-  ui.renderCombatPage = function (el) {
-    _origRenderCombatPage(el);
-    // Inject combat log and tracker after the combat page renders
-    if (game.state.combat.active) {
-      const container = el.querySelector('.combat-page') || el;
-      // Add tracker
-      const trackerDiv = document.createElement('div');
-      trackerDiv.innerHTML = buildTrackerHTML();
-      container.appendChild(trackerDiv.firstElementChild);
-      // Add combat log
-      const logDiv = document.createElement('div');
-      logDiv.innerHTML = buildCombatLogHTML();
-      container.appendChild(logDiv.firstElementChild);
-      // Scroll log to bottom
-      const logBody = document.getElementById('combat-log-entries');
-      if (logBody) logBody.scrollTop = logBody.scrollHeight;
+  var _origRenderCombat = ui.renderCombatPage.bind(ui);
+  ui.renderCombatPage = function(el) {
+    _origRenderCombat(el);
+    if (!game.state.combat.active || !game.state.combat.monster) return;
+    var container = el.querySelector('.combat-page') || el;
+    // Tracker
+    var tDiv = document.createElement('div');
+    tDiv.innerHTML = _buildTrackerHTML();
+    if (tDiv.firstElementChild) container.appendChild(tDiv.firstElementChild);
+    // Combat log
+    var lDiv = document.createElement('div');
+    lDiv.innerHTML = _buildCombatLogHTML();
+    if (lDiv.firstElementChild) container.appendChild(lDiv.firstElementChild);
+    // Auto-scroll
+    var logBody = document.getElementById('combat-log-entries');
+    if (logBody) logBody.scrollTop = logBody.scrollHeight;
+  };
+
+  // ══════════════════════════════════════════════════════════
+  // 8. PATCH: renderBankPage — inject item comparison
+  // ══════════════════════════════════════════════════════════
+  var _origRenderBank = ui.renderBankPage.bind(ui);
+  ui.renderBankPage = function(el) {
+    _origRenderBank(el);
+    var items = el.querySelectorAll('.bank-item');
+    for (var j = 0; j < items.length; j++) {
+      var itemEl = items[j];
+      var btn = itemEl.querySelector('button[onclick*="equipItem"]');
+      if (!btn) continue;
+      var onclick = btn.getAttribute('onclick') || '';
+      var m = onclick.match(/equipItem\('([^']+)'\)/);
+      if (!m) continue;
+      var badge = _buildComparisonBadge(m[1]);
+      if (!badge) continue;
+      var anchor = itemEl.querySelector('.bi-stats') || itemEl.querySelector('.bi-qty');
+      if (anchor && anchor.parentElement) {
+        var wrap = document.createElement('div');
+        wrap.innerHTML = badge;
+        if (wrap.firstElementChild) anchor.parentElement.insertBefore(wrap.firstElementChild, anchor);
+      }
     }
   };
 
   // ══════════════════════════════════════════════════════════
-  // 8. PATCH: Item comparison in bank
+  // 9. PATCH: renderSettingsPage — expand + fix version
   // ══════════════════════════════════════════════════════════
-  const _origRenderBankPage = ui.renderBankPage.bind(ui);
-  ui.renderBankPage = function (el) {
-    _origRenderBankPage(el);
-    // After bank renders, inject comparison badges
-    const items = el.querySelectorAll('.bank-item');
-    items.forEach((itemEl) => {
-      const equipBtn = itemEl.querySelector('button[onclick*="equipItem"]');
-      if (!equipBtn) return;
-      const match = equipBtn.getAttribute('onclick').match(/equipItem\('([^']+)'\)/);
-      if (!match) return;
-      const itemId = match[1];
-      const badge = buildComparisonBadge(itemId);
-      if (badge) {
-        const statsEl = itemEl.querySelector('.bi-stats');
-        const insertPoint = statsEl || itemEl.querySelector('.bi-qty');
-        if (insertPoint) {
-          const div = document.createElement('div');
-          div.innerHTML = badge;
-          insertPoint.parentElement.insertBefore(div.firstElementChild, insertPoint);
-        }
-      }
-    });
-  };
+  var _origRenderSettings = ui.renderSettingsPage.bind(ui);
+  ui.renderSettingsPage = function(el) {
+    _origRenderSettings(el);
+    el.innerHTML = el.innerHTML.replace('Version 5.7', 'Version 9.4');
 
-  // ══════════════════════════════════════════════════════════
-  // 9. PATCH: Settings page expansion + version fix
-  // ══════════════════════════════════════════════════════════
-  const _origRenderSettingsPage = ui.renderSettingsPage.bind(ui);
-  ui.renderSettingsPage = function (el) {
-    _origRenderSettingsPage(el);
-    // Fix version string and add extra settings
-    const content = el.innerHTML;
-    el.innerHTML = content.replace('Version 5.7', 'Version 9.3');
-
-    // Append expanded settings
-    const extra = document.createElement('div');
-    const s = game.state.settings;
-    extra.innerHTML = `
-      <div class="settings-section">
-        <h3>Gameplay</h3>
-        <label class="setting-toggle">
-          <input type="checkbox" ${s.notifications !== false ? 'checked' : ''} onchange="game.state.settings.notifications=this.checked">
-          <span>Show Notifications</span>
-        </label>
-        <label class="setting-toggle">
-          <input type="checkbox" ${s.autoLoot !== false ? 'checked' : ''} onchange="game.state.settings.autoLoot=this.checked">
-          <span>Auto-Loot Drops</span>
-        </label>
-        <label class="setting-toggle">
-          <input type="checkbox" ${s.combatLog !== false ? 'checked' : ''} onchange="game.state.settings.combatLog=this.checked">
-          <span>Combat Log</span>
-        </label>
-        <label class="setting-toggle">
-          <input type="checkbox" ${s.xpTracker !== false ? 'checked' : ''} onchange="game.state.settings.xpTracker=this.checked">
-          <span>XP/hr Tracker</span>
-        </label>
-        <label class="setting-toggle">
-          <input type="checkbox" ${s.confirmFlee !== true ? '' : 'checked'} onchange="game.state.settings.confirmFlee=this.checked">
-          <span>Confirm Before Fleeing</span>
-        </label>
-      </div>
-      <div class="settings-section">
-        <h3>Keyboard Shortcuts</h3>
-        <div class="kb-shortcuts-grid">
-          <div class="kb-row"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> — Abilities</div>
-          <div class="kb-row"><kbd>F</kbd> — Eat Food</div>
-          <div class="kb-row"><kbd>S</kbd> — Special Attack</div>
-          <div class="kb-row"><kbd>Esc</kbd> — Flee Combat</div>
-        </div>
-      </div>
-      <div class="settings-section">
-        <h3>Session Stats</h3>
-        <div class="session-overview">
-          <div class="so-stat"><span>Session Time</span><span>${Math.floor(getSessionSeconds() / 60)} min</span></div>
-          <div class="so-stat"><span>Total Damage Dealt</span><span>${ui.fmt(sessionTracker.totalDmgDealt)}</span></div>
-          <div class="so-stat"><span>Total Kills (session)</span><span>${ui.fmt(sessionTracker.killCount)}</span></div>
-          <div class="so-stat"><span>Average DPS</span><span>${getDPS()}</span></div>
-        </div>
-      </div>
-    `;
+    var s = game.state.settings;
+    var extra = document.createElement('div');
+    extra.innerHTML = '<div class="settings-section">' +
+      '<h3>Gameplay</h3>' +
+      '<label class="setting-toggle"><input type="checkbox" ' + (s.notifications !== false ? 'checked' : '') + ' onchange="game.state.settings.notifications=this.checked"><span>Show Notifications</span></label>' +
+      '<label class="setting-toggle"><input type="checkbox" ' + (s.autoLoot !== false ? 'checked' : '') + ' onchange="game.state.settings.autoLoot=this.checked"><span>Auto-Loot Drops</span></label>' +
+      '<label class="setting-toggle"><input type="checkbox" ' + (s.confirmFlee ? 'checked' : '') + ' onchange="game.state.settings.confirmFlee=this.checked"><span>Confirm Before Fleeing</span></label>' +
+      '</div>' +
+      '<div class="settings-section">' +
+      '<h3>Keyboard Shortcuts</h3>' +
+      '<div class="kb-shortcuts-grid">' +
+      '<div class="kb-row"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> &mdash; Abilities</div>' +
+      '<div class="kb-row"><kbd>F</kbd> &mdash; Eat Food</div>' +
+      '<div class="kb-row"><kbd>S</kbd> &mdash; Special Attack</div>' +
+      '<div class="kb-row"><kbd>Esc</kbd> &mdash; Flee Combat</div>' +
+      '</div></div>' +
+      '<div class="settings-section">' +
+      '<h3>Session Stats</h3>' +
+      '<div class="session-overview">' +
+      '<div class="so-stat"><span>Session Time</span><span>' + Math.floor(sessionSecs() / 60) + ' min</span></div>' +
+      '<div class="so-stat"><span>Total Damage Dealt</span><span>' + ui.fmt(tracker.dmgDealt) + '</span></div>' +
+      '<div class="so-stat"><span>Total Kills (session)</span><span>' + ui.fmt(tracker.kills) + '</span></div>' +
+      '<div class="so-stat"><span>Average DPS</span><span>' + getDps() + '</span></div>' +
+      '</div></div>';
     el.appendChild(extra);
   };
 
   // ══════════════════════════════════════════════════════════
-  // 10. ACTIVITY LOG BUTTON (injected into sidebar)
+  // 10. ACTIVITY LOG BUTTON IN SIDEBAR
   // ══════════════════════════════════════════════════════════
-  function injectActivityButton() {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    if (document.getElementById('notif-history-btn')) return;
-    const btn = document.createElement('div');
+  function _injectActivityBtn() {
+    var sb = document.getElementById('sidebar');
+    if (!sb || document.getElementById('notif-history-btn')) return;
+    var btn = document.createElement('div');
     btn.id = 'notif-history-btn';
     btn.className = 'activity-log-btn';
-    btn.onclick = window._toggleNotifHistory;
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <span>Activity Log</span>
-      <span class="nh-badge" id="notif-history-badge" style="display:none"></span>`;
-    // Insert after the level tracker
-    const tracker = sidebar.querySelector('#level-tracker');
-    if (tracker) {
-      tracker.parentElement.insertBefore(btn, tracker.nextSibling);
+    btn.setAttribute('onclick', 'window._toggleNotifHistory()');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
+      '<span>Activity Log</span>' +
+      '<span class="nh-badge" id="notif-history-badge" style="display:none"></span>';
+    var lt = sb.querySelector('#level-tracker');
+    if (lt && lt.nextSibling) {
+      lt.parentElement.insertBefore(btn, lt.nextSibling);
     } else {
-      sidebar.appendChild(btn);
+      sb.appendChild(btn);
     }
   }
 
   // ══════════════════════════════════════════════════════════
-  // 11. TICK HOOK — update XP/hr display + re-inject button
+  // 11. TICK HOOK — live updates
   // ══════════════════════════════════════════════════════════
-  const _origOnTick = ui.onTick.bind(ui);
-  let _tickCounter = 0;
-  ui.onTick = function () {
-    _origOnTick();
-    _tickCounter++;
-    // Update XP/hr every ~2 seconds (20 ticks at 100ms)
-    if (_tickCounter % 20 === 0) {
-      updateSkillXpRate();
-    }
-    // Re-inject activity button if sidebar was re-rendered
-    if (_tickCounter % 50 === 0) {
-      injectActivityButton();
-    }
-    // Update tracker panel live if on combat page
-    if (_tickCounter % 30 === 0 && ui.currentPage === 'combat' && game.state.combat.active) {
-      const tracker = document.querySelector('.tracker-panel');
-      if (tracker) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = buildTrackerHTML();
-        tracker.replaceWith(tmp.firstElementChild);
+  var _origTick = ui.onTick.bind(ui);
+  var _tc = 0;
+  ui.onTick = function() {
+    _origTick();
+    _tc++;
+    if (_tc % 20 === 0) _updateSkillXpRate();
+    if (_tc % 50 === 0) _injectActivityBtn();
+    if (_tc % 30 === 0 && ui.currentPage === 'combat' && game.state.combat.active) {
+      var tp = document.getElementById('tracker-panel');
+      if (tp) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = _buildTrackerHTML();
+        if (tmp.firstElementChild) tp.replaceWith(tmp.firstElementChild);
       }
     }
   };
 
-  // Also hook into renderSidebar to ensure button persists
-  const _origRenderSidebar = ui.renderSidebar.bind(ui);
-  ui.renderSidebar = function () {
-    _origRenderSidebar();
-    setTimeout(injectActivityButton, 10);
+  // Re-inject button when sidebar re-renders
+  var _origSidebar = ui.renderSidebar.bind(ui);
+  ui.renderSidebar = function() {
+    _origSidebar();
+    setTimeout(_injectActivityBtn, 20);
   };
 
   // ══════════════════════════════════════════════════════════
   // 12. CONFIRM FLEE PATCH
   // ══════════════════════════════════════════════════════════
-  const _origStopCombat = game.stopCombat.bind(game);
-  game.stopCombat = function () {
+  var _origStop = game.stopCombat.bind(game);
+  game.stopCombat = function() {
     if (game.state.settings.confirmFlee && game.state.combat.active) {
       if (!confirm('Flee combat? You will lose current fight progress.')) return;
     }
-    _origStopCombat();
+    _origStop();
   };
 
   // ══════════════════════════════════════════════════════════
   // INIT
   // ══════════════════════════════════════════════════════════
-  // Initialize settings defaults
-  if (game.state.settings.combatLog === undefined) game.state.settings.combatLog = true;
-  if (game.state.settings.xpTracker === undefined) game.state.settings.xpTracker = true;
   if (game.state.settings.confirmFlee === undefined) game.state.settings.confirmFlee = false;
+  setTimeout(_injectActivityBtn, 300);
 
-  // Inject activity button on load
-  setTimeout(injectActivityButton, 500);
-
-  console.log('[Ashfall] Upgrades v1.0 loaded');
-  console.log('  Combat Log: ON');
-  console.log('  XP/hr Tracker: ON');
-  console.log('  Item Comparison: ON');
-  console.log('  Keyboard Shortcuts: 1-4, F, S, Esc');
-  console.log('  Notification History: ON');
-  console.log('  Settings Expansion: ON');
-})();
+  console.log('[Ashfall] Upgrades v1.1 loaded — combat log, tracker, comparison, shortcuts, history, settings');
+});
