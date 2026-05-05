@@ -108,6 +108,70 @@
       this.emit('combatHit',{who:'player',dmg,crit:true,source:'ability'});
       this.emit('notification',{type:'achievement',text:`${ab.name}: ${dmg} damage${fx.burnStacks?` + ${fx.burnStacks} burn stacks`:''}!`});
       this.emit('abilityUsed',{ability:ab, source:'damage'});
+
+    } else if (fx.type === 'debuff') {
+      // Status-only abilities — Ice Blast, Venom Strike
+      if (fx.freeze)  this.applyStatus('monster','freeze', fx.freeze,  8);
+      if (fx.poison)  this.applyStatus('monster','poison', fx.poison, 12);
+      if (fx.burn)    this.applyStatus('monster','burn',   fx.burn,   10);
+      const statusName = fx.freeze ? 'Freeze' : fx.poison ? 'Poison' : 'Burn';
+      const stacks = fx.freeze || fx.poison || fx.burn || 0;
+      this.emit('notification',{type:'success',text:`${ab.name}: Applied ${stacks} ${statusName} stacks!`});
+      this.emit('abilityUsed',{ability:ab, source:'debuff'});
+
+    } else if (fx.type === 'execute') {
+      // Execute — massive damage if target below HP threshold
+      if (!monster) return;
+      const m = monster;
+      const hpThreshold = fx.threshold || 0.30;
+      if (c.monsterHp <= m.hp * hpThreshold) {
+        const sL = this.state.skills.strength?.level || 1;
+        const sB = this.getStatTotal('strengthBonus');
+        const maxHit = Math.max(1, Math.floor((1+sL/10)*(1+sB/80)*4*(fx.mult||3)));
+        const dmg = this.randInt(Math.floor(maxHit*0.5), maxHit);
+        c.monsterHp -= dmg;
+        this.emit('combatHit',{who:'player',dmg,crit:true,source:'ability'});
+        this.emit('notification',{type:'achievement',text:`${ab.name}: EXECUTED for ${dmg} damage!`});
+        this.emit('abilityUsed',{ability:ab, source:'damage'});
+      } else {
+        this.emit('notification',{type:'warn',text:`Target above ${Math.round(hpThreshold*100)}% HP — cannot execute.`});
+        c.abilityCooldowns[id] = 0; // refund cooldown on fail
+        return;
+      }
+
+    } else if (fx.type === 'heal') {
+      // Heal — restore % of max HP
+      const maxHp = this.getMaxHp();
+      const healed = Math.floor(maxHp * (fx.pct || 0.30));
+      c.playerHp = Math.min(maxHp, c.playerHp + healed);
+      this.emit('notification',{type:'success',text:`${ab.name}: Restored ${healed} HP!`});
+      this.emit('abilityUsed',{ability:ab, source:'heal'});
+
+    } else if (fx.type === 'lifesteal_spell') {
+      // Soul Drain — magic damage + heal for portion dealt
+      if (!monster) return;
+      const mB = this.getStatTotal('magicBonus');
+      const mL = this.state.skills.magic?.level || 1;
+      const maxHit = Math.max(1, Math.floor((mL * 0.5 + mB * 0.4) * (fx.mult||1.2)));
+      const dmg = this.randInt(Math.floor(maxHit*0.4), maxHit);
+      c.monsterHp -= dmg;
+      const healed = Math.floor(dmg * (fx.stealPct||50) / 100);
+      c.playerHp = Math.min(this.getMaxHp(), c.playerHp + healed);
+      this.emit('combatHit',{who:'player',dmg,crit:false,source:'ability'});
+      this.emit('notification',{type:'success',text:`${ab.name}: ${dmg} damage, drained ${healed} HP!`});
+      this.emit('abilityUsed',{ability:ab, source:'damage'});
+
+    } else if (fx.type === 'dodge_strike') {
+      // Shadow Step — deal damage + grant dodge charges
+      if (!monster) return;
+      const sL = this.state.skills.strength?.level || 1;
+      const baseDmg = (fx.baseDmg||50) + Math.floor(sL * 0.5);
+      const dmg = this.randInt(Math.floor(baseDmg*0.5), baseDmg);
+      c.monsterHp -= dmg;
+      c.activeBuffs.push({ stat:'dodgeCharges', value:fx.dodges||1, remaining:fx.duration||5, _maxDuration:fx.duration||5, type:'time', _dodges:fx.dodges||1 });
+      this.emit('combatHit',{who:'player',dmg,crit:false,source:'ability'});
+      this.emit('notification',{type:'success',text:`${ab.name}: ${dmg} damage + dodge ${fx.dodges||1} attack(s)!`});
+      this.emit('abilityUsed',{ability:ab, source:'damage'});
     }
 
     // Set cooldown and award tactics XP
