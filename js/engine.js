@@ -98,7 +98,7 @@ class GameEngine {
         totalXpGained:0, itemsCrafted:0, foodEaten:0, goldEarned:0, goldSpent:0,
         totalPlayTime:0, deaths:0, worldBossKills:0, questsCompleted:0,
       },
-      achievements: [], settings: { notifications:true, autoLoot:true },
+      achievements: [], collectionLog: {}, settings: { notifications:true, autoLoot:true },
     };
   }
 
@@ -151,6 +151,12 @@ class GameEngine {
     if (!s.guild) s.guild = null;
     if (!s.storyline) s.storyline = {};
     if (!s.gearSets) s.gearSets = {};
+    if (!s.collectionLog) s.collectionLog = {};
+    // Retroactive collection log scan — log items already in bank/equipment
+    if (Object.keys(s.collectionLog).length === 0 && s.bank) {
+      for (const id of Object.keys(s.bank)) { if (s.bank[id] > 0 && GAME_DATA.items[id]) s.collectionLog[id] = Date.now(); }
+      for (const slot of Object.keys(s.equipment || {})) { if (s.equipment[slot] && GAME_DATA.items[s.equipment[slot]]) s.collectionLog[s.equipment[slot]] = Date.now(); }
+    }
     if (!s.equipment.ring) s.equipment.ring = null;
     if (!s.equipment.amulet) s.equipment.amulet = null;
     if (!s.equipment.cape) s.equipment.cape = null;
@@ -2276,6 +2282,11 @@ class GameEngine {
   addItem(id, qty) {
     if (!this.state.bank[id]) this.state.bank[id] = 0;
     this.state.bank[id] += qty;
+    // Collection Log: track first discovery
+    if (!this.state.collectionLog[id] && GAME_DATA.items[id]) {
+      this.state.collectionLog[id] = Date.now();
+      this.emit('collectionLogNew', { item: id });
+    }
   }
 
   removeItem(id, qty) {

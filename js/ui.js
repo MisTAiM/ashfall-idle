@@ -104,6 +104,7 @@ const NAV = [
     {id:'factions',label:'Factions',icon:'faction'},
     {id:'alignment',label:'Alignment',icon:'alignment'},
     {id:'pets',label:'Pets',icon:'paw'},
+    {id:'codex',label:'Codex',icon:'book'},
     {id:'achievements',label:'Achievements',icon:'trophy'},
     {id:'wiki',label:'Wiki',icon:'book'},
   ]},
@@ -186,6 +187,7 @@ class UI {
     this.engine.on('abilitiesChanged', () => { if (this.currentPage === 'abilities') this.renderPage('abilities'); });
     this.engine.on('slayerChanged', () => { if (this.currentPage === 'slayer') this.renderPage('slayer'); });
     this.engine.on('petFound', () => { if (this.currentPage === 'pets') this.renderPage('pets'); });
+    this.engine.on('collectionLogNew', (d) => { if (this.currentPage === 'codex') this.renderPage('codex'); });
     this.engine.on('init', () => { this.renderSidebar(); this.renderTrainingBar(); this.renderPage(this.currentPage); });
     // Online events
     if (typeof online !== 'undefined') {
@@ -302,6 +304,7 @@ class UI {
     else if (pageId === 'bazaar') this.renderBazaarPage(main);
     else if (pageId === 'gear_sets') this.renderGearSetsPage(main);
     else if (pageId === 'achievements') this.renderAchievementsPage(main);
+    else if (pageId === 'codex') this.renderCodexPage(main);
     else if (pageId === 'wiki') this.renderWikiPage(main);
     else if (pageId === 'statistics') this.renderStatsPage(main);
     else if (pageId === 'settings_page') this.renderSettingsPage(main);
