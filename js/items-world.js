@@ -341,12 +341,15 @@ if (!GAME_DATA.recipes.crafting.find(r=>r.id==='craft_leather')) {
 // ── FORAGING: ADD MUSHROOM, WHEAT, EGG, HERB GATHERING ──
 if (!GAME_DATA.gatheringActions.foraging.find(a=>a.id==='forage_mushroom')) {
   GAME_DATA.gatheringActions.foraging.push(
-    {id:'forage_mushroom', name:'Gather Mushrooms', level:5, xp:18, time:4.0, output:{item:'mushroom',qty:1}},
-    {id:'forage_wheat',    name:'Harvest Wheat',    level:8, xp:22, time:5.0, output:{item:'wheat',qty:2}},
-    {id:'forage_egg',      name:'Collect Eggs',     level:3, xp:12, time:3.0, output:{item:'egg',qty:1}},
-    {id:'forage_corn',     name:'Pick Corn',        level:12,xp:25, time:5.0, output:{item:'corn',qty:1}},
-    {id:'forage_cabbage',  name:'Pick Cabbage',     level:6, xp:15, time:3.5, output:{item:'cabbage',qty:1}},
-    {id:'forage_tomato',   name:'Pick Tomatoes',    level:10,xp:20, time:4.0, output:{item:'tomato',qty:1}},
+    {id:'forage_mushroom', name:'Gather Mushrooms', level:5,  xp:18, time:4.0, loot:[{item:'mushroom',qty:1}]},
+    {id:'forage_wheat',    name:'Harvest Wheat',    level:8,  xp:22, time:5.0, loot:[{item:'wheat',qty:2}]},
+    {id:'forage_egg',      name:'Collect Eggs',     level:3,  xp:12, time:3.0, loot:[{item:'egg',qty:1}]},
+    {id:'forage_corn',     name:'Pick Corn',        level:12, xp:25, time:5.0, loot:[{item:'corn',qty:1}]},
+    {id:'forage_cabbage',  name:'Pick Cabbage',     level:6,  xp:15, time:3.5, loot:[{item:'cabbage',qty:1}]},
+    {id:'forage_tomato',   name:'Pick Tomatoes',    level:10, xp:20, time:4.0, loot:[{item:'tomato',qty:1}]},
+    {id:'forage_potato',   name:'Dig Potatoes',     level:1,  xp:10, time:3.0, loot:[{item:'potato',qty:1}]},
+    {id:'forage_onion',    name:'Pull Onions',      level:2,  xp:11, time:3.0, loot:[{item:'onion',qty:1}]},
+    {id:'forage_strawberry',name:'Pick Berries',    level:15, xp:28, time:4.5, loot:[{item:'strawberry',qty:1}]},
   );
 }
 
@@ -354,7 +357,35 @@ if (!GAME_DATA.gatheringActions.foraging.find(a=>a.id==='forage_mushroom')) {
 if (GAME_DATA.monsters.chicken) {
   const ch = GAME_DATA.monsters.chicken;
   if (!ch.drops.find(d=>d.item==='raw_chicken')) ch.drops.push({item:'raw_chicken',qty:1,chance:0.80});
-  if (!ch.drops.find(d=>d.item==='egg'))         ch.drops.push({item:'egg',qty:1,chance:0.25});
+  if (!ch.drops.find(d=>d.item==='egg'))         ch.drops.push({item:'egg',qty:1,chance:0.40});
+}
+
+// ── EGGS FROM HUNTING ─────────────────────────────────────
+if (GAME_DATA.gatheringActions.hunting) {
+  const rabbit = GAME_DATA.gatheringActions.hunting.find(a=>a.id==='hunt_rabbit');
+  if (rabbit && !rabbit.loot.find(d=>d.item==='egg')) {
+    rabbit.loot.push({item:'egg',qty:1,chance:0.30}); // chance handled by completeAction
+  }
+}
+
+// ── EGG COOKING RECIPES — ensure all exist ─────────────────
+const _eggRecipes = [
+  {id:'cook_fried_egg', name:'Fried Egg',      level:1,  xp:20,  time:2.0, input:[{item:'egg',qty:1}],                                           output:{item:'fried_egg',qty:1},    burnChance:0.15},
+  {id:'cook_boiled_egg',name:'Boiled Egg',     level:3,  xp:22,  time:2.5, input:[{item:'egg',qty:1}],                                           output:{item:'boiled_egg',qty:1},   burnChance:0.05},
+];
+for (const r of _eggRecipes) {
+  if (!GAME_DATA.recipes.cooking.find(x=>x.id===r.id)) GAME_DATA.recipes.cooking.push(r);
+}
+
+// ── EGG FOOD ITEMS ─────────────────────────────────────────
+if (!GAME_DATA.items.fried_egg)  GAME_DATA.items.fried_egg  = {id:'fried_egg', name:'Fried Egg',  type:'food',heals:60, sellPrice:12,sprite:'food-basic',desc:'+60 HP. Simple fried egg.'};
+if (!GAME_DATA.items.boiled_egg) GAME_DATA.items.boiled_egg = {id:'boiled_egg',name:'Boiled Egg', type:'food',heals:55, sellPrice:10,sprite:'food-basic',desc:'+55 HP. Lightly boiled.'};
+
+// ── FARMING SEED: HEN PLOT (passive egg generation) ────────
+// Egg seed (chicken coop) — plants a "hen" that lays eggs passively
+if (!GAME_DATA.items.hen_seed) {
+  GAME_DATA.items.hen_seed = {id:'hen_seed',name:'Hen (Coop)',type:'seed',seedType:'allotment',growTime:7200,yield:'egg',baseYield:8,levelReq:5,xp:18,sellPrice:30,sprite:'misc-seed',desc:'Plant a hen in a coop plot. Produces 8 eggs every 2 hours.'};
+  if (!GAME_DATA.shop.find(x=>x.item==='hen_seed')) GAME_DATA.shop.push({item:'hen_seed',price:80,category:'seeds'});
 }
 
 // ── MONSTER ART FOR NEW MONSTERS ─────────────────────────

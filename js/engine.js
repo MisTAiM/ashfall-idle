@@ -331,7 +331,8 @@ class GameEngine {
         this.addMasteryXp(skillId, zone.id, caught.xp * 0.5);
         return; // skip normal XP add below
       }
-      for (const drop of action.loot) {
+      for (const drop of (action.loot || (action.output ? [{item:action.output.item,qty:action.output.qty||1}] : []))) {
+        if (drop.chance !== undefined && Math.random() > drop.chance) continue; // optional probability
         const isOre = GAME_DATA.items[drop.item]?.type === 'ore' || GAME_DATA.oreBagConfig?.oreTypes?.includes(drop.item);
         if (isOre && this.state.oreBag) {
           // Route to ore bag
