@@ -3365,6 +3365,11 @@ html, body {
 /* Legacy aliases kept for compat */
 .splat-hit { background: #8b2020; color: #ffcc88; font-size: 15px; border: 1px solid #c44; }
 
+/* Status effect DoT splats */
+.splat-burn   { background: #6b2800; color: #ff8c30; font-size: 13px; border: 1px solid #d67338; }
+.splat-poison { background: #1a3a0a; color: #7dcc44; font-size: 13px; border: 1px solid #5ab04b; }
+.splat-bleed  { background: #3a0000; color: #ff4444; font-size: 13px; border: 1px solid #a02a2a; font-style: italic; }
+
 /* ── SESSION DAMAGE TRACKER ──────────────────────────── */
 .sl-dmg-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -3394,6 +3399,12 @@ html, body {
 .sl-dmg-total   .sl-dmg-val { color: #ddd; }
 .sl-dmg-taken   { background: rgba(80,0,0,0.25); }
 .sl-dmg-taken   .sl-dmg-val { color: #ff6666; }
+.sl-dmg-burn    { background: rgba(107,40,0,0.25); }
+.sl-dmg-burn    .sl-dmg-val { color: #ff8c30; }
+.sl-dmg-poison  { background: rgba(26,58,10,0.25); }
+.sl-dmg-poison  .sl-dmg-val { color: #7dcc44; }
+.sl-dmg-bleed2  { background: rgba(58,0,0,0.25); }
+.sl-dmg-bleed2  .sl-dmg-val { color: #ff4444; }
 .sl-dmg-meta {
   display: flex; gap: 6px; flex-wrap: wrap;
   padding: 4px 8px 8px;

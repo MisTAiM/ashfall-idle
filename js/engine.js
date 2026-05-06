@@ -363,8 +363,11 @@ class GameEngine {
       if (action.input && !this.hasItems(action.input)) { this.stopSkill(); this.emit('notification', { type:'warn', text:'Out of materials.' }); return; }
       if (action.input) this.removeItems(action.input);
       if (action.burnChance) {
-        const reduction = this.getMasteryLevel(skillId, action.id) * 0.005;
-        if (Math.random() < Math.max(0.01, action.burnChance - reduction)) {
+        const masteryReduce = this.getMasteryLevel(skillId, action.id) * 0.005;
+        const levelReduce   = Math.max(0, (this.state.skills[skillId]?.level || 1) - (action.level || 1)) * 0.004;
+        const petReduce     = (this.getPetBonus('burnReduction') || 0) / 100;
+        const finalChance   = Math.max(0, action.burnChance - masteryReduce - levelReduce - petReduce);
+        if (Math.random() < finalChance) {
           this.addXp(skillId, Math.floor(action.xp * 0.2));
           this.emit('notification', { type:'warn', text:`Burned the ${action.name.replace('Cook ','')}!` });
           this.incrementStat(skillId); return;
@@ -515,7 +518,7 @@ class GameEngine {
     this.state.combat.area = areaId;
     this.state.combat._sessionLoot = {};
     this.state.combat._sessionKills = 0;
-    this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 };
+    this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, burn:0, poison:0, bleed:0, total:0, taken:0, hits:0, misses:0, crits:0 };
     this.state.combat._sessionStartTime = Date.now();
     this.emit('combatStart', { area:areaId, monster:monsterId });
   }
@@ -569,7 +572,7 @@ class GameEngine {
     // Clear session loot so it doesn't persist into next session
     c._sessionLoot = {};
     c._sessionKills = 0;
-    c._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 };
+    c._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, burn:0, poison:0, bleed:0, total:0, taken:0, hits:0, misses:0, crits:0 };
     // Clear wilderness presence
     if (typeof online !== 'undefined' && online.isOnline) online.clearWildernessPresence();
     this.emit('combatStop');
@@ -646,12 +649,37 @@ class GameEngine {
           if (key === 'burn') dmg = def.baseDmg * Math.pow(1.3, fx.stacks - 1);
           dmg = Math.floor(dmg);
           if (dmg > 0) {
-            if (target === 'monster') this.state.combat.monsterHp -= dmg;
-            else this.state.combat.playerHp -= dmg;
+            if (target === 'monster') {
+              this.state.combat.monsterHp -= dmg;
+              this.emit('combatHit', { who:'player', dmg, style:key, dot:true });
+              // Track DoT damage in session + lifetime
+              const sd = this.state.combat._sessionDmg;
+              if (sd) { sd.total = (sd.total||0)+dmg; sd[key] = (sd[key]||0)+dmg; }
+              if (!this.state.stats.dmg) this.state.stats.dmg = {};
+              this.state.stats.dmg.total = (this.state.stats.dmg.total||0)+dmg;
+              this.state.stats.dmg[key]  = (this.state.stats.dmg[key]||0)+dmg;
+            } else {
+              this.state.combat.playerHp -= dmg;
+              this.emit('combatHit', { who:'monster', dmg, style:key, dot:true });
+              const sd = this.state.combat._sessionDmg;
+              if (sd) sd.taken = (sd.taken||0)+dmg;
+              if (!this.state.stats.dmg) this.state.stats.dmg = {};
+              this.state.stats.dmg.taken = (this.state.stats.dmg.taken||0)+dmg;
+            }
           }
           if (key === 'poison' && fx.stacks >= def.explodeStacks) {
-            if (target === 'monster') this.state.combat.monsterHp -= def.explodeDmg;
-            else this.state.combat.playerHp -= def.explodeDmg;
+            const exDmg = def.explodeDmg;
+            if (target === 'monster') {
+              this.state.combat.monsterHp -= exDmg;
+              this.emit('combatHit', { who:'player', dmg:exDmg, style:'poison', dot:true, crit:true });
+              const sd = this.state.combat._sessionDmg;
+              if (sd) { sd.total=(sd.total||0)+exDmg; sd.poison=(sd.poison||0)+exDmg; }
+            } else {
+              this.state.combat.playerHp -= exDmg;
+              this.emit('combatHit', { who:'monster', dmg:exDmg, style:'poison', dot:true, crit:true });
+              const sd = this.state.combat._sessionDmg;
+              if (sd) sd.taken=(sd.taken||0)+exDmg;
+            }
             delete effects[key]; continue;
           }
         }
@@ -805,7 +833,7 @@ class GameEngine {
       this.state.combat._lastPlayerHit = dmg;
 
       // ── SESSION + LIFETIME DAMAGE TRACKING ──
-      const sd = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 });
+      const sd = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, burn:0, poison:0, bleed:0, total:0, taken:0, hits:0, misses:0, crits:0 });
       sd[style] = (sd[style] || 0) + dmg;
       sd.total  = (sd.total  || 0) + dmg;
       sd.hits   = (sd.hits   || 0) + 1;
@@ -819,7 +847,7 @@ class GameEngine {
       // Track highest hit
       if (!this.state.stats.highestHit || dmg > this.state.stats.highestHit) this.state.stats.highestHit = dmg;
     } else {
-      const sd2 = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 });
+      const sd2 = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, burn:0, poison:0, bleed:0, total:0, taken:0, hits:0, misses:0, crits:0 });
       sd2.misses = (sd2.misses || 0) + 1;
       this.emit('combatHit', { who:'player', dmg:0, miss:true, style });
     }
@@ -1062,7 +1090,7 @@ class GameEngine {
       this.emit('combatHit', { who:'monster', dmg });
 
       // Track damage taken
-      const sdT = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 });
+      const sdT = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, burn:0, poison:0, bleed:0, total:0, taken:0, hits:0, misses:0, crits:0 });
       sdT.taken = (sdT.taken || 0) + dmg;
       if (!this.state.stats.dmg) this.state.stats.dmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0 };
       this.state.stats.dmg.taken = (this.state.stats.dmg.taken || 0) + dmg;
@@ -2233,7 +2261,7 @@ class GameEngine {
     if (totalDmg > 0) {
       c.monsterHp -= totalDmg;
       // Track ability damage
-      const sdA = c._sessionDmg || (c._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 });
+      const sdA = c._sessionDmg || (c._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, burn:0, poison:0, bleed:0, total:0, taken:0, hits:0, misses:0, crits:0 });
       sdA.ability = (sdA.ability || 0) + totalDmg;
       sdA.total   = (sdA.total   || 0) + totalDmg;
       sdA.hits    = (sdA.hits    || 0) + 1;

@@ -1241,13 +1241,16 @@ class UI {
     html += `<div class="dmg-tracker-panel" id="dmg-tracker">
       <div class="sl-dmg-header">
         <span class="sl-dmg-title">⚔ Damage Tracker</span>
-        <button class="sl-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,total:0,taken:0,hits:0,misses:0,crits:0};game.state.combat._sessionStartTime=Date.now();ui._lastSessionGold=0;ui.renderPage('combat')">Reset</button>
+        <button class="sl-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,burn:0,poison:0,bleed:0,total:0,taken:0,hits:0,misses:0,crits:0};game.state.combat._sessionStartTime=Date.now();ui._lastSessionGold=0;ui.renderPage('combat')">Reset</button>
       </div>
       <div class="sl-dmg-grid">
         <div class="sl-dmg-row sl-dmg-melee"><span class="sl-dmg-type">Melee</span><span class="sl-dmg-val" id="sd-melee">${this.fmt(_sd.melee||0)}</span></div>
         <div class="sl-dmg-row sl-dmg-ranged"><span class="sl-dmg-type">Ranged</span><span class="sl-dmg-val" id="sd-ranged">${this.fmt(_sd.ranged||0)}</span></div>
         <div class="sl-dmg-row sl-dmg-magic"><span class="sl-dmg-type">Magic</span><span class="sl-dmg-val" id="sd-magic">${this.fmt(_sd.magic||0)}</span></div>
         <div class="sl-dmg-row sl-dmg-ability"><span class="sl-dmg-type">Ability</span><span class="sl-dmg-val" id="sd-ability">${this.fmt(_sd.ability||0)}</span></div>
+        <div class="sl-dmg-row sl-dmg-burn"><span class="sl-dmg-type">🔥 Burn</span><span class="sl-dmg-val" id="sd-burn">${this.fmt(_sd.burn||0)}</span></div>
+        <div class="sl-dmg-row sl-dmg-poison"><span class="sl-dmg-type">☠ Poison</span><span class="sl-dmg-val" id="sd-poison">${this.fmt(_sd.poison||0)}</span></div>
+        <div class="sl-dmg-row sl-dmg-bleed2"><span class="sl-dmg-type">🩸 Bleed</span><span class="sl-dmg-val" id="sd-bleed">${this.fmt(_sd.bleed||0)}</span></div>
         <div class="sl-dmg-row sl-dmg-total"><span class="sl-dmg-type">Total</span><span class="sl-dmg-val" id="sd-total">${this.fmt(_totalDmg)}</span></div>
         <div class="sl-dmg-row sl-dmg-taken"><span class="sl-dmg-type">Taken</span><span class="sl-dmg-val" id="sd-taken">${this.fmt(_sd.taken||0)}</span></div>
       </div>
@@ -3951,6 +3954,15 @@ class UI {
       if (d.ability) {
         typeClass = 'splat-ability';
         prefix = '✦ ';
+      } else if (style === 'burn') {
+        typeClass = 'splat-burn';
+        prefix = '🔥';
+      } else if (style === 'poison') {
+        typeClass = 'splat-poison';
+        prefix = '☠';
+      } else if (style === 'bleed') {
+        typeClass = 'splat-bleed';
+        prefix = '🩸';
       } else if (style === 'magic') {
         typeClass = 'splat-magic';
       } else if (style === 'ranged') {
@@ -4274,6 +4286,9 @@ class UI {
           _set('sd-ranged', this.fmt(_sd.ranged || 0));
           _set('sd-magic',  this.fmt(_sd.magic  || 0));
           _set('sd-ability',this.fmt(_sd.ability|| 0));
+          _set('sd-burn',   this.fmt(_sd.burn   || 0));
+          _set('sd-poison', this.fmt(_sd.poison || 0));
+          _set('sd-bleed',  this.fmt(_sd.bleed  || 0));
           _set('sd-total',  this.fmt(_total));
           _set('sd-taken',  this.fmt(_sd.taken  || 0));
           _set('sd-kills',  s.combat._sessionKills || 0);
