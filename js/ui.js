@@ -285,6 +285,9 @@ class UI {
     if (typeof online !== 'undefined' && this._lastPage === 'chat' && pageId !== 'chat') {
       online.stopChatListener();
     }
+    if (this._lastPage === 'bounty_board' && pageId !== 'bounty_board') {
+      this._stopBountyListener();
+    }
     this._lastPage = pageId;
     const main = document.getElementById('main-content');
     const skill = GAME_DATA.skills[pageId];
@@ -3586,63 +3589,69 @@ class UI {
     const tab = this._bountyTab || 'all';
     const s = this.engine.state;
 
-    // ── TABS ──────────────────────────────────────────────
     html += `<div class="bounty-tabs">
-      <button class="bounty-tab ${tab==='all'?'active':''}" onclick="ui._bountyTab='all';ui.renderPage('bounty_board')">All</button>
-      <button class="bounty-tab ${tab==='pvp'?'active':''}" onclick="ui._bountyTab='pvp';ui.renderPage('bounty_board')">⚔ PvP</button>
-      <button class="bounty-tab ${tab==='monster'?'active':''}" onclick="ui._bountyTab='monster';ui.renderPage('bounty_board')">💀 Monster Contracts</button>
-      <button class="bounty-tab ${tab==='gather'?'active':''}" onclick="ui._bountyTab='gather';ui.renderPage('bounty_board')">🌿 Gather Contracts</button>
-      <button class="bounty-tab ${tab==='mine'?'active':''}" onclick="ui._bountyTab='mine';ui.renderPage('bounty_board')">📜 Mine</button>
+      <button class="bounty-tab ${tab==='all'?'active':''}" onclick="ui._bountyTab='all';ui._bountyRefresh()">All</button>
+      <button class="bounty-tab ${tab==='pvp'?'active':''}" onclick="ui._bountyTab='pvp';ui._bountyRefresh()">⚔ PvP</button>
+      <button class="bounty-tab ${tab==='monster'?'active':''}" onclick="ui._bountyTab='monster';ui._bountyRefresh()">💀 Monster</button>
+      <button class="bounty-tab ${tab==='gather'?'active':''}" onclick="ui._bountyTab='gather';ui._bountyRefresh()">🌿 Gather</button>
+      <button class="bounty-tab ${tab==='mine'?'active':''}" onclick="ui._bountyTab='mine';ui._bountyRefresh()">📜 Mine</button>
     </div>`;
 
-    // ── POST A BOUNTY PANEL ───────────────────────────────
-    html += `<div class="bounty-post-panel">
-      <div class="bounty-post-header" onclick="this.parentElement.classList.toggle('open')">
+    // ── POST PANEL (no script tag — uses onclick bound to ui methods) ─────
+    html += `<div class="bounty-post-panel" id="bb-panel">
+      <div class="bounty-post-header" onclick="document.getElementById('bb-panel').classList.toggle('open')">
         <span>+ Post a Bounty</span>
         <span class="bp-gold">Balance: ${this.fmt(s.gold)}g</span>
       </div>
       <div class="bounty-post-body">
         <div class="bp-type-row">
           <label>Type:</label>
-          <select id="bb-type" class="chat-input" onchange="ui._bbTypeChange()" style="flex:1">
+          <select id="bb-type" class="chat-input" onchange="ui.bbTypeChange()" style="flex:1">
             <option value="pvp">⚔ PvP Bounty — Kill a specific player</option>
             <option value="monster">💀 Monster Contract — Kill N monsters</option>
             <option value="gather">🌿 Gather Contract — Gather N items</option>
           </select>
         </div>
+
         <div id="bb-pvp-fields">
           <div class="bp-row">
             <label>Target Player:</label>
-            <input type="text" id="bb-target-name" class="chat-input" placeholder="Exact display name">
+            <div style="flex:1;position:relative">
+              <input type="text" id="bb-target-name" class="chat-input" placeholder="Search player name..." oninput="ui.bbSearchPlayers(this.value)" autocomplete="off" style="width:100%">
+              <div id="bb-player-results" class="bb-player-dropdown" style="display:none"></div>
+            </div>
           </div>
         </div>
+
         <div id="bb-monster-fields" style="display:none">
           <div class="bp-row">
             <label>Monster:</label>
             <select id="bb-monster-id" class="chat-input" style="flex:1">
-              ${Object.entries(GAME_DATA.monsters).filter(([,m])=>m.name&&m.combatLevel).sort((a,b)=>(a[1].combatLevel||0)-(b[1].combatLevel||0)).map(([id,m])=>`<option value="${id}">Cb${m.combatLevel} ${m.name}</option>`).join('')}
+              ${Object.entries(GAME_DATA.monsters).filter(([,m])=>m.name&&m.combatLevel).sort((a,b)=>(a[1].combatLevel||0)-(b[1].combatLevel||0)).map(([id,m])=>`<option value="${id}">Cb${m.combatLevel} ${this.escHtml(m.name)}</option>`).join('')}
             </select>
           </div>
           <div class="bp-row">
             <label>Kill Count:</label>
-            <input type="number" id="bb-monster-qty" class="chat-input" placeholder="e.g. 50" min="1" max="1000" value="25" style="width:120px">
+            <input type="number" id="bb-monster-qty" class="chat-input" min="1" max="1000" value="25" style="width:120px">
           </div>
         </div>
+
         <div id="bb-gather-fields" style="display:none">
           <div class="bp-row">
             <label>Item:</label>
             <select id="bb-item-id" class="chat-input" style="flex:1">
-              ${Object.entries(GAME_DATA.items).filter(([,it])=>it.type==='resource'||it.type==='ore'||it.type==='log'||it.subtype==='herb').sort((a,b)=>a[1].name?.localeCompare(b[1].name)).map(([id,it])=>`<option value="${id}">${it.name}</option>`).join('')}
+              ${Object.entries(GAME_DATA.items).filter(([,it])=>it&&(it.type==='resource'||it.type==='ore'||it.type==='log'||it.subtype==='herb')).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||'')).map(([id,it])=>`<option value="${id}">${this.escHtml(it.name)}</option>`).join('')}
             </select>
           </div>
           <div class="bp-row">
             <label>Gather Amount:</label>
-            <input type="number" id="bb-gather-qty" class="chat-input" placeholder="e.g. 100" min="1" max="5000" value="100" style="width:120px">
+            <input type="number" id="bb-gather-qty" class="chat-input" min="1" max="5000" value="100" style="width:120px">
           </div>
         </div>
+
         <div class="bp-row">
-          <label>Reward (gold):</label>
-          <input type="number" id="bb-amount" class="chat-input" placeholder="Min 500g" min="500" style="width:140px">
+          <label>Reward (g):</label>
+          <input type="number" id="bb-amount" class="chat-input" placeholder="Min 500g" min="500" style="width:130px">
           <div class="bp-quick-btns">
             <button class="btn btn-xs" onclick="document.getElementById('bb-amount').value=1000">1k</button>
             <button class="btn btn-xs" onclick="document.getElementById('bb-amount').value=5000">5k</button>
@@ -3650,6 +3659,7 @@ class UI {
             <button class="btn btn-xs" onclick="document.getElementById('bb-amount').value=100000">100k</button>
           </div>
         </div>
+
         <div class="bp-row">
           <label>Duration:</label>
           <select id="bb-duration" class="chat-input" style="width:160px">
@@ -3660,41 +3670,121 @@ class UI {
             <option value="604800000">7 days</option>
           </select>
         </div>
-        <button class="btn btn-primary" onclick="ui._submitBounty()">Post Bounty</button>
+
+        <button class="btn btn-primary" onclick="ui.submitBounty()">Post Bounty</button>
       </div>
     </div>`;
 
-    // ── BOUNTY LIST ───────────────────────────────────────
     html += `<div class="bounty-list-section">
       <div class="bounty-list-header">
         <span class="section-title">${tab==='mine'?'My Bounties':'Active Bounties'}</span>
-        <button class="btn btn-xs" onclick="ui.loadBounties()">↻ Refresh</button>
+        <span class="bounty-live-badge">● LIVE</span>
       </div>
       <div id="bounty-list"><div class="bank-empty">Loading...</div></div>
     </div>`;
 
-    html += `<script>
-      ui._bbTypeChange = function() {
-        const t = document.getElementById('bb-type').value;
-        document.getElementById('bb-pvp-fields').style.display    = t==='pvp'?'':'none';
-        document.getElementById('bb-monster-fields').style.display= t==='monster'?'':'none';
-        document.getElementById('bb-gather-fields').style.display = t==='gather'?'':'none';
-      };
-      ui._submitBounty = async function() {
-        const type = document.getElementById('bb-type').value;
-        const amount = parseInt(document.getElementById('bb-amount').value||0);
-        const duration = parseInt(document.getElementById('bb-duration').value);
-        const opts = {type, amount, duration};
-        if (type==='pvp')     opts.targetName = document.getElementById('bb-target-name').value.trim();
-        if (type==='monster') { opts.monsterId=document.getElementById('bb-monster-id').value; opts.qty=parseInt(document.getElementById('bb-monster-qty').value||0); }
-        if (type==='gather')  { opts.itemId=document.getElementById('bb-item-id').value; opts.qty=parseInt(document.getElementById('bb-gather-qty').value||0); }
-        const id = await online.placeBounty(opts);
-        if (id) ui.loadBounties();
-      };
-    </script>`;
-
     el.innerHTML = html;
-    this.loadBounties();
+    this._startBountyListener();
+  }
+
+  bbTypeChange() {
+    const t = document.getElementById('bb-type')?.value;
+    if (!t) return;
+    document.getElementById('bb-pvp-fields').style.display     = t==='pvp'     ? '' : 'none';
+    document.getElementById('bb-monster-fields').style.display = t==='monster' ? '' : 'none';
+    document.getElementById('bb-gather-fields').style.display  = t==='gather'  ? '' : 'none';
+  }
+
+  async bbSearchPlayers(query) {
+    const dropdown = document.getElementById('bb-player-results');
+    if (!dropdown) return;
+    if (!query || query.length < 2) { dropdown.style.display = 'none'; return; }
+    const results = await online.searchPlayers(query);
+    if (!results.length) { dropdown.style.display = 'none'; return; }
+    dropdown.innerHTML = results.map(p =>
+      `<div class="bb-player-option" onclick="ui.bbSelectPlayer('${this.escHtml(p.name)}')">
+        <span class="bb-player-name">${this.escHtml(p.name)}</span>
+        <span class="bb-player-stats">Cb ${p.combatLevel} | Lv ${p.totalLevel}</span>
+      </div>`
+    ).join('');
+    dropdown.style.display = 'block';
+  }
+
+  bbSelectPlayer(name) {
+    const inp = document.getElementById('bb-target-name');
+    if (inp) inp.value = name;
+    const drop = document.getElementById('bb-player-results');
+    if (drop) drop.style.display = 'none';
+  }
+
+  async submitBounty() {
+    const type     = document.getElementById('bb-type')?.value;
+    const amount   = parseInt(document.getElementById('bb-amount')?.value || 0);
+    const duration = parseInt(document.getElementById('bb-duration')?.value || 86400000);
+    const opts = { type, amount, duration };
+    if (type === 'pvp')     { opts.targetName = document.getElementById('bb-target-name')?.value?.trim(); }
+    if (type === 'monster') { opts.monsterId  = document.getElementById('bb-monster-id')?.value; opts.qty = parseInt(document.getElementById('bb-monster-qty')?.value || 0); }
+    if (type === 'gather')  { opts.itemId     = document.getElementById('bb-item-id')?.value;    opts.qty = parseInt(document.getElementById('bb-gather-qty')?.value || 0); }
+    await online.placeBounty(opts);
+    // Listener will auto-refresh; collapse panel
+    document.getElementById('bb-panel')?.classList.remove('open');
+  }
+
+  _bountyRefresh() {
+    // Stop old listener, re-render page which starts fresh listener
+    this._stopBountyListener();
+    this.renderPage('bounty_board');
+  }
+
+  _stopBountyListener() {
+    if (this._bountyUnsub) { try { this._bountyUnsub(); } catch(e){} this._bountyUnsub = null; }
+  }
+
+  _startBountyListener() {
+    this._stopBountyListener();
+    if (typeof online === 'undefined' || !online.isOnline || !online.firestore) return;
+    const tab = this._bountyTab || 'all';
+
+    const renderCards = (docs) => {
+      const container = document.getElementById('bounty-list');
+      if (!container) { this._stopBountyListener(); return; }
+      const now = new Date();
+      const bounties = docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(b => {
+          const exp = b.expiresAt?.toDate ? b.expiresAt.toDate() : (b.expiresAt ? new Date(b.expiresAt) : null);
+          if (tab !== 'mine' && exp && exp < now) return false;
+          return true;
+        });
+      if (!bounties.length) {
+        container.innerHTML = `<div class="bank-empty">${tab==='mine'?'No bounties posted yet.':'No active bounties. Be the first!'}</div>`;
+        return;
+      }
+      container.innerHTML = '<div class="bounty-cards">' + bounties.map(b => this._bountyCard(b)).join('') + '</div>';
+    };
+
+    try {
+      if (tab === 'mine') {
+        this._bountyUnsub = online.firestore.collection('bounties')
+          .where('placedBy', '==', online.user.uid)
+          .orderBy('timestamp', 'desc')
+          .limit(25)
+          .onSnapshot(snap => renderCards(snap.docs), err => console.error('Bounty listener err:', err));
+      } else {
+        let q = online.firestore.collection('bounties')
+          .where('claimed', '==', false)
+          .where('cancelled', '==', false)
+          .orderBy('amount', 'desc')
+          .limit(50);
+        if (tab !== 'all') q = online.firestore.collection('bounties')
+          .where('type', '==', tab)
+          .where('claimed', '==', false)
+          .where('cancelled', '==', false)
+          .orderBy('amount', 'desc')
+          .limit(50);
+        this._bountyUnsub = q.onSnapshot(snap => renderCards(snap.docs), err => console.error('Bounty listener err:', err));
+      }
+    } catch(e) { console.error('Failed to start bounty listener:', e); }
   }
 
   _bountyCard(b) {
@@ -3777,31 +3867,18 @@ class UI {
   }
 
   async loadBounties() {
-    const container = document.getElementById('bounty-list');
-    if (!container) return;
-    container.innerHTML = '<div class="bank-empty">Loading...</div>';
-    const tab = this._bountyTab || 'all';
-    let bounties = [];
-    if (tab === 'mine') {
-      bounties = await online.getMyBounties();
-    } else {
-      bounties = await online.getActiveBounties(tab === 'all' ? 'all' : tab);
-    }
-    if (bounties.length === 0) {
-      container.innerHTML = `<div class="bank-empty">${tab==='mine'?'You have no bounties posted.':'No active bounties. Be the first!'}</div>`;
-      return;
-    }
-    container.innerHTML = '<div class="bounty-cards">' + bounties.map(b => this._bountyCard(b)).join('') + '</div>';
+    // Backward compat — now just restarts the real-time listener
+    this._startBountyListener();
   }
 
   async _claimBounty(id) {
     const ok = await online.claimBounty(id);
-    if (ok) this.loadBounties();
+    // listener auto-refreshes
   }
 
   async _cancelBounty(id) {
     await online.cancelBounty(id);
-    this.loadBounties();
+    // listener auto-refreshes
   }
 
   // ── LEADERBOARD PAGE ───────────────────────────────────
