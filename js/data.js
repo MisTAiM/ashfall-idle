@@ -539,18 +539,53 @@ const GAME_DATA = {
   ],
 
   abilities: [
-    {id:'power_strike', name:'Power Strike', style:'melee', desc:'Next melee hit deals 200% damage.',cooldown:15,tacticsReq:1, effect:{type:'buff',stat:'damageMult',value:2,hits:1}},
-    {id:'quick_shot',   name:'Quick Shot',   style:'ranged',desc:'Instant ranged shot, +50% damage.', cooldown:12,tacticsReq:1, effect:{type:'multi',shots:1,mult:1.5,style:'ranged'}},
-    {id:'fireball',     name:'Fireball',     style:'magic', desc:'Magic damage + Burn (3 stacks).',cooldown:18,tacticsReq:1, effect:{type:'nuke',mult:1.5,burnStacks:3}},
-    {id:'war_cry',      name:'War Cry',      style:'any',   desc:'+25% damage for 15s.',            cooldown:60,tacticsReq:10,effect:{type:'combat_buff',dmgBonus:25,duration:15}},
-    {id:'ice_blast',    name:'Ice Blast',    style:'magic', desc:'Freezes target (5 stacks).',      cooldown:25,tacticsReq:10,effect:{type:'debuff',freeze:5}},
-    {id:'venom_strike', name:'Venom Strike', style:'melee', desc:'Apply Poison (2 stacks).',        cooldown:20,tacticsReq:15,effect:{type:'debuff',poison:2}},
-    {id:'execute',      name:'Execute',      style:'melee', desc:'3x damage if target below 30% HP.',cooldown:30,tacticsReq:25,effect:{type:'execute',mult:3,threshold:0.30}},
-    {id:'heal',         name:'Heal',         style:'any',   desc:'Restore 30% of max HP.',          cooldown:45,tacticsReq:20,effect:{type:'heal',pct:0.30}},
-    {id:'shadow_step',  name:'Shadow Step',  style:'melee', desc:'Dodge next attack + deal 50 dmg.',cooldown:20,tacticsReq:12,effect:{type:'dodge_strike',baseDmg:50,dodges:1,duration:5}},
-    {id:'soul_drain',   name:'Soul Drain',   style:'magic', desc:'Magic damage + heal 50% dealt.',  cooldown:22,tacticsReq:18,effect:{type:'lifesteal_spell',mult:1.2,stealPct:50}},
-    {id:'rallying_cry', name:'Rallying Cry', style:'any',   desc:'+15% Defence for 20s.',           cooldown:40,tacticsReq:15,effect:{type:'defence_buff',reducePct:15,duration:20}},
-    {id:'double_shot',  name:'Double Shot',  style:'ranged',desc:'Two rapid shots at 80% damage.',  cooldown:16,tacticsReq:12,effect:{type:'multi',shots:2,mult:0.8,style:'ranged'}},
+    // ── MELEE ────────────────────────────────────────────────────────────────
+    {id:'power_strike',    name:'Power Strike',    style:'melee', tacticsReq:1,  cooldown:15, desc:'Next melee hit deals 200% damage.',
+      effect:{type:'buff', value:2}},
+    {id:'cleave',          name:'Cleave',           style:'melee', tacticsReq:8,  cooldown:20, desc:'Three wide swings at 70% damage each.',
+      effect:{type:'cleave', hits:3, mult:0.7}},
+    {id:'venom_strike',    name:'Venom Strike',     style:'melee', tacticsReq:15, cooldown:20, desc:'Strike that applies 3 stacks of Poison.',
+      effect:{type:'debuff', poison:3}},
+    {id:'execute',         name:'Execute',          style:'melee', tacticsReq:25, cooldown:30, desc:'3× weapon damage if target is below 30% HP.',
+      effect:{type:'execute', mult:3, threshold:0.30}},
+    {id:'blood_pact',      name:'Blood Pact',       style:'melee', tacticsReq:30, cooldown:45, desc:'Sacrifice 20% of your max HP to deal massive damage.',
+      effect:{type:'blood_sacrifice', hpCost:0.20, mult:4}},
+    {id:'shadow_step',     name:'Shadow Step',      style:'melee', tacticsReq:12, cooldown:22, desc:'Dodge the next monster attack, then strike for 150% damage.',
+      effect:{type:'dodge_strike', dodges:1, duration:8}},
+    {id:'mark_of_death',   name:'Mark of Death',    style:'melee', tacticsReq:50, cooldown:60, desc:'Mark target: all attacks deal +30% damage for 20s.',
+      effect:{type:'mark_of_death', dmgBonus:30, duration:20}},
+
+    // ── RANGED ───────────────────────────────────────────────────────────────
+    {id:'quick_shot',      name:'Quick Shot',       style:'ranged',tacticsReq:1,  cooldown:12, desc:'Instant ranged shot at 150% weapon damage.',
+      effect:{type:'multi', shots:1, mult:1.5, style:'ranged'}},
+    {id:'double_shot',     name:'Double Shot',      style:'ranged',tacticsReq:12, cooldown:16, desc:'Two rapid shots at 80% weapon damage each.',
+      effect:{type:'multi', shots:2, mult:0.8, style:'ranged'}},
+    {id:'barrage',         name:'Barrage',          style:'ranged',tacticsReq:25, cooldown:28, desc:'Fire 5 arrows at 65% damage each (325% total).',
+      effect:{type:'barrage', hits:5, mult:0.65}},
+
+    // ── MAGIC ────────────────────────────────────────────────────────────────
+    {id:'fireball',        name:'Fireball',         style:'magic', tacticsReq:1,  cooldown:18, desc:'150% magic damage + 3 stacks of Burn.',
+      effect:{type:'nuke', mult:1.5, burnStacks:3}},
+    {id:'ice_blast',       name:'Ice Blast',        style:'magic', tacticsReq:10, cooldown:25, desc:'Freeze the target for 5 stacks.',
+      effect:{type:'debuff', freeze:5}},
+    {id:'soul_drain',      name:'Soul Drain',       style:'magic', tacticsReq:18, cooldown:22, desc:'120% magic damage; heal 50% of damage dealt.',
+      effect:{type:'lifesteal_spell', mult:1.2, stealPct:50}},
+    {id:'void_rupture',    name:'Void Rupture',     style:'magic', tacticsReq:40, cooldown:35, desc:'200% magic damage that partially ignores evasion.',
+      effect:{type:'void_rupture', mult:2.0}},
+
+    // ── ANY STYLE ─────────────────────────────────────────────────────────────
+    {id:'war_cry',         name:'War Cry',          style:'any',   tacticsReq:10, cooldown:60, desc:'+25 Strength bonus for 15 seconds.',
+      effect:{type:'combat_buff', dmgBonus:25, duration:15}},
+    {id:'heal',            name:'Mending Touch',    style:'any',   tacticsReq:20, cooldown:45, desc:'Restore 30% of your maximum HP.',
+      effect:{type:'heal', pct:0.30}},
+    {id:'rallying_cry',    name:'Rallying Cry',     style:'any',   tacticsReq:15, cooldown:40, desc:'+15% Damage Reduction for 20 seconds.',
+      effect:{type:'defence_buff', reducePct:15, duration:20}},
+    {id:'expose_weakness', name:'Expose Weakness',  style:'any',   tacticsReq:20, cooldown:30, desc:'+30 Attack bonus vs this target for 30 seconds.',
+      effect:{type:'expose', bonus:30, duration:30}},
+    {id:'vengeance',       name:'Vengeance',        style:'any',   tacticsReq:35, cooldown:50, desc:'Reflect the next monster hit back at 150% damage.',
+      effect:{type:'vengeance', reflectMult:1.5}},
+    {id:'prayer_surge',    name:'Prayer Surge',     style:'any',   tacticsReq:45, cooldown:70, desc:'Restore 40 Prayer Points and boost Str+Def by 8 for 20s.',
+      effect:{type:'prayer_surge', ppRestore:40, statBoost:8, duration:20}},
   ],
 
   worldBosses: [
@@ -2529,4 +2564,90 @@ GAME_DATA.shop.push(
   {item:'master_wand',         price:25000, category:'weapons'},
 );
 
-console.log('[Ashfall] Equipment overhaul applied. New weapons:', Object.keys(GAME_DATA.items).filter(k=>GAME_DATA.items[k].type==='weapon').length, '| Accessories:', _newAccessories.length);
+// ── FARMING SYSTEM DEPTH ─────────────────────────────────────────
+// Farming's advantage: bulk yields (6-15 per harvest) + exclusive crops
+// Foraging gives 1 herb at a time. Farming gives 5-15 per plot. That's 5-15x efficiency.
+// Plus: ranarr, torstol, snapdragon are FARMING-ONLY. Required for best potions.
+
+// Farming-exclusive herbs (not in foraging)
+if (!GAME_DATA.items.snapdragon) GAME_DATA.items.snapdragon = {id:'snapdragon',name:'Snapdragon',type:'resource',subtype:'herb',sellPrice:120,sprite:'herb-silver',desc:'A sharp-smelling herb only found in cultivated plots. Used in unfinished potions.'};
+if (!GAME_DATA.items.dwarf_weed) GAME_DATA.items.dwarf_weed = {id:'dwarf_weed',name:'Dwarf Weed',type:'resource',subtype:'herb',sellPrice:80,sprite:'herb-purple',desc:'A squat, bitter herb grown only through farming. Used in ranging potions.'};
+if (!GAME_DATA.items.irit_leaf) GAME_DATA.items.irit_leaf = {id:'irit_leaf',name:'Irit Leaf',type:'resource',subtype:'herb',sellPrice:60,sprite:'herb-pale',desc:'A sharp-edged herb from farming plots. Used in super potions.'};
+if (!GAME_DATA.items.kwuarm) GAME_DATA.items.kwuarm = {id:'kwuarm',name:'Kwuarm',type:'resource',subtype:'herb',sellPrice:90,sprite:'herb-red',desc:'A pungent farming herb. Required for super strength potions.'};
+if (!GAME_DATA.items.lantadyme) GAME_DATA.items.lantadyme = {id:'lantadyme',name:'Lantadyme',type:'resource',subtype:'herb',sellPrice:150,sprite:'herb-pale',desc:'A rare blue herb. Only growable via farming. Used in extreme potions.'};
+
+// Farming-exclusive seeds for those herbs
+if (!GAME_DATA.items.snapdragon_seed) GAME_DATA.items.snapdragon_seed = {id:'snapdragon_seed',name:'Snapdragon Seed',type:'seed',seedType:'herb',growTime:2400,yield:'snapdragon',baseYield:6,levelReq:62,xp:98.0,sellPrice:90,sprite:'misc-seed',desc:'Herb crop. Grows in 40 min. Farming-exclusive herb.'};
+if (!GAME_DATA.items.dwarf_weed_seed) GAME_DATA.items.dwarf_weed_seed = {id:'dwarf_weed_seed',name:'Dwarf Weed Seed',type:'seed',seedType:'herb',growTime:2200,yield:'dwarf_weed',baseYield:6,levelReq:70,xp:121.0,sellPrice:120,sprite:'misc-seed',desc:'Herb crop. Grows in 36 min.'};
+if (!GAME_DATA.items.irit_seed) GAME_DATA.items.irit_seed = {id:'irit_seed',name:'Irit Seed',type:'seed',seedType:'herb',growTime:1600,yield:'irit_leaf',baseYield:7,levelReq:44,xp:43.0,sellPrice:50,sprite:'misc-seed',desc:'Herb crop. Grows in 26 min.'};
+if (!GAME_DATA.items.kwuarm_seed) GAME_DATA.items.kwuarm_seed = {id:'kwuarm_seed',name:'Kwuarm Seed',type:'seed',seedType:'herb',growTime:2000,yield:'kwuarm',baseYield:6,levelReq:56,xp:78.0,sellPrice:75,sprite:'misc-seed',desc:'Herb crop. Grows in 33 min.'};
+if (!GAME_DATA.items.lantadyme_seed) GAME_DATA.items.lantadyme_seed = {id:'lantadyme_seed',name:'Lantadyme Seed',type:'seed',seedType:'herb',growTime:3200,yield:'lantadyme',baseYield:5,levelReq:73,xp:151.0,sellPrice:130,sprite:'misc-seed',desc:'Herb crop. Grows in 53 min.'};
+if (!GAME_DATA.items.celestial_seed) GAME_DATA.items.celestial_seed = {id:'celestial_seed',name:'Celestial Seed',type:'seed',seedType:'herb',growTime:5400,yield:'celestial_herb',baseYield:4,levelReq:90,xp:280.0,sellPrice:300,sprite:'misc-seed',desc:'A glowing seed. Farming level 90 required. Grows in 90 min.'};
+
+// Cooked crop foods — farming → cooking synergy
+// These are the ONLY source of high-tier food without fishing high-level fish
+if (!GAME_DATA.items.potato_stew) GAME_DATA.items.potato_stew = {id:'potato_stew',name:'Potato Stew',type:'food',heals:150,sellPrice:30,sprite:'food-basic',desc:'+150 HP. Hearty peasant stew.',buff:{stat:'strengthBonus',value:5,duration:60}};
+if (!GAME_DATA.items.tomato_soup) GAME_DATA.items.tomato_soup = {id:'tomato_soup',name:'Tomato Soup',type:'food',heals:120,sellPrice:22,sprite:'food-basic',desc:'+120 HP. Warm and restorative.'};
+if (!GAME_DATA.items.watermelon_slice) GAME_DATA.items.watermelon_slice = {id:'watermelon_slice',name:'Watermelon Slice',type:'food',heals:250,sellPrice:65,sprite:'food-basic',desc:'+250 HP. Juicy and refreshing. Premium food.'};
+if (!GAME_DATA.items.strawberry_tart) GAME_DATA.items.strawberry_tart = {id:'strawberry_tart',name:'Strawberry Tart',type:'food',heals:180,sellPrice:45,sprite:'food-basic',desc:'+180 HP. A sweet tart. Fast to eat.'};
+if (!GAME_DATA.items.sweetcorn_bread) GAME_DATA.items.sweetcorn_bread = {id:'sweetcorn_bread',name:'Cornbread',type:'food',heals:100,sellPrice:18,sprite:'food-basic',desc:'+100 HP. Budget-friendly farming food.'};
+if (!GAME_DATA.items.farm_feast) GAME_DATA.items.farm_feast = {id:'farm_feast',name:'Farm Feast',type:'food',heals:400,sellPrice:200,sprite:'food-basic',desc:'+400 HP. A grand meal using the finest crops.',buff:{stat:'damageReduction',value:5,duration:90}};
+if (!GAME_DATA.items.blood_stew) GAME_DATA.items.blood_stew = {id:'blood_stew',name:'Bloodroot Stew',type:'food',heals:220,sellPrice:80,sprite:'food-basic',desc:'+220 HP. Made from farmed bloodroot.',buff:{stat:'strengthBonus',value:8,duration:90}};
+
+// Add cooking recipes for farming crops
+GAME_DATA.recipes.cooking.push(
+  {id:'cook_potato_stew',    name:'Potato Stew',    level:10,xp:40, time:3.5,input:[{item:'potato',qty:3}],                              output:{item:'potato_stew',qty:1},   burnChance:0.10, desc:'Requires 3 farmed potatoes.'},
+  {id:'cook_tomato_soup',    name:'Tomato Soup',    level:15,xp:52, time:3.0,input:[{item:'tomato',qty:2}],                              output:{item:'tomato_soup',qty:1},   burnChance:0.10},
+  {id:'cook_sweetcorn_bread',name:'Cornbread',      level:20,xp:65, time:3.5,input:[{item:'sweetcorn',qty:4}],                          output:{item:'sweetcorn_bread',qty:1},burnChance:0.08},
+  {id:'cook_strawberry_tart',name:'Strawberry Tart',level:30,xp:120,time:4.0,input:[{item:'strawberry',qty:4}],                         output:{item:'strawberry_tart',qty:1},burnChance:0.05},
+  {id:'cook_watermelon',     name:'Watermelon Slice',level:43,xp:200,time:2.5,input:[{item:'watermelon',qty:1}],                        output:{item:'watermelon_slice',qty:1},burnChance:0.02},
+  {id:'cook_blood_stew',     name:'Bloodroot Stew', level:40,xp:180,time:4.5,input:[{item:'bloodroot',qty:3},{item:'potato',qty:2}],   output:{item:'blood_stew',qty:1},    burnChance:0.05},
+  {id:'cook_farm_feast',     name:'Farm Feast',     level:65,xp:500,time:8.0,input:[{item:'watermelon',qty:2},{item:'tomato',qty:3},{item:'strawberry',qty:3}], output:{item:'farm_feast',qty:1}, burnChance:0.03},
+);
+
+// Alchemy recipes using farming-exclusive herbs
+GAME_DATA.recipes.alchemy.push(
+  // Snapdragon recipes (Farming-exclusive)
+  {id:'brew_sanfew',       name:'Sanfew Serum',      level:65,xp:800, time:6.5,input:[{item:'snapdragon',qty:3},{item:'silverleaf',qty:2}],output:{item:'super_restore',qty:2},   desc:'Farming herb required. Yields 2 restores.'},
+  // Irit recipes
+  {id:'brew_super_atk_irit',name:'Super Attack (Irit)',level:45,xp:420,time:5.0,input:[{item:'irit_leaf',qty:2},{item:'silverleaf',qty:2}], output:{item:'super_attack',qty:1},    desc:'Irit grows only in farming plots.'},
+  // Kwuarm recipes
+  {id:'brew_kwuarm_str',   name:'Super Strength+',   level:55,xp:500, time:5.5,input:[{item:'kwuarm',qty:2},{item:'bloodroot',qty:1}],     output:{item:'super_strength',qty:1},  desc:'Kwuarm farming herb. Stronger strength potion.'},
+  // Dwarf weed recipes
+  {id:'brew_ranging_super',name:'Super Ranging',     level:72,xp:900, time:7.0,input:[{item:'dwarf_weed',qty:2},{item:'voidbloom',qty:1}], output:{item:'ranging_potion',qty:2},  desc:'Yields 2 ranging potions. Dwarf weed required.'},
+  // Lantadyme recipes
+  {id:'brew_magic_super',  name:'Super Magic',       level:76,xp:1000,time:7.5,input:[{item:'lantadyme',qty:2},{item:'voidbloom',qty:1}],  output:{item:'magic_potion',qty:2},    desc:'Yields 2 magic potions.'},
+  // Ranarr exclusive — better prayer potion
+  {id:'brew_ranarr_prayer',name:'Prayer Potion+',    level:38,xp:300, time:4.5,input:[{item:'ranarr',qty:2},{item:'snape_grass',qty:1}],   output:{item:'prayer_potion',qty:2},   desc:'Ranarr farming herb. Yields 2 prayer potions.'},
+  // Torstol — end-game extreme potions
+  {id:'brew_extreme_str',  name:'Extreme Strength',  level:88,xp:1400,time:9.0,input:[{item:'torstol',qty:1},{item:'kwuarm',qty:2}],      output:{item:'super_strength',qty:3},  desc:'Extreme potion. Requires torstol (Farming lv85).'},
+  {id:'brew_extreme_atk',  name:'Extreme Attack',    level:90,xp:1500,time:9.0,input:[{item:'torstol',qty:1},{item:'irit_leaf',qty:2}],   output:{item:'super_attack',qty:3},    desc:'Extreme potion. Requires torstol.'},
+);
+
+// Add seeds to shop under farming category
+const _farmSeeds = [
+  {item:'snapdragon_seed',price:180,category:'seeds'},
+  {item:'irit_seed',      price:90, category:'seeds'},
+  {item:'kwuarm_seed',    price:140,category:'seeds'},
+  {item:'dwarf_weed_seed',price:220,category:'seeds'},
+  {item:'lantadyme_seed', price:300,category:'seeds'},
+  {item:'celestial_seed', price:800,category:'seeds'},
+];
+for (const s of _farmSeeds) {
+  if (!GAME_DATA.shop.find(x=>x.item===s.item)) GAME_DATA.shop.push(s);
+}
+
+// Herb seeds drop from monster kills (motivation to combat + farm)
+for (const [mId, mon] of Object.entries(GAME_DATA.monsters)) {
+  if (!mon.drops) continue;
+  const cl = mon.combatLevel || 1;
+  if (cl >= 10  && cl < 30 && !mon.drops.find(d=>d.item==='herb_seed'))      mon.drops.push({item:'herb_seed',      qty:1,chance:0.04});
+  if (cl >= 30  && cl < 55 && !mon.drops.find(d=>d.item==='blood_seed'))     mon.drops.push({item:'blood_seed',     qty:1,chance:0.03});
+  if (cl >= 40  && cl < 70 && !mon.drops.find(d=>d.item==='irit_seed'))      mon.drops.push({item:'irit_seed',      qty:1,chance:0.025});
+  if (cl >= 55  && cl < 80 && !mon.drops.find(d=>d.item==='snapdragon_seed'))mon.drops.push({item:'snapdragon_seed',qty:1,chance:0.018});
+  if (cl >= 65  && cl < 90 && !mon.drops.find(d=>d.item==='kwuarm_seed'))    mon.drops.push({item:'kwuarm_seed',    qty:1,chance:0.015});
+  if (cl >= 75           && !mon.drops.find(d=>d.item==='dwarf_weed_seed'))  mon.drops.push({item:'dwarf_weed_seed',qty:1,chance:0.012});
+  if (cl >= 85           && !mon.drops.find(d=>d.item==='lantadyme_seed'))   mon.drops.push({item:'lantadyme_seed', qty:1,chance:0.008});
+}
+
+console.log('[Ashfall] Farming depth applied. Cooking crop recipes:', GAME_DATA.recipes.cooking.filter(r=>['potato_stew','tomato_soup','sweetcorn_bread','strawberry_tart','watermelon_slice','blood_stew','farm_feast'].includes(r.output?.item)).length);

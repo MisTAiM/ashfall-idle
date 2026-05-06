@@ -997,7 +997,17 @@ class GameEngine {
       dB = Math.floor(dB * (1 - 0.05 * curseFx.stacks));
     }
 
-    // Dodge chance (new)
+    // Shadow Step dodge charges (consume before dodge chance calc)
+    const dodgeBuff = this.state.combat.activeBuffs.find(b => b.stat === 'dodgeCharges');
+    if (dodgeBuff && dodgeBuff.value > 0) {
+      dodgeBuff.value--;
+      if (dodgeBuff.value <= 0) this.state.combat.activeBuffs = this.state.combat.activeBuffs.filter(b => b !== dodgeBuff);
+      this.emit('combatHit', { who:'monster', dmg:0, miss:true, dodge:true });
+      this.emit('notification', { type:'info', text:'Shadow Step — attack dodged!' });
+      return;
+    }
+
+    // Dodge chance (passive agility)
     const dodgeChance = GAME_DATA.combatFormulas?.dodgeChance
       ? GAME_DATA.combatFormulas.dodgeChance(dL, this.getStatTotal('agilityBonus') || 0)
       : 0;
@@ -1034,6 +1044,16 @@ class GameEngine {
       }
       this.state.combat.playerHp -= dmg;
       this.emit('combatHit', { who:'monster', dmg });
+
+      // Vengeance: reflect damage back at monster
+      const vengeBuff = this.state.combat.activeBuffs.find(b => b.stat === 'vengeance');
+      if (vengeBuff) {
+        const reflectDmg = Math.floor(dmg * vengeBuff.value);
+        this.state.combat.monsterHp -= reflectDmg;
+        this.state.combat.activeBuffs = this.state.combat.activeBuffs.filter(b => b !== vengeBuff);
+        this.emit('combatHit', { who:'player', dmg:reflectDmg });
+        this.emit('notification', { type:'success', text:`Vengeance! Reflected ${reflectDmg} damage!` });
+      }
 
       // Monster special attacks - apply status effects based on monster type
       const mName = (monster.name || '').toLowerCase();
@@ -1976,78 +1996,224 @@ class GameEngine {
   }
 
   // ── ABILITIES ──────────────────────────────────────────
-  useAbility(slotIdx) {
+  useAbility(abilityId) {
     const c = this.state.combat;
     if (!c.active) return;
-    const id = this.state.equippedAbilities[slotIdx]; if (!id) return;
-    const ab = GAME_DATA.abilities.find(a => a.id === id); if (!ab) return;
-    if ((c.abilityCooldowns[id] || 0) > 0) { this.emit('notification', { type:'warn', text:'On cooldown.' }); return; }
-    if (this.state.skills.tactics.level < ab.tacticsReq) return;
-    c.abilityCooldowns[id] = ab.cooldown;
+    // Accept ability ID directly (UI passes ID string)
+    const ab = GAME_DATA.abilities.find(a => a.id === abilityId);
+    if (!ab) return;
+    if ((c.abilityCooldowns[abilityId] || 0) > 0) { this.emit('notification', { type:'warn', text:`${ab.name} is on cooldown.` }); return; }
+    if (this.state.skills.tactics.level < (ab.tacticsReq || 1)) {
+      this.emit('notification', { type:'warn', text:`Requires Tactics level ${ab.tacticsReq}.` }); return;
+    }
+    c.abilityCooldowns[abilityId] = ab.cooldown;
     const eff = ab.effect;
     let totalDmg = 0;
+    let noteSuffix = '';
 
-    // Status effects on monster
-    if (eff.burn)   this.applyStatus('monster', 'burn',   eff.burn,   10);
-    if (eff.poison) this.applyStatus('monster', 'poison', eff.poison, 12);
-    if (eff.freeze) this.applyStatus('monster', 'freeze', eff.freeze, 8);
-
-    // Direct damage (fireball, shadow step, soul drain)
-    if (eff.directDmg) {
-      const baseDmg = eff.directDmg + Math.floor(this.state.skills.magic.level * 0.5);
-      totalDmg += baseDmg;
-    }
-
-    // Instant physical damage (quick shot, double shot)
-    if (eff.instantDmg) {
-      const style = c.combatStyle;
-      let maxHit;
+    const _physMaxHit = (style) => {
       if (style === 'ranged') {
         const rL = this.state.skills.ranged.level;
         const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
-        maxHit = Math.max(1, Math.floor(0.5 + rL * (rB + 64) / 640));
-      } else {
-        const sL = this.state.skills.strength.level;
-        const sB = this.getStatTotal('strengthBonus');
-        maxHit = Math.max(1, Math.floor(0.5 + sL * (sB + 64) / 640));
+        return Math.max(1, Math.floor(0.5 + rL * (rB + 64) / 640));
       }
-      const mult = eff.dmgMult || 1;
-      const hits = eff.hits || 1;
-      for (let i = 0; i < hits; i++) {
-        totalDmg += Math.floor(this.randInt(1, maxHit) * mult);
+      const sL = this.state.skills.strength.level;
+      const sB = this.getStatTotal('strengthBonus');
+      return Math.max(1, Math.floor(0.5 + sL * (sB + 64) / 640));
+    };
+
+    const _magicMaxHit = () => {
+      const mL = this.state.skills.magic.level;
+      const mB = this.getStatTotal('magicBonus');
+      return Math.max(5, Math.floor(0.5 + mL * (mB + 64) / 640));
+    };
+
+    switch (eff.type) {
+      // ── POWER STRIKE: buff next hit ──────────────────────
+      case 'buff':
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'damageMult');
+        c.activeBuffs.push({ stat:'damageMult', value: eff.value || 2, remaining: 20 });
+        noteSuffix = ` (+${Math.round((eff.value||2)*100-100)}% next hit)`;
+        break;
+
+      // ── MULTI SHOT: quick_shot / double_shot ─────────────
+      case 'multi': {
+        const style = eff.style || c.combatStyle;
+        const mh = _physMaxHit(style);
+        const shots = eff.shots || 1;
+        const mult  = eff.mult  || 1;
+        for (let i = 0; i < shots; i++) totalDmg += Math.floor(this.randInt(1, mh) * mult);
+        break;
       }
+
+      // ── NUKE: fireball – magic damage + burn ─────────────
+      case 'nuke': {
+        const mh = _magicMaxHit();
+        totalDmg = Math.floor(this.randInt(Math.floor(mh * 0.5), mh) * (eff.mult || 1.5));
+        const stacks = eff.burnStacks || 1;
+        for (let i = 0; i < stacks; i++) this.applyStatus('monster', 'burn', 1, 10);
+        break;
+      }
+
+      // ── COMBAT BUFF: war_cry – +% damage for duration ────
+      case 'combat_buff':
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'strengthBonus' || !b._ability);
+        c.activeBuffs.push({ stat:'strengthBonus', value: eff.dmgBonus || 25, remaining: eff.duration || 15, _ability:true });
+        noteSuffix = ` (+${eff.dmgBonus||25} Str for ${eff.duration||15}s)`;
+        break;
+
+      // ── DEBUFF: ice_blast / venom_strike ─────────────────
+      case 'debuff':
+        if (eff.freeze) this.applyStatus('monster', 'freeze', eff.freeze, 8);
+        if (eff.poison) this.applyStatus('monster', 'poison', eff.poison, 12);
+        if (eff.burn)   this.applyStatus('monster', 'burn',   eff.burn,   10);
+        noteSuffix = eff.freeze ? ' (Frozen!)' : eff.poison ? ' (Poisoned!)' : '';
+        break;
+
+      // ── EXECUTE: 3× damage if target below threshold ─────
+      case 'execute': {
+        const m = GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster);
+        const thresh = eff.threshold || 0.30;
+        if (m && c.monsterHp <= m.hp * thresh) {
+          const mh = _physMaxHit(c.combatStyle);
+          totalDmg = Math.floor(mh * (eff.mult || 3));
+        } else {
+          this.emit('notification', { type:'warn', text:`Target above ${Math.round((eff.threshold||0.3)*100)}% HP.` });
+          c.abilityCooldowns[abilityId] = 0;
+          return;
+        }
+        break;
+      }
+
+      // ── HEAL ─────────────────────────────────────────────
+      case 'heal': {
+        const maxHp = this.getMaxHp();
+        const amt = Math.floor(maxHp * (eff.pct || 0.30));
+        c.playerHp = Math.min(maxHp, c.playerHp + amt);
+        noteSuffix = ` (+${amt} HP)`;
+        break;
+      }
+
+      // ── SHADOW STEP: dodge buff + strike ─────────────────
+      case 'dodge_strike': {
+        // Grant dodge charges (consumed in monsterAttack)
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'dodgeCharges');
+        c.activeBuffs.push({ stat:'dodgeCharges', value: eff.dodges || 1, remaining: eff.duration || 8 });
+        // Also deal physical damage
+        const mh = _physMaxHit(c.combatStyle);
+        totalDmg = Math.floor(this.randInt(Math.floor(mh*0.6), mh) * 1.5);
+        noteSuffix = ' (dodge ready)';
+        break;
+      }
+
+      // ── SOUL DRAIN: magic damage + lifesteal ─────────────
+      case 'lifesteal_spell': {
+        const mh = _magicMaxHit();
+        totalDmg = Math.floor(this.randInt(Math.floor(mh*0.5), mh) * (eff.mult || 1.2));
+        if (totalDmg > 0) {
+          const healed = Math.floor(totalDmg * ((eff.stealPct || 50) / 100));
+          c.playerHp = Math.min(this.getMaxHp(), c.playerHp + healed);
+          noteSuffix = ` (+${healed} HP)`;
+        }
+        break;
+      }
+
+      // ── RALLYING CRY: +% damage reduction ────────────────
+      case 'defence_buff':
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'damageReduction' || !b._ability);
+        c.activeBuffs.push({ stat:'damageReduction', value: eff.reducePct || 15, remaining: eff.duration || 20, _ability:true });
+        noteSuffix = ` (DR +${eff.reducePct||15}% for ${eff.duration||20}s)`;
+        break;
+
+      // ── BLOOD PACT: sacrifice HP for nuclear damage ───────
+      case 'blood_sacrifice': {
+        const sacAmt = Math.floor(this.getMaxHp() * (eff.hpCost || 0.20));
+        if (c.playerHp <= sacAmt + 1) {
+          this.emit('notification', { type:'warn', text:'Not enough HP to sacrifice.' });
+          c.abilityCooldowns[abilityId] = 0; return;
+        }
+        c.playerHp -= sacAmt;
+        const mh = _physMaxHit(c.combatStyle);
+        totalDmg = Math.floor(mh * (eff.mult || 4)) + sacAmt;
+        noteSuffix = ` (−${sacAmt} HP)`;
+        break;
+      }
+
+      // ── EXPOSE WEAKNESS: boost accuracy vs target ─────────
+      case 'expose':
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'attackBonus' || !b._ability);
+        c.activeBuffs.push({ stat:'attackBonus', value: eff.bonus || 30, remaining: eff.duration || 30, _ability:true });
+        noteSuffix = ` (+${eff.bonus||30} Atk for ${eff.duration||30}s)`;
+        break;
+
+      // ── BARRAGE: multi-hit ranged burst ──────────────────
+      case 'barrage': {
+        const mh = _physMaxHit('ranged');
+        const hits = eff.hits || 5;
+        for (let i = 0; i < hits; i++) totalDmg += Math.floor(this.randInt(1, mh) * (eff.mult || 0.65));
+        break;
+      }
+
+      // ── VENGEANCE: reflect next incoming hit ──────────────
+      case 'vengeance':
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'vengeance');
+        c.activeBuffs.push({ stat:'vengeance', value: eff.reflectMult || 1.5, remaining: 20 });
+        noteSuffix = ' (next hit reflected)';
+        break;
+
+      // ── CLEAVE: 3 wide melee swings ──────────────────────
+      case 'cleave': {
+        const mh = _physMaxHit('melee');
+        const hits = eff.hits || 3;
+        for (let i = 0; i < hits; i++) totalDmg += Math.floor(this.randInt(1, mh) * (eff.mult || 0.7));
+        break;
+      }
+
+      // ── MARK OF DEATH: all attacks +% damage ─────────────
+      case 'mark_of_death':
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'damageMult' || !b._ability);
+        c.activeBuffs.push({ stat:'damageMult', value: 1 + (eff.dmgBonus||30)/100, remaining: eff.duration || 20, _ability:true });
+        noteSuffix = ` (+${eff.dmgBonus||30}% dmg for ${eff.duration||20}s)`;
+        break;
+
+      // ── VOID RUPTURE: magic, partial evasion ignore ───────
+      case 'void_rupture': {
+        const mh = _magicMaxHit();
+        totalDmg = Math.floor(this.randInt(Math.floor(mh*0.7), mh) * (eff.mult || 2.0));
+        // Apply void debuff on monster (accuracy buff for us)
+        c.activeBuffs.push({ stat:'attackBonus', value: 50, remaining: 5, _ability:true });
+        break;
+      }
+
+      // ── PRAYER SURGE: restore prayer + combat boost ───────
+      case 'prayer_surge':
+        if (!this.state.prayerPoints) this.state.prayerPoints = 0;
+        this.state.prayerPoints = Math.min(
+          this.state.skills.prayer?.level * 10 || 10,
+          (this.state.prayerPoints || 0) + (eff.ppRestore || 40)
+        );
+        c.activeBuffs.push({ stat:'strengthBonus', value: eff.statBoost||8, remaining: eff.duration||20, _ability:true });
+        c.activeBuffs.push({ stat:'defenceBonus',  value: eff.statBoost||8, remaining: eff.duration||20, _ability:true });
+        noteSuffix = ` (+${eff.ppRestore||40} PP restored)`;
+        break;
+
+      default:
+        // Fallback: try legacy field checks
+        if (eff.burn)      this.applyStatus('monster', 'burn',   eff.burn,   10);
+        if (eff.poison)    this.applyStatus('monster', 'poison', eff.poison, 12);
+        if (eff.freeze)    this.applyStatus('monster', 'freeze', eff.freeze,  8);
+        if (eff.directDmg) totalDmg += eff.directDmg + Math.floor(this.state.skills.magic.level * 0.5);
+        if (eff.heal)      c.playerHp = Math.min(this.getMaxHp(), c.playerHp + Math.floor(this.getMaxHp() * eff.heal));
+        break;
     }
 
-    // Execute - multiplied damage if target below threshold
-    if (eff.execute) {
-      const m = GAME_DATA.monsters[c.monster] || GAME_DATA.worldBosses.find(b=>b.id===c.monster);
-      if (m && c.monsterHp <= m.hp * 0.30) {
-        totalDmg += Math.floor(this.state.skills.strength.level * eff.execute);
-      } else {
-        this.emit('notification', { type:'warn', text:'Target above 30% HP.' });
-      }
-    }
-
-    // Apply total damage to monster
+    // Apply total damage
     if (totalDmg > 0) {
       c.monsterHp -= totalDmg;
-      this.emit('combatHit', { who:'player', dmg: totalDmg });
-      // Lifesteal
-      if (eff.lifesteal) {
-        const healed = Math.floor(totalDmg * eff.lifesteal);
-        c.playerHp = Math.min(this.getMaxHp(), c.playerHp + healed);
-      }
+      this.emit('combatHit', { who:'player', dmg: totalDmg, ability:true });
     }
 
-    // Heal ability
-    if (eff.heal) c.playerHp = Math.min(this.getMaxHp(), c.playerHp + Math.floor(this.getMaxHp() * eff.heal));
-
-    // Buff ability (war cry, power strike, rallying cry)
-    if (eff.buff) c.activeBuffs.push({ ...eff.buff, remaining: eff.buff.duration });
-
-    this.emit('notification', { type:'info', text:`Used ${ab.name}${totalDmg>0?' ('+totalDmg+' dmg)':''}!` });
-
-    // Award Tactics XP for using abilities
+    this.emit('notification', { type:'success', text:`${ab.name}${totalDmg>0?' — '+totalDmg+' damage':''}${noteSuffix}!` });
     const tacticsXp = Math.floor(ab.cooldown * 3 + (ab.tacticsReq || 1) * 5);
     this.addXp('tactics', tacticsXp);
   }

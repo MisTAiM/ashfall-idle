@@ -189,11 +189,35 @@ UI.prototype._renderToaRaid = function(t, s) {
       </div>
     </div>
     <div class="toa-mechanic-zone">${mechHtml}</div>
+    <div class="toa-ability-bar">${this._renderToaAbilityBar(s, c)}</div>
     <div class="toa-splat-row">
       <div class="splat-area" id="toa-player-splats"></div>
       <div class="splat-area" id="toa-monster-splats"></div>
     </div>
   </div>`;
+};
+
+UI.prototype._renderToaAbilityBar = function(s, c) {
+  if (!s.equippedAbilities?.length) return '<div class="toa-no-abilities">No abilities equipped — set them up on the Abilities page.</div>';
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    const aid = s.equippedAbilities[i];
+    const ab = aid ? (GAME_DATA.abilities||[]).find(a => a.id === aid) : null;
+    const cd = ab ? (c.abilityCooldowns?.[aid] || 0) : 0;
+    if (ab) {
+      const cdPct = cd > 0 ? Math.min(100, (cd / ab.cooldown) * 100) : 0;
+      html += `<button class="ab-slot-v2 toa-ab-slot ${cd>0?'ab-cd':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}">
+        <div class="ab-cd-overlay" style="height:${cdPct}%"></div>
+        <div class="ab-content">
+          <div class="ab-name">${ab.name}</div>
+          <div class="ab-timer">${cd>0?Math.ceil(cd)+'s':'Ready'}</div>
+        </div>
+      </button>`;
+    } else {
+      html += `<div class="ab-slot-v2 ab-empty toa-ab-slot"><div class="ab-content">Slot ${i+1}</div></div>`;
+    }
+  }
+  return html;
 };
 
 UI.prototype._renderToaFoodStrip = function(s) {
