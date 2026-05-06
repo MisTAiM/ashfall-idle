@@ -68,17 +68,29 @@ const NAV = [
     {id:'statistics',label:'Statistics',icon:'stats'},
     {id:'settings_page',label:'Settings',icon:'settings'},
   ]},
-  { header:'Combat', items:[
+  { header:'Combat Areas', items:[
     {id:'combat',label:'Combat',icon:'combat'},
     {id:'wilderness',label:'Wilderness',icon:'combat'},
+    {id:'slayer',label:'Slayer',icon:'target'},
+    {id:'slayer_bosses',label:'Slayer Bosses',icon:'skull'},
+  ]},
+  { header:'Challenges', items:[
     {id:'dungeons',label:'Dungeons',icon:'dungeon'},
     {id:'fight_cave',label:'Fight Cave',icon:'combat'},
+    {id:'barrows',label:'Barrows',icon:'skull'},
+    {id:'gauntlet',label:'The Gauntlet',icon:'dungeon'},
+    {id:'inferno',label:'The Inferno',icon:'combat'},
+  ]},
+  { header:'Raids', items:[
     {id:'theatre',label:'Theatre of Ash',icon:'combat'},
     {id:'chambers',label:'Chambers of the King',icon:'dungeon'},
+  ]},
+  { header:'Bosses', items:[
     {id:'world_bosses',label:'World Bosses',icon:'worldboss'},
+  ]},
+  { header:'Combat Skills', items:[
     {id:'abilities',label:'Abilities',icon:'banner'},
     {id:'prayer',label:'Prayer',icon:'sparkle'},
-    {id:'slayer',label:'Slayer',icon:'target'},
     {id:'summoning',label:'Summoning',icon:'sparkle'},
     {id:'spellbooks',label:'Spellbooks',icon:'wand'},
     {id:'necromancy',label:'Necromancy',icon:'skull'},
@@ -301,6 +313,10 @@ class UI {
     else if (pageId === 'fight_cave') this.renderFightCavePage(main);
     else if (pageId === 'theatre')    this.renderTheatreOfAshPage(main);
     else if (pageId === 'chambers')   this.renderChambersOfAshPage(main);
+    else if (pageId === 'barrows')    this.renderBarrowsPage(main);
+    else if (pageId === 'gauntlet')   this.renderGauntletPage(main);
+    else if (pageId === 'inferno')    this.renderInfernoPage(main);
+    else if (pageId === 'slayer_bosses') this.renderSlayerBossesPage(main);
     else if (pageId === 'world_bosses') this.renderWorldBossesPage(main);
     else if (pageId === 'abilities') this.renderAbilitiesPage(main);
     else if (pageId === 'farming') this.renderFarmingPage(main);

@@ -191,6 +191,18 @@ class GameEngine {
     if (!s.stats.chambersBestTier) s.stats.chambersBestTier = '';
     // Party system
     if (!s.party) s.party = { active:false, id:null, name:null, leader:null, members:[], raidActive:false, raidType:null, chat:[] };
+    // Barrows
+    if (!s.barrows) s.barrows = { active:false };
+    if (s.barrows.active) s.barrows = { active:false };
+    if (!s.stats.barrowsCompletions) s.stats.barrowsCompletions = 0;
+    // Gauntlet
+    if (!s.gauntlet) s.gauntlet = { active:false };
+    if (s.gauntlet.active) s.gauntlet = { active:false };
+    if (!s.stats.gauntletCompletions) s.stats.gauntletCompletions = 0;
+    // Inferno
+    if (!s.inferno) s.inferno = { active:false };
+    if (s.inferno.active) s.inferno = { active:false };
+    if (!s.stats.infernoCompletions) s.stats.infernoCompletions = 0;
     if (s.multiMob) s.multiMob = null;
     s.combat._permDebuffs = s.combat._permDebuffs || {};
     // Thieving v2
