@@ -512,12 +512,12 @@ GameEngine.prototype.emit = function(event, data) {
 console.log('[Ashfall] Chambers of the Ashen King loaded. Bosses:', Object.keys(COA_BOSSES).length);
 
 // ── CHAMBERS UNIQUE ITEMS ───────────────────────────────────────
-function _item(id, def) {
+function _itCOA(id, def) {
   if (!GAME_DATA.items[id]) GAME_DATA.items[id] = { id, ...def };
 }
 
 // Weapons
-_item('twisted_bow', {
+_itCOA('twisted_bow', {
   name:'Twisted Bow', type:'weapon', slot:'weapon', style:'ranged',
   attackSpeed:2.4, stats:{rangedBonus:145, attackBonus:20}, levelReq:{ranged:85},
   rarity:'mythic', sellPrice:0,
@@ -525,14 +525,14 @@ _item('twisted_bow', {
   specCost:60, specEffect:{type:'twisted_shot', mult:2.0, magicScale:true},
   desc:'An ancient bow twisted by void energy. Passive: damage scales with target\'s magic. Spec: 200% with magic scaling. Unsellable.',
 });
-_item('elder_maul', {
+_itCOA('elder_maul', {
   name:'Elder Maul', type:'weapon', slot:'weapon', style:'melee',
   attackSpeed:3.6, stats:{attackBonus:95, strengthBonus:180}, levelReq:{attack:80, strength:80},
   rarity:'mythic', sellPrice:0,
   specCost:50, specEffect:{type:'crushing_blow', mult:1.80, defReduction:30},
   desc:'A massive maul of elder stone. Highest strength bonus in the game. Spec: 180% + reduce defence. Unsellable.',
 });
-_item('kodai_wand', {
+_itCOA('kodai_wand', {
   name:'Kodai Wand', type:'weapon', slot:'weapon', style:'magic',
   attackSpeed:2.2, stats:{magicBonus:130, attackBonus:28}, levelReq:{magic:80},
   rarity:'mythic', sellPrice:0, providesAllRunes:true,
@@ -540,14 +540,14 @@ _item('kodai_wand', {
   specCost:50, specEffect:{type:'kodai_barrage', mult:1.60, freezePct:100},
   desc:'An ancient wand of Kodai. Unlimited water runes. Spec: 160% + guaranteed freeze. Unsellable.',
 });
-_item('dragon_claws', {
+_itCOA('dragon_claws', {
   name:'Dragon Claws', type:'weapon', slot:'weapon', style:'melee',
   attackSpeed:1.8, stats:{attackBonus:115, strengthBonus:110}, levelReq:{attack:75},
   rarity:'legendary', sellPrice:0,
   specCost:50, specEffect:{type:'claw_rush', mult:0.60, hits:4, guaranteed:true},
   desc:'Razor-sharp dragon claws. Spec: 4 guaranteed hits (60/30/15/15%). 50% spec. Unsellable.',
 });
-_item('dinhs_bulwark', {
+_itCOA('dinhs_bulwark', {
   name:"Dinh's Bulwark", type:'armor', slot:'shield', rarity:'mythic', sellPrice:0,
   stats:{defenceBonus:130, strengthBonus:5, damageReduction:8},
   levelReq:{defence:80},
@@ -556,19 +556,19 @@ _item('dinhs_bulwark', {
 });
 
 // Ancestral Mage Robes
-_item('ancestral_hat', {
+_itCOA('ancestral_hat', {
   name:'Ancestral Hat', type:'armor', slot:'head', rarity:'mythic', sellPrice:0,
   stats:{magicBonus:35, defenceBonus:18, damageReduction:1},
   levelReq:{magic:82, defence:65},
   desc:'Hat of the Ancestral mage set. Best-in-slot magic head. Unsellable.',
 });
-_item('ancestral_robe_top', {
+_itCOA('ancestral_robe_top', {
   name:'Ancestral Robe Top', type:'armor', slot:'body', rarity:'mythic', sellPrice:0,
   stats:{magicBonus:65, defenceBonus:40, damageReduction:2},
   levelReq:{magic:82, defence:65},
   desc:'Top of the Ancestral mage set. Best-in-slot magic body. Unsellable.',
 });
-_item('ancestral_robe_bottom', {
+_itCOA('ancestral_robe_bottom', {
   name:'Ancestral Robe Bottom', type:'armor', slot:'legs', rarity:'mythic', sellPrice:0,
   stats:{magicBonus:50, defenceBonus:30, damageReduction:2},
   levelReq:{magic:82, defence:65},
@@ -576,17 +576,17 @@ _item('ancestral_robe_bottom', {
 });
 
 // Prayer Scrolls
-_item('dexterous_scroll', {
+_itCOA('dexterous_scroll', {
   name:'Dexterous Prayer Scroll', type:'resource', rarity:'legendary', sellPrice:0,
   desc:'Teaches the Rigour prayer. +20% Ranged Accuracy, +23% Ranged Strength, +25% Defence.',
 });
-_item('arcane_scroll', {
+_itCOA('arcane_scroll', {
   name:'Arcane Prayer Scroll', type:'resource', rarity:'legendary', sellPrice:0,
   desc:'Teaches the Augury prayer. +25% Magic Accuracy, +25% Magic Defence, +25% Defence.',
 });
 
 // Pet
-_item('olmlet', {
+_itCOA('olmlet', {
   name:'Olmlet', type:'pet_token', rarity:'mythic', sellPrice:0,
   desc:'A tiny Great Olm. Follows you everywhere. Rarest Chambers drop.',
 });
