@@ -82,6 +82,9 @@ function applyAdminPanel() {
     const TABS = [
       { id:'dashboard',  label:'Dashboard',   icon:'⚡' },
       { id:'players',    label:'Players',     icon:'👤' },
+      { id:'online',     label:'Online',      icon:'🟢' },
+      { id:'guilds_adm', label:'Guilds',      icon:'🏰' },
+      { id:'economy',    label:'Economy',     icon:'📈' },
       { id:'items',      label:'Items',       icon:'⚔' },
       { id:'monsters',   label:'Monsters',    icon:'💀' },
       { id:'theatre',    label:'Theatre',     icon:'🎭' },
@@ -268,6 +271,67 @@ function applyAdminPanel() {
       } else {
         html += `<div class="adm-section"><div class="bank-empty" style="padding:20px">Click "Load Players" to fetch the player list from Firebase.</div></div>`;
       }
+    }
+
+    // ── ONLINE PLAYERS ───────────────────────────────────
+    if (tab === 'online') {
+      html += `<div class="adm-section"><h3>Online Players (from RTDB Presence)</h3>
+        <button class="btn btn-sm" onclick="ui._admLoadOnline()" style="margin-bottom:8px">🔄 Refresh</button>
+        <div id="adm-online-list"><div class="adm-stat">Click Refresh to load.</div></div>
+      </div>`;
+      html += `<script>setTimeout(()=>{ui._admLoadOnline()},200);<\/script>`;
+    }
+
+    // ── GUILD ADMIN ──────────────────────────────────────
+    if (tab === 'guilds_adm') {
+      html += `<div class="adm-section"><h3>Guild Management</h3>
+        <button class="btn btn-sm" onclick="ui._admLoadGuilds()" style="margin-bottom:8px">🔄 Load All Guilds</button>
+        <div id="adm-guilds-list"><div class="adm-stat">Click Load to fetch guilds.</div></div>
+      </div>`;
+      if (this._admGuildEdit) {
+        const g = this._admGuildEdit;
+        html += `<div class="adm-section">
+          <h3>Editing: <span style="color:var(--accent)">[${g.tag||''}] ${g.name}</span></h3>
+          <button class="btn btn-xs" onclick="ui._admGuildEdit=null;ui.renderPage('admin')" style="margin-bottom:8px">← Back</button>
+          <div class="adm-grid">
+            <div class="adm-stat">ID: <code style="font-size:9px">${g.id}</code></div>
+            <div class="adm-stat">Leader: ${g.leaderName||'?'} (${(g.leader||'').substring(0,10)}...)</div>
+            <div class="adm-stat">Members: ${g.memberCount||g.members?.length||0}/50</div>
+            <div class="adm-stat">Bank: ${g.bank||0}g</div>
+            <div class="adm-stat">Join: ${g.settings?.joinType||'open'}</div>
+            <div class="adm-stat">MOTD: ${g.motd||'none'}</div>
+          </div>
+          <h4 style="margin:10px 0 6px;font-size:12px;color:var(--accent)">Members</h4>
+          <div class="adm-grid">${(g.members||[]).map(m=>{
+            const rank = m.rank||m.role||'Recruit';
+            return `<div class="adm-stat">${rank}: <strong>${m.name}</strong> (${(m.uid||'').substring(0,8)}...)</div>`;
+          }).join('')}</div>
+          <div class="adm-btn-grid" style="margin-top:10px">
+            <button class="btn btn-sm" onclick="ui._admSetGuildGold('${g.id}')">Set Bank Gold</button>
+            <button class="btn btn-sm btn-danger" onclick="ui._admDeleteGuild('${g.id}','${(g.name||'').replace(/'/g,"\\'")}')" >Delete Guild</button>
+          </div>
+        </div>`;
+      }
+    }
+
+    // ── ECONOMY OVERVIEW ─────────────────────────────────
+    if (tab === 'economy') {
+      html += `<div class="adm-section"><h3>Economy Overview</h3>
+        <button class="btn btn-sm" onclick="ui._admLoadEconomy()" style="margin-bottom:8px">🔄 Scan Economy</button>
+        <div id="adm-economy-data"><div class="adm-stat">Click Scan to analyze.</div></div>
+      </div>
+      <div class="adm-section"><h3>Economy Controls</h3>
+        <div class="adm-btn-grid">
+          <button class="btn btn-sm" onclick="ui._admPushLive('xp_multiplier',2.0)">2x XP Event</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('gold_multiplier',2.0)">2x Gold Event</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('drop_multiplier',2.0)">2x Drop Event</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('xp_multiplier',1.0);ui._admPushLive('gold_multiplier',1.0);ui._admPushLive('drop_multiplier',1.0)">Reset All Multipliers</button>
+        </div>
+      </div>
+      <div class="adm-section"><h3>Active Bazaar Listings</h3>
+        <button class="btn btn-sm" onclick="ui._admLoadBazaar()" style="margin-bottom:8px">Load Bazaar</button>
+        <div id="adm-bazaar-data"><div class="adm-stat">Click Load to fetch.</div></div>
+      </div>`;
     }
 
     // ── ITEMS ─────────────────────────────────────────────
@@ -958,6 +1022,122 @@ function applyAdminPanel() {
   UI.prototype._admPushLive = async function(key,val){
     const ok = await online.pushLiveUpdate(key, val);
     if (ok) this.renderPage('admin');
+  };
+
+  // Online Players
+  UI.prototype._admLoadOnline = async function(){
+    const el = document.getElementById('adm-online-list');
+    if (!el || !online?.db) return;
+    el.innerHTML = '<div class="adm-stat">Loading...</div>';
+    try {
+      const snap = await online.db.ref('presence').orderByChild('online').equalTo(true).once('value');
+      const players = [];
+      snap.forEach(c => { const d = c.val(); if (d.online) players.push(d); });
+      if (players.length === 0) { el.innerHTML = '<div class="adm-stat">No players online.</div>'; return; }
+      el.innerHTML = `<div class="adm-stat" style="margin-bottom:6px"><strong>${players.length}</strong> player(s) online</div>` +
+        '<div class="adm-player-table"><div class="adm-pt-header"><span>Name</span><span>UID</span><span>Cb Lv</span><span>Zone</span><span>Monster</span></div>' +
+        players.map(p => `<div class="adm-pt-row">
+          <span class="adm-item-name">${p.name||'?'}</span>
+          <span class="adm-item-id">${(p.uid||'').substring(0,10)}…</span>
+          <span>${p.combatLevel||'?'}</span>
+          <span>${p.zone||'—'}</span>
+          <span>${p.monster||'—'}</span>
+        </div>`).join('') + '</div>';
+    } catch(e) { el.innerHTML = `<div class="adm-stat">Error: ${e.message}</div>`; }
+  };
+
+  // Guild Admin
+  UI.prototype._admLoadGuilds = async function(){
+    const el = document.getElementById('adm-guilds-list');
+    if (!el) return;
+    el.innerHTML = '<div class="adm-stat">Loading...</div>';
+    try {
+      const snap = await online.firestore.collection('guilds').limit(50).get();
+      const guilds = [];
+      snap.forEach(doc => guilds.push({ id:doc.id, ...doc.data() }));
+      this._admGuildsList = guilds;
+      if (guilds.length === 0) { el.innerHTML = '<div class="adm-stat">No guilds found.</div>'; return; }
+      el.innerHTML = '<div class="adm-player-table"><div class="adm-pt-header"><span>Guild</span><span>Tag</span><span>Leader</span><span>Members</span><span>Bank</span><span>Actions</span></div>' +
+        guilds.map(g => `<div class="adm-pt-row">
+          <span class="adm-item-name">${g.name||'?'}</span>
+          <span>[${g.tag||'?'}]</span>
+          <span>${g.leaderName||'?'}</span>
+          <span>${g.memberCount||g.members?.length||0}</span>
+          <span>${g.bank||0}g</span>
+          <span><button class="btn btn-xs" onclick='ui._admGuildEdit=${JSON.stringify(g).replace(/'/g,"\\'")}; ui.renderPage("admin")'>Edit</button></span>
+        </div>`).join('') + '</div>';
+    } catch(e) { el.innerHTML = `<div class="adm-stat">Error: ${e.message}</div>`; }
+  };
+  UI.prototype._admDeleteGuild = async function(guildId, name){
+    if (!confirm(`Delete guild "${name}"? This is permanent.`)) return;
+    try {
+      await online.firestore.collection('guilds').doc(guildId).delete();
+      await online.adminLog('delete_guild', { guildId, name });
+      this.toast({type:'success',text:`Guild "${name}" deleted.`});
+      this._admGuildEdit = null;
+      this.renderPage('admin');
+    } catch(e) { this.toast({type:'warn',text:'Failed: '+e.message}); }
+  };
+  UI.prototype._admSetGuildGold = async function(guildId){
+    const amount = parseInt(prompt('Set guild bank gold to:','0'));
+    if (isNaN(amount)) return;
+    try {
+      await online.firestore.collection('guilds').doc(guildId).update({ bank: amount });
+      await online.adminLog('set_guild_gold', { guildId, amount });
+      this.toast({type:'success',text:`Guild bank set to ${amount}g`});
+      this._admGuildEdit = null;
+      this.renderPage('admin');
+    } catch(e) { this.toast({type:'warn',text:'Failed: '+e.message}); }
+  };
+
+  // Economy Overview
+  UI.prototype._admLoadEconomy = async function(){
+    const el = document.getElementById('adm-economy-data');
+    if (!el) return;
+    el.innerHTML = '<div class="adm-stat">Scanning...</div>';
+    try {
+      const snap = await online.firestore.collection('players').limit(200).get();
+      let totalGold = 0, totalKills = 0, playerCount = 0, topGold = [], topLevel = [];
+      snap.forEach(doc => {
+        const p = doc.data();
+        playerCount++;
+        totalGold += p.gold || 0;
+        totalKills += p.kills || 0;
+        topGold.push({ name: p.displayName, gold: p.gold||0 });
+        topLevel.push({ name: p.displayName, level: p.totalLevel||0 });
+      });
+      topGold.sort((a,b) => b.gold - a.gold);
+      topLevel.sort((a,b) => b.level - a.level);
+      el.innerHTML = `
+        <div class="adm-dashboard-grid">
+          <div class="adm-kpi"><div class="adm-kpi-val">${playerCount}</div><div class="adm-kpi-lbl">Total Players</div></div>
+          <div class="adm-kpi"><div class="adm-kpi-val">${(totalGold/1000000).toFixed(1)}M</div><div class="adm-kpi-lbl">Gold in Circulation</div></div>
+          <div class="adm-kpi"><div class="adm-kpi-val">${(totalGold/Math.max(1,playerCount)/1000).toFixed(1)}K</div><div class="adm-kpi-lbl">Avg Gold/Player</div></div>
+          <div class="adm-kpi"><div class="adm-kpi-val">${(totalKills/1000).toFixed(1)}K</div><div class="adm-kpi-lbl">Total Kills</div></div>
+        </div>
+        <div class="adm-dash-row" style="margin-top:10px">
+          <div class="adm-section adm-dash-half"><h4>Richest Players</h4>${topGold.slice(0,10).map((p,i)=>`<div class="adm-stat">${i+1}. ${p.name}: <strong>${(p.gold/1000).toFixed(1)}K</strong></div>`).join('')}</div>
+          <div class="adm-section adm-dash-half"><h4>Highest Level</h4>${topLevel.slice(0,10).map((p,i)=>`<div class="adm-stat">${i+1}. ${p.name}: <strong>TL ${p.level}</strong></div>`).join('')}</div>
+        </div>`;
+    } catch(e) { el.innerHTML = `<div class="adm-stat">Error: ${e.message}</div>`; }
+  };
+  UI.prototype._admLoadBazaar = async function(){
+    const el = document.getElementById('adm-bazaar-data');
+    if (!el) return;
+    el.innerHTML = '<div class="adm-stat">Loading...</div>';
+    try {
+      const listings = await online.getBazaarListings();
+      if (listings.length === 0) { el.innerHTML = '<div class="adm-stat">No active listings.</div>'; return; }
+      el.innerHTML = `<div class="adm-stat" style="margin-bottom:6px">${listings.length} active listing(s)</div>` +
+        '<div class="adm-player-table"><div class="adm-pt-header"><span>Item</span><span>Qty</span><span>Price</span><span>Seller</span><span>Actions</span></div>' +
+        listings.map(l => `<div class="adm-pt-row">
+          <span class="adm-item-name">${l.itemName||l.item}</span>
+          <span>${l.qty}</span>
+          <span>${l.priceEach}g ea</span>
+          <span>${l.sellerName||'?'}</span>
+          <span><button class="btn btn-xs btn-danger" onclick="online.firestore.collection('bazaar').doc('${l.id}').update({status:'cancelled'}).then(()=>{ui.toast({type:'info',text:'Cancelled'});ui._admLoadBazaar()})">Cancel</button></span>
+        </div>`).join('') + '</div>';
+    } catch(e) { el.innerHTML = `<div class="adm-stat">Error: ${e.message}</div>`; }
   };
 
   // Logs

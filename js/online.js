@@ -1169,6 +1169,10 @@ class OnlineManager {
       const doc = await this.firestore.collection('guilds').doc(game.state.guild.id).get();
       if (!doc.exists) return [];
       const members = doc.data().members || [];
+      // Normalize: ensure every member has 'rank' (migrate from old 'role' field)
+      for (const m of members) {
+        if (!m.rank) m.rank = m.role || 'Recruit';
+      }
       // Update my lastSeen
       const me = members.find(m => m.uid === this.user.uid);
       if (me) { me.lastSeen = Date.now(); await doc.ref.update({ members }); }
@@ -1223,6 +1227,7 @@ class OnlineManager {
   }
 
   // Sync guild role from Firestore (fixes stale local role after rank changes)
+  // Also migrates old 'role' field to 'rank' if needed
   async syncGuildRole() {
     if (!this.isOnline || !this.user || !game.state.guild) return;
     try {
@@ -1231,10 +1236,31 @@ class OnlineManager {
       const data = doc.data();
       const me = data.members.find(m => m.uid === this.user.uid);
       if (!me) { game.state.guild = null; return; }
-      game.state.guild.role = me.rank || 'Recruit';
+      // Support both old 'role' field and new 'rank' field
+      const actualRank = me.rank || me.role || 'Recruit';
+      game.state.guild.role = actualRank;
       game.state.guild.name = data.name;
       game.state.guild.tag = data.tag;
-    } catch(e) {}
+      // Auto-migrate: if member has 'role' but not 'rank', write 'rank' field
+      let needsMigration = false;
+      for (const m of data.members) {
+        if (m.role && !m.rank) {
+          m.rank = m.role;
+          needsMigration = true;
+        }
+        if (!m.rank && !m.role) {
+          m.rank = 'Recruit';
+          needsMigration = true;
+        }
+      }
+      if (needsMigration) {
+        try { await doc.ref.update({ members: data.members }); } catch(e) {}
+      }
+      // Also ensure settings exist
+      if (!data.settings || Object.keys(data.settings).length === 0) {
+        try { await doc.ref.update({ settings: { joinType: 'open', withdrawRank: 'General' } }); } catch(e) {}
+      }
+    } catch(e) { console.error('syncGuildRole error:', e); }
   }
 
   async setMemberRank(memberUid, newRank) {
