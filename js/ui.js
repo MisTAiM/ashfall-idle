@@ -3749,42 +3749,49 @@ class UI {
       const container = document.getElementById('bounty-list');
       if (!container) { this._stopBountyListener(); return; }
       const now = new Date();
-      const bounties = docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(b => {
+      let bounties = docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Client-side filter (avoids Firestore composite index requirement)
+      if (tab !== 'mine') {
+        bounties = bounties.filter(b => {
+          if (b.claimed || b.cancelled) return false;
           const exp = b.expiresAt?.toDate ? b.expiresAt.toDate() : (b.expiresAt ? new Date(b.expiresAt) : null);
-          if (tab !== 'mine' && exp && exp < now) return false;
+          if (exp && exp < now) return false;
+          if (tab !== 'all' && b.type !== tab) return false;
           return true;
         });
+      }
+      bounties.sort((a, b) => (b.amount || 0) - (a.amount || 0));
+
       if (!bounties.length) {
-        container.innerHTML = `<div class="bank-empty">${tab==='mine'?'No bounties posted yet.':'No active bounties. Be the first!'}</div>`;
+        container.innerHTML = `<div class="bank-empty">${tab==='mine'?'No bounties posted yet.':'No active bounties — be the first!'}</div>`;
         return;
       }
       container.innerHTML = '<div class="bounty-cards">' + bounties.map(b => this._bountyCard(b)).join('') + '</div>';
     };
 
     try {
+      let q;
       if (tab === 'mine') {
-        this._bountyUnsub = online.firestore.collection('bounties')
+        q = online.firestore.collection('bounties')
           .where('placedBy', '==', online.user.uid)
-          .orderBy('timestamp', 'desc')
-          .limit(25)
-          .onSnapshot(snap => renderCards(snap.docs), err => console.error('Bounty listener err:', err));
+          .limit(30);
       } else {
-        let q = online.firestore.collection('bounties')
+        q = online.firestore.collection('bounties')
           .where('claimed', '==', false)
-          .where('cancelled', '==', false)
-          .orderBy('amount', 'desc')
-          .limit(50);
-        if (tab !== 'all') q = online.firestore.collection('bounties')
-          .where('type', '==', tab)
-          .where('claimed', '==', false)
-          .where('cancelled', '==', false)
-          .orderBy('amount', 'desc')
-          .limit(50);
-        this._bountyUnsub = q.onSnapshot(snap => renderCards(snap.docs), err => console.error('Bounty listener err:', err));
+          .limit(100);
       }
-    } catch(e) { console.error('Failed to start bounty listener:', e); }
+      this._bountyUnsub = q.onSnapshot(
+        snap => renderCards(snap.docs),
+        err  => {
+          console.error('Bounty listener err:', err);
+          const c = document.getElementById('bounty-list');
+          if (c) c.innerHTML = '<div class="bank-empty">Failed to load bounties. Check console.</div>';
+        }
+      );
+    } catch(e) {
+      console.error('Failed to start bounty listener:', e);
+    }
   }
 
   _bountyCard(b) {

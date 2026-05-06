@@ -935,22 +935,22 @@ class OnlineManager {
   async getActiveBounties(filter='all') {
     if (!this.isOnline) return [];
     try {
-      let query = this.firestore.collection('bounties')
+      // Single where clause only — avoids composite index requirement
+      const snap = await this.firestore.collection('bounties')
         .where('claimed', '==', false)
-        .where('cancelled', '==', false)
-        .orderBy('amount', 'desc')
-        .limit(50);
-      if (filter === 'pvp')     query = this.firestore.collection('bounties').where('type','==','pvp').where('claimed','==',false).where('cancelled','==',false).orderBy('amount','desc').limit(50);
-      if (filter === 'monster') query = this.firestore.collection('bounties').where('type','==','monster').where('claimed','==',false).where('cancelled','==',false).orderBy('amount','desc').limit(50);
-      if (filter === 'gather')  query = this.firestore.collection('bounties').where('type','==','gather').where('claimed','==',false).where('cancelled','==',false).orderBy('amount','desc').limit(50);
-      const snap = await query.get();
+        .limit(100)
+        .get();
+      const now = new Date();
       const bounties = [];
       snap.forEach(doc => {
         const d = { id:doc.id, ...doc.data() };
-        const exp = d.expiresAt?.toDate ? d.expiresAt.toDate() : new Date(d.expiresAt);
-        if (exp > new Date()) bounties.push(d); // filter expired client-side
+        if (d.cancelled) return;
+        const exp = d.expiresAt?.toDate ? d.expiresAt.toDate() : (d.expiresAt ? new Date(d.expiresAt) : null);
+        if (exp && exp < now) return;
+        if (filter !== 'all' && d.type !== filter) return;
+        bounties.push(d);
       });
-      return bounties;
+      return bounties.sort((a,b) => (b.amount||0) - (a.amount||0));
     } catch(e) { console.error('getActiveBounties error:', e); return []; }
   }
 
@@ -959,10 +959,10 @@ class OnlineManager {
     try {
       const snap = await this.firestore.collection('bounties')
         .where('placedBy', '==', this.user.uid)
-        .orderBy('timestamp', 'desc')
-        .limit(20)
+        .limit(30)
         .get();
-      return snap.docs.map(doc => ({ id:doc.id, ...doc.data() }));
+      return snap.docs.map(doc => ({ id:doc.id, ...doc.data() }))
+        .sort((a,b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0));
     } catch(e) { return []; }
   }
 
