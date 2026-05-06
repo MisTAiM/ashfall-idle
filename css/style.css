@@ -3318,17 +3318,95 @@ html, body {
 
 /* Hit splat improvements */
 .hit-splat {
-  animation: splatPop 0.5s ease-out forwards;
+  position: absolute;
+  animation: splatPop 1.1s ease-out forwards;
   pointer-events: none;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  border-radius: 4px;
+  padding: 2px 7px;
+  z-index: 20;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
 }
 @keyframes splatPop {
-  0% { transform: scale(0.5) translateY(0); opacity: 1; }
-  40% { transform: scale(1.2) translateY(-10px); }
-  100% { transform: scale(0.8) translateY(-30px); opacity: 0; }
+  0%   { transform: scale(0.6) translateY(0);    opacity: 1; }
+  20%  { transform: scale(1.3) translateY(-8px);  opacity: 1; }
+  60%  { transform: scale(1.0) translateY(-20px); opacity: 0.9; }
+  100% { transform: scale(0.8) translateY(-42px); opacity: 0; }
 }
-.splat-hit { background: var(--red); color: #fff; border-radius: 4px; padding: 2px 6px; font-weight: 700; font-size: 14px; }
-.splat-big { background: var(--red); color: #fff; border-radius: 4px; padding: 2px 8px; font-weight: 900; font-size: 16px; text-shadow: 0 0 8px rgba(196,64,64,0.6); }
-.splat-miss { background: var(--border); color: var(--text-dim); border-radius: 4px; padding: 2px 6px; font-size: 12px; }
+
+/* Player deals damage — type-colored */
+.splat-melee   { background: #8b2020; color: #ffcc88; font-size: 15px; border: 1px solid #c44; }
+.splat-ranged  { background: #1a5e2e; color: #88ffaa; font-size: 15px; border: 1px solid #3a9; }
+.splat-magic   { background: #1e2e7a; color: #aabbff; font-size: 15px; border: 1px solid #46f; }
+.splat-ability { background: #6b3a10; color: #ffd060; font-size: 15px; border: 1px solid #c9873e; box-shadow: 0 0 8px rgba(201,135,62,0.5); }
+
+/* Damage taken by player */
+.splat-taken   { background: #550000; color: #ff6666; font-size: 14px; border: 1px solid #900; }
+
+/* Crit — overlays on any type */
+.splat-crit    { font-size: 18px !important; letter-spacing: 0.5px; box-shadow: 0 0 12px rgba(255,200,0,0.6) !important; border-color: #ffd700 !important; }
+
+/* Miss / dodge */
+.splat-miss    { background: #2a2a2a; color: #888; font-size: 12px; border: 1px solid #444; font-weight: 600; }
+.splat-dodge   { background: #2a3a4a; color: #66ccff; font-size: 13px; border: 1px solid #4af; font-weight: 700; }
+
+/* Large / giant hits */
+.splat-big     { font-size: 17px !important; }
+.splat-giant   { font-size: 21px !important; animation: splatBoom 1.1s ease-out forwards; }
+@keyframes splatBoom {
+  0%   { transform: scale(0.4) translateY(0);    opacity: 1; }
+  15%  { transform: scale(1.6) translateY(-6px);  opacity: 1; }
+  60%  { transform: scale(1.1) translateY(-22px); opacity: 0.9; }
+  100% { transform: scale(0.9) translateY(-50px); opacity: 0; }
+}
+
+/* Legacy aliases kept for compat */
+.splat-hit { background: #8b2020; color: #ffcc88; font-size: 15px; border: 1px solid #c44; }
+
+/* ── SESSION DAMAGE TRACKER ──────────────────────────── */
+.sl-dmg-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.sl-dmg-title { font-family: 'Cinzel', serif; font-size: 12px; color: var(--amber); font-weight: 700; letter-spacing: 0.5px; }
+.sl-dmg-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+  padding: 6px 8px;
+}
+.sl-dmg-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 3px 6px; border-radius: 3px; font-size: 12px;
+}
+.sl-dmg-type { color: var(--text-dim); font-size: 11px; }
+.sl-dmg-val  { font-weight: 700; font-family: 'Cinzel', serif; font-size: 12px; }
+.sl-dmg-melee   { background: rgba(139,32,32,0.25); }
+.sl-dmg-melee   .sl-dmg-val { color: #ffaa66; }
+.sl-dmg-ranged  { background: rgba(26,94,46,0.25); }
+.sl-dmg-ranged  .sl-dmg-val { color: #66dd88; }
+.sl-dmg-magic   { background: rgba(30,46,122,0.25); }
+.sl-dmg-magic   .sl-dmg-val { color: #88aaff; }
+.sl-dmg-ability { background: rgba(107,58,16,0.25); }
+.sl-dmg-ability .sl-dmg-val { color: #c9873e; }
+.sl-dmg-total   { background: rgba(255,255,255,0.05); grid-column: 1 / -1; }
+.sl-dmg-total   .sl-dmg-val { color: #ddd; }
+.sl-dmg-taken   { background: rgba(80,0,0,0.25); }
+.sl-dmg-taken   .sl-dmg-val { color: #ff6666; }
+.sl-dmg-meta {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding: 4px 8px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sl-dmg-stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(255,255,255,0.04); border-radius: 4px;
+  padding: 3px 8px; font-size: 13px; font-weight: 700;
+  color: var(--text); flex: 1;
+}
+.sl-dmg-stat-label { font-size: 9px; color: var(--text-dim); font-weight: 400; margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
+.sl-loot-title { font-size: 11px; color: var(--text-dim); padding: 6px 8px 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* HP bar animations */
 .hp-fill {

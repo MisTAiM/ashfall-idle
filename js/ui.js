@@ -1170,10 +1170,49 @@ class UI {
       // ── SESSION LOOT BAG ──
       const sl = c._sessionLoot || {};
       const sk = c._sessionKills || 0;
+      const sd = c._sessionDmg  || {};
       html += `<div class="session-loot-section" id="session-loot">`;
+
+      // Damage stats bar — always shown when in combat
+      if (c.active || sk > 0) {
+        const totalDmg = sd.total || 0;
+        const dps = totalDmg > 0 && c._sessionStartTime
+          ? (totalDmg / ((Date.now() - c._sessionStartTime) / 1000)).toFixed(1)
+          : '—';
+        const hitRate = (sd.hits||0) + (sd.misses||0) > 0
+          ? Math.round(((sd.hits||0) / ((sd.hits||0)+(sd.misses||0)))*100)
+          : 0;
+        const critRate = (sd.hits||0) > 0 ? Math.round(((sd.crits||0)/(sd.hits||0))*100) : 0;
+
+        html += `<div class="sl-dmg-header">
+          <span class="sl-dmg-title">⚔ Damage Tracker</span>
+          <button class="sl-reset-btn" onclick="
+            game.state.combat._sessionLoot={};
+            game.state.combat._sessionKills=0;
+            game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,total:0,taken:0,hits:0,misses:0,crits:0};
+            game.state.combat._sessionStartTime=Date.now();
+            ui._lastSessionGold=0;
+            ui.renderPage('combat')">Reset</button>
+        </div>
+        <div class="sl-dmg-grid">
+          <div class="sl-dmg-row sl-dmg-melee"><span class="sl-dmg-type">Melee</span><span class="sl-dmg-val">${this.fmt(sd.melee||0)}</span></div>
+          <div class="sl-dmg-row sl-dmg-ranged"><span class="sl-dmg-type">Ranged</span><span class="sl-dmg-val">${this.fmt(sd.ranged||0)}</span></div>
+          <div class="sl-dmg-row sl-dmg-magic"><span class="sl-dmg-type">Magic</span><span class="sl-dmg-val">${this.fmt(sd.magic||0)}</span></div>
+          <div class="sl-dmg-row sl-dmg-ability"><span class="sl-dmg-type">Ability</span><span class="sl-dmg-val">${this.fmt(sd.ability||0)}</span></div>
+          <div class="sl-dmg-row sl-dmg-total"><span class="sl-dmg-type">Total</span><span class="sl-dmg-val">${this.fmt(totalDmg)}</span></div>
+          <div class="sl-dmg-row sl-dmg-taken"><span class="sl-dmg-type">Taken</span><span class="sl-dmg-val">${this.fmt(sd.taken||0)}</span></div>
+        </div>
+        <div class="sl-dmg-meta">
+          <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">DPS</span>${dps}</span>
+          <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Acc</span>${hitRate}%</span>
+          <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Crit</span>${critRate}%</span>
+          <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Kills</span>${sk}</span>
+        </div>`;\
+      }
+
       if (sk > 0) {
         const rarOrder = { mythic:0, legendary:1, epic:2, rare:3, uncommon:4, common:5 };
-        html += `<div class="sl-header"><span class="sl-title">⚔ Session Loot</span><span class="sl-kills">${sk} kills</span><button class="sl-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;ui._lastSessionGold=0;ui.renderPage('combat')">Reset</button></div><div class="sl-items">`;
+        html += `<div class="sl-loot-title">Loot</div><div class="sl-items">`;
         if (sl._gold?.qty > 0) html += `<div class="sl-item sl-gold"><span class="sl-icon">🪙</span><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(sl._gold.qty)}</span></div>`;
         const sorted = Object.entries(sl).filter(([k])=>k!=='_gold').sort((a,b)=>(rarOrder[a[1].rarity]||5)-(rarOrder[b[1].rarity]||5));
         for (const [itemId, data] of sorted) {
@@ -1183,8 +1222,8 @@ class UI {
           html += `<div class="sl-item ${rc}"><span class="sl-icon">${iconSvg}</span><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
         }
         html += '</div>';
-      } else {
-        html += '<div class="sl-empty">Kill monsters to see loot here</div>';
+      } else if (!c.active) {
+        html += '<div class="sl-empty">Start combat to track damage</div>';
       }
       html += '</div>';
 
@@ -2223,6 +2262,27 @@ class UI {
       ['Highest Hit', s.stats.highestHit || 0],
     ];
     for (const [l, v] of combat) html += `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div></div>`;
+    html += '</div>';
+
+    // Damage breakdown
+    const dmg = s.stats.dmg || {};
+    const totalDmgDone = dmg.total || 0;
+    html += '<h2 class="section-title">Damage Breakdown</h2><div class="stats-grid">';
+    const dmgStats = [
+      ['Total Dealt',   this.fmt(totalDmgDone)],
+      ['Melee',         this.fmt(dmg.melee || 0)],
+      ['Ranged',        this.fmt(dmg.ranged || 0)],
+      ['Magic',         this.fmt(dmg.magic || 0)],
+      ['Ability',       this.fmt(dmg.ability || 0)],
+      ['Total Taken',   this.fmt(dmg.taken || 0)],
+      ['Dmg/Kill',      s.stats.monstersKilled > 0 ? Math.round(totalDmgDone / s.stats.monstersKilled) : '—'],
+      ['Ratio (D/T)',   dmg.taken > 0 ? (totalDmgDone / dmg.taken).toFixed(2) + 'x' : '—'],
+    ];
+    const dmgColors = { 'Melee':'#e07a3a', 'Ranged':'#4aaa5a', 'Magic':'#5a8aee', 'Ability':'#c9873e', 'Total Dealt':'#ddd', 'Total Taken':'#cc4444' };
+    for (const [l, v] of dmgStats) {
+      const col = dmgColors[l] ? `style="color:${dmgColors[l]}"` : '';
+      html += `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value" ${col}>${v}</div></div>`;
+    }
     html += '</div>';
 
     // PvP stats
@@ -3871,14 +3931,52 @@ class UI {
   }
 
   showHitSplat(d) {
-    const area = d.who === 'player' ? document.getElementById('monster-splats') : document.getElementById('player-splats');
+    // Find the right splat area — also check theatre and fight cave pages
+    let area;
+    if (d.who === 'player') {
+      area = document.getElementById('monster-splats') || document.getElementById('toa-monster-splats');
+    } else {
+      area = document.getElementById('player-splats') || document.getElementById('toa-player-splats');
+    }
     if (!area) return;
+
     const splat = document.createElement('div');
-    splat.className = `hit-splat ${d.dodge ? 'splat-dodge' : d.miss ? 'splat-miss' : d.crit ? 'splat-crit' : d.dmg > 20 ? 'splat-big' : 'splat-hit'}`;
-    splat.textContent = d.dodge ? 'Dodge!' : d.miss ? 'Miss' : d.dmg;
-    splat.style.left = (20 + Math.random() * 60) + '%';
+
+    if (d.dodge || (d.miss && d.dodge)) {
+      splat.className = 'hit-splat splat-dodge';
+      splat.textContent = 'DODGE!';
+    } else if (d.miss) {
+      splat.className = 'hit-splat splat-miss';
+      splat.textContent = 'MISS';
+    } else if (d.who === 'monster') {
+      // Damage taken — always red
+      splat.className = `hit-splat splat-taken ${d.dmg >= 50 ? 'splat-big' : ''}`;
+      splat.textContent = `-${d.dmg}`;
+    } else {
+      // Player dealt damage — color by type
+      const style = d.style || this.engine.state.combat.combatStyle;
+      let typeClass = '';
+      let prefix = '';
+      if (d.ability) {
+        typeClass = 'splat-ability';
+        prefix = '✦ ';
+      } else if (style === 'magic') {
+        typeClass = 'splat-magic';
+      } else if (style === 'ranged') {
+        typeClass = 'splat-ranged';
+      } else {
+        typeClass = 'splat-melee';
+      }
+      const isBig  = d.dmg >= 50;
+      const isGiant = d.dmg >= 150;
+      splat.className = `hit-splat ${typeClass} ${d.crit ? 'splat-crit' : ''} ${isGiant ? 'splat-giant' : isBig ? 'splat-big' : ''}`;
+      splat.textContent = prefix + d.dmg + (d.crit ? '!' : '');
+    }
+
+    splat.style.left = (15 + Math.random() * 70) + '%';
+    splat.style.top  = (10 + Math.random() * 30) + '%';
     area.appendChild(splat);
-    setTimeout(() => splat.remove(), 900);
+    setTimeout(() => { if (splat.parentNode) splat.remove(); }, 1100);
 
     // Attack animation overlay — SKIP for ability/spec hits (they have their own anim)
     const combatArena = document.querySelector('.combat-arena');

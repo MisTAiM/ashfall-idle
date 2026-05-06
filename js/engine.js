@@ -515,6 +515,8 @@ class GameEngine {
     this.state.combat.area = areaId;
     this.state.combat._sessionLoot = {};
     this.state.combat._sessionKills = 0;
+    this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 };
+    this.state.combat._sessionStartTime = Date.now();
     this.emit('combatStart', { area:areaId, monster:monsterId });
   }
 
@@ -567,6 +569,7 @@ class GameEngine {
     // Clear session loot so it doesn't persist into next session
     c._sessionLoot = {};
     c._sessionKills = 0;
+    c._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 };
     // Clear wilderness presence
     if (typeof online !== 'undefined' && online.isOnline) online.clearWildernessPresence();
     this.emit('combatStop');
@@ -801,11 +804,24 @@ class GameEngine {
       // Track last hit for bleed calculations
       this.state.combat._lastPlayerHit = dmg;
 
-      this.emit('combatHit', { who:'player', dmg, crit:isCrit });
+      // ── SESSION + LIFETIME DAMAGE TRACKING ──
+      const sd = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 });
+      sd[style] = (sd[style] || 0) + dmg;
+      sd.total  = (sd.total  || 0) + dmg;
+      sd.hits   = (sd.hits   || 0) + 1;
+      if (isCrit) sd.crits = (sd.crits || 0) + 1;
+      // Lifetime
+      if (!this.state.stats.dmg) this.state.stats.dmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0 };
+      this.state.stats.dmg[style] = (this.state.stats.dmg[style] || 0) + dmg;
+      this.state.stats.dmg.total  = (this.state.stats.dmg.total  || 0) + dmg;
+
+      this.emit('combatHit', { who:'player', dmg, crit:isCrit, style });
       // Track highest hit
       if (!this.state.stats.highestHit || dmg > this.state.stats.highestHit) this.state.stats.highestHit = dmg;
     } else {
-      this.emit('combatHit', { who:'player', dmg:0, miss:true });
+      const sd2 = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 });
+      sd2.misses = (sd2.misses || 0) + 1;
+      this.emit('combatHit', { who:'player', dmg:0, miss:true, style });
     }
     // Familiar heal-over-time
     const famHeal = this.getFamiliarBonus('healOverTime');
@@ -1044,6 +1060,12 @@ class GameEngine {
       }
       this.state.combat.playerHp -= dmg;
       this.emit('combatHit', { who:'monster', dmg });
+
+      // Track damage taken
+      const sdT = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 });
+      sdT.taken = (sdT.taken || 0) + dmg;
+      if (!this.state.stats.dmg) this.state.stats.dmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0 };
+      this.state.stats.dmg.taken = (this.state.stats.dmg.taken || 0) + dmg;
 
       // Vengeance: reflect damage back at monster
       const vengeBuff = this.state.combat.activeBuffs.find(b => b.stat === 'vengeance');
@@ -2210,7 +2232,15 @@ class GameEngine {
     // Apply total damage
     if (totalDmg > 0) {
       c.monsterHp -= totalDmg;
-      this.emit('combatHit', { who:'player', dmg: totalDmg, ability:true });
+      // Track ability damage
+      const sdA = c._sessionDmg || (c._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0, hits:0, misses:0, crits:0 });
+      sdA.ability = (sdA.ability || 0) + totalDmg;
+      sdA.total   = (sdA.total   || 0) + totalDmg;
+      sdA.hits    = (sdA.hits    || 0) + 1;
+      if (!this.state.stats.dmg) this.state.stats.dmg = { melee:0, ranged:0, magic:0, ability:0, total:0, taken:0 };
+      this.state.stats.dmg.ability = (this.state.stats.dmg.ability || 0) + totalDmg;
+      this.state.stats.dmg.total   = (this.state.stats.dmg.total   || 0) + totalDmg;
+      this.emit('combatHit', { who:'player', dmg: totalDmg, ability:true, style:'ability' });
     }
 
     this.emit('notification', { type:'success', text:`${ab.name}${totalDmg>0?' — '+totalDmg+' damage':''}${noteSuffix}!` });
