@@ -3576,52 +3576,232 @@ class UI {
   // ── BOUNTY BOARD PAGE ──────────────────────────────────
   renderBountyPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Bounty Board','coin','Place bounties on players. Defeat them in PvP to claim the reward.',null);
+    let html = this.header('Bounty Board','coin','Place contracts on players or monsters. Complete them to earn gold.',null);
 
     if (!isOnline) {
-      html += '<div class="bank-empty">Online features not available. Configure Firebase to enable bounties.</div>';
-      el.innerHTML = html;
-      return;
+      html += '<div class="bank-empty">Sign in to use the Bounty Board.</div>';
+      el.innerHTML = html; return;
     }
 
-    html += `<div class="settings-section">
-      <h3>Place a Bounty</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input type="text" id="bounty-target" class="chat-input" placeholder="Target player name">
-        <input type="number" id="bounty-amount" class="chat-input" placeholder="Gold amount (min 100)" min="100" style="width:160px">
-        <button class="btn btn-sm" onclick="ui.placeBounty()">Place Bounty</button>
+    const tab = this._bountyTab || 'all';
+    const s = this.engine.state;
+
+    // ── TABS ──────────────────────────────────────────────
+    html += `<div class="bounty-tabs">
+      <button class="bounty-tab ${tab==='all'?'active':''}" onclick="ui._bountyTab='all';ui.renderPage('bounty_board')">All</button>
+      <button class="bounty-tab ${tab==='pvp'?'active':''}" onclick="ui._bountyTab='pvp';ui.renderPage('bounty_board')">⚔ PvP</button>
+      <button class="bounty-tab ${tab==='monster'?'active':''}" onclick="ui._bountyTab='monster';ui.renderPage('bounty_board')">💀 Monster Contracts</button>
+      <button class="bounty-tab ${tab==='gather'?'active':''}" onclick="ui._bountyTab='gather';ui.renderPage('bounty_board')">🌿 Gather Contracts</button>
+      <button class="bounty-tab ${tab==='mine'?'active':''}" onclick="ui._bountyTab='mine';ui.renderPage('bounty_board')">📜 Mine</button>
+    </div>`;
+
+    // ── POST A BOUNTY PANEL ───────────────────────────────
+    html += `<div class="bounty-post-panel">
+      <div class="bounty-post-header" onclick="this.parentElement.classList.toggle('open')">
+        <span>+ Post a Bounty</span>
+        <span class="bp-gold">Balance: ${this.fmt(s.gold)}g</span>
+      </div>
+      <div class="bounty-post-body">
+        <div class="bp-type-row">
+          <label>Type:</label>
+          <select id="bb-type" class="chat-input" onchange="ui._bbTypeChange()" style="flex:1">
+            <option value="pvp">⚔ PvP Bounty — Kill a specific player</option>
+            <option value="monster">💀 Monster Contract — Kill N monsters</option>
+            <option value="gather">🌿 Gather Contract — Gather N items</option>
+          </select>
+        </div>
+        <div id="bb-pvp-fields">
+          <div class="bp-row">
+            <label>Target Player:</label>
+            <input type="text" id="bb-target-name" class="chat-input" placeholder="Exact display name">
+          </div>
+        </div>
+        <div id="bb-monster-fields" style="display:none">
+          <div class="bp-row">
+            <label>Monster:</label>
+            <select id="bb-monster-id" class="chat-input" style="flex:1">
+              ${Object.entries(GAME_DATA.monsters).filter(([,m])=>m.name&&m.combatLevel).sort((a,b)=>(a[1].combatLevel||0)-(b[1].combatLevel||0)).map(([id,m])=>`<option value="${id}">Cb${m.combatLevel} ${m.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="bp-row">
+            <label>Kill Count:</label>
+            <input type="number" id="bb-monster-qty" class="chat-input" placeholder="e.g. 50" min="1" max="1000" value="25" style="width:120px">
+          </div>
+        </div>
+        <div id="bb-gather-fields" style="display:none">
+          <div class="bp-row">
+            <label>Item:</label>
+            <select id="bb-item-id" class="chat-input" style="flex:1">
+              ${Object.entries(GAME_DATA.items).filter(([,it])=>it.type==='resource'||it.type==='ore'||it.type==='log'||it.subtype==='herb').sort((a,b)=>a[1].name?.localeCompare(b[1].name)).map(([id,it])=>`<option value="${id}">${it.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="bp-row">
+            <label>Gather Amount:</label>
+            <input type="number" id="bb-gather-qty" class="chat-input" placeholder="e.g. 100" min="1" max="5000" value="100" style="width:120px">
+          </div>
+        </div>
+        <div class="bp-row">
+          <label>Reward (gold):</label>
+          <input type="number" id="bb-amount" class="chat-input" placeholder="Min 500g" min="500" style="width:140px">
+          <div class="bp-quick-btns">
+            <button class="btn btn-xs" onclick="document.getElementById('bb-amount').value=1000">1k</button>
+            <button class="btn btn-xs" onclick="document.getElementById('bb-amount').value=5000">5k</button>
+            <button class="btn btn-xs" onclick="document.getElementById('bb-amount').value=25000">25k</button>
+            <button class="btn btn-xs" onclick="document.getElementById('bb-amount').value=100000">100k</button>
+          </div>
+        </div>
+        <div class="bp-row">
+          <label>Duration:</label>
+          <select id="bb-duration" class="chat-input" style="width:160px">
+            <option value="3600000">1 hour</option>
+            <option value="21600000">6 hours</option>
+            <option value="86400000" selected>24 hours</option>
+            <option value="259200000">3 days</option>
+            <option value="604800000">7 days</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="ui._submitBounty()">Post Bounty</button>
       </div>
     </div>`;
 
-    html += '<h2 class="section-title">Active Bounties</h2><div id="bounty-list"><div class="bank-empty">Loading...</div></div>';
+    // ── BOUNTY LIST ───────────────────────────────────────
+    html += `<div class="bounty-list-section">
+      <div class="bounty-list-header">
+        <span class="section-title">${tab==='mine'?'My Bounties':'Active Bounties'}</span>
+        <button class="btn btn-xs" onclick="ui.loadBounties()">↻ Refresh</button>
+      </div>
+      <div id="bounty-list"><div class="bank-empty">Loading...</div></div>
+    </div>`;
+
+    html += `<script>
+      ui._bbTypeChange = function() {
+        const t = document.getElementById('bb-type').value;
+        document.getElementById('bb-pvp-fields').style.display    = t==='pvp'?'':'none';
+        document.getElementById('bb-monster-fields').style.display= t==='monster'?'':'none';
+        document.getElementById('bb-gather-fields').style.display = t==='gather'?'':'none';
+      };
+      ui._submitBounty = async function() {
+        const type = document.getElementById('bb-type').value;
+        const amount = parseInt(document.getElementById('bb-amount').value||0);
+        const duration = parseInt(document.getElementById('bb-duration').value);
+        const opts = {type, amount, duration};
+        if (type==='pvp')     opts.targetName = document.getElementById('bb-target-name').value.trim();
+        if (type==='monster') { opts.monsterId=document.getElementById('bb-monster-id').value; opts.qty=parseInt(document.getElementById('bb-monster-qty').value||0); }
+        if (type==='gather')  { opts.itemId=document.getElementById('bb-item-id').value; opts.qty=parseInt(document.getElementById('bb-gather-qty').value||0); }
+        const id = await online.placeBounty(opts);
+        if (id) ui.loadBounties();
+      };
+    </script>`;
+
     el.innerHTML = html;
     this.loadBounties();
   }
 
-  async placeBounty() {
-    const target = document.getElementById('bounty-target')?.value;
-    const amount = parseInt(document.getElementById('bounty-amount')?.value || 0);
-    if (!target || amount < 100) { this.toast({ type:'warn', text:'Enter a player name and at least 100 gold.' }); return; }
-    await online.placeBounty(target, amount);
-    this.loadBounties();
+  _bountyCard(b) {
+    const now = new Date();
+    const exp = b.expiresAt?.toDate ? b.expiresAt.toDate() : (b.expiresAt ? new Date(b.expiresAt) : null);
+    const expired = exp && exp < now;
+    const timeLeft = exp && !expired ? this._bountyTimeLeft(exp - now) : null;
+    const isMine = typeof online !== 'undefined' && online.user?.uid === b.placedBy;
+    const myProgress = (b.progress || {})[(typeof online !== 'undefined' && online.user?.uid) || ''] || 0;
+    const progressPct = b.targetQty ? Math.min(100, Math.round(myProgress / b.targetQty * 100)) : 0;
+
+    let typeIcon = '⚔', typeLabel = '', targetLabel = '', progressHtml = '', actionBtn = '';
+
+    if (b.type === 'pvp' || !b.type) {
+      typeIcon = '⚔'; typeLabel = 'PvP Bounty';
+      targetLabel = `Target: <strong>${this.escHtml(b.targetName||'?')}</strong>`;
+      const killed = (typeof online !== 'undefined' && online._sessionBountyKills)||[];
+      const canClaim = killed.includes(b.targetName);
+      actionBtn = canClaim
+        ? `<button class="btn btn-sm bounty-claim" onclick="ui._claimBounty('${b.id}')">⚡ Claim Reward</button>`
+        : `<div class="bounty-action-hint">Kill ${this.escHtml(b.targetName||'?')} in Wilderness to claim</div>`;
+    } else if (b.type === 'monster') {
+      typeIcon = '💀'; typeLabel = 'Monster Contract';
+      const mName = GAME_DATA.monsters[b.monsterId]?.name || b.monsterId;
+      targetLabel = `Kill <strong>${b.targetQty}x ${this.escHtml(mName)}</strong>`;
+      progressHtml = `<div class="bounty-progress-row">
+        <div class="bounty-prog-bar"><div class="bounty-prog-fill" style="width:${progressPct}%"></div></div>
+        <span class="bounty-prog-text">${myProgress}/${b.targetQty} (${progressPct}%)</span>
+      </div>`;
+      actionBtn = myProgress >= b.targetQty
+        ? `<button class="btn btn-sm bounty-claim" onclick="ui._claimBounty('${b.id}')">⚡ Claim ${this.fmt(b.amount)}g</button>`
+        : `<div class="bounty-action-hint">Progress updates as you fight</div>`;
+    } else if (b.type === 'gather') {
+      typeIcon = '🌿'; typeLabel = 'Gather Contract';
+      const itName = GAME_DATA.items[b.itemId]?.name || b.itemId;
+      targetLabel = `Gather <strong>${b.targetQty}x ${this.escHtml(itName)}</strong>`;
+      progressHtml = `<div class="bounty-progress-row">
+        <div class="bounty-prog-bar"><div class="bounty-prog-fill" style="width:${progressPct}%"></div></div>
+        <span class="bounty-prog-text">${myProgress}/${b.targetQty} (${progressPct}%)</span>
+      </div>`;
+      actionBtn = myProgress >= b.targetQty
+        ? `<button class="btn btn-sm bounty-claim" onclick="ui._claimBounty('${b.id}')">⚡ Claim ${this.fmt(b.amount)}g</button>`
+        : `<div class="bounty-action-hint">Gather ${b.itemId} to make progress</div>`;
+    }
+
+    const statusBadge = b.claimed ? '<span class="bounty-badge bounty-badge-claimed">Claimed</span>'
+      : b.cancelled ? '<span class="bounty-badge bounty-badge-cancelled">Cancelled</span>'
+      : expired ? '<span class="bounty-badge bounty-badge-expired">Expired</span>'
+      : '<span class="bounty-badge bounty-badge-active">Active</span>';
+
+    return `<div class="bounty-card ${b.claimed||b.cancelled||expired?'bounty-card-done':''}">
+      <div class="bounty-card-top">
+        <span class="bounty-type-icon">${typeIcon}</span>
+        <div class="bounty-card-info">
+          <div class="bounty-card-label">${typeLabel} ${statusBadge}</div>
+          <div class="bounty-card-target">${targetLabel}</div>
+          <div class="bounty-card-meta">
+            <span class="bounty-poster">By ${this.escHtml(b.placedByName||'?')}</span>
+            ${timeLeft ? `<span class="bounty-timer">⏱ ${timeLeft}</span>` : ''}
+            ${b.claimedByName ? `<span class="bounty-claimer">Claimed by ${this.escHtml(b.claimedByName)}</span>` : ''}
+          </div>
+        </div>
+        <div class="bounty-reward">${this.fmt(b.amount)}<span class="bounty-gold-label">g</span></div>
+      </div>
+      ${progressHtml}
+      ${!b.claimed && !b.cancelled && !expired ? `<div class="bounty-card-actions">
+        ${actionBtn}
+        ${isMine ? `<button class="btn btn-xs bounty-cancel" onclick="ui._cancelBounty('${b.id}')">Cancel (75% refund)</button>` : ''}
+      </div>` : ''}
+    </div>`;
+  }
+
+  _bountyTimeLeft(ms) {
+    if (ms <= 0) return 'Expired';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (h > 24) return `${Math.floor(h/24)}d ${h%24}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
   }
 
   async loadBounties() {
     const container = document.getElementById('bounty-list');
     if (!container) return;
-    const bounties = await online.getActiveBounties();
+    container.innerHTML = '<div class="bank-empty">Loading...</div>';
+    const tab = this._bountyTab || 'all';
+    let bounties = [];
+    if (tab === 'mine') {
+      bounties = await online.getMyBounties();
+    } else {
+      bounties = await online.getActiveBounties(tab === 'all' ? 'all' : tab);
+    }
     if (bounties.length === 0) {
-      container.innerHTML = '<div class="bank-empty">No active bounties. Be the first to place one.</div>';
+      container.innerHTML = `<div class="bank-empty">${tab==='mine'?'You have no bounties posted.':'No active bounties. Be the first!'}</div>`;
       return;
     }
-    container.innerHTML = '<div class="actions-grid">' + bounties.map(b => {
-      const expired = b.expiresAt && b.expiresAt.toDate && b.expiresAt.toDate() < new Date();
-      return `<div class="action-card ${expired?'locked':''}">
-        <div class="ac-header"><span class="ac-name">Target: ${this.escHtml(b.targetName)}</span><span class="ac-level">${this.fmt(b.amount)} gold</span></div>
-        <div class="ac-footer"><span>Placed by: ${this.escHtml(b.placedByName)}</span></div>
-        ${!expired?`<button class="btn btn-xs" onclick="online.claimBounty('${b.id}').then(()=>ui.loadBounties())">Claim (after PvP win)</button>`:'<div class="locked-overlay">Expired</div>'}
-      </div>`;
-    }).join('') + '</div>';
+    container.innerHTML = '<div class="bounty-cards">' + bounties.map(b => this._bountyCard(b)).join('') + '</div>';
+  }
+
+  async _claimBounty(id) {
+    const ok = await online.claimBounty(id);
+    if (ok) this.loadBounties();
+  }
+
+  async _cancelBounty(id) {
+    await online.cancelBounty(id);
+    this.loadBounties();
   }
 
   // ── LEADERBOARD PAGE ───────────────────────────────────

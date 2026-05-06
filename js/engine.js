@@ -1194,8 +1194,11 @@ class GameEngine {
       this.shiftAlignment('evil', 5);
       this.shiftAlignment('chaotic', 3);
       if (streak >= 3) this.emit('notification',{type:'achievement',text:`PvP Streak: ${streak} kills!`});
+      const killedName = this.state.combat._pvpRealPlayer || null;
+      this.emit('pvpKill', { targetName: killedName, streak });
       if (typeof online !== 'undefined' && online.isOnline) {
         online.sendSystemMessage(`[PVP] ${online.displayName} killed a player in the Wilderness! (Streak: ${streak})`);
+        if (killedName) online.checkBountiesOnKill(killedName);
       }
     }
 
@@ -1339,6 +1342,8 @@ class GameEngine {
       if (!this.state.combat._sessionLoot) this.state.combat._sessionLoot = {};
       if (!this.state.combat._sessionKills) this.state.combat._sessionKills = 0;
       this.state.combat._sessionKills++;
+      // Contract bounty progress
+      if (typeof online !== 'undefined' && online.isOnline) online.tickContractProgress('monster', mId, 1);
       for (const drop of _lootBag) {
         if (!this.state.combat._sessionLoot[drop.item]) {
           this.state.combat._sessionLoot[drop.item] = { qty:0, rarity:drop.rarity };
@@ -2511,6 +2516,10 @@ class GameEngine {
     if (!this.state.collectionLog[id] && GAME_DATA.items[id]) {
       this.state.collectionLog[id] = Date.now();
       this.emit('collectionLogNew', { item: id });
+    }
+    // Gather contract progress
+    if (typeof online !== 'undefined' && online.isOnline && this.state.activeSkill) {
+      online.tickContractProgress('gather', id, qty);
     }
   }
 

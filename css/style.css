@@ -6208,3 +6208,55 @@ kbd {
   .cmc-stats-grid { grid-template-columns:repeat(2, 1fr); }
   .codex-tabs { overflow-x:auto; }
 }
+
+/* ── BOUNTY BOARD ──────────────────────────────────────────── */
+.bounty-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.bounty-tab { background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-dim); padding:6px 14px; border-radius:4px; cursor:pointer; font-size:12px; transition:all 0.2s; }
+.bounty-tab:hover,.bounty-tab.active { background:rgba(201,135,62,0.15); border-color:var(--amber); color:var(--amber); }
+
+.bounty-post-panel { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; margin-bottom:16px; overflow:hidden; }
+.bounty-post-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; cursor:pointer; font-family:'Cinzel',serif; font-size:13px; color:var(--amber); }
+.bounty-post-header:hover { background:rgba(255,255,255,0.03); }
+.bp-gold { font-size:11px; color:var(--text-dim); }
+.bounty-post-body { display:none; padding:14px; border-top:1px solid var(--border); }
+.bounty-post-panel.open .bounty-post-body { display:flex; flex-direction:column; gap:10px; }
+.bp-type-row,.bp-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.bp-row label,.bp-type-row label { font-size:12px; color:var(--text-dim); min-width:100px; }
+.bp-quick-btns { display:flex; gap:4px; }
+
+.bounty-list-section { margin-top:4px; }
+.bounty-list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.bounty-cards { display:flex; flex-direction:column; gap:10px; }
+
+.bounty-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px; padding:14px; transition:border-color 0.2s; }
+.bounty-card:hover { border-color:rgba(201,135,62,0.4); }
+.bounty-card-done { opacity:0.6; }
+.bounty-card-top { display:flex; align-items:flex-start; gap:12px; }
+.bounty-type-icon { font-size:22px; flex-shrink:0; margin-top:2px; }
+.bounty-card-info { flex:1; min-width:0; }
+.bounty-card-label { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; display:flex; align-items:center; gap:6px; }
+.bounty-card-target { font-size:14px; color:var(--text); font-family:'Cinzel',serif; margin-bottom:4px; }
+.bounty-card-target strong { color:var(--amber); }
+.bounty-card-meta { display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--text-dim); }
+.bounty-timer { color:#5aafff; }
+.bounty-claimer { color:#7dcc44; }
+
+.bounty-reward { font-family:'Cinzel',serif; font-size:20px; font-weight:900; color:#f0d060; flex-shrink:0; text-align:right; line-height:1; }
+.bounty-gold-label { font-size:11px; color:var(--amber); display:block; text-align:right; }
+
+.bounty-badge { padding:2px 7px; border-radius:10px; font-size:10px; font-weight:700; letter-spacing:0.4px; }
+.bounty-badge-active   { background:rgba(90,175,90,0.2);  color:#7dcc44;  border:1px solid #7dcc44; }
+.bounty-badge-claimed  { background:rgba(201,135,62,0.2); color:var(--amber); border:1px solid var(--amber); }
+.bounty-badge-expired  { background:rgba(80,80,80,0.2);   color:#888;     border:1px solid #555; }
+.bounty-badge-cancelled{ background:rgba(180,60,60,0.2);  color:#cc6666;  border:1px solid #cc4444; }
+
+.bounty-progress-row { display:flex; align-items:center; gap:8px; margin:8px 0 4px; }
+.bounty-prog-bar { flex:1; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+.bounty-prog-fill { height:100%; background:linear-gradient(90deg,#c9873e,#f0a040); border-radius:3px; transition:width 0.3s; }
+.bounty-prog-text { font-size:11px; color:var(--text-dim); white-space:nowrap; }
+
+.bounty-card-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.06); }
+.bounty-claim { background:rgba(90,175,62,0.15) !important; border-color:#4a9a3a !important; color:#7dcc44 !important; }
+.bounty-claim:hover { background:rgba(90,175,62,0.3) !important; }
+.bounty-cancel { background:rgba(180,60,60,0.1) !important; border-color:#883333 !important; color:#cc6666 !important; font-size:10px !important; }
+.bounty-action-hint { font-size:11px; color:var(--text-dim); font-style:italic; }

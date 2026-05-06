@@ -858,62 +858,222 @@ class OnlineManager {
   }
 
   // ── BOUNTY SYSTEM ──────────────────────────────────────
-  async placeBounty(targetName, amount) {
-    if (!this.isOnline || !this.user || !game) return;
-    if (game.state.gold < amount || amount < 100) {
-      this.emit('notification', { type:'warn', text:'Minimum bounty is 100 gold.' }); return;
+  // Three types: pvp (kill player), monster (contract: kill N of monster), gather (contract: gather N of item)
+
+  async placeBounty(opts) {
+    // opts: { type:'pvp'|'monster'|'gather', targetName?, monsterId?, itemId?, qty?, amount, duration }
+    if (!this.isOnline || !this.user || !game) return null;
+    const { type, targetName, monsterId, itemId, qty, amount, duration=86400000 } = opts;
+    if (!amount || amount < 500) {
+      this.emit('notification', { type:'warn', text:'Minimum bounty is 500 gold.' }); return null;
     }
+    if (game.state.gold < amount) {
+      this.emit('notification', { type:'warn', text:'Not enough gold.' }); return null;
+    }
+    if (type === 'pvp' && !targetName) {
+      this.emit('notification', { type:'warn', text:'Specify a target player name.' }); return null;
+    }
+    if (type === 'monster' && (!monsterId || !qty || qty < 1)) {
+      this.emit('notification', { type:'warn', text:'Specify a monster and kill count.' }); return null;
+    }
+    if (type === 'gather' && (!itemId || !qty || qty < 1)) {
+      this.emit('notification', { type:'warn', text:'Specify an item and gather amount.' }); return null;
+    }
+
     game.state.gold -= amount;
-    game.state.stats.goldSpent += amount;
+    game.state.stats.goldSpent = (game.state.stats.goldSpent || 0) + amount;
     try {
-      await this.firestore.collection('bounties').add({
+      const doc = {
+        type,
         placedBy: this.user.uid,
         placedByName: this.displayName,
-        targetName,
         amount,
         claimed: false,
         claimedBy: null,
+        claimedByName: null,
+        cancelled: false,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        expiresAt: new Date(Date.now() + 86400000), // 24 hours
-      });
-      this.emit('notification', { type:'success', text:`Bounty of ${amount} gold placed on ${targetName}!` });
+        expiresAt: new Date(Date.now() + duration),
+      };
+      if (type === 'pvp')     { doc.targetName = targetName; }
+      if (type === 'monster') { doc.monsterId = monsterId; doc.targetQty = qty; doc.progress = {}; }
+      if (type === 'gather')  { doc.itemId = itemId; doc.targetQty = qty; doc.progress = {}; }
+
+      const ref = await this.firestore.collection('bounties').add(doc);
+      const label = type === 'pvp' ? `on ${targetName}`
+        : type === 'monster' ? `Kill ${qty}x ${GAME_DATA.monsters[monsterId]?.name||monsterId}`
+        : `Gather ${qty}x ${GAME_DATA.items[itemId]?.name||itemId}`;
+      this.emit('notification', { type:'success', text:`Bounty placed: ${label} — ${amount}g reward!` });
+      return ref.id;
     } catch(e) {
       game.state.gold += amount; // refund
       this.emit('notification', { type:'danger', text:'Bounty error: ' + e.message });
+      return null;
     }
   }
 
-  async getActiveBounties() {
+  async cancelBounty(bountyId) {
+    if (!this.isOnline || !this.user || !game) return;
+    try {
+      const doc = await this.firestore.collection('bounties').doc(bountyId).get();
+      if (!doc.exists) return;
+      const data = doc.data();
+      if (data.placedBy !== this.user.uid) {
+        this.emit('notification', { type:'warn', text:'You can only cancel your own bounties.' }); return;
+      }
+      if (data.claimed || data.cancelled) {
+        this.emit('notification', { type:'warn', text:'Bounty already resolved.' }); return;
+      }
+      // Refund 75% of amount
+      const refund = Math.floor(data.amount * 0.75);
+      await this.firestore.collection('bounties').doc(bountyId).update({ cancelled: true, cancelledAt: new Date() });
+      game.state.gold += refund;
+      this.emit('notification', { type:'info', text:`Bounty cancelled. Refunded ${refund}g (75%).` });
+    } catch(e) { this.emit('notification', { type:'danger', text:'Cancel error: ' + e.message }); }
+  }
+
+  async getActiveBounties(filter='all') {
     if (!this.isOnline) return [];
     try {
-      const snap = await this.firestore.collection('bounties')
+      let query = this.firestore.collection('bounties')
         .where('claimed', '==', false)
+        .where('cancelled', '==', false)
         .orderBy('amount', 'desc')
+        .limit(50);
+      if (filter === 'pvp')     query = this.firestore.collection('bounties').where('type','==','pvp').where('claimed','==',false).where('cancelled','==',false).orderBy('amount','desc').limit(50);
+      if (filter === 'monster') query = this.firestore.collection('bounties').where('type','==','monster').where('claimed','==',false).where('cancelled','==',false).orderBy('amount','desc').limit(50);
+      if (filter === 'gather')  query = this.firestore.collection('bounties').where('type','==','gather').where('claimed','==',false).where('cancelled','==',false).orderBy('amount','desc').limit(50);
+      const snap = await query.get();
+      const bounties = [];
+      snap.forEach(doc => {
+        const d = { id:doc.id, ...doc.data() };
+        const exp = d.expiresAt?.toDate ? d.expiresAt.toDate() : new Date(d.expiresAt);
+        if (exp > new Date()) bounties.push(d); // filter expired client-side
+      });
+      return bounties;
+    } catch(e) { console.error('getActiveBounties error:', e); return []; }
+  }
+
+  async getMyBounties() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const snap = await this.firestore.collection('bounties')
+        .where('placedBy', '==', this.user.uid)
+        .orderBy('timestamp', 'desc')
         .limit(20)
         .get();
-      const bounties = [];
-      snap.forEach(doc => bounties.push({ id:doc.id, ...doc.data() }));
-      return bounties;
+      return snap.docs.map(doc => ({ id:doc.id, ...doc.data() }));
+    } catch(e) { return []; }
+  }
+
+  async getBountiesOnMe() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const name = this.displayName;
+      const snap = await this.firestore.collection('bounties')
+        .where('targetName', '==', name)
+        .where('claimed', '==', false)
+        .where('cancelled', '==', false)
+        .limit(10)
+        .get();
+      return snap.docs.map(doc => ({ id:doc.id, ...doc.data() }));
     } catch(e) { return []; }
   }
 
   async claimBounty(bountyId) {
-    if (!this.isOnline || !this.user || !game) return;
+    if (!this.isOnline || !this.user || !game) return false;
     try {
       const doc = await this.firestore.collection('bounties').doc(bountyId).get();
-      if (!doc.exists || doc.data().claimed) {
-        this.emit('notification', { type:'warn', text:'Bounty already claimed.' }); return;
-      }
+      if (!doc.exists) { this.emit('notification', { type:'warn', text:'Bounty not found.' }); return false; }
       const bounty = doc.data();
+      if (bounty.claimed || bounty.cancelled) {
+        this.emit('notification', { type:'warn', text:'Bounty already resolved.' }); return false;
+      }
+      if (bounty.type === 'pvp') {
+        // Verify via this session's kill list
+        const killed = this._sessionBountyKills || [];
+        if (!killed.includes(bounty.targetName)) {
+          this.emit('notification', { type:'warn', text:`You must defeat ${bounty.targetName} in the Wilderness first.` }); return false;
+        }
+      }
+      if (bounty.type === 'monster' || bounty.type === 'gather') {
+        const myProg = (bounty.progress || {})[this.user.uid] || 0;
+        if (myProg < bounty.targetQty) {
+          const left = bounty.targetQty - myProg;
+          const label = bounty.type === 'monster'
+            ? `${left} more ${GAME_DATA.monsters[bounty.monsterId]?.name||bounty.monsterId} to kill`
+            : `${left} more ${GAME_DATA.items[bounty.itemId]?.name||bounty.itemId} to gather`;
+          this.emit('notification', { type:'warn', text:`Contract incomplete: ${label}.` }); return false;
+        }
+      }
       await this.firestore.collection('bounties').doc(bountyId).update({
         claimed: true,
         claimedBy: this.user.uid,
         claimedByName: this.displayName,
+        claimedAt: new Date(),
       });
       game.state.gold += bounty.amount;
-      game.state.stats.goldEarned += bounty.amount;
-      this.emit('notification', { type:'achievement', text:`Claimed bounty on ${bounty.targetName} for ${bounty.amount} gold!` });
-    } catch(e) { console.error('Claim bounty error:', e); }
+      game.state.stats.goldEarned = (game.state.stats.goldEarned || 0) + bounty.amount;
+      const label = bounty.type === 'pvp' ? `PvP bounty on ${bounty.targetName}`
+        : bounty.type === 'monster' ? `monster contract`
+        : `gathering contract`;
+      this.emit('notification', { type:'achievement', text:`Bounty claimed! +${bounty.amount}g (${label})` });
+      if (bounty.type === 'pvp') this._sessionBountyKills = (this._sessionBountyKills||[]).filter(n=>n!==bounty.targetName);
+      return true;
+    } catch(e) { this.emit('notification', { type:'danger', text:'Claim error: ' + e.message }); return false; }
+  }
+
+  // Called when player kills a real player in wilderness
+  async checkBountiesOnKill(killedName) {
+    if (!killedName || !this.isOnline) return;
+    if (!this._sessionBountyKills) this._sessionBountyKills = [];
+    this._sessionBountyKills.push(killedName);
+    // Check if any PvP bounties exist on this target
+    try {
+      const snap = await this.firestore.collection('bounties')
+        .where('type', '==', 'pvp')
+        .where('targetName', '==', killedName)
+        .where('claimed', '==', false)
+        .where('cancelled', '==', false)
+        .limit(5)
+        .get();
+      if (!snap.empty) {
+        let total = 0;
+        snap.forEach(doc => { total += doc.data().amount; });
+        this.emit('notification', { type:'achievement', text:`${killedName} has ${snap.size} active bounty/ies (${total}g total)! Go to Bounty Board to claim.` });
+      }
+    } catch(e) {}
+  }
+
+  // Called on every monster kill + gather to update contract progress
+  async tickContractProgress(type, targetId, qty) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      // Find matching active contracts
+      const field = type === 'monster' ? 'monsterId' : 'itemId';
+      const snap = await this.firestore.collection('bounties')
+        .where('type', '==', type)
+        .where(field, '==', targetId)
+        .where('claimed', '==', false)
+        .where('cancelled', '==', false)
+        .limit(10)
+        .get();
+      if (snap.empty) return;
+      for (const doc of snap.docs) {
+        const data = doc.data();
+        const progKey = `progress.${this.user.uid}`;
+        const cur = (data.progress || {})[this.user.uid] || 0;
+        const newVal = cur + qty;
+        await doc.ref.update({ [progKey]: newVal });
+        if (newVal >= data.targetQty && cur < data.targetQty) {
+          // Just completed!
+          const label = type === 'monster'
+            ? `Kill ${data.targetQty}x ${GAME_DATA.monsters[targetId]?.name||targetId}`
+            : `Gather ${data.targetQty}x ${GAME_DATA.items[targetId]?.name||targetId}`;
+          this.emit('notification', { type:'achievement', text:`Contract complete: ${label}! Claim ${data.amount}g on the Bounty Board!` });
+        }
+      }
+    } catch(e) {} // fire and forget, non-critical
   }
 
   // ── GUILDS ─────────────────────────────────────────────
