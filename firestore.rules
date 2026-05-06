@@ -79,12 +79,28 @@ service cloud.firestore {
     match /messages/{docId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
-      allow delete: if isAdmin();
+      allow delete: if request.auth != null;
     }
     match /inbox/{docId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null;
+    }
+    match /blocked/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── GUILD SOCIAL ──────────────────────────────────────
+    match /guild_log/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if isAdmin();
+    }
+    match /guild_invites/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if isAdmin();
     }
 
     // ── ADMIN COLLECTIONS ────────────────────────────────

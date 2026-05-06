@@ -3001,118 +3001,376 @@ class UI {
   renderGuildsPage(el) {
     const s = this.engine.state;
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Guilds','faction','Create or join a guild. Ally with others, compete for dominance.',null);
+    let html = this.header('Guilds','faction','Forge alliances, share resources, and dominate the Ashlands.',null);
 
     if (!isOnline) {
       html += '<div class="bank-empty">Online features required. Configure Firebase to enable guilds.</div>';
       el.innerHTML = html; return;
     }
+    if (!online.user || online.user.isAnonymous) {
+      html += '<div class="bank-empty">Create an account to access guilds.</div>';
+      el.innerHTML = html; return;
+    }
+
+    // Guild invitations banner
+    html += '<div id="guild-invites-banner"></div>';
 
     if (s.guild) {
-      html += `<div class="alignment-display">
-        <div class="al-current">Your Guild: <strong>${this.escHtml(s.guild.name)}</strong> [${this.escHtml(s.guild.tag||'')}]</div>
-        <div class="al-desc">Role: ${s.guild.role || 'Member'}</div>
-        <div class="shop-btns" style="margin-top:8px">
-          <button class="btn btn-xs btn-danger" onclick="online.leaveGuild().then(()=>ui.renderPage('guilds'))">Leave Guild</button>
+      // ── TABBED GUILD INTERFACE ──
+      const tab = this._guildTab || 'overview';
+      const tabs = [
+        { id:'overview', label:'Overview', icon:'&#9733;' },
+        { id:'members', label:'Members', icon:'&#9878;' },
+        { id:'bank', label:'Bank', icon:'&#9733;' },
+        { id:'chat', label:'Chat', icon:'&#9993;' },
+        { id:'log', label:'Log', icon:'&#9776;' },
+        { id:'settings', label:'Settings', icon:'&#9881;' },
+      ];
+      html += `<div class="guild-header-panel">
+        <div class="guild-banner">
+          <div class="guild-name-main">[${this.escHtml(s.guild.tag||'')}] ${this.escHtml(s.guild.name)}</div>
+          <div class="guild-role-badge" style="color:${OnlineManager.RANK_COLORS[s.guild.role]||'#7a7e94'}">${s.guild.role || 'Member'}</div>
+        </div>
+        <div class="guild-tabs">
+          ${tabs.map(t => `<button class="guild-tab ${tab===t.id?'guild-tab-active':''}" onclick="ui._guildTab='${t.id}';ui.renderPage('guilds')"><span class="gt-icon">${t.icon}</span> ${t.label}</button>`).join('')}
         </div>
       </div>`;
-      // Guild Bank
-      const canWithdraw = s.guild.role === 'Leader' || s.guild.role === 'General';
-      html += `<div class="settings-section">
-        <h3>Guild Bank</h3>
-        <div id="guild-bank-display"><div class="bank-empty">Loading...</div></div>
-        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-          <input type="number" id="guild-gold" class="qty-input" min="1" value="100" style="width:100px">
-          <button class="btn btn-sm" onclick="online.depositGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>ui._loadGuildData())">Deposit Gold</button>
-          ${canWithdraw?'<button class="btn btn-sm" onclick="online.withdrawGuildGold(parseInt(document.getElementById(\'guild-gold\').value)||0).then(()=>ui._loadGuildData())">Withdraw</button>':''}
-        </div>
-      </div>`;
-      // Member list
-      html += '<h2 class="section-title">Members</h2><div id="guild-members"><div class="bank-empty">Loading...</div></div>';
-    } else {
-      html += `<div class="settings-section">
-        <h3>Create a Guild</h3>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" id="guild-name" class="chat-input" placeholder="Guild name" maxlength="30">
-          <input type="text" id="guild-tag" class="chat-input" placeholder="Tag (3-5 chars)" maxlength="5" style="width:100px">
-          <button class="btn btn-sm" onclick="ui.createGuild()">Create (1000g)</button>
-        </div>
-      </div>`;
-      html += `<div class="settings-section">
-        <h3>Join a Guild</h3>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="guild-join" class="chat-input" placeholder="Guild name to join">
-          <button class="btn btn-sm" onclick="ui.joinGuild()">Join</button>
-        </div>
-      </div>`;
-    }
 
-    html += '<h2 class="section-title">Guild Benefits</h2><div class="actions-grid">';
-    const benefits = [
-      {name:'Shared XP Bonus', desc:'+2% XP for all members when 3+ online.'},
-      {name:'Guild Bank', desc:'Shared gold pool for group purchases.'},
-      {name:'Alliances', desc:'Ally with other guilds for faction wars.'},
-      {name:'Wilderness', desc:'Guild territory control in PvP zones.'},
-      {name:'Guild Chat', desc:'Private communication channel.'},
-      {name:'Guild Quests', desc:'Cooperative quests with group rewards.'},
-    ];
-    for (const b of benefits) {
-      html += `<div class="action-card"><div class="ac-header"><span class="ac-name">${b.name}</span></div><p class="area-desc">${b.desc}</p></div>`;
+      html += '<div class="guild-tab-content" id="guild-tab-content"><div class="bank-empty">Loading...</div></div>';
+      el.innerHTML = html;
+      this._loadGuildTab(tab);
+    } else {
+      // ── NO GUILD - CREATE / JOIN / BROWSE ──
+      html += `<div class="guild-join-section">
+        <div class="guild-join-panel">
+          <h3 class="guild-join-title">Create a Guild</h3>
+          <p class="guild-join-desc">Establish your own guild and recruit members. Costs 1,000 gold.</p>
+          <div class="guild-join-form">
+            <input type="text" id="guild-name" class="guild-input" placeholder="Guild name (3-30 chars)" maxlength="30">
+            <input type="text" id="guild-tag" class="guild-input guild-tag-input" placeholder="TAG" maxlength="5">
+            <button class="btn btn-sm" onclick="ui.createGuild()">Create</button>
+          </div>
+        </div>
+        <div class="guild-join-panel">
+          <h3 class="guild-join-title">Join by Name</h3>
+          <p class="guild-join-desc">Enter the exact name of a guild to join directly.</p>
+          <div class="guild-join-form">
+            <input type="text" id="guild-join" class="guild-input" placeholder="Guild name" style="flex:1">
+            <button class="btn btn-sm" onclick="ui.joinGuild()">Join</button>
+          </div>
+        </div>
+      </div>`;
+
+      // Browse guilds
+      html += `<div class="guild-browse-section">
+        <h2 class="section-title">Browse Guilds</h2>
+        <div class="guild-search-row">
+          <input type="text" id="guild-search" class="guild-input" placeholder="Search guilds..." oninput="ui._searchGuilds(this.value)">
+        </div>
+        <div id="guild-browse-list"><div class="bank-empty">Loading guilds...</div></div>
+      </div>`;
+
+      el.innerHTML = html;
+      this._searchGuilds('');
+      this._loadGuildInvites();
     }
-    html += '</div>';
-    el.innerHTML = html;
-    if (s.guild) this._loadGuildData();
   }
 
-  async _loadGuildData() {
-    // Load guild bank
-    const bankEl = document.getElementById('guild-bank-display');
-    if (bankEl) {
-      const bank = await online.getGuildBank();
-      bankEl.innerHTML = `<span class="bz-gold" style="font-size:14px">${icon('coin',16)} ${this.fmt(bank)} Gold</span>`;
+  async _loadGuildInvites() {
+    const banner = document.getElementById('guild-invites-banner');
+    if (!banner) return;
+    const invites = await online.getGuildInvites();
+    if (invites.length === 0) { banner.innerHTML = ''; return; }
+    banner.innerHTML = invites.map(inv => `<div class="guild-invite-card">
+      <div class="gi-info">
+        <span class="gi-tag">[${this.escHtml(inv.guildTag||'')}]</span>
+        <span class="gi-name">${this.escHtml(inv.guildName)}</span>
+        <span class="gi-from">invited by ${this.escHtml(inv.fromName)}</span>
+      </div>
+      <div class="gi-btns">
+        <button class="btn btn-xs" onclick="online.acceptGuildInvite('${inv.id}').then(()=>ui.renderPage('guilds'))">Accept</button>
+        <button class="btn btn-xs btn-danger" onclick="online.declineGuildInvite('${inv.id}').then(()=>ui._loadGuildInvites())">Decline</button>
+      </div>
+    </div>`).join('');
+  }
+
+  async _searchGuilds(query) {
+    const container = document.getElementById('guild-browse-list');
+    if (!container) return;
+    const guilds = await online.searchGuilds(query);
+    if (guilds.length === 0) {
+      container.innerHTML = '<div class="bank-empty">No guilds found.</div>'; return;
     }
-    // Load members
-    const membersEl = document.getElementById('guild-members');
-    if (membersEl) {
+    container.innerHTML = '<div class="guild-browse-grid">' + guilds.map(g => `<div class="guild-browse-card">
+      <div class="gbc-top">
+        <span class="gbc-tag">[${this.escHtml(g.tag)}]</span>
+        <span class="gbc-name">${this.escHtml(g.name)}</span>
+      </div>
+      <div class="gbc-info">
+        <span>Leader: ${this.escHtml(g.leaderName||'Unknown')}</span>
+        <span>${g.memberCount}/50 members</span>
+        <span class="gbc-type ${g.joinType==='invite'?'gbc-invite':''}">${g.joinType==='invite'?'Invite Only':'Open'}</span>
+      </div>
+      ${g.joinType==='open'?`<button class="btn btn-xs" onclick="online.joinGuild('${this.escHtml(g.name)}').then(()=>ui.renderPage('guilds'))">Join</button>`:''}
+    </div>`).join('') + '</div>';
+  }
+
+  async _loadGuildTab(tab) {
+    const container = document.getElementById('guild-tab-content');
+    if (!container) return;
+
+    // Sync role before rendering anything
+    await online.syncGuildRole();
+    const s = this.engine.state;
+    const myRank = s.guild?.role || 'Recruit';
+    const myIdx = OnlineManager.RANK_ORDER.indexOf(myRank);
+    const rankOrder = OnlineManager.RANK_ORDER;
+    const rankColors = OnlineManager.RANK_COLORS;
+
+    if (tab === 'overview') {
+      const info = await online.getGuildInfo();
+      if (!info) { container.innerHTML = '<div class="bank-empty">Could not load guild.</div>'; return; }
+      const onlineCount = (info.members||[]).filter(m => m.lastSeen && (Date.now() - m.lastSeen < 600000)).length;
+      container.innerHTML = `
+        <div class="guild-overview">
+          <div class="guild-motd-panel">
+            <div class="guild-motd-label">Message of the Day</div>
+            <div class="guild-motd-text">${this.escHtml(info.motd || 'No MOTD set.')}</div>
+          </div>
+          <div class="guild-stats-row">
+            <div class="guild-stat"><span class="gs-val">${info.memberCount || info.members?.length || 0}</span><span class="gs-label">Members</span></div>
+            <div class="guild-stat"><span class="gs-val">${onlineCount}</span><span class="gs-label">Online</span></div>
+            <div class="guild-stat"><span class="gs-val">${this.fmt(info.bank||0)}g</span><span class="gs-label">Bank</span></div>
+            <div class="guild-stat"><span class="gs-val">${info.settings?.joinType||'open'}</span><span class="gs-label">Join Type</span></div>
+          </div>
+          ${info.description ? `<div class="guild-desc-panel"><div class="guild-desc-label">Description</div><div class="guild-desc-text">${this.escHtml(info.description)}</div></div>` : ''}
+          <div class="guild-leave-row">
+            <button class="btn btn-xs btn-danger" onclick="if(confirm('Leave this guild?'))online.leaveGuild().then(()=>{ui._guildTab='overview';ui.renderPage('guilds')})">Leave Guild</button>
+          </div>
+        </div>`;
+    }
+
+    else if (tab === 'members') {
       const members = await online.getGuildMembers();
-      const myRank = game.state.guild?.role || 'Recruit';
-      const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
-      const myIdx = rankOrder.indexOf(myRank);
-      const canManage = myIdx <= 2; // Leader, General, Captain can kick
-      const canRank = myIdx <= 1; // Leader, General can change ranks
+      const canManage = myIdx <= 2;
+      const canRank = myIdx <= 1;
+      const canInvite = myIdx <= 2;
+      let mHtml = '';
+      if (canInvite) {
+        mHtml += `<div class="guild-invite-row">
+          <input type="text" id="guild-invite-name" class="guild-input" placeholder="Player name to invite..." style="flex:1">
+          <button class="btn btn-sm" onclick="ui._guildInvitePlayer()">Invite</button>
+        </div>`;
+      }
       if (members.length === 0) {
-        membersEl.innerHTML = '<div class="bank-empty">No members found.</div>';
+        mHtml += '<div class="bank-empty">No members found.</div>';
       } else {
-        const rankColors = {Leader:'#c9873e',General:'#c44040',Captain:'#4a7ec4',Lieutenant:'#8a5ec4',Sergeant:'#3a9e5c',Member:'#c8cad4',Recruit:'#7a7e94'};
-        membersEl.innerHTML = '<div class="friends-grid">' + members.map(m => {
-          const rank = m.rank || m.role || 'Recruit';
+        // Sort by rank
+        members.sort((a,b) => rankOrder.indexOf(a.rank||'Recruit') - rankOrder.indexOf(b.rank||'Recruit'));
+        mHtml += '<div class="guild-members-grid">' + members.map(m => {
+          const rank = m.rank || 'Recruit';
           const theirIdx = rankOrder.indexOf(rank);
           const isMe = m.uid === online.user?.uid;
           const canKickThis = canManage && !isMe && theirIdx > myIdx;
           const canRankThis = canRank && !isMe && theirIdx > myIdx;
+          const isOnlineNow = m.lastSeen && (Date.now() - m.lastSeen < 600000);
           let rankSelect = '';
           if (canRankThis) {
-            rankSelect = `<select class="rank-select" onchange="online.setMemberRank('${m.uid}',this.value).then(()=>ui._loadGuildData())">`;
+            rankSelect = `<select class="rank-select" onchange="online.setMemberRank('${m.uid}',this.value).then(()=>{ui._guildTab='members';ui.renderPage('guilds')})">`;
             for (const r of rankOrder) {
-              if (rankOrder.indexOf(r) <= myIdx) continue; // Can't set equal or above own rank
+              if (rankOrder.indexOf(r) <= myIdx) continue;
               rankSelect += `<option value="${r}" ${r===rank?'selected':''}>${r}</option>`;
             }
             rankSelect += '</select>';
           }
-          return `<div class="friend-card">
-            <span class="fc-name">
-              <span class="guild-rank" style="color:${rankColors[rank]||'#7a7e94'}">${rank}</span>
-              ${this.escHtml(m.name)} ${isMe?'<small>(You)</small>':''}
-            </span>
-            <div class="fc-btns">
+          const joinDate = m.joined ? new Date(m.joined).toLocaleDateString() : '?';
+          return `<div class="guild-member-card ${isMe?'guild-member-me':''}">
+            <div class="gmc-left">
+              <span class="gmc-online-dot ${isOnlineNow?'gmc-dot-on':'gmc-dot-off'}"></span>
+              <div class="gmc-info">
+                <span class="gmc-name">${this.escHtml(m.name)} ${isMe?'<small style="color:var(--text-dim)">(You)</small>':''}</span>
+                <span class="guild-rank" style="color:${rankColors[rank]||'#7a7e94'}">${rank}</span>
+              </div>
+            </div>
+            <div class="gmc-meta">Joined ${joinDate}</div>
+            <div class="gmc-actions">
               ${rankSelect}
               ${!isMe?`<button class="btn btn-xs" onclick="ui.openDM('${m.uid}','${this.escHtml(m.name)}')">Msg</button>`:''}
-              ${canKickThis?`<button class="btn btn-xs btn-danger" onclick="online.kickMember('${m.uid}').then(()=>ui._loadGuildData())">Kick</button>`:''}
+              ${canKickThis?`<button class="btn btn-xs btn-danger" onclick="if(confirm('Kick ${this.escHtml(m.name)}?'))online.kickMember('${m.uid}').then(()=>{ui._guildTab='members';ui.renderPage('guilds')})">Kick</button>`:''}
             </div>
           </div>`;
         }).join('') + '</div>';
       }
+      container.innerHTML = mHtml;
     }
+
+    else if (tab === 'bank') {
+      const info = await online.getGuildInfo();
+      const bank = info?.bank || 0;
+      const withdrawRank = info?.settings?.withdrawRank || 'General';
+      const canWithdraw = myIdx <= OnlineManager.RANK_ORDER.indexOf(withdrawRank);
+      const log = await online.getGuildLog(30);
+      const bankLog = log.filter(l => l.action === 'deposit' || l.action === 'withdraw');
+      container.innerHTML = `
+        <div class="guild-bank-section">
+          <div class="guild-bank-balance">
+            <span class="gbb-amount">${this.fmt(bank)}</span>
+            <span class="gbb-label">Gold in Treasury</span>
+          </div>
+          <div class="guild-bank-info">Withdraw requires: <strong>${withdrawRank}</strong> rank or higher</div>
+          <div class="guild-bank-controls">
+            <input type="number" id="guild-gold" class="guild-input" min="1" value="100" style="width:120px">
+            <button class="btn btn-sm" onclick="online.depositGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>{ui._guildTab='bank';ui.renderPage('guilds')})">Deposit</button>
+            ${canWithdraw?`<button class="btn btn-sm btn-withdraw" onclick="online.withdrawGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>{ui._guildTab='bank';ui.renderPage('guilds')})">Withdraw</button>`:`<button class="btn btn-sm" disabled title="Insufficient rank">Withdraw</button>`}
+          </div>
+          <div class="guild-bank-your-gold">Your Gold: ${this.fmt(game.state.gold)}</div>
+        </div>
+        <h3 class="guild-sub-title">Treasury History</h3>
+        <div class="guild-log-list">${bankLog.length === 0 ? '<div class="bank-empty">No transactions yet.</div>' : bankLog.map(l => {
+          const d = l.details || {};
+          const time = l.timestamp?.toDate ? l.timestamp.toDate().toLocaleString() : '';
+          const isDeposit = l.action === 'deposit';
+          return `<div class="guild-log-entry ${isDeposit?'gle-deposit':'gle-withdraw'}">
+            <span class="gle-icon">${isDeposit?'&#9650;':'&#9660;'}</span>
+            <span class="gle-text">${this.escHtml(d.player||'?')} ${isDeposit?'deposited':'withdrew'} <strong>${this.fmt(d.amount||0)}g</strong></span>
+            <span class="gle-time">${time}</span>
+          </div>`;
+        }).join('')}</div>`;
+    }
+
+    else if (tab === 'chat') {
+      container.innerHTML = `
+        <div class="guild-chat-container">
+          <div id="guild-chat-messages" class="gchat-messages" style="height:400px"></div>
+          <div class="gchat-input-area">
+            <div class="gchat-input-row">
+              <input type="text" id="guild-chat-input" class="gchat-input" placeholder="Message your guild..." maxlength="300" onkeydown="if(event.key==='Enter')ui._sendGuildChat()" autocomplete="off">
+              <button class="gchat-send" onclick="ui._sendGuildChat()">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path d="M2 21L23 12 2 3 2 10 17 12 2 14z" fill="var(--accent)"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+      online.listenGuildChat(msgs => {
+        const c = document.getElementById('guild-chat-messages');
+        if (!c) return;
+        c.innerHTML = msgs.map(m => {
+          const isMe = online.user && m.uid === online.user.uid;
+          const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+          const rColor = rankColors[m.rank] || '#7a7e94';
+          return `<div class="gchat-msg ${isMe?'gchat-mine':''}">
+            <div class="gchat-avatar" style="border-color:${rColor}">${m.name?m.name[0].toUpperCase():'?'}</div>
+            <div class="gchat-body">
+              <div class="gchat-meta">
+                <span class="guild-rank" style="color:${rColor}">${m.rank||''}</span>
+                <span class="gchat-name ${isMe?'gchat-name-me':''}">${this.escHtml(m.name)}</span>
+                <span class="gchat-time">${time}</span>
+              </div>
+              <div class="gchat-text">${this.escHtml(m.text)}</div>
+            </div>
+          </div>`;
+        }).join('');
+        c.scrollTop = c.scrollHeight;
+      });
+    }
+
+    else if (tab === 'log') {
+      const log = await online.getGuildLog(50);
+      if (log.length === 0) {
+        container.innerHTML = '<div class="bank-empty">No activity recorded yet.</div>';
+      } else {
+        const actionLabels = {
+          created:'Guild Created', joined:'Joined', joined_invite:'Joined via Invite', left:'Left',
+          kicked:'Kicked', rank_change:'Rank Changed', deposit:'Deposited Gold', withdraw:'Withdrew Gold',
+          motd_changed:'MOTD Updated', settings_changed:'Settings Changed'
+        };
+        const actionIcons = {
+          created:'&#9733;', joined:'&#10010;', joined_invite:'&#10010;', left:'&#10008;',
+          kicked:'&#10006;', rank_change:'&#8693;', deposit:'&#9650;', withdraw:'&#9660;',
+          motd_changed:'&#9998;', settings_changed:'&#9881;'
+        };
+        container.innerHTML = '<div class="guild-log-list">' + log.map(l => {
+          const d = l.details || {};
+          const time = l.timestamp?.toDate ? l.timestamp.toDate().toLocaleString() : '';
+          let detail = '';
+          if (l.action === 'rank_change') detail = `${d.player}: ${d.from} &rarr; ${d.to} (by ${d.by})`;
+          else if (l.action === 'kicked') detail = `${d.player} (by ${d.by})`;
+          else if (l.action === 'deposit' || l.action === 'withdraw') detail = `${d.player}: ${this.fmt(d.amount||0)}g`;
+          else if (d.player) detail = d.player;
+          else if (d.by) detail = d.by;
+          return `<div class="guild-log-entry">
+            <span class="gle-icon">${actionIcons[l.action]||'&#8226;'}</span>
+            <span class="gle-text"><strong>${actionLabels[l.action]||l.action}</strong> ${detail ? '— '+detail : ''}</span>
+            <span class="gle-time">${time}</span>
+          </div>`;
+        }).join('') + '</div>';
+      }
+    }
+
+    else if (tab === 'settings') {
+      const info = await online.getGuildInfo();
+      if (!info) { container.innerHTML = '<div class="bank-empty">Failed to load.</div>'; return; }
+      const isLeader = myRank === 'Leader';
+      const isOfficer = myIdx <= 1;
+      container.innerHTML = `
+        <div class="guild-settings-grid">
+          ${isOfficer ? `<div class="guild-setting-card">
+            <h4>Message of the Day</h4>
+            <textarea id="guild-motd-input" class="guild-textarea" rows="3" maxlength="300" placeholder="MOTD shown to all members...">${this.escHtml(info.motd||'')}</textarea>
+            <button class="btn btn-sm" onclick="online.setGuildMotd(document.getElementById('guild-motd-input').value).then(()=>{ui._guildTab='settings';ui.renderPage('guilds')})">Save MOTD</button>
+          </div>` : ''}
+          ${isOfficer ? `<div class="guild-setting-card">
+            <h4>Guild Description</h4>
+            <textarea id="guild-desc-input" class="guild-textarea" rows="3" maxlength="500" placeholder="Describe your guild...">${this.escHtml(info.description||'')}</textarea>
+            <button class="btn btn-sm" onclick="online.setGuildDescription(document.getElementById('guild-desc-input').value).then(()=>{ui._guildTab='settings';ui.renderPage('guilds')})">Save Description</button>
+          </div>` : ''}
+          ${isLeader ? `<div class="guild-setting-card">
+            <h4>Join Policy</h4>
+            <select id="guild-join-type" class="rank-select" style="font-size:13px;padding:6px 10px">
+              <option value="open" ${(info.settings?.joinType||'open')==='open'?'selected':''}>Open — Anyone can join</option>
+              <option value="invite" ${info.settings?.joinType==='invite'?'selected':''}>Invite Only — Requires invitation</option>
+            </select>
+          </div>
+          <div class="guild-setting-card">
+            <h4>Minimum Withdraw Rank</h4>
+            <select id="guild-withdraw-rank" class="rank-select" style="font-size:13px;padding:6px 10px">
+              ${OnlineManager.RANK_ORDER.map(r => `<option value="${r}" ${(info.settings?.withdrawRank||'General')===r?'selected':''}>${r}</option>`).join('')}
+            </select>
+          </div>
+          <div class="guild-setting-card">
+            <button class="btn btn-sm" onclick="ui._saveGuildSettings()">Save All Settings</button>
+          </div>` : '<div class="bank-empty">Only the Guild Leader can change settings.</div>'}
+        </div>`;
+    }
+  }
+
+  async _saveGuildSettings() {
+    const joinType = document.getElementById('guild-join-type')?.value || 'open';
+    const withdrawRank = document.getElementById('guild-withdraw-rank')?.value || 'General';
+    await online.setGuildSettings({ joinType, withdrawRank });
+    this._guildTab = 'settings';
+    this.renderPage('guilds');
+  }
+
+  async _guildInvitePlayer() {
+    const name = document.getElementById('guild-invite-name')?.value?.trim();
+    if (!name) { this.toast({type:'warn',text:'Enter a player name.'}); return; }
+    const results = await online.searchPlayers(name);
+    const target = results.find(r => r.name.toLowerCase() === name.toLowerCase()) || results[0];
+    if (!target) { this.toast({type:'warn',text:`Player "${name}" not found.`}); return; }
+    await online.inviteToGuild(target.uid, target.name);
+  }
+
+  _sendGuildChat() {
+    const input = document.getElementById('guild-chat-input');
+    if (!input || !input.value.trim()) return;
+    online.sendGuildChat(input.value.trim());
+    input.value = '';
+  }
+
+  async _loadGuildData() {
+    // Legacy compat - redirects to tab load
+    this._loadGuildTab(this._guildTab || 'overview');
   }
 
   async createGuild() {
@@ -3220,23 +3478,31 @@ class UI {
 
   renderInboxPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Inbox','scroll','Private messages and notifications.',null);
+    let html = this.header('Inbox','scroll','Private messages, guild invites, and notifications.',null);
     if (!isOnline || !online.user || online.user.isAnonymous) {
       html += '<div class="bank-empty">Create an account to use inbox and messaging.</div>';
       el.innerHTML = html; return;
     }
+
     // Active DM conversation
     if (this._dmTarget) {
       const t = this._dmTarget;
       html += `<div class="dm-section">
         <div class="dm-header">
-          <span>Conversation with <strong>${this.escHtml(t.name)}</strong></span>
-          <button class="btn btn-xs" onclick="ui._dmTarget=null;ui.renderPage('inbox')">Back to Inbox</button>
+          <div class="dm-header-left">
+            <button class="btn btn-xs" onclick="ui._dmTarget=null;ui.renderPage('inbox')">&larr; Back</button>
+            <span class="dm-partner-name">${this.escHtml(t.name)}</span>
+          </div>
+          <div class="dm-header-actions">
+            <button class="btn btn-xs" onclick="ui._blockFromDM('${t.uid}','${this.escHtml(t.name)}')" title="Block player">Block</button>
+          </div>
         </div>
         <div class="dm-messages" id="dm-messages"><div class="bank-empty">Loading...</div></div>
         <div class="dm-input">
-          <input type="text" id="dm-text" class="chat-input-v2" placeholder="Type a message..." maxlength="500" style="flex:1" onkeydown="if(event.key==='Enter')ui.sendDM()">
-          <button class="btn btn-sm" onclick="ui.sendDM()">Send</button>
+          <input type="text" id="dm-text" class="gchat-input" placeholder="Type a message..." maxlength="500" onkeydown="if(event.key==='Enter')ui.sendDM()" autocomplete="off">
+          <button class="gchat-send" onclick="ui.sendDM()">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M2 21L23 12 2 3 2 10 17 12 2 14z" fill="var(--accent)"/></svg>
+          </button>
         </div>
       </div>`;
       el.innerHTML = html;
@@ -3245,27 +3511,108 @@ class UI {
     }
 
     // Compose new message
-    html += `<div class="settings-section">
-      <h3>Send Message</h3>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <input type="text" id="msg-to" class="chat-input-v2" placeholder="Player name..." style="width:160px">
-        <input type="text" id="msg-text" class="chat-input-v2" placeholder="Your message..." style="flex:1" maxlength="500">
+    html += `<div class="inbox-compose">
+      <h3 class="inbox-compose-title">New Message</h3>
+      <div class="inbox-compose-row">
+        <div class="inbox-compose-field">
+          <span class="icf-label">To:</span>
+          <input type="text" id="msg-to" class="guild-input" placeholder="Player name..." style="flex:1">
+        </div>
+        <div class="inbox-compose-field" style="flex:2">
+          <span class="icf-label">Message:</span>
+          <input type="text" id="msg-text" class="guild-input" placeholder="Type your message..." style="flex:1" maxlength="500" onkeydown="if(event.key==='Enter')ui.sendMessageToPlayer()">
+        </div>
         <button class="btn btn-sm" onclick="ui.sendMessageToPlayer()">Send</button>
       </div>
     </div>`;
 
-    // Inbox tools
-    html += `<div style="display:flex;gap:8px;margin-bottom:12px">
-      <button class="btn btn-sm" onclick="ui.renderPage('inbox')">Refresh</button>
-      <button class="btn btn-sm btn-danger" onclick="online.clearInbox().then(()=>ui.renderPage('inbox'))">Clear All</button>
+    // Inbox tabs
+    const inboxTab = this._inboxTab || 'conversations';
+    html += `<div class="inbox-tabs">
+      <button class="inbox-tab ${inboxTab==='conversations'?'inbox-tab-active':''}" onclick="ui._inboxTab='conversations';ui.renderPage('inbox')">Conversations</button>
+      <button class="inbox-tab ${inboxTab==='notifications'?'inbox-tab-active':''}" onclick="ui._inboxTab='notifications';ui.renderPage('inbox')">Notifications</button>
+      <button class="inbox-tab ${inboxTab==='blocked'?'inbox-tab-active':''}" onclick="ui._inboxTab='blocked';ui.renderPage('inbox')">Blocked</button>
     </div>`;
 
-    // Conversations
-    html += '<h2 class="section-title">Conversations</h2><div id="inbox-convos"><div class="bank-empty">Loading...</div></div>';
-    // Notifications
-    html += '<h2 class="section-title">Notifications</h2><div id="inbox-notifs"><div class="bank-empty">Loading...</div></div>';
+    html += '<div id="inbox-tab-content"><div class="bank-empty">Loading...</div></div>';
+
+    // Toolbar
+    html += `<div class="inbox-toolbar">
+      <button class="btn btn-xs" onclick="ui.renderPage('inbox')">Refresh</button>
+      ${inboxTab==='notifications'?`<button class="btn btn-xs btn-danger" onclick="online.clearInbox().then(()=>ui.renderPage('inbox'))">Clear All</button>`:''}
+    </div>`;
+
     el.innerHTML = html;
-    this._loadInboxData();
+    this._loadInboxTab(inboxTab);
+  }
+
+  async _loadInboxTab(tab) {
+    const container = document.getElementById('inbox-tab-content');
+    if (!container) return;
+
+    if (tab === 'conversations') {
+      const convos = await online.getConversationList();
+      if (convos.length === 0) {
+        container.innerHTML = '<div class="bank-empty">No conversations yet. Send a message to start one.</div>';
+      } else {
+        container.innerHTML = '<div class="inbox-convo-list">' + convos.map(c => {
+          const time = c.timestamp?.seconds ? new Date(c.timestamp.seconds * 1000).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+          return `<div class="inbox-convo-v2" onclick="ui.openDM('${c.otherUid}','${this.escHtml(c.otherName||'Unknown')}')">
+            <div class="icv2-avatar">${(c.otherName||'?')[0].toUpperCase()}</div>
+            <div class="icv2-body">
+              <div class="icv2-top">
+                <span class="icv2-name">${this.escHtml(c.otherName||'Unknown')}</span>
+                <span class="icv2-time">${time}</span>
+              </div>
+              <div class="icv2-preview">${this.escHtml(c.lastMessage||'')}</div>
+            </div>
+            <span class="icv2-arrow">&rsaquo;</span>
+          </div>`;
+        }).join('') + '</div>';
+      }
+    }
+
+    else if (tab === 'notifications') {
+      const items = await online.getInbox();
+      const notifs = items.filter(i => i.type !== 'message');
+      if (notifs.length === 0) {
+        container.innerHTML = '<div class="bank-empty">No notifications.</div>';
+      } else {
+        const typeIcons = { friend_request:'&#9829;', guild_invite:'&#9878;', system:'&#9733;', trade:'&#9733;', pvp:'&#9876;' };
+        container.innerHTML = '<div class="inbox-notif-list">' + notifs.map(n => {
+          const time = n.timestamp?.seconds ? new Date(n.timestamp.seconds * 1000).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+          return `<div class="inbox-notif-v2 ${n.read?'':'inbox-notif-unread'}">
+            <span class="inot-icon">${typeIcons[n.type]||'&#8226;'}</span>
+            <div class="inot-body">
+              <span class="inot-from">${this.escHtml(n.fromName||'System')}</span>
+              <span class="inot-text">${this.escHtml(n.preview||n.type)}</span>
+              <span class="inot-time">${time}</span>
+            </div>
+            ${!n.read?`<button class="btn btn-xs" onclick="event.stopPropagation();online.markInboxRead('${n.id}').then(()=>ui.renderPage('inbox'))">Read</button>`:''}
+          </div>`;
+        }).join('') + '</div>';
+      }
+    }
+
+    else if (tab === 'blocked') {
+      const blocked = await online.getBlockedPlayers();
+      if (blocked.length === 0) {
+        container.innerHTML = '<div class="bank-empty">No blocked players.</div>';
+      } else {
+        container.innerHTML = '<div class="inbox-blocked-list">' + blocked.map(b => `<div class="inbox-blocked-card">
+          <span>${this.escHtml(b.name)}</span>
+          <button class="btn btn-xs" onclick="online.unblockPlayer('${b.uid}').then(()=>ui.renderPage('inbox'))">Unblock</button>
+        </div>`).join('') + '</div>';
+      }
+    }
+  }
+
+  async _blockFromDM(uid, name) {
+    if (confirm(`Block ${name}? You won't see their messages.`)) {
+      await online.blockPlayer(uid, name);
+      this._dmTarget = null;
+      this.renderPage('inbox');
+    }
   }
 
   async sendMessageToPlayer() {
@@ -3274,72 +3621,47 @@ class UI {
     if (!toName) { this.toast({type:'warn',text:'Enter a player name.'}); return; }
     if (!text) { this.toast({type:'warn',text:'Enter a message.'}); return; }
     try {
-      // Find player
-      const allSnap = await online.firestore.collection('players').limit(100).get();
-      let targetDoc = null;
-      allSnap.forEach(doc => {
-        if (doc.data().displayName?.toLowerCase() === toName.toLowerCase()) targetDoc = doc;
-      });
-      if (!targetDoc) { this.toast({type:'warn',text:`Player "${toName}" not found.`}); return; }
-      const targetUid = targetDoc.id;
-      const targetName = targetDoc.data().displayName;
-      if (targetUid === online.user.uid) { this.toast({type:'warn',text:"Can't message yourself."}); return; }
-      await online.sendPrivateMessage(targetUid, targetName, text);
+      const results = await online.searchPlayers(toName);
+      const exact = results.find(r => r.name.toLowerCase() === toName.toLowerCase()) || results[0];
+      if (!exact) { this.toast({type:'warn',text:`Player "${toName}" not found.`}); return; }
+      if (exact.uid === online.user.uid) { this.toast({type:'warn',text:"Can't message yourself."}); return; }
+      // Check blocked
+      const blocked = await online.getBlockedPlayers();
+      if (blocked.some(b => b.uid === exact.uid)) { this.toast({type:'warn',text:'This player is blocked.'}); return; }
+      await online.sendPrivateMessage(exact.uid, exact.name, text);
       document.getElementById('msg-text').value = '';
-      this.toast({type:'success',text:`Message sent to ${targetName}!`});
-      // Open the DM view
-      this._dmTarget = { uid:targetUid, name:targetName };
+      this._dmTarget = { uid:exact.uid, name:exact.name };
       this.renderPage('inbox');
-    } catch(e) {
-      this.toast({type:'danger',text:'Failed to send: ' + e.message});
-    }
+    } catch(e) { this.toast({type:'danger',text:'Failed: ' + e.message}); }
   }
 
   async _loadInboxData() {
-    // Load conversations
-    const convoContainer = document.getElementById('inbox-convos');
-    if (convoContainer) {
-      const convos = await online.getConversationList();
-      if (convos.length === 0) {
-        convoContainer.innerHTML = '<div class="bank-empty">No conversations. Message a friend to start.</div>';
-      } else {
-        convoContainer.innerHTML = convos.map(c => {
-          return `<div class="inbox-convo" onclick="ui.openDM('${c.otherUid}','${this.escHtml(c.otherName||'Unknown')}')">
-            <span class="ic-name">${this.escHtml(c.otherName||'Unknown')}</span>
-            <span class="ic-preview">${this.escHtml(c.lastMessage||'')}</span>
-            <span class="ic-arrow">&rarr;</span>
-          </div>`;
-        }).join('');
-      }
-    }
-    // Load notifications
-    const notifContainer = document.getElementById('inbox-notifs');
-    if (notifContainer) {
-      const items = await online.getInbox();
-      const notifs = items.filter(i => i.type !== 'message');
-      if (notifs.length === 0) {
-        notifContainer.innerHTML = '<div class="bank-empty">No notifications.</div>';
-      } else {
-        notifContainer.innerHTML = notifs.map(n => `<div class="inbox-notif ${n.read?'':'inbox-unread'}">
-          <span>${this.escHtml(n.fromName||'System')}: ${this.escHtml(n.preview||n.type)}</span>
-          ${!n.read?`<button class="btn btn-xs" onclick="online.markInboxRead('${n.id}').then(()=>ui.renderPage('inbox'))">Mark Read</button>`:''}
-        </div>`).join('');
-      }
-    }
+    // Legacy compat
+    this._loadInboxTab(this._inboxTab || 'conversations');
   }
 
   async _loadDMMessages(targetUid) {
     const container = document.getElementById('dm-messages');
     if (!container) return;
     const msgs = await online.getConversation(targetUid);
-    if (msgs.length === 0) {
+    const blocked = await online.getBlockedPlayers();
+    const blockedUids = blocked.map(b => b.uid);
+    const filtered = msgs.filter(m => !blockedUids.includes(m.sender));
+    if (filtered.length === 0) {
       container.innerHTML = '<div class="bank-empty">No messages yet. Say hello!</div>';
     } else {
-      container.innerHTML = msgs.map(m => {
+      container.innerHTML = filtered.map(m => {
         const isMe = m.sender === online.user?.uid;
-        return `<div class="dm-msg ${isMe?'dm-mine':'dm-theirs'}">
-          <span class="dm-sender">${isMe?'You':this.escHtml(m.senderName)}</span>
-          <span class="dm-text">${this.escHtml(m.text)}</span>
+        const time = m.timestamp?.seconds ? new Date(m.timestamp.seconds * 1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+        const date = m.timestamp?.seconds ? new Date(m.timestamp.seconds * 1000).toLocaleDateString([],{month:'short',day:'numeric'}) : '';
+        return `<div class="dm-msg-v2 ${isMe?'dm-mine-v2':'dm-theirs-v2'}">
+          <div class="dmv2-bubble">
+            <div class="dmv2-text">${this.escHtml(m.text)}</div>
+            <div class="dmv2-meta">
+              <span class="dmv2-time">${date} ${time}</span>
+              ${isMe?`<button class="dmv2-delete" onclick="event.stopPropagation();online.deleteMessage('${m.id}').then(()=>ui._loadDMMessages('${targetUid}'))" title="Delete">&times;</button>`:''}
+            </div>
+          </div>
         </div>`;
       }).join('');
       container.scrollTop = container.scrollHeight;
@@ -3443,6 +3765,13 @@ class UI {
 
     const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(online.user?.uid);
     const cb = this.engine.getCombatLevel();
+    const channel = this._chatChannel || 'general';
+    const channels = [
+      { id:'general', label:'General', desc:'Open discussion' },
+      { id:'trade', label:'Trade', desc:'Buy, sell, barter' },
+      { id:'lfg', label:'LFG', desc:'Looking for group' },
+      { id:'pvp', label:'PvP', desc:'Arena & wilderness' },
+    ];
 
     html += `<div class="gchat-container">
       <div class="gchat-header">
@@ -3456,20 +3785,51 @@ class UI {
           <span class="gchat-ulevel">Cb${cb}</span>
         </div>
       </div>
+      <div class="gchat-channels">
+        ${channels.map(c => `<button class="gchat-ch-tab ${channel===c.id?'gchat-ch-active':''}" onclick="ui._switchChatChannel('${c.id}')" title="${c.desc}">${c.label}</button>`).join('')}
+      </div>
       <div id="chat-messages" class="gchat-messages"></div>
       <div class="gchat-input-area">
         ${isAdmin ? '<div class="gchat-admin-bar"><span class="gchat-admin-tag">ADMIN</span> /give /xp /announce /clear /mute /broadcast</div>' : ''}
+        <div class="gchat-hint">Commands: /me [action], /roll [max]</div>
         <div class="gchat-input-row">
-          <input type="text" id="chat-input" class="gchat-input" placeholder="${isAdmin?'Admin commands: /help':'Say something...'}" maxlength="300" onkeydown="if(event.key==='Enter')ui.sendChat()" autocomplete="off">
+          <input type="text" id="chat-input" class="gchat-input" placeholder="${isAdmin?'Admin commands: /help':`Chat in #${channel}...`}" maxlength="300" onkeydown="if(event.key==='Enter')ui.sendChat()" autocomplete="off">
           <button class="gchat-send" onclick="ui.sendChat()">
             <svg viewBox="0 0 24 24" width="20" height="20"><path d="M2 21L23 12 2 3 2 10 17 12 2 14z" fill="var(--accent)"/></svg>
           </button>
         </div>
       </div>
     </div>`;
-    el.innerHTML = html;
 
-    online.listenToChat((msgs) => {
+    // Player action popup (hidden by default)
+    html += `<div id="gchat-player-popup" class="gchat-player-popup" style="display:none">
+      <div class="gpp-name" id="gpp-name"></div>
+      <div class="gpp-level" id="gpp-level"></div>
+      <div class="gpp-btns">
+        <button class="btn btn-xs" onclick="ui._chatAction('dm')">Message</button>
+        <button class="btn btn-xs" onclick="ui._chatAction('friend')">Add Friend</button>
+        <button class="btn btn-xs btn-danger" onclick="ui._chatAction('block')">Block</button>
+      </div>
+      <button class="gpp-close" onclick="document.getElementById('gchat-player-popup').style.display='none'">&times;</button>
+    </div>`;
+
+    el.innerHTML = html;
+    this._startChatChannel(channel);
+  }
+
+  _switchChatChannel(channel) {
+    this._chatChannel = channel;
+    online.stopChatListener();
+    this._startChatChannel(channel);
+    const input = document.getElementById('chat-input');
+    if (input) input.placeholder = `Chat in #${channel}...`;
+    // Update active tab
+    document.querySelectorAll('.gchat-ch-tab').forEach(t => t.classList.remove('gchat-ch-active'));
+    document.querySelector(`.gchat-ch-tab[onclick*="${channel}"]`)?.classList.add('gchat-ch-active');
+  }
+
+  _startChatChannel(channel) {
+    online.listenToChatChannel(channel, (msgs) => {
       const container = document.getElementById('chat-messages');
       if (!container) return;
       container.innerHTML = msgs.map(m => {
@@ -3477,24 +3837,64 @@ class UI {
         const isAdminMsg = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(m.uid);
         const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
         const isSys = m.system;
+        const isEmote = m.emote;
+
         if (isSys) {
           return `<div class="gchat-sys"><span class="gchat-sys-icon">&#9733;</span> ${this.escHtml(m.text)} <span class="gchat-time">${time}</span></div>`;
+        }
+        if (isEmote) {
+          return `<div class="gchat-emote"><span class="gchat-emote-name">${this.escHtml(m.name)}</span> ${this.escHtml(m.text)} <span class="gchat-time">${time}</span></div>`;
         }
         return `<div class="gchat-msg ${isMe?'gchat-mine':''} ${isAdminMsg?'gchat-admin':''}">
           <div class="gchat-avatar">${m.name?m.name[0].toUpperCase():'?'}</div>
           <div class="gchat-body">
             <div class="gchat-meta">
               ${isAdminMsg?'<span class="gchat-badge">ADMIN</span>':''}
-              <span class="gchat-name ${isMe?'gchat-name-me':''}">${this.escHtml(m.name)}</span>
+              <span class="gchat-name ${isMe?'gchat-name-me':''}" onclick="ui._showPlayerPopup(event,'${m.uid}','${this.escHtml(m.name)}','${m.totalLevel||'?'}')" style="cursor:pointer">${this.escHtml(m.name)}</span>
               <span class="gchat-lvl">[${m.totalLevel||'?'}]</span>
               <span class="gchat-time">${time}</span>
             </div>
-            <div class="gchat-text">${this.escHtml(m.text)}</div>
+            <div class="gchat-text">${this._formatChatText(m.text)}</div>
           </div>
         </div>`;
       }).join('');
       container.scrollTop = container.scrollHeight;
     });
+  }
+
+  _formatChatText(text) {
+    // Item links: [item_id] becomes clickable
+    let safe = this.escHtml(text);
+    safe = safe.replace(/\[([a-z_]+)\]/g, (match, itemId) => {
+      const item = GAME_DATA.items[itemId];
+      if (!item) return match;
+      const rColor = this.getRarityColor(itemId);
+      return `<span class="gchat-item-link" style="${rColor?'color:'+rColor:''}" title="${item.name}">[${item.name}]</span>`;
+    });
+    return safe;
+  }
+
+  _showPlayerPopup(event, uid, name, level) {
+    if (uid === online.user?.uid) return;
+    const popup = document.getElementById('gchat-player-popup');
+    if (!popup) return;
+    this._chatPopupTarget = { uid, name };
+    document.getElementById('gpp-name').textContent = name;
+    document.getElementById('gpp-level').textContent = `Total Level: ${level}`;
+    popup.style.display = 'flex';
+    // Position near click
+    const rect = event.target.getBoundingClientRect();
+    popup.style.top = (rect.bottom + 4) + 'px';
+    popup.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+  }
+
+  async _chatAction(action) {
+    const target = this._chatPopupTarget;
+    if (!target) return;
+    document.getElementById('gchat-player-popup').style.display = 'none';
+    if (action === 'dm') { this.openDM(target.uid, target.name); }
+    else if (action === 'friend') { await online.sendFriendRequest(target.name); }
+    else if (action === 'block') { await online.blockPlayer(target.uid, target.name); }
   }
 
   sendChat() {
@@ -3505,12 +3905,12 @@ class UI {
 
     // Admin commands
     const isAdmin = typeof ADMIN_UIDS !== 'undefined' && ADMIN_UIDS.includes(online.user?.uid);
-    if (isAdmin && text.startsWith('/')) {
+    if (isAdmin && text.startsWith('/') && !text.startsWith('/me') && !text.startsWith('/roll')) {
       this.handleAdminCommand(text);
       return;
     }
 
-    online.sendMessage(text);
+    online.sendChatMessage(text, this._chatChannel || 'general');
   }
 
   handleAdminCommand(text) {

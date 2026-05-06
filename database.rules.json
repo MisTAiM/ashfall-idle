@@ -7,6 +7,24 @@
         ".validate": "newData.hasChildren(['uid', 'text', 'timestamp'])"
       }
     },
+    "chat_trade": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "chat_lfg": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "chat_pvp": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "guild_chat": {
+      "$guildId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
     "presence": {
       "$uid": {
         ".read": true,

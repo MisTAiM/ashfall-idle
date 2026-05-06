@@ -356,13 +356,8 @@ class OnlineManager {
 
   // ── CHAT ───────────────────────────────────────────────
   listenToChat(callback) {
-    if (!this.isOnline || !this.db) return;
-    this.chatRef = this.db.ref('chat');
-    this.chatListener = this.chatRef.orderByChild('timestamp').limitToLast(100).on('value', (snap) => {
-      const msgs = [];
-      snap.forEach(child => { msgs.push({ id:child.key, ...child.val() }); });
-      callback(msgs);
-    });
+    // Legacy wrapper - uses general channel
+    this.listenToChatChannel('general', callback);
   }
 
   stopChatListener() {
@@ -373,19 +368,8 @@ class OnlineManager {
   }
 
   async sendMessage(text) {
-    if (!this.isOnline || !this.user) return;
-    text = text.trim();
-    if (text.length === 0 || text.length > 300) return;
-    try {
-      await this.db.ref('chat').push({
-        uid: this.user.uid,
-        name: this.displayName || 'Survivor',
-        text,
-        timestamp: firebase.database.ServerValue.TIMESTAMP,
-        combatLevel: game ? game.getCombatLevel() : 1,
-        totalLevel: game ? game.getTotalLevel() : 25,
-      });
-    } catch(e) { console.error('Chat error:', e); }
+    // Legacy wrapper - sends to general
+    return this.sendChatMessage(text, 'general');
   }
 
   async sendSystemMessage(text) {
@@ -1077,34 +1061,55 @@ class OnlineManager {
   }
 
   // ── GUILDS ─────────────────────────────────────────────
+  static RANK_ORDER = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
+  static RANK_COLORS = {Leader:'#c9873e',General:'#c44040',Captain:'#4a7ec4',Lieutenant:'#8a5ec4',Sergeant:'#3a9e5c',Member:'#c8cad4',Recruit:'#7a7e94'};
+
+  _rankIdx(rank) { return OnlineManager.RANK_ORDER.indexOf(rank || 'Recruit'); }
+
   async createGuild(name, tag) {
     if (!this.isOnline || !this.user) return false;
+    if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account first.'}); return false; }
     try {
       const ref = await this.firestore.collection('guilds').add({
-        name, tag, leader: this.user.uid, leaderName: this.displayName,
-        members: [{ uid:this.user.uid, name:this.displayName, rank:'Leader', joined:Date.now() }],
-        ranks: ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'],
+        name, tag: tag.toUpperCase(), leader: this.user.uid, leaderName: this.displayName,
+        members: [{ uid:this.user.uid, name:this.displayName, rank:'Leader', joined:Date.now(), lastSeen:Date.now() }],
+        ranks: OnlineManager.RANK_ORDER,
         created: firebase.firestore.FieldValue.serverTimestamp(),
         memberCount: 1, bank: 0,
+        motd: 'Welcome to the guild!',
+        description: '',
+        settings: { joinType: 'open', withdrawRank: 'General' },
       });
-      game.state.guild = { id:ref.id, name, tag, role:'Leader' };
+      game.state.guild = { id:ref.id, name, tag:tag.toUpperCase(), role:'Leader' };
+      await this._logGuildAction(ref.id, 'created', { by: this.displayName });
       this.emit('notification',{type:'success',text:`Guild "${name}" [${tag}] created!`});
       return true;
     } catch(e) { this.emit('notification',{type:'danger',text:'Guild error: '+e.message}); return false; }
   }
 
+  async getGuildInfo(guildId) {
+    if (!this.isOnline) return null;
+    try {
+      const doc = await this.firestore.collection('guilds').doc(guildId || game.state.guild?.id).get();
+      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    } catch(e) { return null; }
+  }
+
   async joinGuild(guildName) {
     if (!this.isOnline || !this.user) return false;
+    if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account first.'}); return false; }
     try {
       const snap = await this.firestore.collection('guilds').where('name','==',guildName).limit(1).get();
       if (snap.empty) { this.emit('notification',{type:'warn',text:'Guild not found.'}); return false; }
       const doc = snap.docs[0];
       const data = doc.data();
+      if ((data.settings?.joinType || 'open') === 'invite') { this.emit('notification',{type:'warn',text:'Guild is invite-only.'}); return false; }
       if (data.members.length >= 50) { this.emit('notification',{type:'warn',text:'Guild is full (50 max).'}); return false; }
       if (data.members.some(m => m.uid === this.user.uid)) { this.emit('notification',{type:'warn',text:'Already in this guild.'}); return false; }
-      data.members.push({ uid:this.user.uid, name:this.displayName, rank:'Recruit', joined:Date.now() });
+      data.members.push({ uid:this.user.uid, name:this.displayName, rank:'Recruit', joined:Date.now(), lastSeen:Date.now() });
       await doc.ref.update({ members:data.members, memberCount:data.members.length });
       game.state.guild = { id:doc.id, name:data.name, tag:data.tag, role:'Recruit' };
+      await this._logGuildAction(doc.id, 'joined', { player: this.displayName });
       this.emit('notification',{type:'success',text:`Joined guild "${data.name}"!`});
       return true;
     } catch(e) { this.emit('notification',{type:'danger',text:'Join error: '+e.message}); return false; }
@@ -1113,14 +1118,26 @@ class OnlineManager {
   async leaveGuild() {
     if (!this.isOnline || !this.user || !game.state.guild) return;
     try {
-      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const gid = game.state.guild.id;
+      const ref = this.firestore.collection('guilds').doc(gid);
       const doc = await ref.get();
       if (doc.exists) {
         const data = doc.data();
         data.members = data.members.filter(m => m.uid !== this.user.uid);
         if (data.members.length === 0) { await ref.delete(); }
-        else { await ref.update({ members:data.members, memberCount:data.members.length }); }
+        else {
+          // If leader leaves, promote highest-ranked remaining member
+          if (data.leader === this.user.uid && data.members.length > 0) {
+            data.members.sort((a,b) => this._rankIdx(a.rank) - this._rankIdx(b.rank));
+            data.members[0].rank = 'Leader';
+            data.leader = data.members[0].uid;
+            data.leaderName = data.members[0].name;
+          }
+          await ref.update({ members:data.members, memberCount:data.members.length, leader:data.leader, leaderName:data.leaderName });
+        }
+        await this._logGuildAction(gid, 'left', { player: this.displayName });
       }
+      this.stopGuildChatListener();
       const guildName = game.state.guild.name;
       game.state.guild = null;
       this.emit('notification',{type:'info',text:`Left guild "${guildName}".`});
@@ -1129,10 +1146,8 @@ class OnlineManager {
 
   async kickMember(memberUid) {
     if (!this.isOnline || !this.user || !game.state.guild) return;
-    const myRank = game.state.guild.role;
-    const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
-    const myIdx = rankOrder.indexOf(myRank);
-    if (myIdx > 2) { this.emit('notification',{type:'warn',text:'Only Leader, General, or Captain can kick members.'}); return; }
+    const myIdx = this._rankIdx(game.state.guild.role);
+    if (myIdx > 2) { this.emit('notification',{type:'warn',text:'Only Leader, General, or Captain can kick.'}); return; }
     try {
       const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
       const doc = await ref.get();
@@ -1140,11 +1155,11 @@ class OnlineManager {
       const data = doc.data();
       const member = data.members.find(m => m.uid === memberUid);
       if (!member) { this.emit('notification',{type:'warn',text:'Member not found.'}); return; }
-      const theirIdx = rankOrder.indexOf(member.rank || 'Recruit');
-      if (theirIdx <= myIdx) { this.emit('notification',{type:'warn',text:'Cannot kick someone of equal or higher rank.'}); return; }
+      if (this._rankIdx(member.rank) <= myIdx) { this.emit('notification',{type:'warn',text:'Cannot kick equal or higher rank.'}); return; }
       data.members = data.members.filter(m => m.uid !== memberUid);
       await ref.update({ members:data.members, memberCount:data.members.length });
-      this.emit('notification',{type:'success',text:`Kicked ${member.name} from the guild.`});
+      await this._logGuildAction(game.state.guild.id, 'kicked', { player: member.name, by: this.displayName });
+      this.emit('notification',{type:'success',text:`Kicked ${member.name}.`});
     } catch(e) { this.emit('notification',{type:'danger',text:'Kick failed: '+e.message}); }
   }
 
@@ -1152,7 +1167,12 @@ class OnlineManager {
     if (!this.isOnline || !this.user || !game.state.guild) return [];
     try {
       const doc = await this.firestore.collection('guilds').doc(game.state.guild.id).get();
-      return doc.exists ? (doc.data().members || []) : [];
+      if (!doc.exists) return [];
+      const members = doc.data().members || [];
+      // Update my lastSeen
+      const me = members.find(m => m.uid === this.user.uid);
+      if (me) { me.lastSeen = Date.now(); await doc.ref.update({ members }); }
+      return members;
     } catch(e) { return []; }
   }
 
@@ -1163,6 +1183,7 @@ class OnlineManager {
       game.state.gold -= amount;
       const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
       await ref.update({ bank: firebase.firestore.FieldValue.increment(amount) });
+      await this._logGuildAction(game.state.guild.id, 'deposit', { player: this.displayName, amount });
       this.emit('notification',{type:'success',text:`Deposited ${amount}g to guild bank.`});
     } catch(e) { game.state.gold += amount; this.emit('notification',{type:'danger',text:'Deposit failed: '+e.message}); }
   }
@@ -1177,27 +1198,52 @@ class OnlineManager {
 
   async withdrawGuildGold(amount) {
     if (!this.isOnline || !this.user || !game.state.guild) return;
+    // Sync role from Firestore first to avoid stale local role
+    await this.syncGuildRole();
     const myRank = game.state.guild.role;
-    if (myRank !== 'Leader' && myRank !== 'General') { this.emit('notification',{type:'warn',text:'Only Leader and Generals can withdraw.'}); return; }
     try {
       const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
       const doc = await ref.get();
-      const bank = doc.data()?.bank || 0;
+      if (!doc.exists) return;
+      const data = doc.data();
+      const withdrawRank = data.settings?.withdrawRank || 'General';
+      const myIdx = this._rankIdx(myRank);
+      const withdrawIdx = this._rankIdx(withdrawRank);
+      if (myIdx > withdrawIdx) {
+        this.emit('notification',{type:'warn',text:`Only ${withdrawRank} and above can withdraw.`}); return;
+      }
+      const bank = data.bank || 0;
       if (amount > bank) { this.emit('notification',{type:'warn',text:`Guild bank only has ${bank}g.`}); return; }
+      if (amount <= 0) { this.emit('notification',{type:'warn',text:'Invalid amount.'}); return; }
       await ref.update({ bank: firebase.firestore.FieldValue.increment(-amount) });
       game.state.gold += amount;
+      await this._logGuildAction(game.state.guild.id, 'withdraw', { player: this.displayName, amount });
       this.emit('notification',{type:'success',text:`Withdrew ${amount}g from guild bank.`});
     } catch(e) { this.emit('notification',{type:'danger',text:'Withdraw failed: '+e.message}); }
   }
 
+  // Sync guild role from Firestore (fixes stale local role after rank changes)
+  async syncGuildRole() {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    try {
+      const doc = await this.firestore.collection('guilds').doc(game.state.guild.id).get();
+      if (!doc.exists) { game.state.guild = null; return; }
+      const data = doc.data();
+      const me = data.members.find(m => m.uid === this.user.uid);
+      if (!me) { game.state.guild = null; return; }
+      game.state.guild.role = me.rank || 'Recruit';
+      game.state.guild.name = data.name;
+      game.state.guild.tag = data.tag;
+    } catch(e) {}
+  }
+
   async setMemberRank(memberUid, newRank) {
     if (!this.isOnline || !this.user || !game.state.guild) return;
+    await this.syncGuildRole();
     const myRank = game.state.guild.role;
-    const rankOrder = ['Leader','General','Captain','Lieutenant','Sergeant','Member','Recruit'];
-    const myIdx = rankOrder.indexOf(myRank);
-    const targetIdx = rankOrder.indexOf(newRank);
-    // Can only set ranks below your own
-    if (myIdx < 0 || targetIdx <= myIdx) { this.emit('notification',{type:'warn',text:'Cannot set a rank equal to or above your own.'}); return; }
+    const myIdx = this._rankIdx(myRank);
+    const targetIdx = this._rankIdx(newRank);
+    if (myIdx < 0 || targetIdx <= myIdx) { this.emit('notification',{type:'warn',text:'Cannot assign a rank equal to or above your own.'}); return; }
     try {
       const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
       const doc = await ref.get();
@@ -1205,13 +1251,277 @@ class OnlineManager {
       const data = doc.data();
       const member = data.members.find(m => m.uid === memberUid);
       if (!member) { this.emit('notification',{type:'warn',text:'Member not found.'}); return; }
-      // Can't change someone of equal or higher rank
-      const theirIdx = rankOrder.indexOf(member.rank || 'Recruit');
-      if (theirIdx <= myIdx && myRank !== 'Leader') { this.emit('notification',{type:'warn',text:'Cannot change rank of someone at or above your rank.'}); return; }
+      const theirIdx = this._rankIdx(member.rank);
+      if (theirIdx <= myIdx && myRank !== 'Leader') { this.emit('notification',{type:'warn',text:'Cannot change rank of equal or higher rank.'}); return; }
+      const oldRank = member.rank;
       member.rank = newRank;
-      await ref.update({ members:data.members });
+      await ref.update({ members: data.members });
+      await this._logGuildAction(game.state.guild.id, 'rank_change', { player: member.name, from: oldRank, to: newRank, by: this.displayName });
       this.emit('notification',{type:'success',text:`${member.name} is now ${newRank}.`});
     } catch(e) { this.emit('notification',{type:'danger',text:'Rank change failed: '+e.message}); }
+  }
+
+  // ── GUILD MOTD / DESCRIPTION / SETTINGS ─────────────────
+  async setGuildMotd(motd) {
+    if (!this.isOnline || !game.state.guild) return;
+    await this.syncGuildRole();
+    if (this._rankIdx(game.state.guild.role) > 1) { this.emit('notification',{type:'warn',text:'Only Leader and Generals can set MOTD.'}); return; }
+    try {
+      await this.firestore.collection('guilds').doc(game.state.guild.id).update({ motd: (motd||'').substring(0,300) });
+      await this._logGuildAction(game.state.guild.id, 'motd_changed', { by: this.displayName });
+      this.emit('notification',{type:'success',text:'MOTD updated.'});
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); }
+  }
+
+  async setGuildDescription(desc) {
+    if (!this.isOnline || !game.state.guild) return;
+    await this.syncGuildRole();
+    if (this._rankIdx(game.state.guild.role) > 1) { this.emit('notification',{type:'warn',text:'Only Leader and Generals can set description.'}); return; }
+    try {
+      await this.firestore.collection('guilds').doc(game.state.guild.id).update({ description: (desc||'').substring(0,500) });
+      this.emit('notification',{type:'success',text:'Description updated.'});
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); }
+  }
+
+  async setGuildSettings(settings) {
+    if (!this.isOnline || !game.state.guild) return;
+    await this.syncGuildRole();
+    if (game.state.guild.role !== 'Leader') { this.emit('notification',{type:'warn',text:'Only the Leader can change settings.'}); return; }
+    try {
+      await this.firestore.collection('guilds').doc(game.state.guild.id).update({ settings });
+      await this._logGuildAction(game.state.guild.id, 'settings_changed', { by: this.displayName, settings });
+      this.emit('notification',{type:'success',text:'Guild settings updated.'});
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); }
+  }
+
+  // ── GUILD ACTIVITY LOG ──────────────────────────────────
+  async _logGuildAction(guildId, action, details) {
+    try {
+      await this.firestore.collection('guild_log').add({
+        guildId, action, details, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) {} // non-critical
+  }
+
+  async getGuildLog(limit) {
+    if (!this.isOnline || !game.state.guild) return [];
+    try {
+      const snap = await this.firestore.collection('guild_log')
+        .where('guildId','==',game.state.guild.id)
+        .limit(limit || 50).get();
+      const items = [];
+      snap.forEach(doc => items.push({ id:doc.id, ...doc.data() }));
+      items.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
+      return items;
+    } catch(e) { return []; }
+  }
+
+  // ── GUILD CHAT (RTDB for real-time) ─────────────────────
+  listenGuildChat(callback) {
+    if (!this.isOnline || !this.db || !game.state.guild) return;
+    this.stopGuildChatListener();
+    const gid = game.state.guild.id;
+    this._guildChatRef = this.db.ref(`guild_chat/${gid}`);
+    this._guildChatListener = this._guildChatRef.orderByChild('timestamp').limitToLast(100).on('value', snap => {
+      const msgs = [];
+      snap.forEach(child => msgs.push({ id:child.key, ...child.val() }));
+      callback(msgs);
+    });
+  }
+
+  stopGuildChatListener() {
+    if (this._guildChatRef && this._guildChatListener) {
+      this._guildChatRef.off('value', this._guildChatListener);
+      this._guildChatListener = null;
+    }
+  }
+
+  async sendGuildChat(text) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    text = (text||'').trim();
+    if (!text || text.length > 300) return;
+    try {
+      const gid = game.state.guild.id;
+      await this.db.ref(`guild_chat/${gid}`).push({
+        uid: this.user.uid,
+        name: this.displayName || 'Survivor',
+        text,
+        rank: game.state.guild.role || 'Recruit',
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+      });
+    } catch(e) { console.error('Guild chat error:', e); }
+  }
+
+  // ── GUILD SEARCH ────────────────────────────────────────
+  async searchGuilds(query) {
+    if (!this.isOnline) return [];
+    try {
+      const snap = await this.firestore.collection('guilds').limit(100).get();
+      const results = [];
+      const q = (query||'').toLowerCase();
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (!q || d.name?.toLowerCase().includes(q) || d.tag?.toLowerCase().includes(q)) {
+          results.push({ id:doc.id, name:d.name, tag:d.tag, memberCount:d.memberCount||d.members?.length||0, leaderName:d.leaderName, joinType:d.settings?.joinType||'open' });
+        }
+      });
+      return results.slice(0,20);
+    } catch(e) { return []; }
+  }
+
+  // ── GUILD INVITATIONS ───────────────────────────────────
+  async inviteToGuild(targetUid, targetName) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    await this.syncGuildRole();
+    if (this._rankIdx(game.state.guild.role) > 2) { this.emit('notification',{type:'warn',text:'Captains and above can invite.'}); return; }
+    try {
+      await this.firestore.collection('guild_invites').add({
+        guildId: game.state.guild.id, guildName: game.state.guild.name, guildTag: game.state.guild.tag,
+        from: this.user.uid, fromName: this.displayName,
+        to: targetUid, toName: targetName,
+        status: 'pending',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      // Also send an inbox notification
+      await this.firestore.collection('inbox').add({
+        to: targetUid, type: 'guild_invite', fromName: this.displayName,
+        preview: `${this.displayName} invited you to [${game.state.guild.tag}] ${game.state.guild.name}`,
+        read: false, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        data: { guildId: game.state.guild.id, guildName: game.state.guild.name }
+      });
+      this.emit('notification',{type:'success',text:`Invited ${targetName} to the guild.`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Invite failed: '+e.message}); }
+  }
+
+  async getGuildInvites() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const snap = await this.firestore.collection('guild_invites')
+        .where('to','==',this.user.uid)
+        .where('status','==','pending')
+        .limit(20).get();
+      const items = [];
+      snap.forEach(doc => items.push({ id:doc.id, ...doc.data() }));
+      return items;
+    } catch(e) { return []; }
+  }
+
+  async acceptGuildInvite(inviteId) {
+    if (!this.isOnline || !this.user) return false;
+    if (game.state.guild) { this.emit('notification',{type:'warn',text:'Leave your current guild first.'}); return false; }
+    try {
+      const invDoc = await this.firestore.collection('guild_invites').doc(inviteId).get();
+      if (!invDoc.exists) return false;
+      const inv = invDoc.data();
+      const gRef = this.firestore.collection('guilds').doc(inv.guildId);
+      const gDoc = await gRef.get();
+      if (!gDoc.exists) { this.emit('notification',{type:'warn',text:'Guild no longer exists.'}); return false; }
+      const data = gDoc.data();
+      if (data.members.length >= 50) { this.emit('notification',{type:'warn',text:'Guild is full.'}); return false; }
+      if (data.members.some(m => m.uid === this.user.uid)) { this.emit('notification',{type:'warn',text:'Already in this guild.'}); return false; }
+      data.members.push({ uid:this.user.uid, name:this.displayName, rank:'Recruit', joined:Date.now(), lastSeen:Date.now() });
+      await gRef.update({ members:data.members, memberCount:data.members.length });
+      await invDoc.ref.update({ status:'accepted' });
+      game.state.guild = { id:inv.guildId, name:data.name, tag:data.tag, role:'Recruit' };
+      await this._logGuildAction(inv.guildId, 'joined_invite', { player: this.displayName, invitedBy: inv.fromName });
+      this.emit('notification',{type:'success',text:`Joined guild "${data.name}"!`});
+      return true;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async declineGuildInvite(inviteId) {
+    if (!this.isOnline) return;
+    try { await this.firestore.collection('guild_invites').doc(inviteId).update({ status:'declined' }); } catch(e) {}
+  }
+
+  // ── CHAT CHANNELS (RTDB) ───────────────────────────────
+  listenToChatChannel(channel, callback) {
+    if (!this.isOnline || !this.db) return;
+    this.stopChatListener();
+    const refPath = channel === 'general' ? 'chat' : `chat_${channel}`;
+    this.chatRef = this.db.ref(refPath);
+    this.chatListener = this.chatRef.orderByChild('timestamp').limitToLast(100).on('value', (snap) => {
+      const msgs = [];
+      snap.forEach(child => { msgs.push({ id:child.key, ...child.val() }); });
+      callback(msgs);
+    });
+  }
+
+  async sendChatMessage(text, channel) {
+    if (!this.isOnline || !this.user) return;
+    text = (text||'').trim();
+    if (!text || text.length > 300) return;
+    const refPath = (!channel || channel === 'general') ? 'chat' : `chat_${channel}`;
+    try {
+      const msgData = {
+        uid: this.user.uid,
+        name: this.displayName || 'Survivor',
+        text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        combatLevel: game ? game.getCombatLevel() : 1,
+        totalLevel: game ? game.getTotalLevel() : 25,
+      };
+      // /me emote
+      if (text.startsWith('/me ')) {
+        msgData.emote = true;
+        msgData.text = text.substring(4);
+      }
+      // /roll command
+      if (text === '/roll' || text.startsWith('/roll ')) {
+        const max = parseInt(text.split(' ')[1]) || 100;
+        const result = Math.floor(Math.random() * max) + 1;
+        msgData.system = true;
+        msgData.text = `${this.displayName} rolled ${result} (1-${max})`;
+      }
+      await this.db.ref(refPath).push(msgData);
+    } catch(e) { console.error('Chat error:', e); }
+  }
+
+  // ── BLOCK / UNBLOCK PLAYERS ────────────────────────────
+  async blockPlayer(uid, name) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      const ref = this.firestore.collection('blocked').doc(this.user.uid);
+      const doc = await ref.get();
+      const list = doc.exists ? (doc.data().list || []) : [];
+      if (list.some(b => b.uid === uid)) { this.emit('notification',{type:'info',text:'Already blocked.'}); return; }
+      list.push({ uid, name, at: Date.now() });
+      await ref.set({ list });
+      this.emit('notification',{type:'info',text:`Blocked ${name}.`});
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); }
+  }
+
+  async unblockPlayer(uid) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      const ref = this.firestore.collection('blocked').doc(this.user.uid);
+      const doc = await ref.get();
+      if (!doc.exists) return;
+      const list = (doc.data().list || []).filter(b => b.uid !== uid);
+      await ref.set({ list });
+      this.emit('notification',{type:'info',text:'Player unblocked.'});
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); }
+  }
+
+  async getBlockedPlayers() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const doc = await this.firestore.collection('blocked').doc(this.user.uid).get();
+      return doc.exists ? (doc.data().list || []) : [];
+    } catch(e) { return []; }
+  }
+
+  // ── DELETE MESSAGE ─────────────────────────────────────
+  async deleteMessage(msgId) {
+    if (!this.isOnline || !this.user) return;
+    try {
+      const doc = await this.firestore.collection('messages').doc(msgId).get();
+      if (!doc.exists) return;
+      const d = doc.data();
+      if (d.sender !== this.user.uid && d.recipient !== this.user.uid) return;
+      await doc.ref.delete();
+      this.emit('notification',{type:'info',text:'Message deleted.'});
+    } catch(e) { console.error(e); }
   }
 
   // Search for players by partial name
