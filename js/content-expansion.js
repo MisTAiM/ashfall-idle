@@ -353,8 +353,10 @@ GameEngine.prototype.emit = function(event, data) {
 
 // ── SLAYER BOSS FIGHT CHECK ─────────────────────────────────────
 const _origStartCombatCE = GameEngine.prototype.startCombat;
-GameEngine.prototype.startCombat = function(monsterId) {
-  const mon = GAME_DATA.monsters[monsterId];
+GameEngine.prototype.startCombat = function(areaId, monsterId) {
+  // Handle direct boss fight: startCombat(null, 'cerberus')
+  const checkId = monsterId || areaId;
+  const mon = GAME_DATA.monsters[checkId];
   if (mon?.slayerReq) {
     const slayerLvl = this.state.skills?.slayer?.level || 1;
     if (slayerLvl < mon.slayerReq) {
@@ -362,7 +364,7 @@ GameEngine.prototype.startCombat = function(monsterId) {
       return;
     }
   }
-  if (_origStartCombatCE) return _origStartCombatCE.call(this, monsterId);
+  if (_origStartCombatCE) return _origStartCombatCE.call(this, areaId, monsterId);
 };
 
 // ── KILL COUNT TRACKER ──────────────────────────────────────────
@@ -466,190 +468,159 @@ console.log('  New art registered:', ['dharok','ahrim','karil','guthan','torag',
 // UI RENDERING — Barrows, Gauntlet, Inferno, Slayer Bosses
 // ================================================================
 
+// ── DROP TABLE HELPER ───────────────────────────────────────────
+function _renderDrops(drops) {
+  if (!drops || !drops.length) return '';
+  let html = '<div class="ce-drops"><div class="ce-drops-title">Drop Table</div><div class="ce-drops-grid">';
+  for (const d of drops) {
+    const item = GAME_DATA.items[d.item];
+    if (!item) continue;
+    const pct = d.chance >= 1 ? '100%' : d.chance >= 0.1 ? Math.round(d.chance*100)+'%' : '1/'+Math.round(1/d.chance);
+    const rarity = item.rarity || (d.chance >= 0.5 ? 'common' : d.chance >= 0.1 ? 'uncommon' : d.chance >= 0.01 ? 'rare' : 'legendary');
+    html += `<div class="ce-drop-row ce-rarity-${rarity}"><span class="ce-drop-name">${item.name}</span><span class="ce-drop-qty">x${d.qty}</span><span class="ce-drop-rate">${pct}</span></div>`;
+  }
+  html += '</div></div>';
+  return html;
+}
+
+// ── MONSTER STAT CARD ───────────────────────────────────────────
+function _renderMonsterCard(mId) {
+  const m = GAME_DATA.monsters[mId];
+  if (!m) return '';
+  const art = GAME_DATA.monsterArt[mId] ? `<div class="ce-mc-art">${GAME_DATA.monsterArt[mId]}</div>` : '';
+  return `<div class="ce-monster-card">
+    ${art}
+    <div class="ce-mc-info">
+      <div class="ce-mc-name">${m.name}</div>
+      <div class="ce-mc-stats"><span>Lv ${m.combatLevel}</span><span>HP: ${m.hp?.toLocaleString()}</span><span>Max Hit: ${m.maxHit}</span><span>Style: ${m.style}</span><span>Speed: ${m.attackSpeed}s</span></div>
+      <div class="ce-mc-desc">${m.desc || ''}</div>
+      ${_renderDrops(m.drops)}
+    </div>
+  </div>`;
+}
+
+// ── BARROWS ─────────────────────────────────────────────────────
 UI.prototype.renderBarrowsPage = function(el) {
-  const s = this.engine.state;
-  const b = s.barrows;
+  const s = this.engine.state, b = s.barrows;
   const locked = this.engine.getCombatLevel() < GAME_DATA.barrows.levelReq;
   let html = this.header('Barrows','skull','Six brothers. Six crypts. One chest.', null);
-  if (locked) { html += `<div class="toa-locked"><div class="toa-lock-title">Requires combat level ${GAME_DATA.barrows.levelReq}</div></div>`; el.innerHTML = html; return; }
+  if (locked) { html += `<div class="toa-locked"><div class="toa-lock-title">Barrows</div><div class="toa-lock-desc">Requires combat level ${GAME_DATA.barrows.levelReq}.</div></div>`; el.innerHTML = html; return; }
+
   if (b?.active && b.between) {
-    // Between brothers — rest state
-    const nextBId = GAME_DATA.barrows.brothers[b._nextBrother];
-    const nextBoss = BARROWS_BROTHERS[nextBId];
-    html += `<div class="toa-raid-screen"><div class="toa-between-overlay"><div class="toa-between-title">Approaching the next crypt...</div><div class="toa-between-boss">${nextBoss?.name||'Unknown'}</div><div class="toa-between-timer">${Math.ceil(b.betweenTimer)}s</div><div class="toa-death-count">Brothers killed: ${b.killed.length}/6</div></div></div>`;
-  } else if (b?.active && !b.chestOpen) {
-    const bId = GAME_DATA.barrows.brothers[b.brother];
-    const boss = BARROWS_BROTHERS[bId];
-    const c = s.combat;
-    const bossHpPct = Math.max(0, c.monsterHp / boss.hp * 100);
-    const playerHpPct = Math.max(0, c.playerHp / this.engine.getMaxHp() * 100);
-    html += `<div class="toa-raid-screen">
-      <div class="toa-boss-display">
-        <div class="toa-boss-art">${GAME_DATA.monsterArt[bId]||''}</div>
-        <div class="toa-boss-info-raid">
-          <div class="toa-boss-name-raid">${boss.name}</div>
-          <div class="toa-boss-hp-bar"><div class="toa-boss-hp-fill" style="width:${bossHpPct}%"></div></div>
-          <div class="toa-boss-hp-text">${Math.max(0,c.monsterHp).toLocaleString()} / ${boss.hp.toLocaleString()}</div>
-        </div>
-      </div>
-      <p style="color:#aaa;text-align:center;margin:0.5rem 0;font-size:0.85rem">${boss.desc}</p>
-      <div class="toa-player-status">
-        <div class="toa-player-hp"><span>HP</span>
-          <div class="toa-player-hp-bar"><div class="toa-player-hp-fill" style="width:${playerHpPct}%"></div></div>
-          <span>${c.playerHp}/${this.engine.getMaxHp()}</span>
-        </div>
-      </div>
-      <div class="toa-death-count">Brothers killed: ${b.killed.length}/6</div>
-      <button class="btn btn-sm btn-danger" onclick="game.leaveBarrows()">Flee</button>
-    </div>`;
-  } else if (b?.chestOpen) {
-    html += `<div class="toa-chest-screen"><div class="toa-chest-title" style="color:#cd7f32">BARROWS CHEST</div><div class="toa-chest-stats"><span>Brothers: ${b.killed.length}/6</span><span>Completions: ${s.stats?.barrowsCompletions||0}</span></div><div class="toa-loot-grid">${b.loot.map(l=>{const it=GAME_DATA.items[l.item];return`<div class="toa-loot-item toa-rarity-${l.rarity}"><div class="toa-loot-icon">${window.renderItemSprite?window.renderItemSprite(l.item,28):'?'}</div><div class="toa-loot-name">${it?.name||l.item}</div><div class="toa-loot-qty">x${l.qty}</div></div>`;}).join('')}</div><button class="btn btn-sm" onclick="game.leaveBarrows()">Leave</button></div>`;
-  } else {
-    const completions = s.stats?.barrowsCompletions || 0;
-    let brotherList = GAME_DATA.barrows.brothers.map(bId => {
-      const boss = BARROWS_BROTHERS[bId];
-      const kc = s.stats?.bossKills?.[bId] || 0;
-      return `<div class="toa-room-preview">
-        <span class="toa-room-num" style="text-align:center;padding:4px 0">${GAME_DATA.monsterArt[bId] ? `<div style="width:40px;height:40px;display:inline-block">${GAME_DATA.monsterArt[bId]}</div>` : ''}</span>
-        <span class="toa-boss-name">${boss.name}</span>
-        <span class="toa-boss-info">Lv${boss.combatLevel} · ${boss.hp.toLocaleString()}HP · ${boss.style}</span>
-        <span class="toa-boss-mechanic" style="color:var(--text-dim);font-size:11px">${boss.desc}</span>
-      </div>`;
-    }).join('');
-    html += `<div class="toa-entry-screen">
-      <div class="toa-entry-stats">
-        <div class="toa-stat"><span class="toa-stat-n">${completions}</span><span class="toa-stat-l">Completions</span></div>
-        <div class="toa-stat"><span class="toa-stat-n">6</span><span class="toa-stat-l">Brothers</span></div>
-        <div class="toa-stat"><span class="toa-stat-n">Lv60+</span><span class="toa-stat-l">Requirement</span></div>
-      </div>
-      <div class="toa-rooms-list">${brotherList}</div>
-      <div class="toa-unique-preview">
-        <div class="toa-unique-title">Barrows Armor Sets</div>
-        <p style="color:#aaa;font-size:0.85rem;margin:0.5rem 0">Each brother can drop their helm, platebody, platelegs, and weapon. Kill all 6 for maximum loot rolls.</p>
-      </div>
-      <div class="toa-entry-warning">Kill all 6 brothers then loot the chest. Each brother adds a 1/24 roll for their set pieces.</div>
-      <button class="btn btn-lg toa-enter-btn" onclick="game.startBarrows()">Enter the Barrows</button>
-    </div>`;
+    const nxt = BARROWS_BROTHERS[GAME_DATA.barrows.brothers[b._nextBrother]];
+    html += `<div class="toa-raid-screen"><div class="toa-between-overlay"><div class="toa-between-title">Next crypt...</div><div class="toa-between-boss">${nxt?.name||''}</div><div class="toa-between-timer">${Math.ceil(b.betweenTimer)}s</div><div class="toa-between-hint">${nxt?.desc||''}</div><div class="toa-death-count">Brothers killed: ${b.killed.length}/6</div></div></div>`;
+    el.innerHTML = html; return;
   }
+  if (b?.active && !b.chestOpen) {
+    const bId = GAME_DATA.barrows.brothers[b.brother], boss = BARROWS_BROTHERS[bId], c = s.combat;
+    html += `<div class="toa-raid-screen"><div class="toa-boss-display"><div class="toa-boss-art">${GAME_DATA.monsterArt[bId]||''}</div><div class="toa-boss-info-raid"><div class="toa-boss-name-raid">${boss.name}</div><div class="toa-boss-hp-bar"><div class="toa-boss-hp-fill" style="width:${Math.max(0,c.monsterHp/boss.hp*100)}%"></div></div><div class="toa-boss-hp-text">${Math.max(0,c.monsterHp).toLocaleString()} / ${boss.hp.toLocaleString()}</div></div></div><div class="ce-fight-info"><span>Style: ${boss.style}</span><span>Max Hit: ${boss.maxHit}</span><span>Brother ${b.brother+1}/6</span></div><p class="ce-boss-hint">${boss.desc}</p><div class="toa-player-status"><div class="toa-player-hp"><span>HP</span><div class="toa-player-hp-bar"><div class="toa-player-hp-fill" style="width:${Math.max(0,c.playerHp/this.engine.getMaxHp()*100)}%"></div></div><span>${c.playerHp}/${this.engine.getMaxHp()}</span></div></div><div class="toa-death-count">Brothers killed: ${b.killed.length}/6</div><button class="btn btn-sm btn-danger" onclick="game.leaveBarrows()">Flee Barrows</button></div>`;
+    el.innerHTML = html; return;
+  }
+  if (b?.chestOpen) {
+    html += `<div class="toa-chest-screen"><div class="toa-chest-title" style="color:#cd7f32">BARROWS CHEST</div><div class="toa-chest-stats"><span>Brothers: ${b.killed.length}/6</span><span>Completions: ${s.stats?.barrowsCompletions||0}</span></div><div class="toa-loot-grid">${b.loot.map(l=>{const it=GAME_DATA.items[l.item];return`<div class="toa-loot-item toa-rarity-${l.rarity}"><div class="toa-loot-name">${it?.name||l.item}</div><div class="toa-loot-qty">x${l.qty}</div></div>`;}).join('')}</div><button class="btn btn-sm" onclick="game.leaveBarrows()">Leave Barrows</button></div>`;
+    el.innerHTML = html; return;
+  }
+  // Entry
+  const setInfo = {dharok:'Low HP = more damage',ahrim:'+20% magic damage',karil:'+15% ranged accuracy',guthan:'25% lifesteal on hit',torag:'+30% damage reduction',verac:'25% ignore defence'};
+  html += `<div class="toa-entry-screen"><div class="toa-entry-stats"><div class="toa-stat"><span class="toa-stat-n">${s.stats?.barrowsCompletions||0}</span><span class="toa-stat-l">Completions</span></div><div class="toa-stat"><span class="toa-stat-n">6</span><span class="toa-stat-l">Brothers</span></div><div class="toa-stat"><span class="toa-stat-n">1/24</span><span class="toa-stat-l">Piece Rate</span></div></div><div class="ce-section-title">The Brothers</div>`;
+  for (const bId of GAME_DATA.barrows.brothers) {
+    const boss = BARROWS_BROTHERS[bId];
+    html += `<div class="ce-boss-card"><div class="ce-bc-art">${GAME_DATA.monsterArt[bId]?`<div style="width:56px;height:56px">${GAME_DATA.monsterArt[bId]}</div>`:''}</div><div class="ce-bc-info"><div class="ce-bc-name">${boss.name}</div><div class="ce-bc-stats">Lv${boss.combatLevel} · ${boss.hp.toLocaleString()} HP · ${boss.style} · Max hit ${boss.maxHit}</div><div class="ce-bc-desc">${boss.desc}</div><div class="ce-bc-set">Set bonus: <strong>${setInfo[bId]||''}</strong></div><div class="ce-bc-drops">Drops: Helm, Platebody, Platelegs, ${_bWeaponNames[bId]}</div></div></div>`;
+  }
+  html += `<div class="ce-section-title">Chest Loot</div><div class="ce-drops"><div class="ce-drops-grid"><div class="ce-drop-row ce-rarity-common"><span class="ce-drop-name">Death Rune</span><span class="ce-drop-qty">x80</span><span class="ce-drop-rate">80%</span></div><div class="ce-drop-row ce-rarity-common"><span class="ce-drop-name">Blood Rune</span><span class="ce-drop-qty">x50</span><span class="ce-drop-rate">70%</span></div><div class="ce-drop-row ce-rarity-uncommon"><span class="ce-drop-name">Bolt Rack</span><span class="ce-drop-qty">x30</span><span class="ce-drop-rate">60%</span></div><div class="ce-drop-row ce-rarity-rare"><span class="ce-drop-name">Dragon Bones</span><span class="ce-drop-qty">x3</span><span class="ce-drop-rate">40%</span></div></div></div><div class="toa-entry-warning">Kill all 6 brothers then loot the chest. Each brother killed adds a 1/24 roll for their armor.</div><button class="btn btn-lg toa-enter-btn" onclick="game.startBarrows()">Enter the Barrows</button></div>`;
   el.innerHTML = html;
 };
 
+// ── GAUNTLET ────────────────────────────────────────────────────
 UI.prototype.renderGauntletPage = function(el) {
-  const s = this.engine.state;
-  const g = s.gauntlet;
+  const s = this.engine.state, g = s.gauntlet;
   const locked = this.engine.getCombatLevel() < GAME_DATA.gauntlet.levelReq;
-  let html = this.header('The Gauntlet','dungeon','Solo challenge. Gather resources. Slay the Hunllef.',null);
+  let html = this.header('The Gauntlet','dungeon','Solo challenge. Slay the Hunllef.',null);
   if (locked) { html += `<div class="toa-locked"><div class="toa-lock-title">Requires combat level ${GAME_DATA.gauntlet.levelReq}</div></div>`; el.innerHTML = html; return; }
   if (g?.active && g.prep) {
-    html += `<div class="toa-between-overlay">
-      <div class="toa-between-title">Gathering Resources...</div>
-      <div class="toa-between-timer">${Math.ceil(g.prepTimer)}s</div>
-      <div class="toa-between-hint">Crafting weapons and armor from crystalline materials...</div>
-      <button class="btn btn-sm btn-danger" style="margin-top:1rem" onclick="game.leaveGauntlet()">Abandon</button>
-    </div>`;
-  } else if (g?.active && !g.complete) {
-    const c = s.combat; const bossId = g.bossId; const boss = GAME_DATA.monsters[bossId];
-    const bossHpPct = Math.max(0, c.monsterHp / boss.hp * 100);
-    const playerHpPct = Math.max(0, c.playerHp / this.engine.getMaxHp() * 100);
-    html += `<div class="toa-raid-screen">
-      <div class="toa-boss-display">
-        <div class="toa-boss-art">${GAME_DATA.monsterArt[bossId]||''}</div>
-        <div class="toa-boss-info-raid">
-          <div class="toa-boss-name-raid">${boss.name}</div>
-          <div class="toa-boss-hp-bar"><div class="toa-boss-hp-fill" style="width:${bossHpPct}%"></div></div>
-          <div class="toa-boss-hp-text">${Math.max(0,c.monsterHp).toLocaleString()} / ${boss.hp.toLocaleString()}</div>
-        </div>
-      </div>
-      <div class="toa-player-status">
-        <div class="toa-player-hp"><span>HP</span>
-          <div class="toa-player-hp-bar"><div class="toa-player-hp-fill" style="width:${playerHpPct}%"></div></div>
-          <span>${c.playerHp}/${this.engine.getMaxHp()}</span>
-        </div>
-      </div>
-      <div class="toa-style-hint">${boss.desc}</div>
-      <button class="btn btn-sm btn-danger" onclick="game.leaveGauntlet()">Flee</button>
-    </div>`;
-  } else if (g?.complete) {
-    html += `<div class="toa-chest-screen">
-      <div class="toa-chest-title" style="color:#88ccff">${g.corrupted?'CORRUPTED ':''}GAUNTLET COMPLETE</div>
-      <div class="toa-loot-grid">${(g.loot||[]).map(l=>{const it=GAME_DATA.items[l.item];return`<div class="toa-loot-item"><div class="toa-loot-icon">${window.renderItemSprite?window.renderItemSprite(l.item,28):'?'}</div><div class="toa-loot-name">${it?.name||l.item}</div><div class="toa-loot-qty">x${l.qty}</div></div>`;}).join('')}</div>
-      <button class="btn btn-sm" onclick="game.leaveGauntlet()">Leave</button>
-    </div>`;
-  } else {
-    const completions = s.stats?.gauntletCompletions || 0;
-    html += `<div class="toa-entry-screen">
-      <div class="toa-entry-stats">
-        <div class="toa-stat"><span class="toa-stat-n">${completions}</span><span class="toa-stat-l">Completions</span></div>
-        <div class="toa-stat"><span class="toa-stat-n">Lv80+</span><span class="toa-stat-l">Requirement</span></div>
-      </div>
-      <div class="toa-rooms-list">
-        <div class="toa-room-preview">
-          <span class="toa-room-num" style="text-align:center">${GAME_DATA.monsterArt.crystalline_hunllef ? `<div style="width:40px;height:40px;display:inline-block">${GAME_DATA.monsterArt.crystalline_hunllef}</div>` : ''}</span>
-          <span class="toa-boss-name">Crystalline Hunllef</span>
-          <span class="toa-boss-info">25,000 HP · Style-switching boss</span>
-        </div>
-        <div class="toa-room-preview">
-          <span class="toa-room-num" style="text-align:center">${GAME_DATA.monsterArt.corrupted_hunllef ? `<div style="width:40px;height:40px;display:inline-block">${GAME_DATA.monsterArt.corrupted_hunllef}</div>` : ''}</span>
-          <span class="toa-boss-name" style="color:#cc3030">Corrupted Hunllef</span>
-          <span class="toa-boss-info">40,000 HP · Extreme difficulty · Better loot</span>
-        </div>
-      </div>
-      <div class="toa-unique-preview">
-        <div class="toa-unique-title">Unique Drops</div>
-        <div class="toa-unique-grid">
-          ${['crystal_helm','crystal_body','crystal_legs','bow_of_faerdhinen','enhanced_crystal_weapon_seed','younglief'].map(id => {
-            const item = GAME_DATA.items[id]; if (!item) return '';
-            return `<div class="toa-unique-item" title="${item.desc||''}"><div class="toa-ui-name">${item.name}</div></div>`;
-          }).join('')}
-        </div>
-      </div>
-      <div class="toa-entry-warning">Solo challenge. 15-second prep phase, then fight the Hunllef. Corrupted mode has enhanced rewards.</div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:1rem">
-        <button class="btn btn-lg toa-enter-btn" onclick="game.startGauntlet(false)">Normal Gauntlet</button>
-        <button class="btn btn-lg toa-enter-btn" style="border-color:#cc3030" onclick="game.startGauntlet(true)">Corrupted</button>
-      </div>
-    </div>`;
+    html += `<div class="toa-between-overlay"><div class="toa-between-title">Gathering Resources...</div><div class="toa-between-timer">${Math.ceil(g.prepTimer)}s</div><div class="toa-between-hint">Crafting crystalline gear...</div><button class="btn btn-sm btn-danger" style="margin-top:1rem" onclick="game.leaveGauntlet()">Abandon</button></div>`;
+    el.innerHTML = html; return;
   }
+  if (g?.active && !g.complete) {
+    const c = s.combat, boss = GAME_DATA.monsters[g.bossId];
+    html += `<div class="toa-raid-screen"><div class="toa-boss-display"><div class="toa-boss-art">${GAME_DATA.monsterArt[g.bossId]||''}</div><div class="toa-boss-info-raid"><div class="toa-boss-name-raid">${boss.name}</div><div class="toa-boss-hp-bar"><div class="toa-boss-hp-fill" style="width:${Math.max(0,c.monsterHp/boss.hp*100)}%"></div></div><div class="toa-boss-hp-text">${Math.max(0,c.monsterHp).toLocaleString()} / ${boss.hp.toLocaleString()}</div></div></div><div class="ce-fight-info"><span>Style: ${boss.style}</span><span>Max Hit: ${boss.maxHit}</span><span>Speed: ${boss.attackSpeed}s</span></div><p class="ce-boss-hint">${boss.desc}</p><div class="toa-player-status"><div class="toa-player-hp"><span>HP</span><div class="toa-player-hp-bar"><div class="toa-player-hp-fill" style="width:${Math.max(0,c.playerHp/this.engine.getMaxHp()*100)}%"></div></div><span>${c.playerHp}/${this.engine.getMaxHp()}</span></div></div><button class="btn btn-sm btn-danger" onclick="game.leaveGauntlet()">Flee</button></div>`;
+    el.innerHTML = html; return;
+  }
+  if (g?.complete) {
+    html += `<div class="toa-chest-screen"><div class="toa-chest-title" style="color:${g.corrupted?'#cc3030':'#88ccff'}">${g.corrupted?'CORRUPTED ':''}GAUNTLET COMPLETE</div><div class="toa-loot-grid">${(g.loot||[]).map(l=>{const it=GAME_DATA.items[l.item];return`<div class="toa-loot-item"><div class="toa-loot-name">${it?.name||l.item}</div><div class="toa-loot-qty">x${l.qty}</div></div>`;}).join('')}</div><button class="btn btn-sm" onclick="game.leaveGauntlet()">Leave</button></div>`;
+    el.innerHTML = html; return;
+  }
+  // Entry
+  html += `<div class="toa-entry-screen"><div class="toa-entry-stats"><div class="toa-stat"><span class="toa-stat-n">${s.stats?.gauntletCompletions||0}</span><span class="toa-stat-l">Completions</span></div><div class="toa-stat"><span class="toa-stat-n">Lv80+</span><span class="toa-stat-l">Requirement</span></div></div>`;
+  html += `<div class="ce-section-title">Bosses</div>${_renderMonsterCard('crystalline_hunllef')}${_renderMonsterCard('corrupted_hunllef')}`;
+  html += `<div class="ce-section-title">Normal Mode Rewards</div><div class="ce-drops"><div class="ce-drops-grid">${GAME_DATA.gauntlet.normalRewards.map(d=>{const it=GAME_DATA.items[d.item];if(!it)return'';const pct=d.chance>=1?'100%':d.chance>=0.1?Math.round(d.chance*100)+'%':'1/'+Math.round(1/d.chance);return`<div class="ce-drop-row"><span class="ce-drop-name">${it.name}</span><span class="ce-drop-qty">x${d.qty}</span><span class="ce-drop-rate">${pct}</span></div>`;}).join('')}</div></div>`;
+  html += `<div class="ce-section-title">Corrupted Mode Rewards</div><div class="ce-drops"><div class="ce-drops-grid">${GAME_DATA.gauntlet.corruptedRewards.map(d=>{const it=GAME_DATA.items[d.item];if(!it)return'';const pct=d.chance>=1?'100%':d.chance>=0.1?Math.round(d.chance*100)+'%':'1/'+Math.round(1/d.chance);return`<div class="ce-drop-row"><span class="ce-drop-name">${it.name}</span><span class="ce-drop-qty">x${d.qty}</span><span class="ce-drop-rate">${pct}</span></div>`;}).join('')}</div></div>`;
+  html += `<div class="toa-entry-warning">Solo challenge. 15s prep phase then fight the Hunllef. The boss switches attack styles — pray accordingly.</div><div style="display:flex;gap:8px;justify-content:center;margin-top:1rem"><button class="btn btn-lg toa-enter-btn" onclick="game.startGauntlet(false)">Normal</button><button class="btn btn-lg toa-enter-btn" style="border-color:#cc3030" onclick="game.startGauntlet(true)">Corrupted</button></div></div>`;
   el.innerHTML = html;
 };
 
+// ── INFERNO ─────────────────────────────────────────────────────
 UI.prototype.renderInfernoPage = function(el) {
-  const s = this.engine.state;
-  const inf = s.inferno;
+  const s = this.engine.state, inf = s.inferno;
   const locked = this.engine.getCombatLevel() < GAME_DATA.inferno.levelReq;
   let html = this.header('The Inferno','combat','69 waves. TzKal-Zuk awaits. Earn the Infernal Cape.',null);
   if (locked) { html += `<div class="toa-locked"><div class="toa-lock-title">Requires combat level ${GAME_DATA.inferno.levelReq}</div></div>`; el.innerHTML = html; return; }
-  if (inf?.active && !inf.complete) {
-    const c = s.combat; const mon = GAME_DATA.monsters[c.monster];
-    html += `<div class="toa-raid-screen"><div class="toa-raid-header"><div class="toa-death-count">Wave ${(inf.wave||0)+1}/69</div></div><div class="toa-boss-display"><div class="toa-boss-art">${GAME_DATA.monsterArt[c.monster]||''}</div><div class="toa-boss-info-raid"><div class="toa-boss-name-raid">${mon?.name||'???'}</div><div class="toa-boss-hp-bar"><div class="toa-boss-hp-fill" style="width:${Math.max(0,c.monsterHp/(mon?.hp||1)*100)}%"></div></div><div class="toa-boss-hp-text">${Math.max(0,c.monsterHp).toLocaleString()} / ${(mon?.hp||0).toLocaleString()}</div></div></div><div class="toa-player-status"><div class="toa-player-hp"><span>HP</span><div class="toa-player-hp-bar"><div class="toa-player-hp-fill" style="width:${Math.max(0,c.playerHp/this.engine.getMaxHp()*100)}%"></div></div><span>${c.playerHp}/${this.engine.getMaxHp()}</span></div></div><button class="btn btn-sm btn-danger" onclick="game.leaveInferno()">Flee</button></div>`;
-  } else if (inf?.complete) {
-    html += `<div class="toa-chest-screen"><div class="toa-chest-title" style="color:#ff6030">INFERNO COMPLETE</div><div class="toa-loot-grid">${(inf.loot||[]).map(l=>{const it=GAME_DATA.items[l.item];return`<div class="toa-loot-item toa-rarity-mythic"><div class="toa-loot-icon">${window.renderItemSprite?window.renderItemSprite(l.item,28):'?'}</div><div class="toa-loot-name">${it?.name||l.item}</div></div>`;}).join('')}</div><button class="btn btn-sm" onclick="game.leaveInferno()">Leave</button></div>`;
-  } else {
-    html += `<div class="toa-entry-screen"><div class="toa-entry-stats"><div class="toa-stat"><span class="toa-stat-n">${s.stats?.infernoCompletions||0}</span><span class="toa-stat-l">Completions</span></div><div class="toa-stat"><span class="toa-stat-n">69</span><span class="toa-stat-l">Waves</span></div></div><div class="toa-rooms-list"><div class="toa-room-preview"><span class="toa-boss-name">Waves 1–9: Nibblers + Bats</span></div><div class="toa-room-preview"><span class="toa-boss-name">Waves 10–19: Bats + Blobs</span></div><div class="toa-room-preview"><span class="toa-boss-name">Waves 20–34: Blobs + Melee Brutes</span></div><div class="toa-room-preview"><span class="toa-boss-name">Waves 35–49: Brutes + Rangers</span></div><div class="toa-room-preview"><span class="toa-boss-name">Waves 50–61: Rangers + Magers</span></div><div class="toa-room-preview"><span class="toa-boss-name">Waves 62–65: Magers</span></div><div class="toa-room-preview"><span class="toa-boss-name">Waves 66–68: Triple Jad</span></div><div class="toa-room-preview"><span class="toa-boss-name" style="color:#c44020">Wave 69: TzKal-Zuk (20,000 HP)</span></div></div><div class="toa-entry-warning">The hardest PvE content in the game. Reward: Infernal Cape (best-in-slot melee cape).</div><button class="btn btn-lg toa-enter-btn" style="border-color:#c44020" onclick="game.startInferno()">Enter the Inferno</button></div>`;
+
+  if (inf?.active && inf.between) {
+    html += `<div class="toa-between-overlay"><div class="toa-between-title">Next wave...</div><div class="toa-between-timer">${Math.ceil(inf.betweenTimer)}s</div><div class="toa-death-count">Wave ${(inf.wave||0)+1}/69</div></div>`;
+    el.innerHTML = html; return;
   }
+  if (inf?.active && !inf.complete) {
+    const c = s.combat, mon = GAME_DATA.monsters[c.monster];
+    const elapsed = Math.floor((Date.now() - inf.startTime)/1000);
+    html += `<div class="toa-raid-screen"><div class="toa-raid-header"><div class="toa-death-count">Wave ${(inf.wave||0)+1}/69</div><div class="toa-raid-timer">${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}</div></div><div class="toa-boss-display"><div class="toa-boss-art">${GAME_DATA.monsterArt[c.monster]||''}</div><div class="toa-boss-info-raid"><div class="toa-boss-name-raid">${mon?.name||'???'}</div><div class="toa-boss-hp-bar"><div class="toa-boss-hp-fill" style="width:${Math.max(0,c.monsterHp/(mon?.hp||1)*100)}%"></div></div><div class="toa-boss-hp-text">${Math.max(0,c.monsterHp).toLocaleString()} / ${(mon?.hp||0).toLocaleString()}</div></div></div><div class="ce-fight-info"><span>Style: ${mon?.style||'?'}</span><span>Max Hit: ${mon?.maxHit||'?'}</span><span>Cb Lv: ${mon?.combatLevel||'?'}</span></div><p class="ce-boss-hint">${mon?.desc||''}</p><div class="toa-player-status"><div class="toa-player-hp"><span>HP</span><div class="toa-player-hp-bar"><div class="toa-player-hp-fill" style="width:${Math.max(0,c.playerHp/this.engine.getMaxHp()*100)}%"></div></div><span>${c.playerHp}/${this.engine.getMaxHp()}</span></div></div><button class="btn btn-sm btn-danger" onclick="game.leaveInferno()">Flee</button></div>`;
+    el.innerHTML = html; return;
+  }
+  if (inf?.complete) {
+    html += `<div class="toa-chest-screen"><div class="toa-chest-title" style="color:#ff6030">THE INFERNO IS COMPLETE</div><div class="toa-loot-grid">${(inf.loot||[]).map(l=>{const it=GAME_DATA.items[l.item];return`<div class="toa-loot-item toa-rarity-mythic"><div class="toa-loot-name">${it?.name||l.item}</div></div>`;}).join('')}</div><button class="btn btn-sm" onclick="game.leaveInferno()">Leave</button></div>`;
+    el.innerHTML = html; return;
+  }
+  // Entry — wave breakdown with full monster details
+  const waveGroups = [
+    { label:'Waves 1–9', monsters:['jal_nib','jal_mejrah'], desc:'Nibblers attack pillars — kill first. Bats use magic.' },
+    { label:'Waves 10–19', monsters:['jal_mejrah','jal_ak'], desc:'Bats and Blobs. Blobs split into 2 smaller blobs on death.' },
+    { label:'Waves 20–34', monsters:['jal_ak','jal_imkot'], desc:'Blobs and Melee Brutes. Brutes hit extremely hard.' },
+    { label:'Waves 35–49', monsters:['jal_imkot','jal_xil'], desc:'Brutes and Rangers. Protect from Ranged against Rangers.' },
+    { label:'Waves 50–61', monsters:['jal_xil','jal_zek'], desc:'Rangers and Magers. Protect from Magic. Magers heal allies.' },
+    { label:'Waves 62–65', monsters:['jal_zek'], desc:'Pure Mager waves. Devastating magic damage.' },
+    { label:'Waves 66–68', monsters:['jaltok_jad'], desc:'Triple Jad. Three Jads attacking simultaneously. Prayer flick all three.' },
+    { label:'Wave 69: FINAL', monsters:['tzkal_zuk'], desc:'TzKal-Zuk. 20,000 HP. Max hit 250. The hardest boss in the game.' },
+  ];
+  html += `<div class="toa-entry-screen"><div class="toa-entry-stats"><div class="toa-stat"><span class="toa-stat-n">${s.stats?.infernoCompletions||0}</span><span class="toa-stat-l">Completions</span></div><div class="toa-stat"><span class="toa-stat-n">69</span><span class="toa-stat-l">Waves</span></div><div class="toa-stat"><span class="toa-stat-n">Lv100+</span><span class="toa-stat-l">Required</span></div></div><div class="ce-section-title">Wave Breakdown</div>`;
+  for (const wg of waveGroups) {
+    const isZuk = wg.monsters.includes('tzkal_zuk');
+    html += `<div class="ce-boss-card ${isZuk?'ce-boss-final':''}"><div class="ce-bc-art">${GAME_DATA.monsterArt[wg.monsters[0]]?`<div style="width:48px;height:48px">${GAME_DATA.monsterArt[wg.monsters[0]]}</div>`:''}</div><div class="ce-bc-info"><div class="ce-bc-name">${wg.label}</div><div class="ce-bc-stats">${wg.monsters.map(mId=>{const m=GAME_DATA.monsters[mId];return m?`${m.name} (Lv${m.combatLevel}, ${m.hp}HP, ${m.style}, max hit ${m.maxHit})`:mId;}).join(' · ')}</div><div class="ce-bc-desc">${wg.desc}</div></div></div>`;
+  }
+  html += `<div class="ce-section-title">Rewards</div><div class="ce-drops"><div class="ce-drops-grid"><div class="ce-drop-row ce-rarity-mythic"><span class="ce-drop-name">Infernal Cape (best melee cape)</span><span class="ce-drop-qty">x1</span><span class="ce-drop-rate">100%</span></div><div class="ce-drop-row ce-rarity-mythic"><span class="ce-drop-name">Jal-Nib-Rek (pet)</span><span class="ce-drop-qty">x1</span><span class="ce-drop-rate">1/200</span></div></div></div><div class="toa-entry-warning">The hardest PvE content in Ashfall. Bring your best gear, full prayer, and plenty of food.</div><button class="btn btn-lg toa-enter-btn" style="border-color:#c44020" onclick="game.startInferno()">Enter the Inferno</button></div>`;
   el.innerHTML = html;
 };
 
+// ── SLAYER BOSSES ───────────────────────────────────────────────
 UI.prototype.renderSlayerBossesPage = function(el) {
   const s = this.engine.state;
   const slayerLvl = s.skills.slayer?.level || 1;
-  let html = this.header('Slayer Bosses','skull','Boss variants of slayer creatures. Unique drops. Slayer level required.',null);
-  html += '<div class="actions-grid">';
+  let html = this.header('Slayer Bosses','skull','Boss variants of slayer creatures. Slayer level required.',null);
   for (const sb of GAME_DATA.slayerBosses) {
     const locked = slayerLvl < sb.slayerReq;
     const mon = GAME_DATA.monsters[sb.id];
     const kc = s.stats?.bossKills?.[sb.id] || 0;
-    const drops = mon?.drops?.filter(d => GAME_DATA.items[d.item]).map(d => GAME_DATA.items[d.item].name).join(', ') || '';
-    html += `<div class="action-card ${locked?'locked':''}">
-      <div class="ac-header"><span class="ac-name">${sb.name}</span><span class="ac-level">Slay Lv ${sb.slayerReq}</span></div>
-      <div style="text-align:center;padding:8px 0">${GAME_DATA.monsterArt[sb.id] ? `<div style="width:64px;height:64px;margin:0 auto">${GAME_DATA.monsterArt[sb.id]}</div>` : ''}</div>
-      <p class="area-desc">${sb.desc}</p>
-      <div class="ac-footer"><span>HP: ${mon?.hp?.toLocaleString()}</span><span>Max Hit: ${mon?.maxHit}</span><span>KC: ${kc}</span></div>
-      ${drops ? `<div class="dungeon-rewards" style="font-size:11px;color:var(--text-dim);margin-top:4px">Drops: ${drops}</div>` : ''}
-      <button class="btn btn-sm" ${locked?'disabled':''} onclick="game.startCombat('${sb.id}')">Fight</button>
+    html += `<div class="ce-boss-card ${locked?'locked':''}">
+      <div class="ce-bc-art">${GAME_DATA.monsterArt[sb.id]?`<div style="width:64px;height:64px">${GAME_DATA.monsterArt[sb.id]}</div>`:''}</div>
+      <div class="ce-bc-info">
+        <div class="ce-bc-name">${sb.name} <span style="color:var(--text-dim);font-size:11px;font-family:Crimson Text,serif">KC: ${kc}</span></div>
+        <div class="ce-bc-stats">Lv${mon?.combatLevel} · ${mon?.hp?.toLocaleString()} HP · ${mon?.style} · Max Hit ${mon?.maxHit} · Speed ${mon?.attackSpeed}s</div>
+        <div class="ce-bc-desc">${sb.desc}</div>
+        <div class="ce-bc-set">Slayer Requirement: <strong>Level ${sb.slayerReq}</strong> ${locked?`<span style="color:#cc6666">(You: ${slayerLvl})</span>`:` <span style="color:#7dcc44">(Met)</span>`}</div>
+        ${_renderDrops(mon?.drops)}
+        <div style="margin-top:8px"><button class="btn btn-sm" ${locked?'disabled':''} onclick="game.startCombat(null,'${sb.id}')">Fight</button></div>
+      </div>
       ${locked?`<div class="locked-overlay">Slayer Lv ${sb.slayerReq}</div>`:''}
     </div>`;
   }
-  html += '</div>';
   el.innerHTML = html;
 };

@@ -481,12 +481,12 @@ GameEngine.prototype.getPartyBonus = function() {
 // ── FIREBASE PARTY SYNC ────────────────────────────────────────
 GameEngine.prototype._syncPartyToFirebase = async function() {
   try {
-    if (!window.onlineSystem?.firestore || !window.onlineSystem?.user) return;
-    const fs = window.onlineSystem.firestore;
+    if (!online?.firestore || !online?.user) return;
+    const fs = online.firestore;
     const party = this.state.party;
     await fs.collection('parties').doc(party.id).set({
       name: party.name,
-      leader: window.onlineSystem.user.uid,
+      leader: online.user.uid,
       leaderName: party.leader,
       members: party.members,
       raidActive: party.raidActive,
@@ -499,11 +499,11 @@ GameEngine.prototype._syncPartyToFirebase = async function() {
 
 GameEngine.prototype._joinPartyFromFirebase = async function(partyId) {
   try {
-    if (!window.onlineSystem?.firestore) {
+    if (!online?.firestore) {
       this.emit('notification',{type:'warn',text:'Must be logged in to join parties.'});
       return;
     }
-    const fs = window.onlineSystem.firestore;
+    const fs = online.firestore;
     const doc = await fs.collection('parties').doc(partyId).get();
     if (!doc.exists) { this.emit('notification',{type:'warn',text:'Party not found.'}); return; }
     const data = doc.data();
@@ -528,15 +528,15 @@ GameEngine.prototype._joinPartyFromFirebase = async function(partyId) {
 
 GameEngine.prototype._sendPartyInvite = async function(playerName) {
   try {
-    if (!window.onlineSystem?.firestore) return;
-    const fs = window.onlineSystem.firestore;
+    if (!online?.firestore) return;
+    const fs = online.firestore;
     // Find player by name
     const snap = await fs.collection('players').where('displayName','==',playerName).limit(1).get();
     if (snap.empty) { this.emit('notification',{type:'warn',text:`Player "${playerName}" not found.`}); return; }
     const targetUid = snap.docs[0].id;
     await fs.collection('inbox').add({
       to: targetUid,
-      from: window.onlineSystem.user.uid,
+      from: online.user.uid,
       fromName: this.state.playerName || 'Player',
       type: 'party_invite',
       partyId: this.state.party.id,
@@ -552,8 +552,8 @@ GameEngine.prototype._sendPartyInvite = async function(playerName) {
 
 GameEngine.prototype._syncPartyChatToFirebase = async function(message) {
   try {
-    if (!window.onlineSystem?.firestore || !this.state.party?.id) return;
-    const fs = window.onlineSystem.firestore;
+    if (!online?.firestore || !this.state.party?.id) return;
+    const fs = online.firestore;
     await fs.collection('party_chat').add({
       partyId: this.state.party.id,
       sender: this.state.playerName || 'Player',
@@ -566,11 +566,11 @@ GameEngine.prototype._syncPartyChatToFirebase = async function(message) {
 // ── RAID GROUP FINDER ───────────────────────────────────────────
 GameEngine.prototype.findRaidGroup = async function(raidType) {
   try {
-    if (!window.onlineSystem?.firestore) {
+    if (!online?.firestore) {
       this.emit('notification',{type:'warn',text:'Must be logged in to use Raid Finder.'});
       return [];
     }
-    const fs = window.onlineSystem.firestore;
+    const fs = online.firestore;
     const snap = await fs.collection('parties')
       .where('status','==','open')
       .where('raidType','==',raidType)

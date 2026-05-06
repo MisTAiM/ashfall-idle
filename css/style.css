@@ -6704,3 +6704,48 @@ kbd {
 /* Chambers mechanic override */
 .coa-mechanic-alert { border-color:#c9873e !important; }
 .coa-handle-btn { background:rgba(201,135,62,0.3) !important; border-color:#c9873e !important; }
+
+/* ================================================================
+   CONTENT EXPANSION UI — Boss cards, drop tables, monster info
+   ================================================================ */
+.ce-section-title { font-family:'Cinzel',serif; font-size:14px; color:var(--amber); margin:16px 0 8px; padding-bottom:4px; border-bottom:1px solid rgba(201,135,62,0.2); }
+
+/* Boss Card — used in Barrows, Inferno, Slayer Bosses */
+.ce-boss-card { display:flex; gap:12px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px; position:relative; overflow:hidden; }
+.ce-boss-card.locked { opacity:0.5; }
+.ce-boss-card.ce-boss-final { border-color:rgba(196,64,32,0.4); background:rgba(196,64,32,0.06); }
+.ce-bc-art { flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.ce-bc-info { flex:1; min-width:0; }
+.ce-bc-name { font-family:'Cinzel',serif; font-size:14px; color:var(--text); margin-bottom:2px; }
+.ce-bc-stats { font-size:11px; color:var(--text-dim); margin-bottom:4px; }
+.ce-bc-desc { font-size:12px; color:var(--text-dim); margin-bottom:4px; line-height:1.4; }
+.ce-bc-set { font-size:11px; color:var(--amber); margin-bottom:2px; }
+.ce-bc-set strong { color:var(--text); }
+.ce-bc-drops { font-size:11px; color:var(--text-dim); }
+
+/* Drop Table */
+.ce-drops { background:rgba(0,0,0,0.15); border-radius:5px; padding:8px; margin-top:6px; }
+.ce-drops-title { font-family:'Cinzel',serif; font-size:11px; color:var(--amber); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }
+.ce-drops-grid { display:flex; flex-direction:column; gap:2px; }
+.ce-drop-row { display:flex; justify-content:space-between; align-items:center; padding:3px 6px; border-radius:3px; font-size:11px; background:rgba(255,255,255,0.02); }
+.ce-drop-name { flex:1; color:var(--text); }
+.ce-drop-qty { color:var(--text-dim); margin:0 8px; min-width:30px; text-align:right; }
+.ce-drop-rate { color:var(--text-dim); min-width:40px; text-align:right; font-size:10px; }
+.ce-rarity-common .ce-drop-name { color:#aaa; }
+.ce-rarity-uncommon .ce-drop-name { color:#5aafff; }
+.ce-rarity-rare .ce-drop-name { color:#aa55ff; }
+.ce-rarity-legendary .ce-drop-name { color:var(--amber); font-weight:600; }
+.ce-rarity-epic .ce-drop-name { color:#e060e0; font-weight:600; }
+.ce-rarity-mythic .ce-drop-name { color:#ff6060; font-weight:700; }
+
+/* Monster Card */
+.ce-monster-card { display:flex; gap:12px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px; }
+.ce-mc-art { flex-shrink:0; width:64px; height:64px; display:flex; align-items:center; }
+.ce-mc-info { flex:1; }
+.ce-mc-name { font-family:'Cinzel',serif; font-size:14px; color:var(--text); margin-bottom:2px; }
+.ce-mc-stats { font-size:11px; color:var(--text-dim); display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
+.ce-mc-desc { font-size:12px; color:var(--text-dim); line-height:1.4; }
+
+/* Fight Info Bar */
+.ce-fight-info { display:flex; justify-content:center; gap:16px; font-size:12px; color:var(--text-dim); padding:6px 0; }
+.ce-boss-hint { color:#aaa; text-align:center; margin:4px 0 8px; font-size:12px; font-style:italic; }
