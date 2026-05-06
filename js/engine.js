@@ -184,6 +184,13 @@ class GameEngine {
     // Theatre of Ash — always reset active raid state on load
     if (!s.theatre) s.theatre = { active:false };
     if (s.theatre.active) s.theatre = { active:false }; // never load mid-raid
+    // Chambers of the Ashen King — always reset active raid state on load
+    if (!s.chambers) s.chambers = { active:false };
+    if (s.chambers.active) s.chambers = { active:false }; // never load mid-raid
+    if (!s.stats.chambersCompletions) s.stats.chambersCompletions = 0;
+    if (!s.stats.chambersBestTier) s.stats.chambersBestTier = '';
+    // Party system
+    if (!s.party) s.party = { active:false, id:null, name:null, leader:null, members:[], raidActive:false, raidType:null, chat:[] };
     if (s.multiMob) s.multiMob = null;
     s.combat._permDebuffs = s.combat._permDebuffs || {};
     // Thieving v2

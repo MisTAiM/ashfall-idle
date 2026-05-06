@@ -51,6 +51,7 @@ const NAV = [
     {id:'account',label:'Account',icon:'npc'},
     {id:'character',label:'Character',icon:'shield'},
     {id:'guilds',label:'Guilds',icon:'faction'},
+    {id:'party',label:'Party Finder',icon:'combat'},
     {id:'friends',label:'Friends',icon:'npc'},
     {id:'inbox',label:'Inbox',icon:'scroll'},
     {id:'chat',label:'Global Chat',icon:'scroll'},
@@ -73,6 +74,7 @@ const NAV = [
     {id:'dungeons',label:'Dungeons',icon:'dungeon'},
     {id:'fight_cave',label:'Fight Cave',icon:'combat'},
     {id:'theatre',label:'Theatre of Ash',icon:'combat'},
+    {id:'chambers',label:'Chambers of the King',icon:'dungeon'},
     {id:'world_bosses',label:'World Bosses',icon:'worldboss'},
     {id:'abilities',label:'Abilities',icon:'banner'},
     {id:'prayer',label:'Prayer',icon:'sparkle'},
@@ -298,6 +300,7 @@ class UI {
     else if (pageId === 'dungeons') this.renderDungeonsPage(main);
     else if (pageId === 'fight_cave') this.renderFightCavePage(main);
     else if (pageId === 'theatre')    this.renderTheatreOfAshPage(main);
+    else if (pageId === 'chambers')   this.renderChambersOfAshPage(main);
     else if (pageId === 'world_bosses') this.renderWorldBossesPage(main);
     else if (pageId === 'abilities') this.renderAbilitiesPage(main);
     else if (pageId === 'farming') this.renderFarmingPage(main);
@@ -325,6 +328,7 @@ class UI {
     else if (pageId === 'account') this.renderAccountPage(main);
     else if (pageId === 'character') this.renderCharacterPage(main);
     else if (pageId === 'guilds') this.renderGuildsPage(main);
+    else if (pageId === 'party') this.renderPartyPage(main);
     else if (pageId === 'friends') this.renderFriendsPage(main);
     else if (pageId === 'inbox') this.renderInboxPage(main);
     else if (pageId === 'gift') this.renderGiftPage(main);
