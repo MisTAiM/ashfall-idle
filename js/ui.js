@@ -1207,7 +1207,7 @@ class UI {
           <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Acc</span>${hitRate}%</span>
           <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Crit</span>${critRate}%</span>
           <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Kills</span>${sk}</span>
-        </div>`;\
+        </div>`;
       }
 
       if (sk > 0) {
