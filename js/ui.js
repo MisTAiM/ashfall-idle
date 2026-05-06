@@ -1167,52 +1167,13 @@ class UI {
         html += '</div>';
       }
 
-      // ── SESSION LOOT BAG ──
+      // ── SESSION LOOT (inside combat) ──
       const sl = c._sessionLoot || {};
       const sk = c._sessionKills || 0;
-      const sd = c._sessionDmg  || {};
       html += `<div class="session-loot-section" id="session-loot">`;
-
-      // Damage stats bar — always shown when in combat
-      if (c.active || sk > 0) {
-        const totalDmg = sd.total || 0;
-        const dps = totalDmg > 0 && c._sessionStartTime
-          ? (totalDmg / ((Date.now() - c._sessionStartTime) / 1000)).toFixed(1)
-          : '—';
-        const hitRate = (sd.hits||0) + (sd.misses||0) > 0
-          ? Math.round(((sd.hits||0) / ((sd.hits||0)+(sd.misses||0)))*100)
-          : 0;
-        const critRate = (sd.hits||0) > 0 ? Math.round(((sd.crits||0)/(sd.hits||0))*100) : 0;
-
-        html += `<div class="sl-dmg-header">
-          <span class="sl-dmg-title">⚔ Damage Tracker</span>
-          <button class="sl-reset-btn" onclick="
-            game.state.combat._sessionLoot={};
-            game.state.combat._sessionKills=0;
-            game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,total:0,taken:0,hits:0,misses:0,crits:0};
-            game.state.combat._sessionStartTime=Date.now();
-            ui._lastSessionGold=0;
-            ui.renderPage('combat')">Reset</button>
-        </div>
-        <div class="sl-dmg-grid">
-          <div class="sl-dmg-row sl-dmg-melee"><span class="sl-dmg-type">Melee</span><span class="sl-dmg-val">${this.fmt(sd.melee||0)}</span></div>
-          <div class="sl-dmg-row sl-dmg-ranged"><span class="sl-dmg-type">Ranged</span><span class="sl-dmg-val">${this.fmt(sd.ranged||0)}</span></div>
-          <div class="sl-dmg-row sl-dmg-magic"><span class="sl-dmg-type">Magic</span><span class="sl-dmg-val">${this.fmt(sd.magic||0)}</span></div>
-          <div class="sl-dmg-row sl-dmg-ability"><span class="sl-dmg-type">Ability</span><span class="sl-dmg-val">${this.fmt(sd.ability||0)}</span></div>
-          <div class="sl-dmg-row sl-dmg-total"><span class="sl-dmg-type">Total</span><span class="sl-dmg-val">${this.fmt(totalDmg)}</span></div>
-          <div class="sl-dmg-row sl-dmg-taken"><span class="sl-dmg-type">Taken</span><span class="sl-dmg-val">${this.fmt(sd.taken||0)}</span></div>
-        </div>
-        <div class="sl-dmg-meta">
-          <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">DPS</span>${dps}</span>
-          <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Acc</span>${hitRate}%</span>
-          <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Crit</span>${critRate}%</span>
-          <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Kills</span>${sk}</span>
-        </div>`;
-      }
-
       if (sk > 0) {
         const rarOrder = { mythic:0, legendary:1, epic:2, rare:3, uncommon:4, common:5 };
-        html += `<div class="sl-loot-title">Loot</div><div class="sl-items">`;
+        html += `<div class="sl-loot-title">Session Loot</div><div class="sl-items">`;
         if (sl._gold?.qty > 0) html += `<div class="sl-item sl-gold"><span class="sl-icon">🪙</span><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(sl._gold.qty)}</span></div>`;
         const sorted = Object.entries(sl).filter(([k])=>k!=='_gold').sort((a,b)=>(rarOrder[a[1].rarity]||5)-(rarOrder[b[1].rarity]||5));
         for (const [itemId, data] of sorted) {
@@ -1222,8 +1183,6 @@ class UI {
           html += `<div class="sl-item ${rc}"><span class="sl-icon">${iconSvg}</span><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
         }
         html += '</div>';
-      } else if (!c.active) {
-        html += '<div class="sl-empty">Start combat to track damage</div>';
       }
       html += '</div>';
 
@@ -1268,6 +1227,38 @@ class UI {
       }
       html += '</div>';
     }
+
+    // ── DAMAGE TRACKER — always rendered, updated live by onTick ──
+    const _sd = c._sessionDmg || {};
+    const _sk = c._sessionKills || 0;
+    const _totalDmg = _sd.total || 0;
+    const _dps = _totalDmg > 0 && c._sessionStartTime
+      ? (_totalDmg / ((Date.now() - c._sessionStartTime) / 1000)).toFixed(1) : '—';
+    const _hitRate = (_sd.hits||0)+(_sd.misses||0) > 0
+      ? Math.round(((_sd.hits||0)/((_sd.hits||0)+(_sd.misses||0)))*100) : 0;
+    const _critRate = (_sd.hits||0) > 0 ? Math.round(((_sd.crits||0)/(_sd.hits||0))*100) : 0;
+
+    html += `<div class="dmg-tracker-panel" id="dmg-tracker">
+      <div class="sl-dmg-header">
+        <span class="sl-dmg-title">⚔ Damage Tracker</span>
+        <button class="sl-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,total:0,taken:0,hits:0,misses:0,crits:0};game.state.combat._sessionStartTime=Date.now();ui._lastSessionGold=0;ui.renderPage('combat')">Reset</button>
+      </div>
+      <div class="sl-dmg-grid">
+        <div class="sl-dmg-row sl-dmg-melee"><span class="sl-dmg-type">Melee</span><span class="sl-dmg-val" id="sd-melee">${this.fmt(_sd.melee||0)}</span></div>
+        <div class="sl-dmg-row sl-dmg-ranged"><span class="sl-dmg-type">Ranged</span><span class="sl-dmg-val" id="sd-ranged">${this.fmt(_sd.ranged||0)}</span></div>
+        <div class="sl-dmg-row sl-dmg-magic"><span class="sl-dmg-type">Magic</span><span class="sl-dmg-val" id="sd-magic">${this.fmt(_sd.magic||0)}</span></div>
+        <div class="sl-dmg-row sl-dmg-ability"><span class="sl-dmg-type">Ability</span><span class="sl-dmg-val" id="sd-ability">${this.fmt(_sd.ability||0)}</span></div>
+        <div class="sl-dmg-row sl-dmg-total"><span class="sl-dmg-type">Total</span><span class="sl-dmg-val" id="sd-total">${this.fmt(_totalDmg)}</span></div>
+        <div class="sl-dmg-row sl-dmg-taken"><span class="sl-dmg-type">Taken</span><span class="sl-dmg-val" id="sd-taken">${this.fmt(_sd.taken||0)}</span></div>
+      </div>
+      <div class="sl-dmg-meta">
+        <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">DPS</span><span id="sd-dps">${_dps}</span></span>
+        <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Acc</span><span id="sd-acc">${_hitRate}%</span></span>
+        <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Crit</span><span id="sd-crit">${_critRate}%</span></span>
+        <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Kills</span><span id="sd-kills">${_sk}</span></span>
+      </div>
+    </div>`;
+
     html += '</div>';
     el.innerHTML = html;
     } catch(err) {
@@ -4274,6 +4265,25 @@ class UI {
               if (cd>0) slotEl.classList.add('ab-cd'); else slotEl.classList.remove('ab-cd');
             }
           }
+
+          // ── DAMAGE TRACKER live update ──
+          const _sd = s.combat._sessionDmg || {};
+          const _total = _sd.total || 0;
+          const _set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+          _set('sd-melee',  this.fmt(_sd.melee  || 0));
+          _set('sd-ranged', this.fmt(_sd.ranged || 0));
+          _set('sd-magic',  this.fmt(_sd.magic  || 0));
+          _set('sd-ability',this.fmt(_sd.ability|| 0));
+          _set('sd-total',  this.fmt(_total));
+          _set('sd-taken',  this.fmt(_sd.taken  || 0));
+          _set('sd-kills',  s.combat._sessionKills || 0);
+          if (_total > 0 && s.combat._sessionStartTime) {
+            const elapsed = (Date.now() - s.combat._sessionStartTime) / 1000;
+            _set('sd-dps', (_total / elapsed).toFixed(1));
+          }
+          const _hits = (_sd.hits||0) + (_sd.misses||0);
+          if (_hits > 0) _set('sd-acc', Math.round((_sd.hits||0) / _hits * 100) + '%');
+          if (_sd.hits > 0) _set('sd-crit', Math.round((_sd.crits||0) / _sd.hits * 100) + '%');
         }
       }
     }
