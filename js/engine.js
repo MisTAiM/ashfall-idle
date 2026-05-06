@@ -226,6 +226,7 @@ class GameEngine {
     else if (this.state.activeSkill && this.state.activeAction) this.tickSkill(safeDt);
 
     this.tickFarming(now);
+    this.initDailyQuests();
     this.tickBuffs(safeDt);
     this.tickAbilityCooldowns(safeDt);
     this.tickFamiliar(safeDt);
@@ -2737,7 +2738,8 @@ class GameEngine {
     const xpGain = Math.floor((seed.xp||10) * qty);
     this.addXp('farming', xpGain);
     if (Math.random() < 0.35 + (plot.compostTier||0)*0.05) this.addItem(plot.seed, 1);
-    this.trackQuestProgress('gather', { item:seed.yield, qty });
+    this.trackQuestProgress('gather',  { item:seed.yield, qty });
+    this.trackQuestProgress('harvest', { item:seed.yield, qty });
     const type = plot.type||'allotment';
     const compostTier = plot.compostTier, compostBonus = plot.compostBonus, diseaseReduction = plot.diseaseReduction;
     Object.assign(plot, this._makePlot(type));
@@ -2791,66 +2793,125 @@ class GameEngine {
   // ── QUESTS ─────────────────────────────────────────────
   acceptQuest(questId) {
     const q = GAME_DATA.quests.find(x => x.id === questId); if (!q) return;
-    if (this.state.quests.completed.includes(questId)) return;
-    if (this.state.quests.active.includes(questId)) return;
-    if (q.prereq && !this.state.quests.completed.includes(q.prereq)) {
-      this.emit('notification', { type:'warn', text:'Complete prior quest first.' }); return;
+    if (this.state.quests.completed.includes(questId)) { this.emit('notification',{type:'warn',text:'Quest already completed.'}); return; }
+    if (this.state.quests.active.includes(questId)) { this.emit('notification',{type:'warn',text:'Quest already active.'}); return; }
+    // Check prereqs (support both prereqs[] array and single prereq string)
+    const prereqs = q.prereqs || (q.prereq ? [q.prereq] : []);
+    for (const pre of prereqs) {
+      if (!this.state.quests.completed.includes(pre)) {
+        const preQ = GAME_DATA.quests.find(x=>x.id===pre);
+        this.emit('notification',{type:'warn',text:`Complete "${preQ?.name||pre}" first.`}); return;
+      }
+    }
+    // Check level requirements
+    if (q.levelReqs) {
+      for (const [sk, lv] of Object.entries(q.levelReqs)) {
+        if ((this.state.skills[sk]?.level||1) < lv) {
+          this.emit('notification',{type:'warn',text:`Requires ${GAME_DATA.skills[sk]?.name||sk} level ${lv}.`}); return;
+        }
+      }
     }
     this.state.quests.active.push(questId);
-    this.state.quests.progress[questId] = q.objectives.map(() => 0);
-    this.emit('notification', { type:'info', text:`Accepted: ${q.name}` });
+    this.state.quests.progress[questId] = (q.objectives||[]).map(() => 0);
+    this.emit('notification',{type:'success',text:`Quest accepted: ${q.name}`});
     this.emit('questsChanged');
   }
 
   abandonQuest(questId) {
     const i = this.state.quests.active.indexOf(questId);
-    if (i >= 0) { this.state.quests.active.splice(i, 1); delete this.state.quests.progress[questId]; this.emit('questsChanged'); }
+    if (i >= 0) { this.state.quests.active.splice(i,1); delete this.state.quests.progress[questId]; this.emit('questsChanged'); }
   }
 
-  trackQuestProgress(type, data) {
-    for (const qId of this.state.quests.active) {
-      const q = GAME_DATA.quests.find(x => x.id === qId); if (!q) continue;
-      const prog = this.state.quests.progress[qId] || [];
+  _trackAllQuests(type, data) {
+    // Track both main quests and dailies
+    const allActive = [
+      ...this.state.quests.active.map(id=>({id,list:GAME_DATA.quests,prog:this.state.quests.progress,isDaily:false})),
+      ...((this.state.dailyQuests?.active)||[]).map(id=>({id,list:GAME_DATA.dailyQuests||[],prog:this.state.dailyQuests?.progress||{},isDaily:true})),
+    ];
+    for (const {id:qId, list, prog, isDaily} of allActive) {
+      const q = list.find(x=>x.id===qId); if (!q) continue;
+      const p = prog[qId] || [];
       let updated = false;
-      q.objectives.forEach((obj, i) => {
-        if (obj.type !== type) return;
-        if (type === 'kill' && obj.monster === data.monster) { prog[i] = Math.min(obj.qty, (prog[i]||0) + data.qty); updated = true; }
-        if (type === 'gather' && obj.item === data.item) { prog[i] = Math.min(obj.qty, (prog[i]||0) + data.qty); updated = true; }
-        if (type === 'craft' && obj.item === data.item) { prog[i] = Math.min(obj.qty, (prog[i]||0) + data.qty); updated = true; }
-        if (type === 'thieve' && obj.target === data.target) { prog[i] = Math.min(obj.qty, (prog[i]||0) + data.qty); updated = true; }
-        // v3 quest types
-        if (type === 'bury_bones' && obj.type === 'bury_bones') { prog[i] = Math.min(obj.qty, (prog[i]||0) + (data.qty||0)); updated = true; }
-        if (type === 'bury_big_bones' && obj.type === 'bury_big_bones') { prog[i] = Math.min(obj.qty, (prog[i]||0) + (data.qty||0)); updated = true; }
-        if (type === 'bury_dragon_bones' && obj.type === 'bury_dragon_bones') { prog[i] = Math.min(obj.qty, (prog[i]||0) + (data.qty||0)); updated = true; }
-        if (type === 'slayer_tasks' && obj.type === 'slayer_tasks') { prog[i] = Math.min(obj.qty, (this.state.stats.slayerTasksCompleted||0)); updated = true; }
-        if (type === 'slayer_kills' && obj.type === 'slayer_kills') { prog[i] = Math.min(obj.qty, (this.state.stats.slayerKillsOnTask||0)); updated = true; }
-        if (type === 'magic_kills' && obj.type === 'magic_kills') { prog[i] = Math.min(obj.qty, (this.state.stats.magicKills||0)); updated = true; }
-        if (type === 'skill_level' && obj.type === 'skill_level' && data.skill === obj.skill) { prog[i] = data.level >= obj.level ? obj.qty : 0; updated = true; }
-        if (type === 'dungeon' && obj.type === 'dungeon' && data.dungeon === obj.dungeon) { prog[i] = Math.min(obj.qty, (prog[i]||0) + 1); updated = true; }
+      (q.objectives||[]).forEach((obj,i) => {
+        const cur = p[i]||0;
+        if (cur >= obj.qty) return; // already done
+        let add = 0;
+        switch(obj.type) {
+          case 'kill':         if (type==='kill'    && obj.monster===data.monster)  add=data.qty; break;
+          case 'kill_any':     if (type==='kill')                                    add=data.qty; break;
+          case 'gather':       if (type==='gather'  && obj.item===data.item)        add=data.qty; break;
+          case 'gather_any':   if (type==='gather')                                  add=data.qty; break;
+          case 'harvest':      if (type==='harvest' && obj.item===data.item)        add=data.qty; break;
+          case 'craft':        if (type==='craft'   && obj.item===data.item)        add=data.qty; break;
+          case 'craft_any':    if (type==='craft')                                   add=data.qty; break;
+          case 'craft_cooking':if (type==='craft'   && GAME_DATA.items[data.item]?.type==='food') add=data.qty; break;
+          case 'thieve':       if (type==='thieve'  && obj.target===data.target)    add=data.qty; break;
+          case 'thieve_any':   if (type==='thieve')                                  add=data.qty; break;
+          case 'dungeon':      if (type==='dungeon' && obj.dungeon===data.dungeon)  add=1; break;
+          case 'dungeon_any':  if (type==='dungeon')                                 add=1; break;
+          case 'slayer_tasks': if (type==='slayer_tasks') { p[i]=Math.min(obj.qty,this.state.stats.slayerTasksCompleted||0); updated=true; return; }
+          case 'skill_level':  if (type==='skill_level' && obj.skill===data.skill) { p[i]=(this.state.skills[obj.skill]?.level||1)>=obj.level?obj.qty:0; updated=true; return; }
+          case 'gold':         { p[i]=Math.min(obj.qty,this.state.gold); updated=true; return; }
+          case 'pets':         { p[i]=Math.min(obj.qty,(this.state.pets||[]).length); updated=true; return; }
+          case 'bury_bones': case 'bury_big_bones': case 'bury_dragon_bones':
+            if (type===obj.type) add=data.qty||1; break;
+        }
+        if (add>0) { p[i]=Math.min(obj.qty,cur+add); updated=true; }
       });
-      // Gold quest type — checked on tick
-      q.objectives.forEach((obj, i) => {
-        if (obj.type === 'gold') { prog[i] = Math.min(obj.qty, this.state.gold); updated = true; }
-      });
-      if (updated) this.state.quests.progress[qId] = prog;
-      // Check completion
-      if (q.objectives.every((obj, i) => (prog[i] || 0) >= obj.qty)) this.completeQuest(qId);
+      if (updated) prog[qId]=p;
+      if ((q.objectives||[]).every((_,i)=>(p[i]||0)>=q.objectives[i].qty)) {
+        isDaily ? this._completeDailyQuest(qId) : this.completeQuest(qId);
+      }
     }
   }
 
+  trackQuestProgress(type, data) { this._trackAllQuests(type, data); }
+
   completeQuest(questId) {
-    const q = GAME_DATA.quests.find(x => x.id === questId); if (!q) return;
+    const q = GAME_DATA.quests.find(x=>x.id===questId); if (!q) return;
     const i = this.state.quests.active.indexOf(questId);
-    if (i < 0) return;
-    this.state.quests.active.splice(i, 1);
+    if (i<0) return;
+    this.state.quests.active.splice(i,1);
     this.state.quests.completed.push(questId);
     delete this.state.quests.progress[questId];
-    if (q.rewards.gold) { this.state.gold += q.rewards.gold; this.state.stats.goldEarned += q.rewards.gold; }
-    if (q.rewards.xp) for (const [sk, amt] of Object.entries(q.rewards.xp)) this.addXp(sk, amt);
-    if (q.rewards.rep) for (const [fac, amt] of Object.entries(q.rewards.rep)) this.addReputation(fac, amt);
-    if (q.rewards.items) for (const it of q.rewards.items) this.addItem(it.item, it.qty);
+    if (q.rewards.gold)  { this.state.gold += q.rewards.gold; this.state.stats.goldEarned += q.rewards.gold; }
+    if (q.rewards.xp)    for (const [sk,amt] of Object.entries(q.rewards.xp)) this.addXp(sk,amt);
+    if (q.rewards.items) for (const it of q.rewards.items) this.addItem(it.id||it.item, it.qty);
+    if (q.rewards.qp)    { this.state.questPoints = (this.state.questPoints||0) + q.rewards.qp; }
     this.state.stats.questsCompleted++;
-    this.emit('notification', { type:'achievement', text:`Quest complete: ${q.name}!` });
+    this.emit('questComplete', { quest:q });
+    this.emit('notification',{type:'achievement',text:`⚔ Quest complete: ${q.name}! +${q.rewards.qp||0} QP`});
+    this.emit('questsChanged');
+  }
+
+  // ── DAILY QUESTS ────────────────────────────────────────
+  initDailyQuests() {
+    if (!this.state.dailyQuests) this.state.dailyQuests = { active:[], progress:{}, lastRefresh:0, completed:[] };
+    const now = Date.now();
+    const msPerDay = 86400000;
+    const todayStart = Math.floor(now / msPerDay) * msPerDay;
+    if ((this.state.dailyQuests.lastRefresh||0) < todayStart) {
+      // New day — refresh all dailies
+      this.state.dailyQuests.active = (GAME_DATA.dailyQuests||[]).map(q=>q.id);
+      this.state.dailyQuests.progress = {};
+      this.state.dailyQuests.completed = [];
+      for (const q of GAME_DATA.dailyQuests||[]) this.state.dailyQuests.progress[q.id]=(q.objectives||[]).map(()=>0);
+      this.state.dailyQuests.lastRefresh = todayStart;
+      if (now-todayStart < 5000) this.emit('notification',{type:'info',text:'Daily quests refreshed! Check your quest log.'});
+    }
+  }
+
+  _completeDailyQuest(questId) {
+    const q = (GAME_DATA.dailyQuests||[]).find(x=>x.id===questId); if(!q) return;
+    if ((this.state.dailyQuests?.completed||[]).includes(questId)) return;
+    const i = (this.state.dailyQuests?.active||[]).indexOf(questId);
+    if (i>=0) this.state.dailyQuests.active.splice(i,1);
+    if (!this.state.dailyQuests.completed) this.state.dailyQuests.completed=[];
+    this.state.dailyQuests.completed.push(questId);
+    if (q.rewards.gold)  { this.state.gold += q.rewards.gold; this.state.stats.goldEarned += q.rewards.gold; }
+    if (q.rewards.xp)    for (const [sk,amt] of Object.entries(q.rewards.xp)) this.addXp(sk,amt);
+    if (q.rewards.items) for (const it of (q.rewards.items||[])) this.addItem(it.id||it.item,it.qty);
+    this.emit('notification',{type:'achievement',text:`✓ Daily complete: ${q.name}! +${q.rewards.gold||0}g`});
     this.emit('questsChanged');
   }
 

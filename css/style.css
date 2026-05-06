@@ -6270,3 +6270,72 @@ kbd {
 .bb-player-stats { font-size:11px; color:var(--text-dim); }
 .bounty-live-badge { font-size:11px; color:#7dcc44; font-weight:700; animation:livePulse 2s infinite; }
 @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── QUEST SYSTEM v2 ─────────────────────────────────────────────── */
+.qp-banner { background:rgba(201,135,62,0.08); border:1px solid rgba(201,135,62,0.3); border-radius:6px; padding:10px 14px; margin-bottom:16px; }
+.qp-info { display:flex; align-items:baseline; gap:4px; margin-bottom:6px; }
+.qp-num { font-family:'Cinzel',serif; font-size:24px; font-weight:900; color:var(--amber); }
+.qp-label { color:var(--text-dim); font-size:13px; }
+.qp-bar { height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+.qp-fill { height:100%; background:linear-gradient(90deg,#8b4a1a,var(--amber)); border-radius:3px; transition:width 0.4s; }
+
+.quest-section { margin-bottom:20px; }
+.qs-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.qs-timer { font-size:12px; color:#5aafff; }
+
+.daily-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.daily-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:12px; transition:border-color 0.2s; }
+.daily-card:hover { border-color:rgba(201,135,62,0.4); }
+.daily-done { opacity:0.55; border-color:rgba(90,175,62,0.4) !important; }
+.dc-name { font-family:'Cinzel',serif; font-size:13px; color:var(--text); margin-bottom:3px; }
+.daily-done .dc-name { color:#7dcc44; }
+.dc-desc { font-size:11px; color:var(--text-dim); margin-bottom:8px; }
+.dc-prog-bar { height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; margin-bottom:6px; }
+.dc-prog-fill { height:100%; background:var(--amber); border-radius:2px; transition:width 0.3s; }
+.daily-done .dc-prog-fill { background:#7dcc44; }
+.dc-reward { font-size:10px; color:var(--text-dim); }
+
+.quest-card-full { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-left:3px solid var(--amber); border-radius:6px; padding:14px; margin-bottom:12px; }
+.qcf-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+.qcf-name { font-family:'Cinzel',serif; font-size:15px; color:var(--text); font-weight:700; }
+.qcf-series { font-size:11px; color:var(--text-dim); background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:10px; }
+.qcf-qp { font-size:11px; color:var(--amber); margin-left:auto; font-weight:700; }
+.qcf-desc { font-size:12px; color:var(--text-dim); margin-bottom:10px; }
+.qcf-objectives { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.qo-row { display:flex; align-items:center; gap:8px; font-size:12px; }
+.qo-row.qo-done { opacity:0.65; }
+.qo-check { width:16px; color:#7dcc44; font-weight:900; flex-shrink:0; }
+.qo-label { flex:1; color:var(--text-dim); }
+.qo-done .qo-label { text-decoration:line-through; color:#556; }
+.qo-count { font-size:11px; color:var(--text-dim); white-space:nowrap; }
+.qo-bar { width:80px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; flex-shrink:0; }
+.qo-fill { height:100%; background:var(--amber); border-radius:2px; }
+.qo-done .qo-fill { background:#7dcc44; }
+.qcf-footer { display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px solid rgba(255,255,255,0.06); flex-wrap:wrap; gap:8px; }
+.qcf-rewards { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11px; }
+.qcf-gold { color:#f0d060; font-weight:700; }
+.qcf-xp  { color:#5aafff; }
+.qcf-item { color:var(--amber); }
+
+.quest-series-group { margin-bottom:14px; }
+.qsg-label { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+.quest-available-card { background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:5px; padding:10px 12px; margin-bottom:6px; display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.quest-available-card.qa-locked { opacity:0.55; }
+.qa-name { font-family:'Cinzel',serif; font-size:13px; color:var(--text); flex:1; }
+.qa-qp { font-size:10px; color:var(--amber); margin-left:4px; }
+.qa-desc { font-size:11px; color:var(--text-dim); width:100%; }
+.qa-reqs { font-size:10px; color:#cc6666; width:100%; }
+
+.completed-grid { display:flex; flex-direction:column; gap:4px; }
+.completed-quest { display:flex; align-items:center; gap:8px; padding:6px 10px; background:rgba(90,175,62,0.06); border-radius:4px; }
+.cq-check { color:#7dcc44; font-weight:900; flex-shrink:0; }
+.cq-name { flex:1; font-size:13px; color:var(--text-dim); }
+.cq-qp { font-size:11px; color:var(--amber); }
+
+/* NPC updates */
+.npc-quest-badge { background:var(--amber); color:#000; border-radius:50%; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:900; margin-left:4px; }
+.quest-mini-locked { opacity:0.6; }
+.qm-qp { font-size:10px; color:var(--amber); }
+.npc-shop-preview { margin-top:8px; }
+.npc-shop-item { display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.npc-shop-more { font-size:10px; color:var(--text-dim); text-align:right; margin-top:2px; font-style:italic; }
