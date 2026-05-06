@@ -103,6 +103,14 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── GIFTS / TRADE ─────────────────────────────────────
+    match /gifts/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if isAdmin();
+    }
+
     // ── ADMIN COLLECTIONS ────────────────────────────────
     match /admin_log/{docId} {
       allow read: if isAdmin();

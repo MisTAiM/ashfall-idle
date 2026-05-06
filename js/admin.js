@@ -4,7 +4,7 @@
 
 (function() {
 
-const ADMIN_VERSION = '3.0';
+const ADMIN_VERSION = '4.0';
 
 function _checkAdmin() { return typeof isAdmin === 'function' ? isAdmin() : false; }
 
@@ -201,7 +201,42 @@ function applyAdminPanel() {
             <div class="adm-stat">Kills: ${p.kills||0} | Quests: ${p.questsCompleted||0}</div>
             <div class="adm-stat">Last seen: ${p.lastSeen?.toDate?.()?.toLocaleDateString?.() || 'unknown'}</div>
           </div>
-          <div class="adm-btn-grid">
+
+          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Remote Modification (modifies their cloud save)</h4>
+          <div class="adm-remote-grid">
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">Give Gold</span>
+              <div class="adm-row-flex">
+                <input type="number" id="adm-rp-gold" class="bank-search-input" value="10000" style="width:100px">
+                <button class="btn btn-xs" onclick="online.adminGivePlayerGold('${p.uid}',parseInt(document.getElementById('adm-rp-gold').value)||0)">Give</button>
+              </div>
+            </div>
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">Give Item</span>
+              <div class="adm-row-flex">
+                <input type="text" id="adm-rp-item" class="bank-search-input" placeholder="item_id" style="width:120px">
+                <input type="number" id="adm-rp-item-qty" class="bank-search-input" value="1" style="width:60px">
+                <button class="btn btn-xs" onclick="online.adminGivePlayerItem('${p.uid}',document.getElementById('adm-rp-item').value,parseInt(document.getElementById('adm-rp-item-qty').value)||1)">Give</button>
+              </div>
+            </div>
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">Give XP</span>
+              <div class="adm-row-flex">
+                <select id="adm-rp-skill" class="bank-search-input" style="width:100px">
+                  ${Object.keys(game.state.skills).map(sk=>`<option value="${sk}">${sk}</option>`).join('')}
+                </select>
+                <input type="number" id="adm-rp-xp" class="bank-search-input" value="50000" style="width:80px">
+                <button class="btn btn-xs" onclick="online.adminGivePlayerXp('${p.uid}',document.getElementById('adm-rp-skill').value,parseInt(document.getElementById('adm-rp-xp').value)||0)">Give</button>
+              </div>
+            </div>
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">View Full Save</span>
+              <button class="btn btn-xs" onclick="ui._admViewPlayerSave('${p.uid}')">Load Save JSON</button>
+              <div id="adm-rp-save" style="font-size:10px;max-height:200px;overflow:auto;margin-top:4px;color:var(--text-dim)"></div>
+            </div>
+          </div>
+
+          <div class="adm-btn-grid" style="margin-top:10px">
             <button class="btn btn-sm btn-danger" onclick="ui._admDeletePlayer('${p.uid}','${(p.displayName||'?').replace(/'/g,"\\'")}')">🗑 Delete Player</button>
             <button class="btn btn-sm" onclick="ui._admBanPlayer('${p.uid}','${(p.displayName||'?').replace(/'/g,"\\'")}')">🚫 Ban Player</button>
           </div>
@@ -535,15 +570,38 @@ function applyAdminPanel() {
           </div>
         </div>
       </div>`;
+      // Live Push quick buttons
+      html+=`<div class="adm-section"><h3>Live Push Controls</h3>
+        <p style="font-size:11px;color:var(--text-dim);margin:0 0 8px">Push real-time updates to all connected clients. Changes take effect on next client poll.</p>
+        <div class="adm-btn-grid">
+          <button class="btn btn-sm" onclick="ui._admPushLive('xp_multiplier',2.0)">Enable 2x XP</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('xp_multiplier',3.0)">Enable 3x XP</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('xp_multiplier',1.0)">Reset XP (1x)</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('gold_multiplier',2.0)">Enable 2x Gold</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('gold_multiplier',1.0)">Reset Gold (1x)</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('drop_multiplier',2.0)">Enable 2x Drops</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('drop_multiplier',1.0)">Reset Drops (1x)</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('maintenance',true)">Maintenance ON</button>
+          <button class="btn btn-sm" onclick="ui._admPushLive('maintenance',false)">Maintenance OFF</button>
+        </div>
+        <div class="adm-row-flex" style="margin-top:10px">
+          <input type="text" id="adm-push-key" class="bank-search-input" placeholder="Custom key">
+          <input type="text" id="adm-push-val" class="bank-search-input" placeholder="Value (JSON)">
+          <button class="btn btn-sm" onclick="try{ui._admPushLive(document.getElementById('adm-push-key').value,JSON.parse(document.getElementById('adm-push-val').value))}catch(e){ui.toast({type:'warn',text:'Invalid JSON'})}">Push</button>
+        </div>
+      </div>`;
       const knownFlags = [
-        {key:'double_xp',       label:'Double XP',           desc:'2x XP for all skills'},
-        {key:'double_drops',    label:'Double Drops',         desc:'2x drop rates for all monsters'},
-        {key:'safe_wilderness', label:'Safe Wilderness',      desc:'Disable PvP in wilderness'},
-        {key:'bazaar_disabled', label:'Disable Bazaar',       desc:'Take bazaar offline for maintenance'},
+        {key:'double_xp',       label:'Double XP',            desc:'2x XP for all skills'},
         {key:'xp_multiplier',   label:'XP Multiplier',        desc:'Float: 1.0 = normal, 2.0 = double'},
-        {key:'maintenance',     label:'Maintenance Mode',     desc:'Warn players game is under maintenance'},
-        {key:'event_active',    label:'Event Active',         desc:'Trigger in-game event banner'},
-        {key:'event_name',      label:'Event Name',           desc:'Name of the active event'},
+        {key:'gold_multiplier', label:'Gold Multiplier',       desc:'Float: 1.0 = normal, 2.0 = double'},
+        {key:'drop_multiplier', label:'Drop Rate Multiplier',  desc:'Float: 1.0 = normal, 2.0 = double'},
+        {key:'double_drops',    label:'Double Drops',          desc:'2x drop rates (legacy boolean)'},
+        {key:'safe_wilderness', label:'Safe Wilderness',       desc:'Disable PvP in wilderness'},
+        {key:'bazaar_disabled', label:'Disable Bazaar',        desc:'Take bazaar offline'},
+        {key:'maintenance',     label:'Maintenance Mode',      desc:'Show maintenance banner'},
+        {key:'event_active',    label:'Event Active',          desc:'Trigger event banner'},
+        {key:'event_name',      label:'Event Name',            desc:'Name of the active event'},
+        {key:'gifts_disabled',  label:'Disable Gifts',         desc:'Turn off gift/trade system'},
       ];
       html+=`<script>setTimeout(async()=>{const el=document.getElementById('adm-settings-area');if(!el)return;const settings=await online.getGameSettings?.();let h='<div class="adm-flags-grid">';for(const f of ${JSON.stringify(knownFlags)}){const v=settings[f.key];h+='<div class="adm-flag-row"><div><div class="adm-flag-name">'+f.label+'</div><div class="adm-flag-desc">'+f.desc+'</div></div><div class="adm-flag-val">'+JSON.stringify(v??null)+'</div><div class="adm-flag-actions"><button class="btn btn-xs" onclick="online.setGameSetting(\\''+f.key+'\\',true).then(()=>ui.renderPage(\\'admin\\'))">On</button><button class="btn btn-xs" onclick="online.setGameSetting(\\''+f.key+'\\',false).then(()=>ui.renderPage(\\'admin\\'))">Off</button><button class="btn btn-xs btn-danger" onclick="online.setGameSetting(\\''+f.key+'\\',null).then(()=>ui.renderPage(\\'admin\\'))">Clear</button></div></div>';}h+='</div>';el.innerHTML=h;},300);<\/script>`;
     }
@@ -882,6 +940,25 @@ function applyAdminPanel() {
 
   // Settings
   UI.prototype._admSetFlag = async function(){const k=document.getElementById('adm-flag-key')?.value?.trim(),v=document.getElementById('adm-flag-val')?.value?.trim();if(!k||!v)return;let val;try{val=JSON.parse(v);}catch(e){val=v;}const ok=await online.setGameSetting(k,val);if(ok){this.toast({type:'success',text:`Flag "${k}" set to ${JSON.stringify(val)}`});this.renderPage('admin');}else this.toast({type:'warn',text:'Failed — check RTDB rules'});};
+
+  // Remote player save viewer
+  UI.prototype._admViewPlayerSave = async function(uid){
+    const el = document.getElementById('adm-rp-save');
+    if (!el) return;
+    el.textContent = 'Loading...';
+    const save = await online.adminGetPlayerSave(uid);
+    if (!save) { el.textContent = 'No save found.'; return; }
+    // Show key stats summary
+    const sk = save.skills || {};
+    const skillStr = Object.entries(sk).map(([id,s])=>`${id}:${s.level}`).join(', ');
+    el.innerHTML = `<strong>Gold:</strong> ${save.gold||0}<br><strong>Skills:</strong> ${skillStr}<br><strong>Bank items:</strong> ${Object.keys(save.bank||{}).filter(k=>(save.bank[k]||0)>0).length}<br><strong>Quests:</strong> ${save.quests?.completed?.length||0}<br><strong>Guild:</strong> ${save.guild?.name||'none'}<br><details><summary>Full JSON</summary><pre style="max-height:300px;overflow:auto;font-size:9px">${JSON.stringify(save,null,1)}</pre></details>`;
+  };
+
+  // Live push specific settings
+  UI.prototype._admPushLive = async function(key,val){
+    const ok = await online.pushLiveUpdate(key, val);
+    if (ok) this.renderPage('admin');
+  };
 
   // Logs
   UI.prototype._admLoadLogs = async function(){this.toast({type:'info',text:'Loading logs…'});this._admLogs=await online.getAdminLog(100);this.renderPage('admin');};

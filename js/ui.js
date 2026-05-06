@@ -327,6 +327,7 @@ class UI {
     else if (pageId === 'guilds') this.renderGuildsPage(main);
     else if (pageId === 'friends') this.renderFriendsPage(main);
     else if (pageId === 'inbox') this.renderInboxPage(main);
+    else if (pageId === 'gift') this.renderGiftPage(main);
     else if (pageId === 'chat') this.renderChatPage(main);
     else if (pageId === 'pvp_arena') this.renderPvPPage(main);
     else if (pageId === 'bounty_board') this.renderBountyPage(main);
@@ -3012,6 +3013,17 @@ class UI {
       el.innerHTML = html; return;
     }
 
+    // If in a guild, sync role from Firestore FIRST before rendering
+    if (s.guild && !this._guildRoleSynced) {
+      el.innerHTML = html + '<div class="bank-empty">Loading guild...</div>';
+      online.syncGuildRole().then(() => {
+        this._guildRoleSynced = true;
+        this.renderGuildsPage(el);
+      });
+      return;
+    }
+    this._guildRoleSynced = false; // reset for next render
+
     // Guild invitations banner
     html += '<div id="guild-invites-banner"></div>';
 
@@ -3207,10 +3219,13 @@ class UI {
     else if (tab === 'bank') {
       const info = await online.getGuildInfo();
       const bank = info?.bank || 0;
+      const bankItems = info?.bankItems || {};
       const withdrawRank = info?.settings?.withdrawRank || 'General';
       const canWithdraw = myIdx <= OnlineManager.RANK_ORDER.indexOf(withdrawRank);
       const log = await online.getGuildLog(30);
-      const bankLog = log.filter(l => l.action === 'deposit' || l.action === 'withdraw');
+      const bankLog = log.filter(l => ['deposit','withdraw','item_deposit','item_withdraw'].includes(l.action));
+      const itemEntries = Object.entries(bankItems).filter(([id,q]) => q > 0 && GAME_DATA.items[id]);
+
       container.innerHTML = `
         <div class="guild-bank-section">
           <div class="guild-bank-balance">
@@ -3220,19 +3235,45 @@ class UI {
           <div class="guild-bank-info">Withdraw requires: <strong>${withdrawRank}</strong> rank or higher</div>
           <div class="guild-bank-controls">
             <input type="number" id="guild-gold" class="guild-input" min="1" value="100" style="width:120px">
-            <button class="btn btn-sm" onclick="online.depositGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>{ui._guildTab='bank';ui.renderPage('guilds')})">Deposit</button>
-            ${canWithdraw?`<button class="btn btn-sm btn-withdraw" onclick="online.withdrawGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>{ui._guildTab='bank';ui.renderPage('guilds')})">Withdraw</button>`:`<button class="btn btn-sm" disabled title="Insufficient rank">Withdraw</button>`}
+            <button class="btn btn-sm" onclick="online.depositGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>{ui._guildTab='bank';ui.renderPage('guilds')})">Deposit Gold</button>
+            ${canWithdraw?`<button class="btn btn-sm btn-withdraw" onclick="online.withdrawGuildGold(parseInt(document.getElementById('guild-gold').value)||0).then(()=>{ui._guildTab='bank';ui.renderPage('guilds')})">Withdraw Gold</button>`:`<button class="btn btn-sm" disabled title="Insufficient rank">Withdraw</button>`}
           </div>
           <div class="guild-bank-your-gold">Your Gold: ${this.fmt(game.state.gold)}</div>
         </div>
+
+        <h3 class="guild-sub-title">Item Vault</h3>
+        <div class="guild-item-bank-controls">
+          <select id="guild-item-select" class="rank-select" style="font-size:13px;padding:6px;flex:1;max-width:220px">
+            <option value="">-- Select item --</option>
+            ${Object.entries(game.state.bank).filter(([id,q])=>q>0 && GAME_DATA.items[id] && !online.isUntradeable(id)).sort((a,b)=>(GAME_DATA.items[a[0]]?.name||'').localeCompare(GAME_DATA.items[b[0]]?.name||'')).map(([id,q])=>
+              `<option value="${id}">${GAME_DATA.items[id].name} (${q})</option>`
+            ).join('')}
+          </select>
+          <input type="number" id="guild-item-qty" class="guild-input" min="1" value="1" style="width:70px">
+          <button class="btn btn-xs" onclick="ui._guildDepositItem()">Deposit</button>
+        </div>
+        ${itemEntries.length > 0 ? `<div class="guild-item-bank-grid">${itemEntries.map(([id,q]) => {
+          const item = GAME_DATA.items[id];
+          const rColor = this.getRarityColor(id);
+          return `<div class="guild-bank-item">
+            <span class="gbi-name" style="${rColor?'color:'+rColor:''}">${item.name}</span>
+            <span class="gbi-qty">x${q}</span>
+            ${canWithdraw?`<button class="btn btn-xs" onclick="online.withdrawGuildItem('${id}',1).then(()=>{ui._guildTab='bank';ui.renderPage('guilds')})">Take 1</button>`:''}
+          </div>`;
+        }).join('')}</div>` : '<div class="bank-empty">No items in vault.</div>'}
+
         <h3 class="guild-sub-title">Treasury History</h3>
         <div class="guild-log-list">${bankLog.length === 0 ? '<div class="bank-empty">No transactions yet.</div>' : bankLog.map(l => {
           const d = l.details || {};
           const time = l.timestamp?.toDate ? l.timestamp.toDate().toLocaleString() : '';
-          const isDeposit = l.action === 'deposit';
+          const isDeposit = l.action === 'deposit' || l.action === 'item_deposit';
+          const label = l.action === 'item_deposit' ? `deposited ${d.qty||1}x ${d.item||d.itemId}`
+            : l.action === 'item_withdraw' ? `withdrew ${d.qty||1}x ${d.item||d.itemId}`
+            : l.action === 'deposit' ? `deposited <strong>${this.fmt(d.amount||0)}g</strong>`
+            : `withdrew <strong>${this.fmt(d.amount||0)}g</strong>`;
           return `<div class="guild-log-entry ${isDeposit?'gle-deposit':'gle-withdraw'}">
             <span class="gle-icon">${isDeposit?'&#9650;':'&#9660;'}</span>
-            <span class="gle-text">${this.escHtml(d.player||'?')} ${isDeposit?'deposited':'withdrew'} <strong>${this.fmt(d.amount||0)}g</strong></span>
+            <span class="gle-text">${this.escHtml(d.player||'?')} ${label}</span>
             <span class="gle-time">${time}</span>
           </div>`;
         }).join('')}</div>`;
@@ -3368,6 +3409,100 @@ class UI {
     input.value = '';
   }
 
+  async _guildDepositItem() {
+    const itemId = document.getElementById('guild-item-select')?.value;
+    const qty = parseInt(document.getElementById('guild-item-qty')?.value) || 1;
+    if (!itemId) { this.toast({type:'warn',text:'Select an item.'}); return; }
+    await online.depositGuildItem(itemId, qty);
+    this._guildTab = 'bank';
+    this.renderPage('guilds');
+  }
+
+  // ── GIFT UI ────────────────────────────────────────────
+  openGiftDialog(targetUid, targetName) {
+    this._giftTarget = { uid: targetUid, name: targetName };
+    this._giftMode = 'item';
+    this.renderPage('gift');
+  }
+
+  renderGiftPage(el) {
+    if (!this._giftTarget) { this.renderPage('inbox'); return; }
+    const t = this._giftTarget;
+    const mode = this._giftMode || 'item';
+    let html = this.header('Send Gift','scroll',`Sending to ${t.name}`,null);
+
+    html += `<div class="guild-join-section">
+      <div class="guild-join-panel" style="flex:1">
+        <div style="display:flex;gap:4px;margin-bottom:12px">
+          <button class="btn btn-xs ${mode==='item'?'':'btn-dim'}" onclick="ui._giftMode='item';ui.renderPage('gift')">Send Items</button>
+          <button class="btn btn-xs ${mode==='gold'?'':'btn-dim'}" onclick="ui._giftMode='gold';ui.renderPage('gift')">Send Gold</button>
+        </div>
+        ${mode === 'item' ? `
+          <select id="gift-item" class="rank-select" style="font-size:13px;padding:6px;width:100%;margin-bottom:8px">
+            <option value="">-- Select item --</option>
+            ${Object.entries(game.state.bank).filter(([id,q])=>q>0 && GAME_DATA.items[id] && !online.isUntradeable(id)).sort((a,b)=>(GAME_DATA.items[a[0]]?.name||'').localeCompare(GAME_DATA.items[b[0]]?.name||'')).map(([id,q])=>
+              `<option value="${id}">${GAME_DATA.items[id].name} (${q})</option>`
+            ).join('')}
+          </select>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:12px;color:var(--text-dim)">Qty:</span>
+            <input type="number" id="gift-qty" class="guild-input" min="1" value="1" style="width:80px">
+            <button class="btn btn-sm" onclick="ui._sendItemGift()">Send Gift</button>
+          </div>
+        ` : `
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:12px;color:var(--text-dim)">Amount:</span>
+            <input type="number" id="gift-gold" class="guild-input" min="1" value="100" style="width:120px">
+            <button class="btn btn-sm" onclick="ui._sendGoldGift()">Send Gold</button>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:6px">Your gold: ${this.fmt(game.state.gold)}</div>
+        `}
+        <button class="btn btn-xs" style="margin-top:12px" onclick="ui._giftTarget=null;ui.renderPage('inbox')">&larr; Back</button>
+      </div>
+    </div>`;
+
+    // Pending gifts
+    html += '<h2 class="section-title">Pending Gifts</h2><div id="pending-gifts"><div class="bank-empty">Loading...</div></div>';
+    el.innerHTML = html;
+    this._loadPendingGifts();
+  }
+
+  async _loadPendingGifts() {
+    const container = document.getElementById('pending-gifts');
+    if (!container) return;
+    const gifts = await online.getPendingGifts();
+    if (gifts.length === 0) { container.innerHTML = '<div class="bank-empty">No pending gifts.</div>'; return; }
+    container.innerHTML = gifts.map(g => {
+      const label = g.type === 'item' ? `${g.qty}x ${g.itemName||g.itemId}` : `${g.amount}g`;
+      return `<div class="guild-browse-card">
+        <div class="gbc-top">
+          <span class="gbc-name">${this.escHtml(g.fromName)}</span>
+        </div>
+        <div class="gbc-info"><span>Sent: ${label}</span></div>
+        <button class="btn btn-xs" onclick="online.claimGift('${g.id}').then(()=>ui._loadPendingGifts())">Claim</button>
+      </div>`;
+    }).join('');
+  }
+
+  async _sendItemGift() {
+    const t = this._giftTarget;
+    if (!t) return;
+    const itemId = document.getElementById('gift-item')?.value;
+    const qty = parseInt(document.getElementById('gift-qty')?.value) || 1;
+    if (!itemId) { this.toast({type:'warn',text:'Select an item.'}); return; }
+    await online.sendGift(t.uid, t.name, itemId, qty);
+    this.renderPage('gift');
+  }
+
+  async _sendGoldGift() {
+    const t = this._giftTarget;
+    if (!t) return;
+    const amount = parseInt(document.getElementById('gift-gold')?.value) || 0;
+    if (amount <= 0) { this.toast({type:'warn',text:'Enter an amount.'}); return; }
+    await online.sendGoldGift(t.uid, t.name, amount);
+    this.renderPage('gift');
+  }
+
   async _loadGuildData() {
     // Legacy compat - redirects to tab load
     this._loadGuildTab(this._guildTab || 'overview');
@@ -3494,6 +3629,7 @@ class UI {
             <span class="dm-partner-name">${this.escHtml(t.name)}</span>
           </div>
           <div class="dm-header-actions">
+            <button class="btn btn-xs" onclick="ui.openGiftDialog('${t.uid}','${this.escHtml(t.name)}')" title="Send gift">Gift</button>
             <button class="btn btn-xs" onclick="ui._blockFromDM('${t.uid}','${this.escHtml(t.name)}')" title="Block player">Block</button>
           </div>
         </div>
@@ -3807,6 +3943,7 @@ class UI {
       <div class="gpp-level" id="gpp-level"></div>
       <div class="gpp-btns">
         <button class="btn btn-xs" onclick="ui._chatAction('dm')">Message</button>
+        <button class="btn btn-xs" onclick="ui._chatAction('gift')">Gift</button>
         <button class="btn btn-xs" onclick="ui._chatAction('friend')">Add Friend</button>
         <button class="btn btn-xs btn-danger" onclick="ui._chatAction('block')">Block</button>
       </div>
@@ -3893,6 +4030,7 @@ class UI {
     if (!target) return;
     document.getElementById('gchat-player-popup').style.display = 'none';
     if (action === 'dm') { this.openDM(target.uid, target.name); }
+    else if (action === 'gift') { this.openGiftDialog(target.uid, target.name); }
     else if (action === 'friend') { await online.sendFriendRequest(target.name); }
     else if (action === 'block') { await online.blockPlayer(target.uid, target.name); }
   }

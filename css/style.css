@@ -4420,6 +4420,38 @@ html, body {
   border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
 }
 
+/* Guild Item Bank */
+.guild-item-bank-controls {
+  display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;
+}
+.guild-item-bank-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px;
+  margin-bottom: 16px;
+}
+.guild-bank-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 12px;
+}
+.gbi-name { flex: 1; font-family: 'Cinzel', serif; font-size: 12px; }
+.gbi-qty { font-family: 'JetBrains Mono', monospace; color: var(--text-dim); font-size: 11px; }
+
+/* Admin Remote Modification */
+.adm-remote-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px;
+}
+.adm-remote-card {
+  background: rgba(30,25,20,0.5); border: 1px solid rgba(80,70,60,0.3);
+  border-radius: 6px; padding: 10px;
+}
+.adm-rc-label {
+  display: block; font-family: 'Cinzel', serif; font-size: 11px;
+  color: var(--accent); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* Gift dim button */
+.btn-dim { opacity: 0.5; }
+
 /* ================================================================
    v8.9 VISUAL OVERHAUL - Chat, Skill Art, Monster Drops, Loot Bag
    ================================================================ */

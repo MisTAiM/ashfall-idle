@@ -1524,6 +1524,247 @@ class OnlineManager {
     } catch(e) { console.error(e); }
   }
 
+  // ── UNTRADEABLE ITEMS ──────────────────────────────────
+  static UNTRADEABLE = ['fire_cape','barrows_gloves','void_crystal','ava_accumulator','mage_cape'];
+
+  isUntradeable(itemId) {
+    return OnlineManager.UNTRADEABLE.includes(itemId);
+  }
+
+  // ── GIFT / TRADE SYSTEM ────────────────────────────────
+  async sendGift(targetUid, targetName, itemId, qty) {
+    if (!this.isOnline || !this.user || !game) return false;
+    if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account first.'}); return false; }
+    if (targetUid === this.user.uid) { this.emit('notification',{type:'warn',text:"Can't gift yourself."}); return false; }
+    if (this.isUntradeable(itemId)) { this.emit('notification',{type:'warn',text:`${GAME_DATA.items[itemId]?.name||itemId} is untradeable.`}); return false; }
+    if (!GAME_DATA.items[itemId]) { this.emit('notification',{type:'warn',text:'Invalid item.'}); return false; }
+    if (qty <= 0 || (game.state.bank[itemId]||0) < qty) { this.emit('notification',{type:'warn',text:'Not enough items.'}); return false; }
+    try {
+      // Remove from sender bank
+      game.state.bank[itemId] -= qty;
+      if (game.state.bank[itemId] <= 0) delete game.state.bank[itemId];
+      // Create gift in Firestore
+      await this.firestore.collection('gifts').add({
+        from: this.user.uid, fromName: this.displayName,
+        to: targetUid, toName: targetName,
+        type: 'item', itemId, qty,
+        itemName: GAME_DATA.items[itemId].name,
+        claimed: false,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      // Inbox notification
+      await this.firestore.collection('inbox').add({
+        to: targetUid, type: 'gift', fromName: this.displayName,
+        preview: `${this.displayName} sent you ${qty}x ${GAME_DATA.items[itemId].name}`,
+        read: false, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      this.emit('notification',{type:'success',text:`Sent ${qty}x ${GAME_DATA.items[itemId].name} to ${targetName}!`});
+      return true;
+    } catch(e) {
+      // Refund on failure
+      game.state.bank[itemId] = (game.state.bank[itemId]||0) + qty;
+      this.emit('notification',{type:'danger',text:'Gift failed: '+e.message});
+      return false;
+    }
+  }
+
+  async sendGoldGift(targetUid, targetName, amount) {
+    if (!this.isOnline || !this.user || !game) return false;
+    if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account first.'}); return false; }
+    if (targetUid === this.user.uid) { this.emit('notification',{type:'warn',text:"Can't gift yourself."}); return false; }
+    if (amount <= 0 || game.state.gold < amount) { this.emit('notification',{type:'warn',text:'Not enough gold.'}); return false; }
+    try {
+      game.state.gold -= amount;
+      await this.firestore.collection('gifts').add({
+        from: this.user.uid, fromName: this.displayName,
+        to: targetUid, toName: targetName,
+        type: 'gold', amount,
+        claimed: false,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      await this.firestore.collection('inbox').add({
+        to: targetUid, type: 'gift', fromName: this.displayName,
+        preview: `${this.displayName} sent you ${amount} gold`,
+        read: false, timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      this.emit('notification',{type:'success',text:`Sent ${amount}g to ${targetName}!`});
+      return true;
+    } catch(e) {
+      game.state.gold += amount;
+      this.emit('notification',{type:'danger',text:'Gift failed: '+e.message});
+      return false;
+    }
+  }
+
+  async getPendingGifts() {
+    if (!this.isOnline || !this.user) return [];
+    try {
+      const snap = await this.firestore.collection('gifts')
+        .where('to','==',this.user.uid)
+        .where('claimed','==',false)
+        .limit(50).get();
+      const gifts = [];
+      snap.forEach(doc => gifts.push({ id:doc.id, ...doc.data() }));
+      gifts.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
+      return gifts;
+    } catch(e) { return []; }
+  }
+
+  async claimGift(giftId) {
+    if (!this.isOnline || !this.user || !game) return false;
+    try {
+      const doc = await this.firestore.collection('gifts').doc(giftId).get();
+      if (!doc.exists) return false;
+      const g = doc.data();
+      if (g.to !== this.user.uid || g.claimed) return false;
+      if (g.type === 'item') {
+        game.addItem(g.itemId, g.qty);
+        this.emit('notification',{type:'success',text:`Claimed ${g.qty}x ${g.itemName||g.itemId}!`});
+      } else if (g.type === 'gold') {
+        game.state.gold += g.amount;
+        this.emit('notification',{type:'success',text:`Claimed ${g.amount}g!`});
+      }
+      await doc.ref.update({ claimed:true, claimedAt:firebase.firestore.FieldValue.serverTimestamp() });
+      return true;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  // ── GUILD ITEM BANK ────────────────────────────────────
+  async depositGuildItem(itemId, qty) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    if (this.isUntradeable(itemId)) { this.emit('notification',{type:'warn',text:'That item is untradeable.'}); return; }
+    if (!GAME_DATA.items[itemId]) { this.emit('notification',{type:'warn',text:'Invalid item.'}); return; }
+    if (qty <= 0 || (game.state.bank[itemId]||0) < qty) { this.emit('notification',{type:'warn',text:'Not enough items.'}); return; }
+    try {
+      game.state.bank[itemId] -= qty;
+      if (game.state.bank[itemId] <= 0) delete game.state.bank[itemId];
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const key = `bankItems.${itemId}`;
+      await ref.update({ [key]: firebase.firestore.FieldValue.increment(qty) });
+      await this._logGuildAction(game.state.guild.id, 'item_deposit', { player:this.displayName, item:GAME_DATA.items[itemId].name, itemId, qty });
+      this.emit('notification',{type:'success',text:`Deposited ${qty}x ${GAME_DATA.items[itemId].name} to guild bank.`});
+    } catch(e) {
+      game.state.bank[itemId] = (game.state.bank[itemId]||0) + qty;
+      this.emit('notification',{type:'danger',text:'Deposit failed: '+e.message});
+    }
+  }
+
+  async withdrawGuildItem(itemId, qty) {
+    if (!this.isOnline || !this.user || !game.state.guild) return;
+    await this.syncGuildRole();
+    const info = await this.getGuildInfo();
+    if (!info) return;
+    const withdrawRank = info.settings?.withdrawRank || 'General';
+    if (this._rankIdx(game.state.guild.role) > this._rankIdx(withdrawRank)) {
+      this.emit('notification',{type:'warn',text:`Only ${withdrawRank} and above can withdraw.`}); return;
+    }
+    const bankQty = (info.bankItems||{})[itemId] || 0;
+    if (qty <= 0 || qty > bankQty) { this.emit('notification',{type:'warn',text:`Guild bank only has ${bankQty}x.`}); return; }
+    try {
+      const ref = this.firestore.collection('guilds').doc(game.state.guild.id);
+      const key = `bankItems.${itemId}`;
+      await ref.update({ [key]: firebase.firestore.FieldValue.increment(-qty) });
+      game.addItem(itemId, qty);
+      await this._logGuildAction(game.state.guild.id, 'item_withdraw', { player:this.displayName, item:GAME_DATA.items[itemId]?.name, itemId, qty });
+      this.emit('notification',{type:'success',text:`Withdrew ${qty}x ${GAME_DATA.items[itemId]?.name}.`});
+    } catch(e) { this.emit('notification',{type:'danger',text:'Withdraw failed: '+e.message}); }
+  }
+
+  async getGuildBankItems() {
+    if (!this.isOnline || !game.state.guild) return {};
+    try {
+      const doc = await this.firestore.collection('guilds').doc(game.state.guild.id).get();
+      return doc.exists ? (doc.data().bankItems || {}) : {};
+    } catch(e) { return {}; }
+  }
+
+  // ── ADMIN: REMOTE PLAYER MODIFICATION ──────────────────
+  async adminGetPlayerSave(uid) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return null;
+    try {
+      const doc = await this.firestore.collection('saves').doc(uid).get();
+      return doc.exists ? doc.data().save : null;
+    } catch(e) { return null; }
+  }
+
+  async adminSetPlayerSave(uid, save) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      save._cloudSaveTime = Date.now();
+      save.lastSave = Date.now();
+      await this.firestore.collection('saves').doc(uid).set({
+        save, uid, lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      await this.adminLog('remote_save_edit', { targetUid: uid });
+      return true;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminGivePlayerGold(uid, amount) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save) { this.emit('notification',{type:'warn',text:'Save not found.'}); return false; }
+      save.gold = (save.gold || 0) + amount;
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) {
+        this.emit('notification',{type:'success',text:`Gave ${amount}g to ${uid.substring(0,8)}...`});
+        await this.adminLog('give_gold_remote', { targetUid: uid, amount });
+      }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminGivePlayerItem(uid, itemId, qty) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save) { this.emit('notification',{type:'warn',text:'Save not found.'}); return false; }
+      if (!save.bank) save.bank = {};
+      save.bank[itemId] = (save.bank[itemId] || 0) + qty;
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) {
+        this.emit('notification',{type:'success',text:`Gave ${qty}x ${GAME_DATA.items[itemId]?.name||itemId} to ${uid.substring(0,8)}...`});
+        await this.adminLog('give_item_remote', { targetUid: uid, itemId, qty });
+      }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminGivePlayerXp(uid, skill, amount) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save || !save.skills?.[skill]) { this.emit('notification',{type:'warn',text:'Save/skill not found.'}); return false; }
+      save.skills[skill].xp = (save.skills[skill].xp || 0) + amount;
+      // Recalc level
+      const xpTable = [0,83,174,276,388,512,650,801,969,1154,1358,1584,1833,2107,2411,2746,3115,3523,3973,4470,5018,5624,6291,7028,7842,8740,9730,10824,12031,13363,14833,16456,18247,20224,22406,24815,27473,30408,33648,37224,41171,45529,50339,55649,61512,67983,75127,83014,91721,101333,111945,123660,136594,150872,166636,184040,203254,224466,247886,273742,302288,333804,368599,407015,449428,496254,547953,605032,668051,737627,814445,899257,992895,1096278,1210421,1336443,1475581,1629200,1798808,1986068,2192818,2421087,2673114,2951373,3258594,3597792,3972294,4385776,4842295,5346332,5902831,6517253,7195629,7944614,8771558,9684577,10692629,11805606,13034431];
+      const newXp = save.skills[skill].xp;
+      let lv = 1;
+      for (let i = 1; i < xpTable.length; i++) { if (newXp >= xpTable[i]) lv = i + 1; else break; }
+      save.skills[skill].level = Math.min(99, lv);
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) {
+        this.emit('notification',{type:'success',text:`Gave ${amount} ${skill} XP to ${uid.substring(0,8)}...`});
+        await this.adminLog('give_xp_remote', { targetUid: uid, skill, amount });
+      }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  // ── ADMIN: PUSH LIVE GAME SETTINGS ─────────────────────
+  // These are read by clients on init and polled periodically
+  async pushLiveUpdate(key, value) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      await this.db.ref(`/game_settings/${key}`).set(value);
+      await this.db.ref('/game_settings/_lastUpdate').set(Date.now());
+      await this.adminLog('push_live_update', { key, value });
+      this.emit('notification',{type:'success',text:`Live update pushed: ${key}`});
+      return true;
+    } catch(e) { return false; }
+  }
+
   // Search for players by partial name
   async searchPlayers(query) {
     if (!this.isOnline || !query || query.length < 2) return [];
