@@ -427,7 +427,7 @@ const GAME_DATA = {
       {id:'fletch_willow_bow',   name:'Willow Shortbow',    level:20,xp:160, time:4.0,input:[{item:'willow_log',qty:2}], output:{item:'willow_shortbow',qty:1}},
       {id:'fletch_maple_bow',    name:'Maple Shortbow',     level:35,xp:320, time:4.5,input:[{item:'maple_log',qty:3}],  output:{item:'maple_shortbow',qty:1}},
       {id:'fletch_yew_bow',      name:'Yew Longbow',        level:50,xp:600,time:5.0,input:[{item:'yew_log',qty:3}],    output:{item:'yew_longbow',qty:1}},
-      {id:'fletch_elder_bow',    name:'Elder Bow',          level:65,xp:1120,time:6.0,input:[{item:'elder_log',qty:4}],   output:{item:'elder_bow',qty:1}},
+      {id:'fletch_elder_bow',    name:'Elder Shortbow',     level:65,xp:1120,time:6.0,input:[{item:'elder_log',qty:4}],   output:{item:'elder_shortbow',qty:1}},
       {id:'fletch_ashwood_bow',  name:'Ashwood Bow',        level:78,xp:1800,time:7.0,input:[{item:'ash_log',qty:5}],    output:{item:'ashwood_bow',qty:1}},
     ],
     crafting: [
@@ -1106,7 +1106,7 @@ GAME_DATA.recipes.enchanting = [
   // Bow enchantments
   {id:'ench_maple_bw', name:'Enchant Maple Bow',    level:30, xp:320, time:6.0,input:[{item:'maple_shortbow',qty:1},{item:'arcane_shard',qty:1},{item:'air_rune',qty:10}],output:{item:'ench_maple_bow',qty:1}},
   {id:'ench_yew_bw',   name:'Enchant Yew Longbow',  level:45, xp:640,time:7.0,input:[{item:'yew_longbow',qty:1},{item:'void_crystal',qty:1},{item:'air_rune',qty:15}],output:{item:'ench_yew_bow',qty:1}},
-  {id:'ench_elder_bw', name:'Enchant Elder Bow',    level:65, xp:1280,time:9.0,input:[{item:'elder_bow',qty:1},{item:'celestial_essence',qty:1},{item:'chaos_rune',qty:10}],output:{item:'ench_elder_bow',qty:1}},
+  {id:'ench_elder_bw', name:'Enchant Elder Shortbow', level:65, xp:1280,time:9.0,input:[{item:'elder_shortbow',qty:1},{item:'celestial_essence',qty:1},{item:'chaos_rune',qty:10}],output:{item:'ench_elder_bow',qty:1}},
   // Staff enchantments
   {id:'ench_myst_st',  name:'Enchant Mystic Staff', level:25, xp:240, time:5.0,input:[{item:'mystic_staff',qty:1},{item:'arcane_shard',qty:1},{item:'chaos_rune',qty:5}],output:{item:'ench_mystic_staff',qty:1}},
   {id:'ench_void_st',  name:'Enchant Void Staff',   level:45, xp:640,time:7.0,input:[{item:'void_staff',qty:1},{item:'void_crystal',qty:1},{item:'death_rune',qty:8}],output:{item:'ench_void_staff',qty:1}},

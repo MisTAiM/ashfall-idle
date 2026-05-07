@@ -187,3 +187,42 @@ if (!GAME_DATA.combatPets.find(p => p.id === 'lil_veriax')) {
 console.log('[Ashfall] Theatre of Ash items registered:', 
   ['veriax_scythe','bloodfire_staff','ashen_rapier','judicator_helm','judicator_plate',
    'judicator_legs','hollow_ward','void_tear','veriax_eye','lil_veriax'].filter(id=>GAME_DATA.items[id]).length);
+
+// ── MISSING QUEST/UTILITY ITEMS ─────────────────────────────────
+if (!GAME_DATA.items.herb_sack)
+  GAME_DATA.items.herb_sack = { id:'herb_sack', name:'Herb Sack', type:'tool', subtype:'gathering', rarity:'rare', sellPrice:0, desc:'Automatically collects herbs while gathering. Holds up to 30 herbs.', unique:true };
+
+if (!GAME_DATA.items.ring_of_wealth)
+  GAME_DATA.items.ring_of_wealth = { id:'ring_of_wealth', name:'Ring of Wealth', type:'armor', slot:'ring', stats:{}, rarity:'rare', sellPrice:2000, sprite:'ring-gold', desc:'Improves rare drop rates by 5%.', bonus:{ dropRate:5 } };
+
+// Bronze/iron arrows in shop
+if (!GAME_DATA.shop.find(s=>s.item==='bronze_arrows'))
+  GAME_DATA.shop.push({item:'bronze_arrows', price:3,  category:'equipment', desc:'Bronze arrows x1'});
+if (!GAME_DATA.shop.find(s=>s.item==='iron_arrows'))
+  GAME_DATA.shop.push({item:'iron_arrows',   price:6,  category:'equipment', desc:'Iron arrows x1'});
+if (!GAME_DATA.shop.find(s=>s.item==='steel_arrows'))
+  GAME_DATA.shop.push({item:'steel_arrows',  price:12, category:'equipment', desc:'Steel arrows x1'});
+
+// ── FISHING RARE CATCHES & SKILL DEPTH ITEMS ────────────────────
+if (!GAME_DATA.items.mermaid_tear)
+  GAME_DATA.items.mermaid_tear   = { id:'mermaid_tear',   name:"Mermaid's Tear",  type:'resource', rarity:'rare',      sellPrice:500,  sprite:'gem-blue',   desc:'A crystallised drop from the deep. Sell to fishermen for rewards.' };
+if (!GAME_DATA.items.fishing_trophy)
+  GAME_DATA.items.fishing_trophy = { id:'fishing_trophy', name:'Fishing Trophy',  type:'resource', rarity:'uncommon',  sellPrice:200,  sprite:'misc-coin',  desc:'An ornate trophy for exceptional catches.' };
+if (!GAME_DATA.items.leviathan_scale)
+  GAME_DATA.items.leviathan_scale= { id:'leviathan_scale',name:'Leviathan Scale', type:'resource', rarity:'epic',      sellPrice:1500, sprite:'misc-scale', desc:'A massive scale from a legendary leviathan. Prized by crafters.' };
+if (!GAME_DATA.items.clue_scroll_easy)
+  GAME_DATA.items.clue_scroll_easy={ id:'clue_scroll_easy',name:'Clue Scroll (Easy)',type:'quest', rarity:'uncommon', sellPrice:0,    sprite:'misc-scroll', desc:'A mysterious scroll. Solve the clues for treasure!' };
+
+// ── BIRD NEST DROPS ─────────────────────────────────────────────
+if (!GAME_DATA.items.gold_ring)
+  GAME_DATA.items.gold_ring = { id:'gold_ring', name:'Gold Ring', type:'armor', slot:'ring', stats:{}, rarity:'common', sellPrice:100, sprite:'ring-gold', desc:'A plain gold ring.' };
+if (!GAME_DATA.items.sapphire_ring)
+  GAME_DATA.items.sapphire_ring = { id:'sapphire_ring', name:'Sapphire Ring', type:'armor', slot:'ring', stats:{}, rarity:'uncommon', sellPrice:350, sprite:'ring-blue', desc:'A ring set with sapphire.' };
+if (!GAME_DATA.items.ruby_ring)
+  GAME_DATA.items.ruby_ring = { id:'ruby_ring', name:'Ruby Ring', type:'armor', slot:'ring', stats:{}, rarity:'rare', sellPrice:800, sprite:'ring-red', desc:'A ring set with ruby.' };
+if (!GAME_DATA.items.diamond_ring)
+  GAME_DATA.items.diamond_ring = { id:'diamond_ring', name:'Diamond Ring', type:'armor', slot:'ring', stats:{}, rarity:'rare', sellPrice:1500, sprite:'ring-pale', desc:'A ring set with diamond.' };
+if (!GAME_DATA.items.ranarr_seed)
+  GAME_DATA.items.ranarr_seed = { id:'ranarr_seed', name:'Ranarr Seed', type:'seed', growTime:2400, yield:'ranarr_weed', rarity:'rare', sellPrice:80, sprite:'misc-seed', desc:'A seed for a Ranarr herb. 40-min grow time.' };
+if (!GAME_DATA.items.ranarr_weed)
+  GAME_DATA.items.ranarr_weed = { id:'ranarr_weed', name:'Ranarr Weed', type:'resource', subtype:'herb', rarity:'rare', sellPrice:200, sprite:'herb-green', desc:'A potent herb used in prayer potions.' };

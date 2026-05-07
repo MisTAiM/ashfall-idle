@@ -386,7 +386,94 @@ class GameEngine {
         const gem = this.weightedRandom(['topaz','sapphire','ruby','emerald','diamond','onyx'], [40,25,15,10,8,2]);
         this.addItem(gem, 1);
         this.trackQuestProgress('gather', { item:gem, qty:1 });
-        this.emit('notification', { type:'rare', text:`Found a ${GAME_DATA.items[gem].name}!` });
+        this.emit('notification', { type:'rare', text:`✦ Gem found — ${GAME_DATA.items[gem]?.name || gem}!` });
+      }
+
+      // ── WOODCUTTING DEPTH ──────────────────────────────────────
+      if (skillId === 'woodcutting') {
+        const mastLv = this.getMasteryLevel('woodcutting', action.masteryId || action.id);
+        // Double log chance: 5% base + 0.5% per mastery level (max ~55%)
+        const doubleChance = 0.05 + mastLv * 0.005;
+        if (Math.random() < doubleChance) {
+          const extraLog = action.loot[0]?.item;
+          if (extraLog) {
+            this.addItem(extraLog, 1);
+            this.emit('notification', { type:'info', text:`Double log! Mastery bonus.` });
+          }
+        }
+        // Bird nest: 0.4% base chance (OSRS-style)
+        if (Math.random() < 0.004) {
+          const nestContents = this.weightedRandom(
+            ['nest_seeds','nest_ring','nest_empty'],
+            [60, 15, 25]
+          );
+          const nestItem = nestContents === 'nest_ring' ? this.weightedRandom(
+            ['gold_ring','sapphire_ring','ruby_ring','diamond_ring'],
+            [50,25,15,10]
+          ) : nestContents === 'nest_seeds' ? this.weightedRandom(
+            ['herb_seed','ranarr_seed','blood_seed','moon_seed'],
+            [40,20,20,20]
+          ) : null;
+          if (nestItem && GAME_DATA.items[nestItem]) {
+            this.addItem(nestItem, 1);
+            this.emit('notification', { type:'rare', text:`🪺 Bird's nest! Contains: ${GAME_DATA.items[nestItem].name}` });
+          } else {
+            this.emit('notification', { type:'info', text:`🪺 Empty bird's nest fell from the tree.` });
+          }
+        }
+      }
+
+      // ── FISHING DEPTH ──────────────────────────────────────────
+      if (skillId === 'fishing') {
+        const fishingLv = this.state.skills.fishing.level;
+        // Rare catch: 1.5% chance at high level spots for bonus XP + special item
+        if (Math.random() < 0.015 && fishingLv >= 50) {
+          const rareCatch = this.weightedRandom(
+            ['mermaid_tear','clue_scroll_easy','fishing_trophy','leviathan_scale'],
+            [40, 30, 20, 10]
+          );
+          if (rareCatch === 'mermaid_tear' || rareCatch === 'fishing_trophy' || rareCatch === 'leviathan_scale') {
+            if (GAME_DATA.items[rareCatch]) {
+              this.addItem(rareCatch, 1);
+              this.emit('notification', { type:'rare', text:`🐟 Rare catch! ${GAME_DATA.items[rareCatch].name}` });
+            }
+          } else if (rareCatch === 'clue_scroll_easy') {
+            if (GAME_DATA.items['clue_scroll_easy']) {
+              this.addItem('clue_scroll_easy', 1);
+              this.emit('notification', { type:'rare', text:`📜 Clue scroll found while fishing!` });
+            }
+          }
+        }
+        // Big fish bonus XP (5% chance)
+        if (Math.random() < 0.05) {
+          const bonusXp = Math.floor(action.xp * 0.5);
+          this.addXp(skillId, bonusXp);
+          this.emit('xpGain', { skill: skillId, amount: bonusXp, source: 'bigFish' });
+          this.emit('notification', { type:'info', text:`🎣 Big catch! +${bonusXp} bonus XP` });
+        }
+      }
+
+      // ── FORAGING DEPTH ─────────────────────────────────────────
+      if (skillId === 'foraging') {
+        const mastLv = this.getMasteryLevel('foraging', action.masteryId || action.id);
+        // Multi-herb: 3% base + 0.4% per mastery level chance for extra herb
+        const multiChance = 0.03 + mastLv * 0.004;
+        if (Math.random() < multiChance) {
+          const herb = action.loot[0]?.item;
+          if (herb) {
+            this.addItem(herb, 1);
+            this.emit('notification', { type:'info', text:`Double herb! Mastery bonus.` });
+          }
+        }
+      }
+
+      // ── HUNTING DEPTH ──────────────────────────────────────────
+      if (skillId === 'hunting' && action.level >= 55) {
+        // Clue scroll chance from high-level hunts (1%)
+        if (Math.random() < 0.01 && GAME_DATA.items['clue_scroll_easy']) {
+          this.addItem('clue_scroll_easy', 1);
+          this.emit('notification', { type:'rare', text:`📜 Clue scroll! Found on the hunt.` });
+        }
       }
     } else if (skill.type === 'artisan' || skillId === 'summoning') {
       if (action.input && !this.hasItems(action.input)) { this.stopSkill(); this.emit('notification', { type:'warn', text:'Out of materials.' }); return; }

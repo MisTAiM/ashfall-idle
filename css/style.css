@@ -6911,3 +6911,22 @@ kbd {
 
 /* Ammo slot quantity in equipment page */
 .ammo-slot-qty { font-size:10px; color:var(--text-dim); margin-left:4px; }
+
+/* ── ADMIN CREATE FORMS ──────────────────────────────────────── */
+.adm-create-form {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(201,135,62,0.2);
+  border-radius: 8px;
+  padding: 14px;
+}
+.adm-create-form h4 {
+  font-family: 'Cinzel', serif;
+  color: var(--amber);
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+.btn-active {
+  background: rgba(201,135,62,0.2) !important;
+  border-color: var(--amber) !important;
+  color: var(--amber) !important;
+}

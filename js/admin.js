@@ -86,6 +86,9 @@ function applyAdminPanel() {
       { id:'guilds_adm', label:'Guilds',      icon:'🏰' },
       { id:'economy',    label:'Economy',     icon:'📈' },
       { id:'items',      label:'Items',       icon:'⚔' },
+      { id:'create',     label:'Create',      icon:'➕' },
+      { id:'shop_mgr',   label:'Shop',        icon:'🛒' },
+      { id:'recipes',    label:'Recipes',     icon:'📖' },
       { id:'monsters',   label:'Monsters',    icon:'💀' },
       { id:'theatre',    label:'Theatre',     icon:'🎭' },
       { id:'abilities',  label:'Abilities',   icon:'✦' },
@@ -98,6 +101,7 @@ function applyAdminPanel() {
       { id:'logs',       label:'Logs',        icon:'📋' },
       { id:'combat',     label:'Combat',      icon:'⚔' },
       { id:'quests',     label:'Quests',      icon:'📜' },
+      { id:'worldboss',  label:'World Boss',  icon:'👑' },
       { id:'state',      label:'State',       icon:'🔍' },
       { id:'tools',      label:'Tools',       icon:'🛠' },
     ];
@@ -822,6 +826,253 @@ function applyAdminPanel() {
       html+=`</div>`;
     }
 
+    // ── CREATE (no-code item/monster/recipe creator) ──────
+    if (tab === 'create') {
+      const cMode = this._admCreateMode || 'item';
+      html += `<div class="adm-section"><h3>➕ Create New Game Content</h3>
+        <div class="adm-btn-grid" style="margin-bottom:12px">
+          <button class="btn btn-sm ${cMode==='item'?'btn-active':''}" onclick="ui._admCreateMode='item';ui.renderPage('admin')">New Item</button>
+          <button class="btn btn-sm ${cMode==='monster'?'btn-active':''}" onclick="ui._admCreateMode='monster';ui.renderPage('admin')">New Monster</button>
+          <button class="btn btn-sm ${cMode==='recipe'?'btn-active':''}" onclick="ui._admCreateMode='recipe';ui.renderPage('admin')">New Recipe</button>
+          <button class="btn btn-sm ${cMode==='area'?'btn-active':''}" onclick="ui._admCreateMode='area';ui.renderPage('admin')">New Combat Area</button>
+        </div>`;
+
+      if (cMode === 'item') {
+        html += `<div class="adm-create-form"><h4>New Item</h4>
+          <div class="adm-edit-grid">
+            <label>ID (no spaces)</label><input type="text" id="ci-id" class="bank-search-input" placeholder="e.g. dragon_platebody">
+            <label>Name</label><input type="text" id="ci-name" class="bank-search-input" placeholder="Dragon Platebody">
+            <label>Description</label><input type="text" id="ci-desc" class="bank-search-input" placeholder="A powerful dragonhide platebody.">
+            <label>Type</label>
+            <select id="ci-type" class="bank-search-input" onchange="ui.renderPage('admin')">
+              <option value="weapon">weapon</option><option value="armor">armor</option><option value="ammo">ammo</option>
+              <option value="food">food</option><option value="resource">resource</option><option value="potion">potion</option>
+              <option value="tool">tool</option><option value="special">special</option><option value="quest">quest</option>
+            </select>
+            <label>Slot</label>
+            <select id="ci-slot" class="bank-search-input">
+              <option value="">(none)</option><option value="weapon">weapon</option><option value="shield">shield</option>
+              <option value="head">head</option><option value="body">body</option><option value="legs">legs</option>
+              <option value="boots">boots</option><option value="gloves">gloves</option><option value="ring">ring</option>
+              <option value="amulet">amulet</option><option value="cape">cape</option><option value="ammo">ammo</option>
+            </select>
+            <label>Style (weapons)</label>
+            <select id="ci-style" class="bank-search-input">
+              <option value="">(none)</option><option value="melee">melee</option><option value="ranged">ranged</option><option value="magic">magic</option>
+            </select>
+            <label>Rarity</label>
+            <select id="ci-rarity" class="bank-search-input">
+              ${['common','uncommon','rare','epic','legendary','mythic'].map(r=>`<option value="${r}">${r}</option>`).join('')}
+            </select>
+            <label>Sell Price</label><input type="number" id="ci-price" class="bank-search-input" value="100">
+            <label>Attack Speed</label><input type="number" id="ci-speed" step="0.1" class="bank-search-input" value="2.4" placeholder="2.4">
+            <label>Heals (food)</label><input type="number" id="ci-heals" class="bank-search-input" value="0">
+            <label style="color:var(--accent-dim);grid-column:1/-1;font-size:11px;margin-top:4px">— Combat Stats (0 = omit) —</label>
+            <label>Attack Bonus</label><input type="number" id="ci-atk" class="bank-search-input" value="0">
+            <label>Strength Bonus</label><input type="number" id="ci-str" class="bank-search-input" value="0">
+            <label>Defence Bonus</label><input type="number" id="ci-def" class="bank-search-input" value="0">
+            <label>Ranged Bonus</label><input type="number" id="ci-rng" class="bank-search-input" value="0">
+            <label>Magic Bonus</label><input type="number" id="ci-mag" class="bank-search-input" value="0">
+            <label>Dmg Reduction</label><input type="number" id="ci-dr" class="bank-search-input" value="0">
+            <label style="color:var(--accent-dim);grid-column:1/-1;font-size:11px;margin-top:4px">— Level Requirements —</label>
+            <label>Attack Req</label><input type="number" id="ci-req-atk" class="bank-search-input" value="0">
+            <label>Defence Req</label><input type="number" id="ci-req-def" class="bank-search-input" value="0">
+            <label>Ranged Req</label><input type="number" id="ci-req-rng" class="bank-search-input" value="0">
+            <label>Magic Req</label><input type="number" id="ci-req-mag" class="bank-search-input" value="0">
+            <label>Add to Shop?</label>
+            <select id="ci-shop" class="bank-search-input">
+              <option value="">No</option><option value="equipment">Yes – Equipment</option><option value="weapons">Yes – Weapons</option>
+              <option value="food">Yes – Food</option><option value="potions">Yes – Potions</option>
+            </select>
+            <label>Shop Price</label><input type="number" id="ci-shop-price" class="bank-search-input" value="1000">
+          </div>
+          <div class="adm-btn-grid" style="margin-top:10px">
+            <button class="btn btn-sm" onclick="ui._admCreateItem()">✅ Create Item</button>
+            <button class="btn btn-sm" onclick="ui._admCreateItem(true)">✅ Create + Give 1</button>
+          </div>
+          <div id="adm-create-result" style="margin-top:8px;font-size:12px;color:var(--accent)"></div>
+        </div>`;
+      }
+
+      if (cMode === 'monster') {
+        html += `<div class="adm-create-form"><h4>New Monster</h4>
+          <div class="adm-edit-grid">
+            <label>ID (no spaces)</label><input type="text" id="cm-id" class="bank-search-input" placeholder="e.g. ash_giant">
+            <label>Name</label><input type="text" id="cm-name" class="bank-search-input" placeholder="Ash Giant">
+            <label>HP</label><input type="number" id="cm-hp" class="bank-search-input" value="200">
+            <label>Max Hit</label><input type="number" id="cm-maxhit" class="bank-search-input" value="20">
+            <label>Combat Level</label><input type="number" id="cm-cl" class="bank-search-input" value="30">
+            <label>Attack Speed (s)</label><input type="number" step="0.1" id="cm-spd" class="bank-search-input" value="2.4">
+            <label>XP Per Kill</label><input type="number" id="cm-xp" class="bank-search-input" value="150">
+            <label>Style</label>
+            <select id="cm-style" class="bank-search-input">
+              <option value="melee">melee</option><option value="ranged">ranged</option><option value="magic">magic</option>
+            </select>
+            <label>Alignment</label>
+            <select id="cm-align" class="bank-search-input">
+              ${Object.keys(GAME_DATA.alignments||{}).map(a=>`<option value="${a}">${a}</option>`).join('')}
+            </select>
+            <label>Gold Min</label><input type="number" id="cm-gmin" class="bank-search-input" value="5">
+            <label>Gold Max</label><input type="number" id="cm-gmax" class="bank-search-input" value="20">
+            <label>Evasion Melee</label><input type="number" id="cm-evmelee" class="bank-search-input" value="10">
+            <label>Evasion Ranged</label><input type="number" id="cm-evranged" class="bank-search-input" value="10">
+            <label>Evasion Magic</label><input type="number" id="cm-evmagic" class="bank-search-input" value="10">
+            <label style="color:var(--accent-dim);grid-column:1/-1;font-size:11px;margin-top:4px">— Drops (comma-separated: item_id:qty:chance) —</label>
+            <label>Drop 1</label><input type="text" id="cm-drop1" class="bank-search-input" placeholder="bones:1:1.0">
+            <label>Drop 2</label><input type="text" id="cm-drop2" class="bank-search-input" placeholder="gold_ore:2:0.30">
+            <label>Drop 3</label><input type="text" id="cm-drop3" class="bank-search-input" placeholder="iron_sword:1:0.05">
+            <label>Drop 4</label><input type="text" id="cm-drop4" class="bank-search-input" placeholder="">
+            <label>Drop 5</label><input type="text" id="cm-drop5" class="bank-search-input" placeholder="">
+            <label>Add to Area</label>
+            <select id="cm-area" class="bank-search-input">
+              <option value="">(none)</option>
+              ${(GAME_DATA.combatAreas||[]).map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="adm-btn-grid" style="margin-top:10px">
+            <button class="btn btn-sm" onclick="ui._admCreateMonster()">✅ Create Monster</button>
+          </div>
+          <div id="adm-create-result" style="margin-top:8px;font-size:12px;color:var(--accent)"></div>
+        </div>`;
+      }
+
+      if (cMode === 'recipe') {
+        const skillsWithRecipes = Object.keys(GAME_DATA.recipes||{});
+        html += `<div class="adm-create-form"><h4>New Recipe</h4>
+          <div class="adm-edit-grid">
+            <label>Recipe ID</label><input type="text" id="cr-id" class="bank-search-input" placeholder="e.g. cook_dragon_meat">
+            <label>Display Name</label><input type="text" id="cr-name" class="bank-search-input" placeholder="Dragon Steak">
+            <label>Skill</label>
+            <select id="cr-skill" class="bank-search-input">
+              ${skillsWithRecipes.map(sk=>`<option value="${sk}">${sk}</option>`).join('')}
+            </select>
+            <label>Level Required</label><input type="number" id="cr-level" class="bank-search-input" value="1">
+            <label>XP Reward</label><input type="number" id="cr-xp" class="bank-search-input" value="100">
+            <label>Craft Time (s)</label><input type="number" step="0.1" id="cr-time" class="bank-search-input" value="3.0">
+            <label>Output Item ID</label><input type="text" id="cr-out-id" class="bank-search-input" placeholder="dragon_steak">
+            <label>Output Quantity</label><input type="number" id="cr-out-qty" class="bank-search-input" value="1">
+            <label style="color:var(--accent-dim);grid-column:1/-1;font-size:11px;margin-top:4px">— Inputs (item_id:qty) —</label>
+            <label>Input 1</label><input type="text" id="cr-in1" class="bank-search-input" placeholder="raw_dragon:1">
+            <label>Input 2</label><input type="text" id="cr-in2" class="bank-search-input" placeholder="coal_ore:2">
+            <label>Input 3</label><input type="text" id="cr-in3" class="bank-search-input" placeholder="">
+            <label>Input 4</label><input type="text" id="cr-in4" class="bank-search-input" placeholder="">
+          </div>
+          <div class="adm-btn-grid" style="margin-top:10px">
+            <button class="btn btn-sm" onclick="ui._admCreateRecipe()">✅ Add Recipe</button>
+          </div>
+          <div id="adm-create-result" style="margin-top:8px;font-size:12px;color:var(--accent)"></div>
+        </div>`;
+      }
+
+      if (cMode === 'area') {
+        html += `<div class="adm-create-form"><h4>New Combat Area</h4>
+          <div class="adm-edit-grid">
+            <label>Area ID</label><input type="text" id="ca-id" class="bank-search-input" placeholder="e.g. ash_wastes">
+            <label>Name</label><input type="text" id="ca-name" class="bank-search-input" placeholder="Ash Wastes">
+            <label>Description</label><input type="text" id="ca-desc" class="bank-search-input" placeholder="A desolate wasteland.">
+            <label>Combat Level Req</label><input type="number" id="ca-lvl" class="bank-search-input" value="1">
+            <label>Monster IDs (comma-separated)</label><input type="text" id="ca-monsters" class="bank-search-input" placeholder="goblin,bandit,wolf">
+          </div>
+          <div class="adm-btn-grid" style="margin-top:10px">
+            <button class="btn btn-sm" onclick="ui._admCreateArea()">✅ Create Area</button>
+          </div>
+          <div id="adm-create-result" style="margin-top:8px;font-size:12px;color:var(--accent)"></div>
+        </div>`;
+      }
+
+      html += `</div>`;
+    }
+
+    // ── SHOP MANAGER ──────────────────────────────────────
+    if (tab === 'shop_mgr') {
+      html += `<div class="adm-section"><h3>🛒 Shop Manager</h3>
+        <p style="font-size:11px;color:var(--text-dim);margin:0 0 10px">Add or remove items from the player shop. Changes are runtime-only unless you edit data.js.</p>
+        <div class="adm-edit-grid" style="margin-bottom:10px">
+          <label>Item ID</label><input type="text" id="sm-id" class="bank-search-input" placeholder="iron_sword">
+          <label>Price (gold)</label><input type="number" id="sm-price" class="bank-search-input" value="500">
+          <label>Category</label>
+          <select id="sm-cat" class="bank-search-input">
+            ${[...new Set((GAME_DATA.shop||[]).map(s=>s.category))].filter(Boolean).concat(['equipment','weapons','food','potions','thieving','special']).filter((v,i,a)=>a.indexOf(v)===i).map(c=>`<option value="${c}">${c}</option>`).join('')}
+          </select>
+          <label>Custom Category</label><input type="text" id="sm-cat-custom" class="bank-search-input" placeholder="Leave blank to use above">
+        </div>
+        <div class="adm-btn-grid" style="margin-bottom:12px">
+          <button class="btn btn-sm" onclick="ui._admAddToShop()">➕ Add to Shop</button>
+        </div>
+        <h4 style="margin-bottom:6px">Current Shop (${(GAME_DATA.shop||[]).length} items)</h4>
+        <input type="text" class="bank-search-input" placeholder="Search shop…" oninput="ui._admShopSearch=this.value;ui.renderPage('admin')" value="${this._admShopSearch||''}" style="margin-bottom:8px;width:100%">
+        <div class="adm-item-list">`;
+      const shopSearch = (this._admShopSearch||'').toLowerCase();
+      const shopItems = (GAME_DATA.shop||[]).filter(si=>{
+        const item=GAME_DATA.items[si.item];
+        return !shopSearch || si.item.includes(shopSearch) || (item?.name||'').toLowerCase().includes(shopSearch);
+      });
+      for (let i=0;i<shopItems.length;i++) {
+        const si = shopItems[i]; const item=GAME_DATA.items[si.item];
+        const realIdx = GAME_DATA.shop.indexOf(si);
+        html += `<div class="adm-item-row">
+          <span class="adm-item-name">${item?.name||si.item}</span>
+          <span class="adm-item-id">${si.item}</span>
+          <span class="adm-item-qty">${si.price}g</span>
+          <span style="font-size:10px;color:var(--text-dim)">${si.category||''}</span>
+          <input type="number" value="${si.price}" style="width:70px;padding:2px 4px;background:var(--bg-deep);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:11px" onchange="GAME_DATA.shop[${realIdx}].price=parseInt(this.value)||0;ui.toast({type:'info',text:'Price updated'})">
+          <button class="btn btn-xs btn-danger" onclick="GAME_DATA.shop.splice(${realIdx},1);ui.toast({type:'warn',text:'Removed from shop'});ui.renderPage('admin')">✕</button>
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // ── RECIPES TAB ───────────────────────────────────────
+    if (tab === 'recipes') {
+      const rSkill = this._admRecipeSkill || Object.keys(GAME_DATA.recipes||{})[0];
+      html += `<div class="adm-section"><h3>📖 Recipe Browser & Editor</h3>
+        <div class="adm-row-flex" style="margin-bottom:10px">
+          <select class="bank-search-input" style="width:150px" onchange="ui._admRecipeSkill=this.value;ui.renderPage('admin')">
+            ${Object.keys(GAME_DATA.recipes||{}).map(sk=>`<option value="${sk}" ${rSkill===sk?'selected':''}>${sk}</option>`).join('')}
+          </select>
+          <input type="text" class="bank-search-input" placeholder="Search…" oninput="ui._admRecipeSearch=this.value;ui.renderPage('admin')" value="${this._admRecipeSearch||''}" style="flex:1">
+        </div>`;
+      const rSearch = (this._admRecipeSearch||'').toLowerCase();
+      const recipes = (GAME_DATA.recipes?.[rSkill]||[]).filter(r=>!rSearch||r.name?.toLowerCase().includes(rSearch)||r.id?.includes(rSearch));
+      html += `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">${recipes.length} recipes in ${rSkill}</div>`;
+      html += `<div class="adm-item-list">`;
+      for (const r of recipes) {
+        const out = GAME_DATA.items[r.output?.item];
+        html += `<div class="adm-item-row" style="flex-wrap:wrap;gap:4px">
+          <span class="adm-item-name">${r.name||r.id}</span>
+          <span class="adm-item-id">Lv${r.level} · ${r.xp}xp · ${r.time}s</span>
+          <span style="font-size:11px;color:var(--text-dim)">→ ${out?.name||r.output?.item} x${r.output?.qty||1}</span>
+          <span style="font-size:10px;color:var(--text-dim)">${(r.input||[]).map(i=>`${i.item}x${i.qty}`).join(', ')}</span>
+          <input type="number" value="${r.level}" style="width:45px;padding:2px;background:var(--bg-deep);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:10px" title="Level req" onchange="r.level=parseInt(this.value)||1">
+          <input type="number" value="${r.xp}" style="width:55px;padding:2px;background:var(--bg-deep);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:10px" title="XP" onchange="GAME_DATA.recipes['${rSkill}'].find(rx=>rx.id==='${r.id}').xp=parseInt(this.value)||0">
+          <button class="btn btn-xs btn-danger" onclick="if(confirm('Delete recipe ${r.id}?')){const idx=GAME_DATA.recipes['${rSkill}'].findIndex(rx=>rx.id==='${r.id}');if(idx>=0)GAME_DATA.recipes['${rSkill}'].splice(idx,1);ui.renderPage('admin')}">✕ Delete</button>
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // ── WORLD BOSS ────────────────────────────────────────
+    if (tab === 'worldboss') {
+      html += `<div class="adm-section"><h3>👑 World Boss Control</h3>`;
+      for (const boss of (GAME_DATA.worldBosses||[])) {
+        const lastKill = s.worldBossRespawns?.[boss.id] || 0;
+        const respawnLeft = Math.max(0, (lastKill + boss.respawn*1000) - Date.now());
+        const respawnMin = Math.ceil(respawnLeft/60000);
+        const isUp = respawnLeft <= 0;
+        html += `<div class="adm-item-row" style="flex-wrap:wrap;gap:6px;align-items:center;padding:8px">
+          <span class="adm-item-name">${boss.name}</span>
+          <span class="adm-m-meta">Lv${boss.combatLevel} · ${boss.hp.toLocaleString()}HP</span>
+          <span style="font-size:11px;${isUp?'color:#4aaa60':'color:#e06040'}">${isUp?'🟢 UP':'🔴 Respawns in '+respawnMin+'m'}</span>
+          <button class="btn btn-xs" onclick="delete game.state.worldBossRespawns['${boss.id}'];ui.toast({type:'success',text:'${boss.name} spawned!'});ui.renderPage('admin')">Force Spawn</button>
+          <button class="btn btn-xs btn-danger" onclick="game.state.worldBossRespawns['${boss.id}']=Date.now();ui.renderPage('admin')">Reset Timer</button>
+          <button class="btn btn-xs" onclick="game.startWorldBoss('${boss.id}');ui.renderPage('combat')">Fight Now</button>
+        </div>`;
+      }
+      html += `<div class="adm-section" style="margin-top:10px"><h3>Spawn All Bosses</h3>
+        <button class="btn btn-sm" onclick="(GAME_DATA.worldBosses||[]).forEach(b=>delete game.state.worldBossRespawns[b.id]);ui.toast({type:'success',text:'All world bosses spawned!'});ui.renderPage('admin')">Spawn All World Bosses</button>
+      </div></div>`;
+    }
+
     // ── STATE ─────────────────────────────────────────────
     if (tab === 'state') {
       html+=`<div class="adm-section"><h3>Inspect / Edit State</h3>
@@ -1399,6 +1650,156 @@ if (typeof GameEngine !== 'undefined') {
 
 applyAdminPanel();
 window.loadCustomMonsterImages = loadCustomMonsterImages;
+
+  // ── CREATE METHODS ──────────────────────────────────────
+  UI.prototype._admCreateItem = function(giveOne=false) {
+    const g = (id) => document.getElementById(id)?.value?.trim();
+    const gn = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+    const itemId = g('ci-id');
+    if (!itemId) { this.toast({type:'warn',text:'Item ID required'}); return; }
+    if (GAME_DATA.items[itemId]) { this.toast({type:'warn',text:'Item ID already exists — use a unique ID'}); return; }
+    const stats = {};
+    if (gn('ci-atk')) stats.attackBonus = gn('ci-atk');
+    if (gn('ci-str')) stats.strengthBonus = gn('ci-str');
+    if (gn('ci-def')) stats.defenceBonus = gn('ci-def');
+    if (gn('ci-rng')) stats.rangedBonus = gn('ci-rng');
+    if (gn('ci-mag')) stats.magicBonus = gn('ci-mag');
+    if (gn('ci-dr'))  stats.damageReduction = gn('ci-dr');
+    const levelReq = {};
+    if (gn('ci-req-atk')) levelReq.attack = gn('ci-req-atk');
+    if (gn('ci-req-def')) levelReq.defence = gn('ci-req-def');
+    if (gn('ci-req-rng')) levelReq.ranged = gn('ci-req-rng');
+    if (gn('ci-req-mag')) levelReq.magic = gn('ci-req-mag');
+    const slot = g('ci-slot');
+    const style = g('ci-style');
+    const heals = gn('ci-heals');
+    const newItem = {
+      id: itemId,
+      name: g('ci-name') || itemId,
+      desc: g('ci-desc') || '',
+      type: g('ci-type') || 'resource',
+      rarity: g('ci-rarity') || 'common',
+      sellPrice: gn('ci-price'),
+      ...(slot ? { slot } : {}),
+      ...(style ? { style } : {}),
+      ...(Object.keys(stats).length ? { stats } : {}),
+      ...(Object.keys(levelReq).length ? { levelReq } : {}),
+      ...(heals > 0 ? { heals } : {}),
+      ...(gn('ci-speed') !== 2.4 ? { attackSpeed: gn('ci-speed') } : {}),
+      sprite: slot === 'weapon' ? `sword-${g('ci-rarity')||'iron'}` : slot ? `${slot}-steel` : 'misc-gear',
+    };
+    GAME_DATA.items[itemId] = newItem;
+    const shopCat = g('ci-shop');
+    if (shopCat) GAME_DATA.shop.push({ item: itemId, price: gn('ci-shop-price') || newItem.sellPrice*2, category: shopCat });
+    if (giveOne) game.addItem(itemId, 1);
+    online?.adminLog?.('create_item', { itemId, name: newItem.name });
+    const result = document.getElementById('adm-create-result');
+    if (result) result.textContent = `✅ Created: ${newItem.name} (${itemId})${giveOne?' — added to bank':''}`;
+    this.toast({type:'success', text:`Item "${newItem.name}" created!`});
+  };
+
+  UI.prototype._admCreateMonster = function() {
+    const g = (id) => document.getElementById(id)?.value?.trim();
+    const gn = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+    const mId = g('cm-id');
+    if (!mId) { this.toast({type:'warn',text:'Monster ID required'}); return; }
+    if (GAME_DATA.monsters[mId]) { this.toast({type:'warn',text:'Monster ID already exists'}); return; }
+    const parseDrops = (raw) => {
+      if (!raw) return null;
+      const parts = raw.split(':');
+      if (parts.length < 2) return null;
+      return { item: parts[0].trim(), qty: parseInt(parts[1])||1, chance: parseFloat(parts[2])||1.0 };
+    };
+    const drops = ['cm-drop1','cm-drop2','cm-drop3','cm-drop4','cm-drop5'].map(id=>parseDrops(g(id))).filter(Boolean);
+    const monster = {
+      id: mId,
+      name: g('cm-name') || mId,
+      hp: gn('cm-hp') || 100,
+      maxHit: gn('cm-maxhit') || 10,
+      combatLevel: gn('cm-cl') || 1,
+      attackSpeed: gn('cm-spd') || 2.4,
+      xp: gn('cm-xp') || 50,
+      style: g('cm-style') || 'melee',
+      alignment: g('cm-align') || 'true_neutral',
+      gold: { min: gn('cm-gmin')||1, max: gn('cm-gmax')||10 },
+      evasion: { melee: gn('cm-evmelee')||0, ranged: gn('cm-evranged')||0, magic: gn('cm-evmagic')||0 },
+      drops: drops.length ? drops : [{ item:'bones', qty:1, chance:1.0 }],
+    };
+    GAME_DATA.monsters[mId] = monster;
+    const areaId = g('cm-area');
+    if (areaId) {
+      const area = GAME_DATA.combatAreas.find(a=>a.id===areaId);
+      if (area && !area.monsters.includes(mId)) area.monsters.push(mId);
+    }
+    online?.adminLog?.('create_monster', { mId, name: monster.name });
+    const result = document.getElementById('adm-create-result');
+    if (result) result.textContent = `✅ Created: ${monster.name} (${mId})${areaId?' added to '+areaId:''}`;
+    this.toast({type:'success', text:`Monster "${monster.name}" created!`});
+  };
+
+  UI.prototype._admCreateRecipe = function() {
+    const g = (id) => document.getElementById(id)?.value?.trim();
+    const gn = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+    const rId = g('cr-id');
+    const skill = g('cr-skill');
+    if (!rId || !skill) { this.toast({type:'warn',text:'Recipe ID and skill required'}); return; }
+    if (!GAME_DATA.recipes[skill]) GAME_DATA.recipes[skill] = [];
+    if (GAME_DATA.recipes[skill].find(r=>r.id===rId)) { this.toast({type:'warn',text:'Recipe ID already exists'}); return; }
+    const parseInput = (raw) => {
+      if (!raw) return null;
+      const parts = raw.split(':');
+      if (parts.length < 1 || !parts[0].trim()) return null;
+      return { item: parts[0].trim(), qty: parseInt(parts[1])||1 };
+    };
+    const inputs = ['cr-in1','cr-in2','cr-in3','cr-in4'].map(id=>parseInput(g(id))).filter(Boolean);
+    const recipe = {
+      id: rId,
+      name: g('cr-name') || rId,
+      level: gn('cr-level') || 1,
+      xp: gn('cr-xp') || 50,
+      time: gn('cr-time') || 3.0,
+      input: inputs,
+      output: { item: g('cr-out-id'), qty: gn('cr-out-qty') || 1 },
+    };
+    GAME_DATA.recipes[skill].push(recipe);
+    online?.adminLog?.('create_recipe', { rId, skill, name: recipe.name });
+    const result = document.getElementById('adm-create-result');
+    if (result) result.textContent = `✅ Created recipe: ${recipe.name} in ${skill}`;
+    this.toast({type:'success', text:`Recipe "${recipe.name}" added to ${skill}!`});
+  };
+
+  UI.prototype._admCreateArea = function() {
+    const g = (id) => document.getElementById(id)?.value?.trim();
+    const aId = g('ca-id');
+    if (!aId) { this.toast({type:'warn',text:'Area ID required'}); return; }
+    if (GAME_DATA.combatAreas.find(a=>a.id===aId)) { this.toast({type:'warn',text:'Area ID already exists'}); return; }
+    const monsters = (g('ca-monsters')||'').split(',').map(m=>m.trim()).filter(Boolean);
+    const area = {
+      id: aId,
+      name: g('ca-name') || aId,
+      desc: g('ca-desc') || '',
+      levelReq: parseInt(document.getElementById('ca-lvl')?.value)||1,
+      monsters,
+    };
+    GAME_DATA.combatAreas.push(area);
+    online?.adminLog?.('create_area', { aId, name: area.name });
+    const result = document.getElementById('adm-create-result');
+    if (result) result.textContent = `✅ Created area: ${area.name} with ${monsters.length} monster(s)`;
+    this.toast({type:'success', text:`Area "${area.name}" created!`});
+  };
+
+  UI.prototype._admAddToShop = function() {
+    const id = document.getElementById('sm-id')?.value?.trim();
+    const price = parseInt(document.getElementById('sm-price')?.value)||100;
+    const cat = document.getElementById('sm-cat-custom')?.value?.trim() || document.getElementById('sm-cat')?.value || 'equipment';
+    if (!id) { this.toast({type:'warn',text:'Item ID required'}); return; }
+    if (!GAME_DATA.items[id]) { this.toast({type:'warn',text:`Item "${id}" not found in game data`}); return; }
+    if (GAME_DATA.shop.find(s=>s.item===id)) { this.toast({type:'warn',text:'Item already in shop — remove first or edit price'}); return; }
+    GAME_DATA.shop.push({ item: id, price, category: cat });
+    online?.adminLog?.('add_to_shop', { itemId: id, price, category: cat });
+    this.toast({type:'success', text:`"${GAME_DATA.items[id].name}" added to shop for ${price}g`});
+    this.renderPage('admin');
+  };
 
 // Load images after Firebase auth
 (function waitForAuth(){if(typeof online!=='undefined'&&online.db){loadCustomMonsterImages();}else setTimeout(waitForAuth,1000);})();
