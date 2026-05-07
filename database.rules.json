@@ -25,6 +25,18 @@
         ".write": "auth != null"
       }
     },
+    "party_chat": {
+      "$partyId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "party_state": {
+      "$partyId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
     "presence": {
       "$uid": {
         ".read": true,

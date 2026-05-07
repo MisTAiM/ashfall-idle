@@ -6761,3 +6761,9 @@ kbd {
 
 /* Active button state (raid target selection) */
 .btn-active { border-color:var(--amber) !important; background:rgba(201,135,62,0.15) !important; color:var(--amber) !important; }
+
+/* Player Search Results */
+.party-search-results { max-height:200px; overflow-y:auto; margin-top:6px; }
+.party-search-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:4px; margin-bottom:4px; font-size:12px; gap:6px; }
+.party-search-name { font-weight:600; color:var(--text); flex:1; }
+.party-search-info { color:var(--text-dim); font-size:11px; white-space:nowrap; }

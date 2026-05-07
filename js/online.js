@@ -2040,6 +2040,106 @@ class OnlineManager {
       }, err => { console.error('Inbox listener error:', err); });
   }
 
+  // ── PARTY REAL-TIME ─────────────────────────────────────────
+  // Real-time Firestore listener on party doc
+  startPartyListener(partyId, callback) {
+    this.stopPartyListener();
+    if (!this.isOnline || !this.firestore || !partyId) return;
+    this._partyUnsub = this.firestore.collection('parties').doc(partyId)
+      .onSnapshot(snap => {
+        if (snap.exists) callback(snap.data());
+      }, err => { console.error('[Party] Listener error:', err); });
+  }
+  stopPartyListener() {
+    if (this._partyUnsub) { this._partyUnsub(); this._partyUnsub = null; }
+  }
+
+  // Real-time RTDB listener for party chat
+  startPartyChatListener(partyId, callback) {
+    this.stopPartyChatListener();
+    if (!this.isOnline || !this.db || !partyId) return;
+    this._partyChatRef = this.db.ref(`party_chat/${partyId}`);
+    this._partyChatListener = this._partyChatRef.orderByChild('timestamp').limitToLast(50).on('value', snap => {
+      const msgs = [];
+      snap.forEach(child => { msgs.push({ id:child.key, ...child.val() }); });
+      callback(msgs);
+    });
+  }
+  stopPartyChatListener() {
+    if (this._partyChatRef && this._partyChatListener) {
+      this._partyChatRef.off('value', this._partyChatListener);
+      this._partyChatRef = null; this._partyChatListener = null;
+    }
+  }
+
+  // Send party chat via RTDB
+  async sendPartyChat(partyId, text) {
+    if (!this.isOnline || !this.db || !this.user || !partyId) return;
+    text = (text||'').trim();
+    if (!text || text.length > 300) return;
+    try {
+      await this.db.ref(`party_chat/${partyId}`).push({
+        uid: this.user.uid,
+        name: this.displayName || 'Survivor',
+        text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+      });
+    } catch(e) { console.error('[Party] Chat send failed:', e); }
+  }
+
+  // Sync party state to Firestore
+  async syncPartyState(partyId, data) {
+    if (!this.isOnline || !this.firestore || !partyId) return;
+    try {
+      await this.firestore.collection('parties').doc(partyId).set(data, {merge:true});
+    } catch(e) { console.error('[Party] State sync failed:', e); }
+  }
+
+  // Search players with partial match + online status
+  async searchPlayersForParty(query) {
+    if (!this.isOnline || !query || query.length < 2) return [];
+    try {
+      const snap = await this.firestore.collection('players').limit(200).get();
+      const results = [];
+      const q = query.toLowerCase();
+      const presenceSnap = await this.db.ref('presence').once('value');
+      const presenceData = presenceSnap.val() || {};
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.displayName?.toLowerCase().includes(q) && doc.id !== this.user?.uid) {
+          const pres = presenceData[doc.id];
+          const isOnline = pres && pres.online && (Date.now() - (pres.lastSeen||0)) < 300000;
+          results.push({
+            uid: doc.id,
+            name: d.displayName,
+            combatLevel: d.combatLevel || 1,
+            totalLevel: d.totalLevel || 1,
+            online: isOnline,
+            zone: pres?.zone || null,
+            lastSeen: pres?.lastSeen || null,
+          });
+        }
+      });
+      // Sort: online first, then by combat level
+      results.sort((a,b) => (b.online?1:0) - (a.online?1:0) || b.combatLevel - a.combatLevel);
+      return results.slice(0, 20);
+    } catch(e) { console.error('[Party] Search failed:', e); return []; }
+  }
+
+  // Find open parties from Firestore
+  async findOpenParties() {
+    if (!this.isOnline || !this.firestore) return [];
+    try {
+      const snap = await this.firestore.collection('parties').where('status','==','open').limit(20).get();
+      const groups = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        groups.push({ id:doc.id, name:d.name, leader:d.leaderName, members:d.members?.length||1, raidTarget:d.raidTarget, maxSize:4 });
+      });
+      return groups;
+    } catch(e) { return []; }
+  }
+
   // ── EVENTS ─────────────────────────────────────────────
   on(event, fn) { if (!this.listeners[event]) this.listeners[event] = []; this.listeners[event].push(fn); }
   emit(event, data) { if (this.listeners[event]) for (const fn of this.listeners[event]) fn(data); }

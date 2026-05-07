@@ -450,22 +450,47 @@ GameEngine.prototype.initPartySystem = function() {
 GameEngine.prototype.createParty = function(partyName) {
   this.initPartySystem();
   if (this.state.party.active) { this.emit('notification',{type:'warn',text:'Already in a party.'}); return; }
+  if (!online?.isOnline || !online?.user) { this.emit('notification',{type:'warn',text:'Must be logged in to create a party.'}); return; }
   const partyId = 'party_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
-  const playerName = this.state.playerName || 'Player';
+  const playerName = this.state.playerName || online.displayName || 'Player';
   const cl = this.getCombatLevel();
   this.state.party = {
     active:true, id:partyId, name:partyName || 'Raid Party',
     leader:playerName,
-    members:[{ id:'self', name:playerName, combatLevel:cl, role:'leader', ready:true, isPlayer:true }],
+    members:[{ id:online.user.uid, name:playerName, combatLevel:cl, role:'leader', ready:true, isPlayer:true }],
     npcMembers:[], raidTarget:null,
     readyCheck:false, allReady:false,
     raidActive:false, raidStarted:false,
-    chat:[{sender:'System',text:`Party "${partyName||'Raid Party'}" created.`,time:Date.now()}],
-    memberStatus:{}, totalPartyDmg:0,
+    chat:[], memberStatus:{}, totalPartyDmg:0,
   };
   this.emit('notification',{type:'success',text:`Party "${partyName||'Raid Party'}" created!`});
   this._syncPartyToFirebase();
+  this._startPartyListeners();
+  // Send system message via RTDB
+  online.sendPartyChat(partyId, `📢 Party "${partyName||'Raid Party'}" created by ${playerName}`);
 };
+
+// ── RE-RENDER PARTY PAGE ON REAL-TIME UPDATES ───────────────────
+// Engine events trigger UI re-render when on party page
+(function() {
+  const _origInit = GameEngine.prototype.initPartySystem;
+  let _boundPartyEvents = false;
+  GameEngine.prototype.initPartySystem = function() {
+    _origInit.call(this);
+    if (!_boundPartyEvents) {
+      _boundPartyEvents = true;
+      this.on('partyUpdate', () => { if (window.ui?.currentPage === 'party') window.ui.renderPage('party'); });
+      this.on('partyChat', () => {
+        // Only update chat log, not full page re-render (avoids losing input focus)
+        const chatLog = document.getElementById('partyChatLog');
+        if (!chatLog || window.ui?.currentPage !== 'party') return;
+        const p = this.state.party;
+        chatLog.innerHTML = (p.chat||[]).slice(-30).map(msg=>`<div class="party-chat-msg"><span class="party-chat-sender">${msg.sender}:</span> <span class="party-chat-text">${msg.text}</span></div>`).join('');
+        chatLog.scrollTop = chatLog.scrollHeight;
+      });
+    }
+  };
+})();
 
 GameEngine.prototype.addNpcCompanion = function(npcId) {
   this.initPartySystem();
@@ -625,49 +650,92 @@ GameEngine.prototype.emit = function(event, data) {
   }
 };
 
-// ── PARTY FIREBASE SYNC ─────────────────────────────────────────
-GameEngine.prototype._syncPartyToFirebase = async function() {
-  try {
-    if (!online?.firestore || !online?.user) return;
-    const p = this.state.party;
-    await online.firestore.collection('parties').doc(p.id).set({
-      name:p.name, leader:online.user.uid, leaderName:p.leader,
-      members:p.members.filter(m=>m.isPlayer), raidTarget:p.raidTarget,
-      raidActive:p.raidActive, createdAt:Date.now(), status:'open',
-    });
-  } catch(e) { console.warn('[Party] Sync failed:', e.message); }
+// ── REAL-TIME LISTENER MANAGEMENT ────────────────────────────────
+GameEngine.prototype._startPartyListeners = function() {
+  const p = this.state.party;
+  if (!p?.active || !p.id) return;
+
+  // Firestore listener: party document changes (members join/leave, ready status, raid target)
+  online.startPartyListener(p.id, (data) => {
+    if (!this.state.party?.active) return;
+    // Merge remote members with local state (keep NPCs local)
+    if (data.members) this.state.party.members = data.members;
+    if (data.raidTarget !== undefined) this.state.party.raidTarget = data.raidTarget;
+    if (data.raidActive !== undefined) this.state.party.raidActive = data.raidActive;
+    if (data.leaderName) this.state.party.leader = data.leaderName;
+    this.emit('partyUpdate', this.state.party);
+  });
+
+  // RTDB listener: real-time party chat
+  online.startPartyChatListener(p.id, (msgs) => {
+    if (!this.state.party?.active) return;
+    this.state.party.chat = msgs.map(m => ({ sender:m.name||'System', text:m.text, time:m.timestamp }));
+    this.emit('partyChat', this.state.party.chat);
+  });
 };
 
+GameEngine.prototype._stopPartyListeners = function() {
+  online.stopPartyListener();
+  online.stopPartyChatListener();
+};
+
+// ── FIREBASE SYNC ───────────────────────────────────────────────
+GameEngine.prototype._syncPartyToFirebase = function() {
+  const p = this.state.party;
+  if (!p?.active || !p.id || !online?.isOnline) return;
+  online.syncPartyState(p.id, {
+    name:p.name, leader:online.user?.uid, leaderName:p.leader,
+    members:p.members.filter(m=>m.isPlayer),
+    raidTarget:p.raidTarget, raidActive:p.raidActive||false,
+    createdAt:Date.now(), status:'open',
+  });
+};
+
+// ── JOIN / LEAVE / INVITE ───────────────────────────────────────
 GameEngine.prototype.joinParty = function(partyId) {
   this.initPartySystem();
   if (this.state.party.active) { this.emit('notification',{type:'warn',text:'Leave current party first.'}); return; }
+  if (!online?.isOnline || !online?.user) { this.emit('notification',{type:'warn',text:'Must be logged in.'}); return; }
   this._joinPartyFromFirebase(partyId);
 };
 
 GameEngine.prototype._joinPartyFromFirebase = async function(partyId) {
   try {
-    if (!online?.firestore) { this.emit('notification',{type:'warn',text:'Must be logged in.'}); return; }
     const doc = await online.firestore.collection('parties').doc(partyId).get();
     if (!doc.exists) { this.emit('notification',{type:'warn',text:'Party not found.'}); return; }
     const data = doc.data();
     if ((data.members?.length||0) >= GAME_DATA.partySystem.maxSize) { this.emit('notification',{type:'warn',text:'Party is full.'}); return; }
-    const me = { id:online.user.uid, name:this.state.playerName||'Player', combatLevel:this.getCombatLevel(), role:'member', ready:false, isPlayer:true };
+    const me = { id:online.user.uid, name:this.state.playerName||online.displayName||'Player', combatLevel:this.getCombatLevel(), role:'member', ready:false, isPlayer:true };
     const members = [...(data.members||[]), me];
     await online.firestore.collection('parties').doc(partyId).update({ members });
     this.state.party = {
       active:true, id:partyId, name:data.name, leader:data.leaderName,
       members, npcMembers:[], raidTarget:data.raidTarget,
-      readyCheck:false, allReady:false, raidActive:false, raidStarted:false,
-      chat:[{sender:'System',text:`Joined "${data.name}".`,time:Date.now()}],
-      memberStatus:{}, totalPartyDmg:0,
+      readyCheck:false, allReady:false, raidActive:data.raidActive||false, raidStarted:false,
+      chat:[], memberStatus:{}, totalPartyDmg:0,
     };
+    this._startPartyListeners();
+    online.sendPartyChat(partyId, `${me.name} joined the party.`);
     this.emit('notification',{type:'success',text:`Joined "${data.name}"!`});
   } catch(e) { this.emit('notification',{type:'danger',text:'Join failed: '+e.message}); }
 };
 
 GameEngine.prototype.leaveParty = function() {
   if (!this.state.party?.active) return;
-  const name = this.state.party.name;
+  const p = this.state.party;
+  const name = p.name;
+  // Remove self from Firebase party doc
+  if (online?.isOnline && online?.user && p.id) {
+    const remaining = p.members.filter(m => m.id !== online.user.uid);
+    if (remaining.length === 0) {
+      // Last member — delete party
+      online.firestore?.collection('parties').doc(p.id).delete().catch(()=>{});
+    } else {
+      online.firestore?.collection('parties').doc(p.id).update({ members:remaining }).catch(()=>{});
+    }
+    online.sendPartyChat(p.id, `${this.state.playerName||'Player'} left the party.`);
+  }
+  this._stopPartyListeners();
   this.state.party = { active:false, id:null, name:null, leader:null, members:[], npcMembers:[], raidTarget:null, readyCheck:false, allReady:false, raidActive:false, raidStarted:false, chat:[], memberStatus:{}, totalPartyDmg:0 };
   this.emit('notification',{type:'info',text:`Left party "${name}".`});
 };
@@ -681,33 +749,42 @@ GameEngine.prototype.inviteToParty = function(playerName) {
 
 GameEngine.prototype._sendPartyInvite = async function(playerName) {
   try {
-    if (!online?.firestore) return;
-    const snap = await online.firestore.collection('players').where('displayName','==',playerName).limit(1).get();
-    if (snap.empty) { this.emit('notification',{type:'warn',text:`"${playerName}" not found.`}); return; }
+    if (!online?.firestore || !online?.user) return;
+    const results = await online.searchPlayersForParty(playerName);
+    const exact = results.find(r => r.name.toLowerCase() === playerName.toLowerCase()) || results[0];
+    if (!exact) { this.emit('notification',{type:'warn',text:`"${playerName}" not found.`}); return; }
     await online.firestore.collection('inbox').add({
-      to:snap.docs[0].id, from:online.user.uid, fromName:this.state.playerName||'Player',
+      to:exact.uid, from:online.user.uid, fromName:this.state.playerName||online.displayName||'Player',
       type:'party_invite', partyId:this.state.party.id, partyName:this.state.party.name,
       timestamp:Date.now(), read:false,
     });
-    this.emit('notification',{type:'success',text:`Invite sent to ${playerName}!`});
+    online.sendPartyChat(this.state.party.id, `Invite sent to ${exact.name}`);
+    this.emit('notification',{type:'success',text:`Invite sent to ${exact.name}!`});
   } catch(e) { this.emit('notification',{type:'warn',text:'Invite failed: '+e.message}); }
 };
 
+// ── PARTY CHAT (uses RTDB real-time) ────────────────────────────
 GameEngine.prototype.partyChat = function(msg) {
   const p = this.state.party;
-  if (!p?.active || !msg) return;
-  p.chat.push({ sender:this.state.playerName||'Player', text:msg, time:Date.now() });
-  if (p.chat.length > 50) p.chat.shift();
+  if (!p?.active || !msg || !p.id) return;
+  online.sendPartyChat(p.id, msg);
 };
 
-GameEngine.prototype.findRaidGroup = async function(raidType) {
-  try {
-    if (!online?.firestore) { this.emit('notification',{type:'warn',text:'Must be logged in.'}); return []; }
-    const snap = await online.firestore.collection('parties').where('status','==','open').limit(10).get();
-    const groups = [];
-    snap.forEach(doc => { const d = doc.data(); groups.push({id:doc.id,name:d.name,leader:d.leaderName,members:d.members?.length||1,maxSize:4}); });
-    return groups;
-  } catch(e) { return []; }
+// ── RAID TARGET + SYNC ──────────────────────────────────────────
+GameEngine.prototype.setRaidTarget = function(targetId) {
+  const p = this.state.party;
+  if (!p?.active) return;
+  const target = GAME_DATA.partySystem.raidTargets.find(t => t.id === targetId);
+  if (!target) return;
+  if (this.getCombatLevel() < target.levelReq) { this.emit('notification',{type:'warn',text:`Requires combat level ${target.levelReq}.`}); return; }
+  p.raidTarget = targetId;
+  this._syncPartyToFirebase();
+  online.sendPartyChat(p.id, `Raid target set: ${target.name}`);
+  this.emit('notification',{type:'info',text:`Target: ${target.name}`});
+};
+
+GameEngine.prototype.findRaidGroup = async function() {
+  return await online.findOpenParties();
 };
 
 // ── PARTY PAGE UI ───────────────────────────────────────────────
@@ -717,106 +794,184 @@ UI.prototype.renderPartyPage = function(el) {
   this.engine.initPartySystem();
   const p = s.party;
   const cl = this.engine.getCombatLevel();
+  const isOnline = online?.isOnline && online?.user;
   let html = this.header('Party System','combat','Form a party with players or NPC companions. Tackle raids together.',null);
+
+  if (!isOnline) {
+    html += `<div class="toa-locked"><div class="toa-lock-title">Login Required</div><div class="toa-lock-desc">You must be logged in to use the Party System. Go to Account to sign in.</div></div>`;
+    el.innerHTML = html; return;
+  }
 
   if (!p.active) {
     // ── CREATE / JOIN ───────────────────────────────────
     html += `<div class="party-create-section">
       <div class="party-create-title">Create a Party</div>
       <div class="party-create-form"><input type="text" id="partyNameInput" class="input-field" placeholder="Party name..." maxlength="24" /><button class="btn btn-sm" onclick="game.createParty(document.getElementById('partyNameInput').value)">Create</button></div>
-      <div class="party-divider">— or join —</div>
+      <div class="party-divider">— or join via ID —</div>
       <div class="party-create-form"><input type="text" id="partyCodeInput" class="input-field" placeholder="Party ID..." /><button class="btn btn-sm" onclick="game.joinParty(document.getElementById('partyCodeInput').value)">Join</button></div>
     </div>`;
+
+    // ── PLAYER SEARCH ───────────────────────────────────
+    html += `<div class="party-create-section">
+      <div class="party-create-title">Search Players</div>
+      <div class="party-create-form"><input type="text" id="playerSearchInput" class="input-field" placeholder="Search by name (min 2 chars)..." oninput="ui._debouncePlayerSearch(this.value)" /><button class="btn btn-xs" onclick="ui._doPlayerSearch(document.getElementById('playerSearchInput').value)">Search</button></div>
+      <div id="playerSearchResults" class="party-search-results"></div>
+    </div>`;
+
     html += `<div class="party-bonuses-info"><div class="party-create-title">Party Raid Bonuses</div>
       <div class="party-bonus-row"><span>2 Members</span><span>Boss HP ×0.85, Your Damage +8%</span></div>
       <div class="party-bonus-row"><span>3 Members</span><span>Boss HP ×0.70, Your Damage +12%</span></div>
       <div class="party-bonus-row"><span>4 Members</span><span>Boss HP ×0.60, Your Damage +18%</span></div>
     </div>`;
-    html += `<div class="ce-section-title">NPC Companions</div><p style="color:var(--text-dim);font-size:12px;margin-bottom:8px">Create a party to hire NPC companions. They fight alongside you in raids, dealing damage and taking hits.</p>`;
+
+    // NPC companions
+    html += `<div class="ce-section-title">NPC Companions</div><p style="color:var(--text-dim);font-size:12px;margin-bottom:8px">Create a party first, then hire NPC companions to fill empty slots.</p>`;
     for (const npc of GAME_DATA.npcCompanions) {
       const locked = cl < npc.unlockLevel;
       html += `<div class="ce-boss-card ${locked?'locked':''}"><div class="ce-bc-info"><div class="ce-bc-name">${npc.name}</div><div class="ce-bc-stats">Cb Lv${npc.combatLevel} · ${npc.style} · ${npc.dps} DPS · ${npc.hp} HP${npc.heals?' · Healer':''}</div><div class="ce-bc-desc">${npc.desc}</div><div class="ce-bc-set">Unlock: Combat Level ${npc.unlockLevel} ${locked?`(You: ${cl})`:' ✓'}</div></div>${locked?'<div class="locked-overlay">Lv '+npc.unlockLevel+'</div>':''}</div>`;
     }
-    html += `<div class="party-finder-section"><div class="party-create-title">Raid Group Finder</div><div class="party-finder-btns"><button class="btn btn-xs" onclick="ui.findGroups('open')">Find Open Groups</button></div><div id="raidFinderResults"></div></div>`;
+
+    // Raid Group Finder
+    html += `<div class="party-finder-section"><div class="party-create-title">Open Raid Groups</div><button class="btn btn-xs" onclick="ui._loadOpenGroups()">Refresh</button><div id="raidFinderResults" style="margin-top:8px"></div></div>`;
   } else {
-    // ── ACTIVE PARTY ────────────────────────────────────
+    // ── ACTIVE PARTY (with live data) ───────────────────
     const totalSize = p.members.length + p.npcMembers.length;
     const bonus = this.engine.getPartyBonus();
     html += `<div class="party-active-section">
-      <div class="party-header-row"><div class="party-name-display">${p.name}</div><div class="party-id-display">ID: <code>${p.id}</code></div></div>`;
+      <div class="party-header-row"><div class="party-name-display">${p.name}</div><div class="party-id-display">ID: <code onclick="navigator.clipboard?.writeText('${p.id}');game.emit('notification',{type:'info',text:'Party ID copied!'})" style="cursor:pointer" title="Click to copy">${p.id?.substring(0,20)}...</code></div></div>`;
 
-    // Members
-    html += `<div class="party-create-title">Members (${totalSize}/4)</div>`;
+    // Members (real players from Firebase)
+    html += `<div class="party-create-title">Players (${p.members.length})</div>`;
     for (const m of p.members) {
-      html += `<div class="party-member-row"><span class="party-member-name">${m.name} ${m.role==='leader'?'👑':''} <span style="color:var(--text-dim);font-size:10px">${m.isPlayer?'Player':'NPC'}</span></span><span class="party-member-level">Cb ${m.combatLevel} ${m.ready?'<span style="color:#4aaa50">Ready</span>':''}</span></div>`;
-    }
-    for (const n of p.npcMembers) {
-      const ms = p.memberStatus[n.id];
-      const alive = !ms || ms.alive;
-      html += `<div class="party-member-row"><span class="party-member-name">${n.name} <span style="color:var(--text-dim);font-size:10px">NPC · ${n.style}${n.heals?' · Healer':''}</span></span><span class="party-member-level">${n.dps} DPS ${alive?'':'<span style="color:#cc4444">Dead</span>'} <button class="btn btn-xs" style="padding:1px 6px;font-size:10px" onclick="game.removeNpcCompanion('${n.id}')">×</button></span></div>`;
+      const isSelf = m.id === online?.user?.uid;
+      html += `<div class="party-member-row"><span class="party-member-name">${m.name} ${m.role==='leader'?'<span style="color:var(--amber)">Leader</span>':''} ${isSelf?'<span style="color:#4aaa50">(You)</span>':''}</span><span class="party-member-level">Cb ${m.combatLevel} ${m.ready?'<span style="color:#4aaa50">Ready</span>':''}</span></div>`;
     }
 
-    // Hire NPCs
+    // NPC members
+    if (p.npcMembers.length) {
+      html += `<div class="party-create-title">Companions (${p.npcMembers.length})</div>`;
+      for (const n of p.npcMembers) {
+        const ms = p.memberStatus[n.id];
+        const alive = !ms || ms.alive;
+        html += `<div class="party-member-row"><span class="party-member-name">${n.name} <span style="color:var(--text-dim);font-size:10px">${n.style}${n.heals?' · Healer':''} · ${n.dps} DPS</span></span><span class="party-member-level">${alive?(ms?`${ms.hp}/${ms.maxHp} HP`:'Ready'):'<span style="color:#cc4444">Fallen</span>'} <button class="btn btn-xs" style="padding:1px 6px;font-size:10px" onclick="game.removeNpcCompanion('${n.id}')">×</button></span></div>`;
+      }
+    }
+
+    // Hire NPCs + invite
     if (totalSize < 4) {
-      html += `<div class="ce-section-title">Hire Companion</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">`;
+      html += `<div class="ce-section-title">Add Members (${totalSize}/4)</div>`;
+      html += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`;
       for (const npc of GAME_DATA.npcCompanions) {
         const locked = cl < npc.unlockLevel;
         const already = p.npcMembers.find(n=>n.id===npc.id);
-        html += `<button class="btn btn-xs" ${locked||already?'disabled':''} onclick="game.addNpcCompanion('${npc.id}')" title="${npc.desc}">${npc.name} (${npc.dps}dps)</button>`;
+        if (!locked && !already) html += `<button class="btn btn-xs" onclick="game.addNpcCompanion('${npc.id}')" title="${npc.desc}">${npc.name}</button>`;
       }
       html += `</div>`;
+      html += `<div class="party-create-title">Invite Player</div>
+        <div class="party-create-form"><input type="text" id="partyInviteSearch" class="input-field" placeholder="Search player name..." oninput="ui._debouncePartyInviteSearch(this.value)" /><button class="btn btn-xs" onclick="game.inviteToParty(document.getElementById('partyInviteSearch').value)">Invite</button></div>
+        <div id="partyInviteResults" class="party-search-results"></div>`;
     }
 
-    // Invite player
-    html += `<div class="party-invite-section"><input type="text" id="partyInviteInput" class="input-field" placeholder="Invite player..." /><button class="btn btn-xs" onclick="game.inviteToParty(document.getElementById('partyInviteInput').value)">Invite</button></div>`;
-
-    // Raid target selection
+    // Raid target
     html += `<div class="ce-section-title">Raid Target</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`;
     for (const t of GAME_DATA.partySystem.raidTargets) {
       const sel = p.raidTarget === t.id;
       const tLocked = cl < t.levelReq;
-      html += `<button class="btn btn-xs ${sel?'btn-active':''}" ${tLocked?'disabled':''} onclick="game.setRaidTarget('${t.id}')" style="${sel?'border-color:var(--amber);background:rgba(201,135,62,0.15)':''}">${t.name}${tLocked?' (Lv'+t.levelReq+')':''}</button>`;
+      html += `<button class="btn btn-xs ${sel?'btn-active':''}" ${tLocked?'disabled':''} onclick="game.setRaidTarget('${t.id}')">${t.name}${tLocked?' (Lv'+t.levelReq+')':''}</button>`;
     }
     html += `</div>`;
 
-    // Status & launch
+    // Status + launch
     if (p.raidTarget) {
       const targetName = GAME_DATA.partySystem.raidTargets.find(t=>t.id===p.raidTarget)?.name || p.raidTarget;
       html += `<div class="party-bonuses-info" style="margin-bottom:12px">
         <div class="party-bonus-row"><span>Target</span><span>${targetName}</span></div>
         <div class="party-bonus-row"><span>Party Size</span><span>${totalSize}</span></div>
-        <div class="party-bonus-row"><span>Boss HP Multiplier</span><span>×${bonus.hpMult.toFixed(2)}</span></div>
-        <div class="party-bonus-row"><span>Your Damage Bonus</span><span>+${Math.round((bonus.dmgMult-1)*100)}%</span></div>
+        <div class="party-bonus-row"><span>Boss HP Mult</span><span>×${bonus.hpMult.toFixed(2)}</span></div>
+        <div class="party-bonus-row"><span>Damage Bonus</span><span>+${Math.round((bonus.dmgMult-1)*100)}%</span></div>
       </div>`;
       html += `<button class="btn btn-lg toa-enter-btn" onclick="game.launchPartyRaid()">Launch Raid</button>`;
     }
 
-    // Raid status (during active raid)
+    // NPC raid status
     if (p.raidActive && Object.keys(p.memberStatus).length > 0) {
-      html += `<div class="ce-section-title">Party Status (In Raid)</div>`;
+      html += `<div class="ce-section-title">Raid Status</div>`;
       for (const [id, ms] of Object.entries(p.memberStatus)) {
-        const hpPct = Math.max(0, ms.hp / ms.maxHp * 100);
-        html += `<div class="party-member-row"><span class="party-member-name">${ms.name} <span style="color:var(--text-dim);font-size:10px">${ms.style}${ms.heals?' · Healer':''}</span></span><span style="font-size:11px">${ms.alive?`<span style="color:#4aaa50">${ms.hp}/${ms.maxHp}</span> · ${ms.totalDmg.toLocaleString()} dmg`:'<span style="color:#cc4444">Fallen</span>'}</span></div>`;
+        html += `<div class="party-member-row"><span class="party-member-name">${ms.name}</span><span style="font-size:11px">${ms.alive?`<span style="color:#4aaa50">${ms.hp}/${ms.maxHp}</span> · ${ms.totalDmg.toLocaleString()} dmg`:'<span style="color:#cc4444">Fallen</span>'}</span></div>`;
       }
       html += `<div class="party-bonus-row" style="margin-top:4px"><span>Total NPC Damage</span><span>${p.totalPartyDmg.toLocaleString()}</span></div>`;
     }
 
-    // Chat
-    html += `<div class="party-chat-section"><div class="party-create-title">Party Chat</div><div class="party-chat-log" id="partyChatLog">${p.chat.slice(-20).map(msg=>`<div class="party-chat-msg"><span class="party-chat-sender">${msg.sender}:</span> <span class="party-chat-text">${msg.text}</span></div>`).join('')}</div><div class="party-chat-input-row"><input type="text" id="partyChatInput" class="input-field" placeholder="Message..." maxlength="200" onkeypress="if(event.key==='Enter'){game.partyChat(this.value);this.value='';}" /><button class="btn btn-xs" onclick="const i=document.getElementById('partyChatInput');game.partyChat(i.value);i.value='';">Send</button></div></div>`;
+    // Real-time chat (from RTDB)
+    html += `<div class="party-chat-section"><div class="party-create-title">Party Chat <span style="color:var(--text-dim);font-size:10px">Live</span></div>
+      <div class="party-chat-log" id="partyChatLog">${(p.chat||[]).slice(-30).map(msg=>`<div class="party-chat-msg"><span class="party-chat-sender">${msg.sender}:</span> <span class="party-chat-text">${msg.text}</span></div>`).join('')}</div>
+      <div class="party-chat-input-row">
+        <input type="text" id="partyChatInput" class="input-field" placeholder="Message..." maxlength="200" onkeypress="if(event.key==='Enter'){game.partyChat(this.value);this.value='';}" />
+        <button class="btn btn-xs" onclick="const i=document.getElementById('partyChatInput');game.partyChat(i.value);i.value='';">Send</button>
+      </div>
+    </div>`;
 
     html += `<button class="btn btn-sm btn-danger" style="margin-top:12px" onclick="game.leaveParty()">Leave Party</button>`;
     html += `</div>`;
   }
   el.innerHTML = html;
-  } catch(e) { el.innerHTML = `<div class="bank-empty" style="color:#cc6666">Party page error: ${e.message}<br><small>${e.stack?.split('\n')[1]||''}</small></div>`; console.error('[Party UI]', e); }
+
+  // Auto-scroll chat
+  const chatLog = document.getElementById('partyChatLog');
+  if (chatLog) chatLog.scrollTop = chatLog.scrollHeight;
+
+  } catch(e) { el.innerHTML = `<div class="bank-empty" style="color:#cc6666">Party page error: ${e.message}<br><small>${e.stack?.split('\\n')[1]||''}</small></div>`; console.error('[Party UI]', e); }
 };
 
-UI.prototype.findGroups = async function(raidType) {
-  const results = await this.engine.findRaidGroup(raidType);
+// ── PLAYER SEARCH (debounced) ───────────────────────────────────
+UI.prototype._debouncePlayerSearch = function(query) {
+  clearTimeout(this._playerSearchTimer);
+  this._playerSearchTimer = setTimeout(() => this._doPlayerSearch(query), 400);
+};
+UI.prototype._doPlayerSearch = async function(query) {
+  const container = document.getElementById('playerSearchResults');
+  if (!container) return;
+  if (!query || query.length < 2) { container.innerHTML = ''; return; }
+  container.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:8px">Searching...</div>';
+  const results = await online.searchPlayersForParty(query);
+  if (!results.length) { container.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:8px">No players found.</div>'; return; }
+  container.innerHTML = results.map(r => `<div class="party-search-row">
+    <span class="party-search-name">${r.name}</span>
+    <span class="party-search-info">Cb ${r.combatLevel} · Total ${r.totalLevel} ${r.online?'<span style="color:#4aaa50">Online</span>':'<span style="color:var(--text-dim)">Offline</span>'}</span>
+    <button class="btn btn-xs" onclick="game.inviteToParty('${r.name}')">Invite</button>
+  </div>`).join('');
+};
+
+// ── PARTY INVITE SEARCH (debounced) ─────────────────────────────
+UI.prototype._debouncePartyInviteSearch = function(query) {
+  clearTimeout(this._partyInviteTimer);
+  this._partyInviteTimer = setTimeout(() => this._doPartyInviteSearch(query), 400);
+};
+UI.prototype._doPartyInviteSearch = async function(query) {
+  const container = document.getElementById('partyInviteResults');
+  if (!container) return;
+  if (!query || query.length < 2) { container.innerHTML = ''; return; }
+  container.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:4px">Searching...</div>';
+  const results = await online.searchPlayersForParty(query);
+  if (!results.length) { container.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:4px">No players found.</div>'; return; }
+  container.innerHTML = results.slice(0,8).map(r => `<div class="party-search-row">
+    <span class="party-search-name">${r.name}</span>
+    <span class="party-search-info">Cb ${r.combatLevel} ${r.online?'<span style="color:#4aaa50">●</span>':'<span style="color:#666">●</span>'}</span>
+    <button class="btn btn-xs" onclick="game.inviteToParty('${r.name}')">Invite</button>
+  </div>`).join('');
+};
+
+// ── OPEN GROUPS FINDER ──────────────────────────────────────────
+UI.prototype._loadOpenGroups = async function() {
   const container = document.getElementById('raidFinderResults');
   if (!container) return;
-  if (!results.length) { container.innerHTML = '<div class="party-finder-empty">No open groups. Create your own!</div>'; return; }
-  container.innerHTML = results.map(g => `<div class="party-finder-result"><span>${g.name}</span><span>${g.leader}</span><span>${g.members}/${g.maxSize}</span><button class="btn btn-xs" onclick="game.joinParty('${g.id}')">Join</button></div>`).join('');
+  container.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:8px">Loading...</div>';
+  const groups = await online.findOpenParties();
+  if (!groups.length) { container.innerHTML = '<div class="party-finder-empty">No open groups found. Create your own!</div>'; return; }
+  container.innerHTML = groups.map(g => {
+    const targetName = GAME_DATA.partySystem.raidTargets.find(t=>t.id===g.raidTarget)?.name || g.raidTarget || 'No target';
+    return `<div class="party-finder-result"><span>${g.name}</span><span>${g.leader}</span><span>${g.members}/${g.maxSize}</span><span style="color:var(--text-dim);font-size:11px">${targetName}</span><button class="btn btn-xs" onclick="game.joinParty('${g.id}')">Join</button></div>`;
+  }).join('');
 };
 
 // ── COMBAT HOOKS — apply party bonuses to actual combat ─────────
