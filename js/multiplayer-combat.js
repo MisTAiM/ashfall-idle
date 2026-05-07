@@ -210,10 +210,15 @@ GameEngine.prototype.stopSpectating = function() {
       p.raidStarted = false;
       if (p.totalPartyDmg > 0) {
         const msg = `Raid ended. NPC companions dealt ${p.totalPartyDmg.toLocaleString()} total damage.`;
-        p.chat.push({sender:'System', text:msg, time:Date.now()});
         if (typeof online !== 'undefined' && online?.db && p.id) {
           online.sendPartyChat?.(p.id, msg);
         }
+      }
+      // Update Firebase so other members see raid ended
+      if (typeof online !== 'undefined' && online?.firestore && p.id) {
+        online.firestore.collection('parties').doc(p.id).update({
+          raidActive: false,
+        }).catch(() => {});
       }
       this.stopSpectating();
     }

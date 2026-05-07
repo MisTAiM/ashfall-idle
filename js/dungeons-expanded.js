@@ -548,7 +548,7 @@ GameEngine.prototype.launchPartyRaid = function() {
   const totalSize = p.members.length + p.npcMembers.length;
   if (totalSize < 1) { this.emit('notification',{type:'warn',text:'Need at least 1 member.'}); return; }
 
-  // Initialize member combat status
+  // Initialize NPC member combat status
   p.memberStatus = {};
   for (const m of p.npcMembers) {
     p.memberStatus[m.id] = { hp:m.hp, maxHp:m.hp, alive:true, dps:m.dps, totalDmg:0, name:m.name, style:m.style, heals:m.heals||false, healAmt:m.healAmt||0, healTimer:0, healInterval:m.healInterval||99 };
@@ -557,18 +557,57 @@ GameEngine.prototype.launchPartyRaid = function() {
   p.raidActive = true; p.raidStarted = true;
   p.readyCheck = false;
 
-  p.chat.push({sender:'System',text:`Raid launched: ${p.raidTarget}! ${totalSize} members.`,time:Date.now()});
+  // Broadcast to Firebase so ALL party members see the raid start
+  if (online?.isOnline && online?.firestore && p.id) {
+    online.firestore.collection('parties').doc(p.id).update({
+      raidActive: true,
+      raidTarget: p.raidTarget,
+      raidLaunchedBy: online.user?.uid,
+      raidLaunchedAt: Date.now(),
+    }).catch(e => console.warn('[Party] Raid broadcast failed:', e));
+  }
+
+  if (online?.isOnline && p.id) {
+    online.sendPartyChat(p.id, `⚔️ RAID LAUNCHED: ${GAME_DATA.partySystem.raidTargets.find(t=>t.id===p.raidTarget)?.name||p.raidTarget}! All members join now!`);
+  }
+
   this.emit('notification',{type:'achievement',text:`Party raid starting with ${totalSize} members!`});
 
-  // Launch the actual raid/dungeon
-  const target = p.raidTarget;
-  if (target === 'theatre') { this.startTheatreOfAsh?.(); }
-  else if (target === 'chambers') { this.startChambersOfAsh?.(); }
-  else {
-    // Dungeon — start it with party scaling
-    const dungeon = GAME_DATA.dungeons.find(d => d.id === target);
-    if (dungeon) { this.startDungeon?.(target); }
+  // Leader auto-enters combat
+  this._enterPartyRaidCombat(p.raidTarget);
+};
+
+// Called by leader on launch AND by members when they join
+GameEngine.prototype._enterPartyRaidCombat = function(targetId) {
+  const p = this.state.party;
+  if (!p) return;
+
+  // Initialize NPC status if not already done
+  if (!p.memberStatus || Object.keys(p.memberStatus).length === 0) {
+    p.memberStatus = {};
+    for (const m of (p.npcMembers||[])) {
+      p.memberStatus[m.id] = { hp:m.hp, maxHp:m.hp, alive:true, dps:m.dps, totalDmg:0, name:m.name, style:m.style, heals:m.heals||false, healAmt:m.healAmt||0, healTimer:0, healInterval:m.healInterval||99 };
+    }
   }
+  p.raidActive = true;
+  p.raidStarted = true;
+
+  if (targetId === 'theatre') { this.startTheatreOfAsh?.(); }
+  else if (targetId === 'chambers') { this.startChambersOfAsh?.(); }
+  else {
+    const dungeon = GAME_DATA.dungeons.find(d => d.id === targetId);
+    if (dungeon) { this.startDungeon?.(targetId); }
+  }
+};
+
+// Called by non-leader members to join an active raid
+GameEngine.prototype.joinActiveRaid = function() {
+  const p = this.state.party;
+  if (!p?.active || !p.raidTarget) { this.emit('notification',{type:'warn',text:'No active raid to join.'}); return; }
+  if (p.raidStarted && this.state.combat?.active) { this.emit('notification',{type:'warn',text:'Already in combat.'}); return; }
+
+  this.emit('notification',{type:'achievement',text:'Joining party raid...'});
+  this._enterPartyRaidCombat(p.raidTarget);
 };
 
 // ── PARTY COMBAT TICK — simulates NPC member damage ─────────────
@@ -655,14 +694,34 @@ GameEngine.prototype._startPartyListeners = function() {
   const p = this.state.party;
   if (!p?.active || !p.id) return;
 
-  // Firestore listener: party document changes (members join/leave, ready status, raid target)
+  // Firestore listener: party document changes
   online.startPartyListener(p.id, (data) => {
     if (!this.state.party?.active) return;
-    // Merge remote members with local state (keep NPCs local)
+    // Merge remote members with local state
     if (data.members) this.state.party.members = data.members;
     if (data.raidTarget !== undefined) this.state.party.raidTarget = data.raidTarget;
-    if (data.raidActive !== undefined) this.state.party.raidActive = data.raidActive;
     if (data.leaderName) this.state.party.leader = data.leaderName;
+
+    // GROUP TARGETING: detect when leader launches a raid
+    if (data.raidActive && !this.state.party.raidStarted && !this.state.combat?.active) {
+      // Someone launched a raid — notify and auto-prompt
+      const isLeader = data.raidLaunchedBy === online?.user?.uid;
+      if (!isLeader && data.raidTarget) {
+        this.state.party.raidActive = true;
+        this.state.party.raidTarget = data.raidTarget;
+        const targetName = GAME_DATA.partySystem.raidTargets.find(t=>t.id===data.raidTarget)?.name || data.raidTarget;
+        this.emit('notification',{type:'achievement',text:`⚔️ Party raid started: ${targetName}! Go to Party Finder to join!`});
+        // Auto-navigate to party page
+        if (window.ui) { window.ui.currentPage = 'party'; window.ui.renderSidebar(); window.ui.renderPage('party'); }
+      }
+    }
+
+    // Detect raid ended
+    if (data.raidActive === false && this.state.party.raidActive) {
+      this.state.party.raidActive = false;
+      this.state.party.raidStarted = false;
+    }
+
     this.emit('partyUpdate', this.state.party);
   });
 
@@ -881,7 +940,7 @@ UI.prototype.renderPartyPage = function(el) {
     }
     html += `</div>`;
 
-    // Status + launch
+    // Status + launch / join
     if (p.raidTarget) {
       const targetName = GAME_DATA.partySystem.raidTargets.find(t=>t.id===p.raidTarget)?.name || p.raidTarget;
       html += `<div class="party-bonuses-info" style="margin-bottom:12px">
@@ -890,7 +949,28 @@ UI.prototype.renderPartyPage = function(el) {
         <div class="party-bonus-row"><span>Boss HP Mult</span><span>×${bonus.hpMult.toFixed(2)}</span></div>
         <div class="party-bonus-row"><span>Damage Bonus</span><span>+${Math.round((bonus.dmgMult-1)*100)}%</span></div>
       </div>`;
-      html += `<button class="btn btn-lg toa-enter-btn" onclick="game.launchPartyRaid()">Launch Raid</button>`;
+
+      const inCombat = this.engine.state.combat?.active;
+      const raidLive = p.raidActive;
+
+      if (raidLive && !inCombat && !p.raidStarted) {
+        // Raid is active but THIS player hasn't joined yet — big join button
+        html += `<div class="party-raid-alert">
+          <div class="pra-title">⚔️ RAID IN PROGRESS</div>
+          <div class="pra-desc">${targetName} — your party is fighting! Join now to contribute.</div>
+          <button class="btn btn-lg toa-enter-btn" style="border-color:#c44020;animation:pulse 1.5s infinite" onclick="game.joinActiveRaid()">JOIN RAID NOW</button>
+        </div>`;
+      } else if (raidLive && inCombat) {
+        // Currently in the raid
+        html += `<div class="party-raid-alert" style="border-color:rgba(74,170,80,0.4);background:rgba(74,170,80,0.06)">
+          <div class="pra-title" style="color:#4aaa50">IN COMBAT</div>
+          <div class="pra-desc">You are fighting with your party. Check the Combat page to see the battle.</div>
+          <button class="btn btn-sm" onclick="ui.currentPage='combat';ui.renderSidebar();ui.renderPage('combat')">Go to Combat</button>
+        </div>`;
+      } else if (!raidLive) {
+        // No raid active — leader can launch
+        html += `<button class="btn btn-lg toa-enter-btn" onclick="game.launchPartyRaid()">Launch Raid</button>`;
+      }
     }
 
     // NPC raid status
