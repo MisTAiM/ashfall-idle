@@ -774,6 +774,15 @@ class GameEngine {
     const align = GAME_DATA.alignments[this.state.alignment];
     if (align?.bonus?.globalDmg) maxHit = Math.floor(maxHit * (1 + align.bonus.globalDmg/100));
     if (align?.bonus?.strengthDmg && style === 'melee') maxHit = Math.floor(maxHit * (1 + align.bonus.strengthDmg/100));
+    // Pet stat bonuses (accuracyMult, damageMult)
+    const petAccMult = this.getPetBonus('accuracyMult');
+    if (petAccMult > 1) accuracy = Math.floor(accuracy * petAccMult);
+    const petDmgMult = this.getPetBonus('damageMult');
+    if (petDmgMult > 1) maxHit = Math.floor(maxHit * petDmgMult);
+    const petCombatDmg = this.getPetBonus('combatDmg');
+    if (petCombatDmg > 0) maxHit = Math.floor(maxHit * (1 + petCombatDmg/100));
+    const petMagicDmg = this.getPetBonus('magicDmg');
+    if (petMagicDmg > 0 && style === 'magic') maxHit = Math.floor(maxHit * (1 + petMagicDmg/100));
     // Active buffs (War Cry, Power Strike, etc)
     for (const buff of this.state.combat.activeBuffs) {
       if (buff.stat === 'damageMult') maxHit = Math.floor(maxHit * buff.value);
@@ -3395,14 +3404,11 @@ class GameEngine {
     const pets = GAME_DATA.combatPets || GAME_DATA.pets || [];
     const pet = pets.find(p => p.id === this.state.activePet);
     if (!pet) return 0;
-    // New format: pet.passive.type
-    if (pet.passive) {
-      if (type === 'lootQty' && pet.passive.lootQty) return pet.passive.lootQty;
-      if (type === 'farmYield' && pet.passive.farmYield) return pet.passive.farmYield;
-      if (type === 'combatDmg' && pet.passive.combatDmg) return pet.passive.combatDmg;
-      if (type === 'magicDmg' && pet.passive.magicDmg) return pet.passive.magicDmg;
-    }
-    // Legacy format: pet.bonus.type
+    // Check pet.passive object
+    if (pet.passive && pet.passive[type] !== undefined) return pet.passive[type];
+    // Check pet.stats object (accuracyMult, damageMult, etc.)
+    if (pet.stats && pet.stats[type] !== undefined) return pet.stats[type];
+    // Legacy format
     if (pet.bonus?.type === type) return pet.bonus.value || 0;
     return 0;
   }
@@ -3488,6 +3494,23 @@ class GameEngine {
       case 'slow': {
         c.statusEffects.monster.slow = { amount:action.amount||0.20, timer:(action.duration||2.5), stacks:1, duration:999 };
         this.emit('petAction', { pet, action:action.desc||'slows', type:'slow' });
+        break;
+      }
+      default: {
+        // Handle custom pet types (olm_beam, void_strike, etc.)
+        // These use action.damage as a percentage of max hit
+        if (action.damage) {
+          const maxHp = this.getMaxHp();
+          const maxHit = this.getStatTotal('strengthBonus') + this.getStatTotal('magicBonus') + this.getStatTotal('rangedBonus');
+          const dmg = Math.max(1, Math.floor((maxHit > 0 ? maxHit : maxHp * 0.1) * action.damage + Math.random() * 5));
+          c.monsterHp = Math.max(0, (c.monsterHp||0) - dmg);
+          this.emit('petAction', { pet, action:action.desc||action.type, dmg, type:'damage' });
+        } else if (action.baseDmg) {
+          // Fallback flat damage
+          const dmg = Math.max(1, Math.floor(action.baseDmg + Math.random() * action.baseDmg));
+          c.monsterHp = Math.max(0, (c.monsterHp||0) - dmg);
+          this.emit('petAction', { pet, action:action.desc||action.type, dmg, type:'damage' });
+        }
         break;
       }
     }
