@@ -6758,3 +6758,6 @@ kbd {
 .ce-clog-name { color:var(--text); }
 .ce-clog-has .ce-clog-name { color:#8ad88a; }
 .ce-clog-check { color:#4aaa50; font-weight:700; font-size:12px; }
+
+/* Active button state (raid target selection) */
+.btn-active { border-color:var(--amber) !important; background:rgba(201,135,62,0.15) !important; color:var(--amber) !important; }
