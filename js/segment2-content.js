@@ -7,7 +7,7 @@
 // ── AGILITY SKILL ────────────────────────────────────────────────
 if (!GAME_DATA.skills.agility) {
   GAME_DATA.skills.agility = {
-    id:'agility', name:'Agility', type:'gathering', icon:'run',
+    id:'agility', name:'Agility', type:'agility', icon:'run',
     desc:'Run obstacle courses for XP, marks of grace, and stamina bonuses.'
   };
 }

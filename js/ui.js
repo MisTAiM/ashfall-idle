@@ -380,10 +380,11 @@ class UI {
     }
     this._lastPage = pageId;
     const main = document.getElementById('main-content');
+    // Named pages that override the generic skill renderer
+    if (pageId === 'agility') { this.renderAgilityPage(main); return; }
+    if (pageId === 'thieving') { this.renderThievingPage(main); return; }
     const skill = GAME_DATA.skills[pageId];
     if (skill && (skill.type === 'gathering' || skill.type === 'artisan')) this.renderSkillPage(main, pageId, skill);
-    else if (pageId === 'agility') this.renderAgilityPage(main);
-    else if (pageId === 'thieving') this.renderThievingPage(main);
     else if (pageId === 'combat') this.renderCombatPage(main);
     else if (pageId === 'wilderness') this.renderWildernessPage(main);
     else if (pageId === 'dungeons') this.renderDungeonsPage(main);
@@ -575,15 +576,17 @@ class UI {
         html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('${sId}','${action.id}')"`}>
           ${artSvg}
           <div class="ac-header"><span class="ac-name">${action.name}</span><span class="ac-level">Lv ${action.level}</span></div>
-          ${action.altarName ? `<div class="altar-info"><span class="altar-name">${action.altarName}</span>${action.altarDesc ? `<span class="altar-desc">${action.altarDesc}</span>`:''}</div>` : ''}
-          ${inputHtml}${outputHtml}
-          ${actionDescHtml}
+          <div class="ac-body">
+            ${action.altarName ? `<div class="altar-info"><span class="altar-name">${action.altarName}</span>${action.altarDesc ? `<span class="altar-desc">${action.altarDesc}</span>`:''}</div>` : ''}
+            ${inputHtml}${outputHtml}
+            ${actionDescHtml}
+          </div>
+          <div class="ac-footer">
             <span class="ac-xp">+${action.xp} XP</span>
             <span class="ac-time">${toolPct>0?(action.time*(1-toolPct/100)).toFixed(1)+'s':action.time+'s'}</span>
             ${m>0?`<span class="ac-mastery">M:${m}</span>`:''}
           </div>
-          ${locked?`<div class="locked-overlay">Requires Level ${action.level}</div>`:''}
-        </div>`;
+          ${locked?`<div class="locked-overlay">Requires Level ${action.level}</div>`:''}        </div>`;
       }
       html += '</div>';
       if (hasCategories) html += '</div>';

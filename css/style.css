@@ -304,9 +304,10 @@ html, body {
 /* ── ACTION CARDS / GRID ────────────────────────────── */
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
   margin-bottom: 20px;
+  align-items: stretch;
 }
 
 .action-card {
@@ -318,6 +319,8 @@ html, body {
   transition: all 0.15s;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .action-card:hover:not(.locked) {
@@ -356,6 +359,13 @@ html, body {
   margin-bottom: 6px;
 }
 
+.ac-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .ac-name {
   font-family: 'Cinzel', serif;
   font-size: 14px;
@@ -376,29 +386,37 @@ html, body {
   flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 4px;
+  min-height: 20px;
 }
 
 .recipe-mat {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--green);
   background: rgba(58,158,92,0.08);
   padding: 2px 6px;
   border-radius: 3px;
+  white-space: nowrap;
 }
 
 .recipe-mat.mat-missing { color: var(--red); background: rgba(196,64,64,0.08); }
 
 .recipe-output {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--blue);
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex: 1;
 }
 
 .ac-footer {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-top: 6px;
+  margin-top: auto;
+  padding-top: 8px;
 }
 
 .ac-xp { font-size: 12px; color: var(--green); }
@@ -4470,7 +4488,8 @@ html, body {
   justify-content: center;
 }
 .ac-art svg { width: 44px; height: 44px; }
-.action-card { text-align: center; }
+/* Only center content when a card has art */
+.action-card:has(.ac-art) { text-align: center; }
 
 /* ── MONSTER DROP PREVIEW ─────────────────────────────── */
 .mb-drops {
