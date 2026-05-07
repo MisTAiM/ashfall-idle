@@ -183,8 +183,39 @@ class UI {
         }
       }
     });
-    this.engine.on('combatHit', (d) => { this.showHitSplat(d); if (this.engine.state.combat._multiMobMode) this._updateMultiMobUI(); });
-    this.engine.on('lootDrop', (d) => this.showLootBag(d));
+    this.engine.on('combatHit', (d) => {
+      this.showHitSplat(d);
+      if (this.engine.state.combat._multiMobMode) this._updateMultiMobUI();
+      // Combat log entry
+      if (!this._combatLog) this._combatLog = [];
+      const mon = this.engine.state.combat.monster;
+      const monName = GAME_DATA.monsters[mon]?.name || GAME_DATA.worldBosses?.find(b=>b.id===mon)?.name || 'Enemy';
+      if (d.cannon) {
+        if (d.dmg > 0) this._combatLog.push({ type:'cannon', text:`Cannon: ${d.dmg} on ${monName}` });
+      } else if (d.who === 'player') {
+        if (d.miss) this._combatLog.push({ type:'miss', text:`Miss vs ${monName}` });
+        else this._combatLog.push({ type:'hit', text:`${d.crit?'CRIT ':''}${d.dmg} ${d.style||''}→ ${monName}` });
+      } else {
+        if (d.miss || d.dodge) this._combatLog.push({ type:'miss', text:`${d.dodge?'Dodged':'Blocked'} ${monName} attack` });
+        else this._combatLog.push({ type:'taken', text:`${monName} hits you for ${d.dmg}${d.dot?' (DoT)':''}` });
+      }
+      if (this._combatLog.length > 50) this._combatLog.splice(0, this._combatLog.length - 50);
+      // Live update log if visible
+      const logEl = document.getElementById('combat-log-entries');
+      if (logEl && this._showCombatLog) {
+        const last = this._combatLog.slice(-20).reverse();
+        logEl.innerHTML = last.map(entry => {
+          const cls = entry.type==='hit'?'cl-hit':entry.type==='taken'?'cl-taken':entry.type==='miss'?'cl-miss':entry.type==='kill'?'cl-kill':entry.type==='cannon'?'cl-cannon':'cl-dot';
+          const ic = entry.type==='hit'?'⚔':entry.type==='taken'?'💥':entry.type==='miss'?'○':entry.type==='kill'?'💀':entry.type==='cannon'?'🔴':'⬡';
+          return `<div class="cl-entry ${cls}">${ic} ${entry.text}</div>`;
+        }).join('');
+      }
+    });
+    this.engine.on('lootDrop', (d) => {
+      this.showLootBag(d);
+      if (!this._combatLog) this._combatLog = [];
+      this._combatLog.push({ type:'kill', text:`${d.monsterName||'Monster'} defeated!` });
+    });
     this.engine.on('petAction', (d) => this.showPetAction(d));
     this.engine.on('petChanged', () => { if (this.currentPage === 'combat') this.renderPage('combat'); if (this.currentPage === 'pets') this.renderPage('pets'); });
     this.engine.on('thievingStun', (d) => { if (this.currentPage === 'thieving') this._updateThievingHpBar(d.hp, d.maxHp); });
@@ -203,10 +234,29 @@ class UI {
     this.engine.on('slayerChanged', () => { if (this.currentPage === 'slayer') this.renderPage('slayer'); });
     this.engine.on('petFound', () => { if (this.currentPage === 'pets') this.renderPage('pets'); });
     this.engine.on('collectionLogNew', (d) => { if (this.currentPage === 'codex') this.renderPage('codex'); });
-    this.engine.on('init', () => { this.renderSidebar(); this.renderTrainingBar(); this.renderPage(this.currentPage); });
+    this.engine.on('init', () => {
+      this.renderSidebar();
+      this.renderTrainingBar();
+      this.renderPage(this.currentPage);
+      // Show tutorial for new players (total XP < 500 across all skills)
+      const totalXp = Object.values(this.engine.state.skills||{}).reduce((s,sk)=>s+(sk.xp||0),0);
+      if (totalXp < 500 && !this.engine.state._tutorialDismissed) {
+        setTimeout(() => this.showTutorial(), 1500);
+      }
+    });
     // Cannon events
     this.engine.on('cannonFire', (d) => this.showCannonFire(d));
     this.engine.on('cannonToggled', () => { if (this.currentPage === 'combat') this.renderPage('combat'); });
+    this.engine.on('bossPhase', (d) => {
+      // Flash the combat arena with a phase transition effect
+      const arena = document.querySelector('.combat-arena');
+      if (arena) {
+        arena.classList.add('phase-transition');
+        setTimeout(() => arena.classList.remove('phase-transition'), 1000);
+      }
+      // Re-render to update phase badge
+      if (this.currentPage === 'combat') this.renderPage('combat');
+    });
     // Online events
     if (typeof online !== 'undefined') {
       online.on('notification', (n) => this.toast(n));
@@ -1049,8 +1099,19 @@ class UI {
       const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
       const _playerAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&size=64`;
 
+      // Boss phase data
+      const bossPhaseIdx = c._bossPhase || 0;
+      const bossPhaseData = GAME_DATA.bossPhases?.[c.monster];
+      const currentPhase = bossPhaseData && bossPhaseIdx > 0 ? bossPhaseData.phases[bossPhaseIdx - 1] : null;
+      // Monster weakness
+      const weakness = GAME_DATA.monsterWeaknesses?.[c.monster];
+      // Active protection prayers
+      const protPrayer = s.activePrayers?.find(id => ['protect_melee','protect_ranged','protect_magic'].includes(id));
+      const overheadIcon = { protect_melee:'⚔', protect_ranged:'🏹', protect_magic:'🔮' };
+
       html += `<div class="combat-arena-v2 combat-arena">
         <div class="ca-side ca-player player-side">
+          ${protPrayer ? `<div class="overhead-prayer" title="${protPrayer.replace(/_/g,' ')}">${overheadIcon[protPrayer]||'🛡'}</div>` : ''}
           <div class="ca-avatar"><img src="${_playerAvatar}" alt="You" width="64" height="64" class="player-combat-avatar"></div>
           <div class="ca-name">${typeof online!=='undefined'&&online.displayName?online.displayName:'You'}</div>
           <div class="ca-level">Combat Lv ${this.engine.getCombatLevel()}</div>
@@ -1064,9 +1125,14 @@ class UI {
         <div class="ca-center">
           <div class="ca-vs-badge">VS</div>
           <div class="ca-kills">Kills: <span id="kill-count">${s.stats.monstersKilled||0}</span></div>
+          ${currentPhase ? `<div class="boss-phase-badge phase-${bossPhaseIdx} ${currentPhase.enrage?'phase-enrage':''}">
+            ⚠ Phase ${bossPhaseIdx}: ${currentPhase.name}
+            ${c._enrageBonus > 0 ? `<span class="enrage-pct">+${Math.round(c._enrageBonus*100)}% dmg</span>` : ''}
+          </div>` : ''}
+          ${weakness ? `<div class="weakness-badge">Weak: ${weakness.weak} +${weakness.bonus}%</div>` : ''}
         </div>
         <div class="ca-side ca-monster">
-          ${GAME_DATA.monsterArt?.[c.monster] ? `<div class="monster-art">${GAME_DATA.monsterArt[c.monster]}</div>` : `<div class="monster-art-placeholder">${icon('combat',48)}</div>`}
+          ${GAME_DATA.monsterArt?.[c.monster] ? `<div class="monster-art ${currentPhase?.enrage?'enrage-shake':''}">${GAME_DATA.monsterArt[c.monster]}</div>` : `<div class="monster-art-placeholder">${icon('combat',48)}</div>`}
           <div class="ca-name">${mon.name}</div>
           <div class="ca-level">Level ${mon.combatLevel||0} | ${mon.style||'melee'}</div>
           <div class="ca-hp-container">
@@ -1433,6 +1499,24 @@ class UI {
         <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Acc</span><span id="sd-acc">${_hitRate}%</span></span>
         <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Crit</span><span id="sd-crit">${_critRate}%</span></span>
         <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Kills</span><span id="sd-kills">${_sk}</span></span>
+      </div>
+    </div>`;
+
+    // ── COMBAT LOG ────────────────────────────────────────────────
+    const showLog = this._showCombatLog || false;
+    html += `<div class="combat-log-section">
+      <div class="combat-log-header" onclick="ui._showCombatLog=!ui._showCombatLog;const l=document.getElementById('combat-log-body');if(l)l.style.display=ui._showCombatLog?'block':'none'">
+        <span>📋 Combat Log</span>
+        <span class="combat-log-toggle">${showLog ? '▲' : '▼'}</span>
+      </div>
+      <div id="combat-log-body" style="display:${showLog?'block':'none'}">
+        <div class="combat-log-entries" id="combat-log-entries">
+          ${(this._combatLog||[]).slice(-20).reverse().map(entry => {
+            const cls = entry.type === 'hit' ? 'cl-hit' : entry.type === 'taken' ? 'cl-taken' : entry.type === 'miss' ? 'cl-miss' : entry.type === 'kill' ? 'cl-kill' : entry.type === 'cannon' ? 'cl-cannon' : 'cl-dot';
+            const icon_ = entry.type === 'hit' ? '⚔' : entry.type === 'taken' ? '💥' : entry.type === 'miss' ? '○' : entry.type === 'kill' ? '💀' : entry.type === 'cannon' ? '🔴' : '⬡';
+            return `<div class="cl-entry ${cls}">${icon_} ${entry.text}</div>`;
+          }).join('') || '<div class="cl-entry cl-miss">No combat yet.</div>'}
+        </div>
       </div>
     </div>`;
 
@@ -3218,12 +3302,13 @@ class UI {
       // ── TABBED GUILD INTERFACE ──
       const tab = this._guildTab || 'overview';
       const tabs = [
-        { id:'overview', label:'Overview', icon:'&#9733;' },
-        { id:'members', label:'Members', icon:'&#9878;' },
-        { id:'bank', label:'Bank', icon:'&#9733;' },
-        { id:'chat', label:'Chat', icon:'&#9993;' },
-        { id:'log', label:'Log', icon:'&#9776;' },
-        { id:'settings', label:'Settings', icon:'&#9881;' },
+        { id:'overview',  label:'Overview',  icon:'&#9733;' },
+        { id:'members',   label:'Members',   icon:'&#9878;' },
+        { id:'upgrades',  label:'Upgrades',  icon:'&#9650;' },
+        { id:'bank',      label:'Bank',      icon:'&#9733;' },
+        { id:'chat',      label:'Chat',      icon:'&#9993;' },
+        { id:'log',       label:'Log',       icon:'&#9776;' },
+        { id:'settings',  label:'Settings',  icon:'&#9881;' },
       ];
       html += `<div class="guild-header-panel">
         <div class="guild-banner">
@@ -3502,6 +3587,44 @@ class UI {
       });
     }
 
+    else if (tab === 'upgrades') {
+      const info = await online.getGuildInfo?.() || {};
+      const guildGold = info.gold || 0;
+      const ownedUpgrades = new Set(info.upgrades || []);
+      const myRankIdx = OnlineManager.RANK_ORDER.indexOf(s.guild.role || 'Member');
+      const canUpgrade = myRankIdx <= 1; // Leader or General+
+      const upgrades = GAME_DATA.guildUpgrades || [];
+      const tiers = [1,2,3,4];
+
+      container.innerHTML = `<div class="guild-upgrades-wrap">
+        <div class="guild-gold-bar">🏦 Guild Bank: <strong>${guildGold.toLocaleString()}g</strong></div>
+        ${!canUpgrade ? '<div class="guild-upgrade-note">General rank or higher required to purchase upgrades.</div>' : ''}
+        ${tiers.map(tier => {
+          const tierUpgrades = upgrades.filter(u => u.tier === tier);
+          return `<div class="guild-upgrade-tier">
+            <div class="guild-tier-header">Tier ${tier}</div>
+            <div class="guild-upgrade-grid">
+              ${tierUpgrades.map(u => {
+                const owned = ownedUpgrades.has(u.id);
+                const reqOwned = !u.requires || ownedUpgrades.has(u.requires);
+                const canBuy = canUpgrade && !owned && reqOwned && guildGold >= u.cost;
+                const locked = !reqOwned;
+                return `<div class="guild-upgrade-card ${owned?'upgrade-owned':''} ${locked?'upgrade-locked':''}">
+                  <div class="gu-icon">${u.icon||'⚡'}</div>
+                  <div class="gu-name">${u.name}</div>
+                  <div class="gu-desc">${u.desc}</div>
+                  <div class="gu-cost">${owned ? '✓ Purchased' : locked ? `Requires previous tier` : `${u.cost.toLocaleString()}g`}</div>
+                  ${!owned && !locked && canUpgrade ? `<button class="btn btn-xs ${canBuy?'':'btn-disabled'}" ${canBuy?'':'disabled'} 
+                    onclick="ui._buyGuildUpgrade('${u.id}',${u.cost})">
+                    ${canBuy ? 'Purchase' : 'Insufficient gold'}
+                  </button>` : ''}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
     else if (tab === 'log') {
       const log = await online.getGuildLog(50);
       if (log.length === 0) {
@@ -3577,6 +3700,25 @@ class UI {
     const withdrawRank = document.getElementById('guild-withdraw-rank')?.value || 'General';
     await online.setGuildSettings({ joinType, withdrawRank });
     this._guildTab = 'settings';
+    this.renderPage('guilds');
+  }
+
+  async _buyGuildUpgrade(upgradeId, cost) {
+    const info = await online.getGuildInfo?.();
+    if (!info) { this.toast({type:'warn',text:'Could not load guild data.'}); return; }
+    if ((info.gold||0) < cost) { this.toast({type:'warn',text:`Insufficient guild gold. Need ${cost.toLocaleString()}g.`}); return; }
+    const owned = new Set(info.upgrades||[]);
+    if (owned.has(upgradeId)) { this.toast({type:'warn',text:'Already purchased.'}); return; }
+    // Deduct gold and add upgrade
+    await online.db?.ref(`guilds/${this.engine.state.guild.id}`).transaction(guild => {
+      if (!guild) return guild;
+      guild.gold = (guild.gold||0) - cost;
+      if (!guild.upgrades) guild.upgrades = [];
+      if (!guild.upgrades.includes(upgradeId)) guild.upgrades.push(upgradeId);
+      return guild;
+    });
+    this.toast({type:'success', text:`Upgrade purchased!`});
+    this._guildTab = 'upgrades';
     this.renderPage('guilds');
   }
 
@@ -5251,6 +5393,38 @@ class UI {
       const pSide = document.querySelector('.player-side');
       if (pSide) { pSide.classList.add('hit-flash'); setTimeout(()=>pSide.classList.remove('hit-flash'), 300); }
     }
+  }
+
+  showTutorial(step = 0) {
+    const steps = GAME_DATA.tutorialSteps || [];
+    if (step >= steps.length) {
+      // Done
+      this.engine.state._tutorialDismissed = true;
+      const overlay = document.getElementById('tutorial-overlay');
+      if (overlay) overlay.remove();
+      return;
+    }
+    const s = steps[step];
+    let overlay = document.getElementById('tutorial-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'tutorial-overlay';
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `
+      <div class="tutorial-backdrop"></div>
+      <div class="tutorial-card">
+        <div class="tutorial-step-indicator">${steps.map((_,i) => `<span class="tutorial-dot ${i===step?'tut-active':i<step?'tut-done':''}"></span>`).join('')}</div>
+        <div class="tutorial-icon">${s.icon}</div>
+        <div class="tutorial-title">Step ${s.step}: ${s.title}</div>
+        <div class="tutorial-desc">${s.desc}</div>
+        <div class="tutorial-actions">
+          ${step > 0 ? `<button class="btn btn-sm" onclick="ui.showTutorial(${step-1})">← Back</button>` : ''}
+          <button class="btn btn-sm" onclick="ui.currentPage='${s.highlight}';ui.renderSidebar();ui.renderPage('${s.highlight}');ui.showTutorial(${step+1})">${s.action}</button>
+          <button class="btn btn-sm" onclick="ui.showTutorial(${step+1})">${step < steps.length-1 ? 'Skip →' : 'Finish'}</button>
+        </div>
+        <button class="tutorial-dismiss" onclick="game.state._tutorialDismissed=true;document.getElementById('tutorial-overlay').remove()" title="Dismiss tutorial">✕</button>
+      </div>`;
   }
 
   showXpGain(d) {

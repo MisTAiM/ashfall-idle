@@ -699,9 +699,10 @@ class GameEngine {
     c.playerHp = this.getMaxHp();
     c.playerAttackTimer = 0; c.monsterAttackTimer = 0;
     c.statusEffects = { player:{}, monster:{} };
-    c._multiMobMode = false;          // always reset — prevents saved multi-mob state from blocking normal combat
-    c._petAttackCounter = 0;          // reset pet ability counter per fight
-    c._permDebuffs = {};              // reset permanent debuffs (War Cry stacks)
+    c._multiMobMode = false;
+    c._petAttackCounter = 0;
+    c._permDebuffs = {};
+    c._bossPhase = 0; c._enrageTimer = 0; c._enrageBonus = 0; // reset phase state
     if (this.state.multiMob) this.state.multiMob = null;
   }
 
@@ -739,6 +740,33 @@ class GameEngine {
     const isWB = !!c.worldBoss;
     const monster = isWB ? (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster) : GAME_DATA.monsters[c.monster];
     if (!monster) { this.stopCombat(); this.emit('notification',{type:'warn',text:'Combat ended: monster data unavailable.'}); return; }
+
+    // ── BOSS PHASE SYSTEM ─────────────────────────────────────────
+    if (isWB && GAME_DATA.bossPhases?.[c.monster]) {
+      const phaseData = GAME_DATA.bossPhases[c.monster];
+      const hpPct = c.monsterHp / monster.hp;
+      if (!c._bossPhase) c._bossPhase = 0;
+      if (!c._enrageTimer) c._enrageTimer = 0;
+      // Check for phase trigger (check in descending threshold order)
+      const phases = phaseData.phases || [];
+      for (let i = phases.length - 1; i >= 0; i--) {
+        const ph = phases[i];
+        if (hpPct <= ph.hpThreshold && c._bossPhase <= i) {
+          c._bossPhase = i + 1;
+          this.emit('notification', { type: ph.enrage ? 'danger' : 'warn', text: ph.notify });
+          if (ph.dot) this.applyStatus('player', ph.dot.type, ph.dot.stacks, ph.dot.duration);
+          this.emit('bossPhase', { phase: i + 1, name: ph.name, boss: c.monster });
+        }
+      }
+      // Enrage: boost max hit over time once past final phase threshold
+      const finalPhase = phases[phases.length - 1];
+      if (finalPhase && hpPct <= finalPhase.hpThreshold) {
+        c._enrageTimer += dt;
+        // +0.5% maxHit per second of enrage (capped at +50% extra)
+        const enrageBonus = Math.min(0.50, c._enrageTimer * (phaseData.enrageDmgPerSec || 0.5) / 100);
+        c._enrageBonus = enrageBonus;
+      }
+    }
     if (c.autoEat && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
     this._tickStatusEffects(c.statusEffects.monster, dt, 'monster');
     this._tickStatusEffects(c.statusEffects.player, dt, 'player');
@@ -941,6 +969,12 @@ class GameEngine {
       }
     }
     maxHit = Math.floor((maxHit + affixFlatDmg) * (1 + affixDmgBonus));
+
+    // ── MONSTER WEAKNESS BONUS ────────────────────────────────────
+    const weakness = GAME_DATA.monsterWeaknesses?.[c.monster];
+    if (weakness && weakness.weak === style) {
+      maxHit = Math.floor(maxHit * (1 + weakness.bonus / 100));
+    }
 
     // Hit chance calculation
     const evasion = monster.evasion?.[style] || 0;
@@ -1243,6 +1277,15 @@ class GameEngine {
     const ch = Math.min(0.95, Math.max(0.05, ac / (ac + ev)));
     if (Math.random() < ch) {
       let dmg = this.randInt(1, monster.maxHit);
+      // Boss enrage multiplier
+      const enrageBonus = this.state.combat._enrageBonus || 0;
+      if (enrageBonus > 0) dmg = Math.floor(dmg * (1 + enrageBonus));
+      // Boss phase attack multiplier
+      if (this.state.combat._bossPhase > 0 && GAME_DATA.bossPhases?.[this.state.combat.monster]) {
+        const phases = GAME_DATA.bossPhases[this.state.combat.monster].phases;
+        const phase = phases[this.state.combat._bossPhase - 1];
+        if (phase) dmg = Math.floor(dmg * (phase.attackMult || 1));
+      }
       dmg = Math.max(1, Math.floor(dmg * (100 - dr) / 100));
       // Prayer protection
       const protMelee = this.getPrayerBonus('protectMelee');

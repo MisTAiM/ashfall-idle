@@ -6993,3 +6993,121 @@ kbd {
 .bi-tooltip-stat span:last-child { color:#7ab87a; }
 .bi-tooltip-desc { font-size:10px; color:var(--text-dim); margin-top:6px; font-style:italic; }
 .bi-tooltip-req { font-size:10px; color:#e08040; margin-top:4px; }
+
+/* ── BOSS PHASE SYSTEM ──────────────────────────────────────── */
+.boss-phase-badge {
+  font-size:10px; font-family:'Cinzel',serif; text-align:center;
+  padding:4px 8px; border-radius:6px; margin:4px 0;
+  background:rgba(220,120,20,0.18); border:1px solid rgba(220,120,20,0.5);
+  color:#e08030; animation:phase-pulse 2s infinite;
+}
+.boss-phase-badge.phase-enrage {
+  background:rgba(196,32,32,0.22); border-color:rgba(196,32,32,0.6);
+  color:#ff5050; animation:enrage-pulse 0.8s infinite;
+}
+.enrage-pct { font-size:9px; color:#ff7070; margin-left:4px; }
+@keyframes phase-pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+@keyframes enrage-pulse { 0%,100%{box-shadow:0 0 6px rgba(196,32,32,0.4)} 50%{box-shadow:0 0 18px rgba(196,32,32,0.7)} }
+.enrage-shake { animation:enrage-shake 0.4s infinite; }
+@keyframes enrage-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-2px)} 75%{transform:translateX(2px)} }
+.phase-transition { animation:phase-flash 1s ease-out; }
+@keyframes phase-flash { 0%{box-shadow:inset 0 0 40px rgba(255,100,0,0.5)} 100%{box-shadow:none} }
+
+/* ── WEAKNESS BADGE ─────────────────────────────────────────── */
+.weakness-badge {
+  font-size:10px; padding:2px 8px; border-radius:8px; margin-top:2px;
+  background:rgba(74,170,80,0.15); border:1px solid rgba(74,170,80,0.3);
+  color:#4aaa60; text-align:center;
+}
+
+/* ── OVERHEAD PRAYER ────────────────────────────────────────── */
+.overhead-prayer {
+  position:absolute; top:-8px; left:50%; transform:translateX(-50%);
+  font-size:18px; background:rgba(201,135,62,0.2); border:1px solid rgba(201,135,62,0.5);
+  border-radius:50%; width:28px; height:28px; display:flex; align-items:center;
+  justify-content:center; animation:overhead-float 1.5s ease-in-out infinite;
+  z-index:10;
+}
+.ca-side { position:relative; }
+@keyframes overhead-float { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-4px)} }
+
+/* ── COMBAT LOG ─────────────────────────────────────────────── */
+.combat-log-section {
+  background:rgba(0,0,0,0.2); border:1px solid var(--border);
+  border-radius:8px; margin:8px 0; overflow:hidden;
+}
+.combat-log-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 12px; cursor:pointer; font-size:12px; color:var(--text-dim);
+  background:rgba(255,255,255,0.02);
+  transition:background 0.2s;
+}
+.combat-log-header:hover { background:rgba(255,255,255,0.05); }
+.combat-log-toggle { font-size:10px; }
+.combat-log-entries {
+  padding:6px; max-height:160px; overflow-y:auto;
+  display:flex; flex-direction:column; gap:2px;
+}
+.cl-entry { font-size:10px; padding:2px 6px; border-radius:4px; }
+.cl-hit    { color:#9ad4ff; background:rgba(100,180,255,0.06); }
+.cl-taken  { color:#ff8080; background:rgba(255,80,80,0.06); }
+.cl-miss   { color:var(--text-dim); }
+.cl-kill   { color:#c9873e; font-weight:700; }
+.cl-cannon { color:#c9873e; background:rgba(201,135,62,0.06); }
+.cl-dot    { color:#9ae480; background:rgba(80,180,80,0.06); }
+
+/* ── GUILD UPGRADES ─────────────────────────────────────────── */
+.guild-upgrades-wrap { padding:2px; }
+.guild-gold-bar {
+  background:rgba(201,135,62,0.1); border:1px solid rgba(201,135,62,0.25);
+  border-radius:8px; padding:8px 14px; margin-bottom:12px;
+  font-size:13px; color:var(--amber);
+}
+.guild-upgrade-note { font-size:11px; color:#e06040; margin-bottom:10px; }
+.guild-upgrade-tier { margin-bottom:14px; }
+.guild-tier-header {
+  font-family:'Cinzel',serif; font-size:12px; color:var(--text-dim);
+  border-bottom:1px solid var(--border); padding-bottom:4px; margin-bottom:8px;
+}
+.guild-upgrade-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.guild-upgrade-card {
+  background:rgba(0,0,0,0.2); border:1px solid var(--border);
+  border-radius:8px; padding:10px; text-align:center;
+  transition:border-color 0.2s;
+}
+.guild-upgrade-card.upgrade-owned {
+  border-color:rgba(74,170,80,0.4); background:rgba(74,170,80,0.04);
+}
+.guild-upgrade-card.upgrade-locked { opacity:0.45; }
+.gu-icon { font-size:20px; margin-bottom:4px; }
+.gu-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.gu-desc { font-size:10px; color:var(--text-dim); margin-bottom:6px; line-height:1.4; }
+.gu-cost { font-size:11px; color:var(--amber); margin-bottom:6px; }
+.upgrade-owned .gu-cost { color:#4aaa60; }
+
+/* ── TUTORIAL OVERLAY ───────────────────────────────────────── */
+#tutorial-overlay { position:fixed; inset:0; z-index:9999; pointer-events:none; }
+.tutorial-backdrop {
+  position:absolute; inset:0; background:rgba(0,0,0,0.65);
+  pointer-events:all;
+}
+.tutorial-card {
+  position:absolute; bottom:80px; left:50%; transform:translateX(-50%);
+  background:#151820; border:2px solid rgba(201,135,62,0.6);
+  border-radius:16px; padding:20px 22px; width:min(340px,90vw);
+  pointer-events:all; box-shadow:0 8px 40px rgba(0,0,0,0.8);
+  text-align:center;
+}
+.tutorial-step-indicator { display:flex; justify-content:center; gap:6px; margin-bottom:12px; }
+.tutorial-dot { width:8px; height:8px; border-radius:50%; background:var(--border); }
+.tutorial-dot.tut-active { background:var(--amber); }
+.tutorial-dot.tut-done  { background:#4aaa60; }
+.tutorial-icon { font-size:32px; margin-bottom:8px; }
+.tutorial-title { font-family:'Cinzel',serif; font-size:15px; color:var(--amber); margin-bottom:10px; }
+.tutorial-desc { font-size:12px; color:var(--text-dim); margin-bottom:14px; line-height:1.5; }
+.tutorial-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.tutorial-dismiss {
+  position:absolute; top:10px; right:12px; background:none;
+  border:none; color:var(--text-dim); font-size:16px; cursor:pointer;
+}
+.tutorial-dismiss:hover { color:var(--text); }
