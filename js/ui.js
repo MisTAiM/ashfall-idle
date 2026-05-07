@@ -236,7 +236,7 @@ class UI {
     </div>
     <div class="level-tracker" id="level-tracker">`;
     // Compact skill level grid
-    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
+    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
     for (const sId of skillOrder) {
       const sk = s.skills[sId];
       if (!sk) continue;
@@ -310,6 +310,7 @@ class UI {
     const main = document.getElementById('main-content');
     const skill = GAME_DATA.skills[pageId];
     if (skill && (skill.type === 'gathering' || skill.type === 'artisan')) this.renderSkillPage(main, pageId, skill);
+    else if (pageId === 'agility') this.renderAgilityPage(main);
     else if (pageId === 'thieving') this.renderThievingPage(main);
     else if (pageId === 'combat') this.renderCombatPage(main);
     else if (pageId === 'wilderness') this.renderWildernessPage(main);
@@ -422,6 +423,26 @@ class UI {
           <div class="aa-progress"><div class="aa-fill" style="width:${(p*100).toFixed(0)}%"></div></div>
           <button class="btn btn-danger btn-sm" onclick="ui.stopAction()">Stop</button>
         </div>`;
+
+        // ── SMITHING HEAT BAR ──────────────────────────────────
+        if (sId === 'smithing' && GAME_DATA.smeltingHeat?.enabled) {
+          const heat = s._smithingHeat || 0;
+          const heatPct = Math.min(100, Math.round(heat));
+          const isHot = heatPct >= (GAME_DATA.smeltingHeat.bonusThreshold || 60);
+          const heatColor = heatPct > 80 ? '#ff4000' : heatPct > 60 ? '#ff8c00' : heatPct > 40 ? '#d4a83a' : '#5a6070';
+          html += `<div class="heat-bar-wrap ${isHot?'heat-hot':''}">
+            <div class="heat-bar-label">
+              <span class="heat-icon">${isHot?'🔥':'❄️'}</span>
+              <span>Forge Heat</span>
+              <span class="heat-pct" style="color:${heatColor}">${heatPct}%</span>
+              ${isHot ? `<span class="heat-bonus">+${GAME_DATA.smeltingHeat.bonusXpPct}% XP</span>` : ''}
+            </div>
+            <div class="heat-bar">
+              <div class="heat-fill" style="width:${heatPct}%;background:${heatColor}"></div>
+              <div class="heat-threshold-line" style="left:${GAME_DATA.smeltingHeat.bonusThreshold||60}%"></div>
+            </div>
+          </div>`;
+        }
       }
     }
     // Determine categories
@@ -516,6 +537,90 @@ class UI {
     }
 
     el.innerHTML = html;
+  }
+
+  renderAgilityPage(el) {
+    const s = this.engine.state;
+    const agilLv  = s.skills.agility?.level  || 1;
+    const agilXp  = s.skills.agility?.xp     || 0;
+    const courses = GAME_DATA.gatheringActions?.agility || [];
+    const active  = s.activeSkill === 'agility';
+    const marks   = s.bank?.['mark_of_grace'] || 0;
+    const curId   = s.activeAction;
+
+    let html = this.header('Agility','run',`Level ${agilLv} · ${this.fmt(agilXp)} XP · ${marks} marks`,null);
+
+    // XP bar
+    const xpTable = [0,83,174,276,388,512,650,801,969,1154,1358,1584,1833,2107,2411,2746,3115,3523,3973,4470,5018,5624,6291,7028,7842,8740,9730,10824,12031,13363,14833,16456,18247,20224,22406,24815,27473,30408,33648,37224,41171,45529,50339,55649,61512,68000,75127,82904,91373,100678,110745,121535,133066,145418,158806,173255,188874,205751,224002,243822,265534,289096,314891,342546,373169,406206,441533,479905,521311,566085,614334,666862,723782,785483,851704,923048,999927,1083019,1172773,1269674,1374140,1485543,1605425,1734434,1873256,2023568,2187279,2364310,2556493,2765818,3000000,3256751,3538503,3848063,4187812,4560107,4969161,5415961,5909031];
+    const lvl = agilLv; const nextXp = xpTable[lvl] || xpTable[98]; const prevXp = xpTable[lvl-1] || 0;
+    const pct = Math.min(100, Math.floor(((agilXp - prevXp) / Math.max(1, nextXp - prevXp)) * 100));
+    html += `<div class="skill-xp-bar-wrap"><div class="skill-xp-bar" style="width:${pct}%" title="${this.fmt(agilXp)}/${this.fmt(nextXp)} XP to level ${lvl+1}"></div><div class="skill-xp-label">${pct}% to Lv ${lvl+1}</div></div>`;
+
+    // Grace shop
+    html += `<div class="agil-grace-header"><span class="agil-marks-badge">🪙 ${marks} Marks of Grace</span><button class="btn btn-xs" onclick="ui._admTab='shop_mgr';ui.renderPage('admin')" style="font-size:10px">Exchange →</button></div>`;
+    html += `<div class="agil-grace-shop"><h3>Graceful Outfit (Marks of Grace)</h3><div class="agil-grace-grid">`;
+    const graceShop = GAME_DATA.graceShop || [];
+    for (const si of graceShop) {
+      const item = GAME_DATA.items[si.item]; if (!item) continue;
+      const owned = (s.bank[si.item]||0) + (s.equipment ? (Object.values(s.equipment).includes(si.item)?1:0) : 0);
+      const canBuy = marks >= si.price;
+      html += `<div class="agil-grace-item ${owned?'agil-owned':''}">
+        <div class="agi-icon">${window.renderItemSprite ? window.renderItemSprite(si.item, 28) : ''}</div>
+        <div class="agi-name">${item.name}</div>
+        <div class="agi-price">${si.price} marks</div>
+        ${owned ? `<div class="agi-owned-badge">✓ Owned</div>` : `<button class="btn btn-xs ${canBuy?'':'btn-disabled'}" ${canBuy?'':'disabled'} onclick="ui._buyGrace('${si.item}',${si.price})">Buy</button>`}
+      </div>`;
+    }
+    html += `</div></div>`;
+
+    // Courses
+    html += `<h2 class="section-title">Agility Courses</h2><div class="agil-courses">`;
+    for (const c of courses) {
+      const locked = agilLv < c.level;
+      const isCur  = active && curId === c.id;
+      html += `<div class="agil-course-card ${locked?'agil-locked':''} ${isCur?'agil-active':''}">
+        <div class="agil-course-header">
+          <span class="agil-course-name">${c.name}</span>
+          <span class="agil-req ${locked?'req-locked':'req-met'}">Lv ${c.level}</span>
+        </div>
+        <div class="agil-course-meta">
+          <span class="agil-xp">+${c.xp} XP/lap</span>
+          <span class="agil-time">${c.time}s/lap</span>
+          <span class="agil-mark-chance">${Math.floor((c.loot?.[0]?.chance||0)*100)}% mark</span>
+        </div>
+        <div class="agil-obstacles">
+          ${(c.obstacles||[]).map(o=>`<span class="agil-obstacle">${o}</span>`).join('')}
+        </div>
+        <div class="agil-desc">${c.desc||''}</div>
+        ${locked
+          ? `<button class="btn btn-sm btn-disabled" disabled>Requires Agility ${c.level}</button>`
+          : isCur
+            ? `<button class="btn btn-sm btn-danger" onclick="game.stopSkill();ui.renderPage('agility')">■ Stop</button>`
+            : `<button class="btn btn-sm" onclick="game.startSkill('agility','${c.id}');ui.renderPage('agility')">▶ Run Course</button>`
+        }
+      </div>`;
+    }
+    html += `</div>`;
+
+    // Passive agility bonuses
+    const agilBonus = Math.floor(agilLv / 10);
+    html += `<div class="agil-bonuses"><h3>Passive Bonuses (Lv ${agilLv})</h3>
+      <div class="agil-bonus-row">✦ +${agilBonus}% dodge chance in combat</div>
+      <div class="agil-bonus-row">✦ +${Math.floor(agilLv/5)}% skill speed bonus (gathering)</div>
+      <div class="agil-bonus-row">✦ Graceful outfit: reduces weight, restores energy faster</div>
+    </div>`;
+
+    el.innerHTML = html;
+  }
+
+  _buyGrace(itemId, cost) {
+    const s = this.engine.state;
+    if ((s.bank['mark_of_grace']||0) < cost) { this.toast({type:'warn',text:'Not enough Marks of Grace'}); return; }
+    s.bank['mark_of_grace'] -= cost;
+    if (s.bank['mark_of_grace'] <= 0) delete s.bank['mark_of_grace'];
+    this.engine.addItem(itemId, 1);
+    this.toast({type:'success', text:`${GAME_DATA.items[itemId]?.name} purchased!`});
+    this.renderPage('agility');
   }
 
   renderThievingPage(el) {
@@ -1717,7 +1822,20 @@ class UI {
         statStr += (statStr?' | ':'') + `Req: ${reqs}`;
       }
 
-      html += `<div class="bank-item" data-rarity="${item.rarity||'common'}" title="${item.desc}${statStr?'\n'+statStr:''}">
+      html += `<div class="bank-item" data-rarity="${item.rarity||'common'}">
+        <div class="bi-tooltip">
+          <div class="bi-tooltip-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name} ${this.getRarityTag(id)}</div>
+          ${item.stats ? Object.entries(item.stats).filter(([,v])=>v).map(([k,v])=>`<div class="bi-tooltip-stat"><span>${k.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}</span><span>+${v}</span></div>`).join('') : ''}
+          ${item.heals ? `<div class="bi-tooltip-stat"><span>Heals</span><span>+${item.heals} HP</span></div>` : ''}
+          ${item.rangedBonus && item.type==='ammo' ? `<div class="bi-tooltip-stat"><span>Ranged Bonus</span><span>+${item.rangedBonus}</span></div>` : ''}
+          ${item.prayerRestore ? `<div class="bi-tooltip-stat"><span>Prayer Restore</span><span>+${item.prayerRestore}</span></div>` : ''}
+          ${item.attackSpeed ? `<div class="bi-tooltip-stat"><span>Attack Speed</span><span>${item.attackSpeed}s</span></div>` : ''}
+          ${item.agilBonus ? `<div class="bi-tooltip-stat"><span>Agility Bonus</span><span>-${item.agilBonus} weight</span></div>` : ''}
+          ${item.levelReq ? `<div class="bi-tooltip-req">Req: ${Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ')}</div>` : ''}
+          ${item.providesAllRunes ? `<div class="bi-tooltip-stat"><span>Provides</span><span>All runes ∞</span></div>` : ''}
+          <div class="bi-tooltip-desc">${item.desc||''}</div>
+          ${item.sellPrice ? `<div class="bi-tooltip-stat" style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px"><span>Sell price</span><span>${item.sellPrice}g ea</span></div>` : ''}
+        </div>
         <div class="bi-icon">${window.renderItemSprite ? window.renderItemSprite(id, 32) : ''}</div>
         <div class="bi-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name} ${this.getRarityTag(id)}</div>
         ${statStr ? `<div class="bi-stats">${statStr}</div>` : ''}

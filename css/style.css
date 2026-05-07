@@ -6930,3 +6930,66 @@ kbd {
   border-color: var(--amber) !important;
   color: var(--amber) !important;
 }
+
+/* ── AGILITY PAGE ─────────────────────────────────────────────── */
+.skill-xp-bar-wrap { position:relative; height:14px; background:rgba(255,255,255,0.05); border-radius:7px; margin:0 0 12px; overflow:hidden; }
+.skill-xp-bar { height:100%; background:linear-gradient(90deg,#c9873e,#e0a060); border-radius:7px; transition:width 0.4s; }
+.skill-xp-label { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:10px; color:var(--text-dim); }
+
+.agil-grace-header { display:flex; align-items:center; gap:10px; margin:0 0 10px; }
+.agil-marks-badge { background:rgba(201,135,62,0.15); border:1px solid rgba(201,135,62,0.3); border-radius:20px; padding:4px 12px; font-size:13px; color:var(--amber); }
+
+.agil-grace-shop { background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:14px; }
+.agil-grace-shop h3 { font-family:'Cinzel',serif; font-size:13px; color:var(--amber); margin:0 0 10px; }
+.agil-grace-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.agil-grace-item { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:8px; text-align:center; }
+.agil-grace-item.agil-owned { border-color:rgba(74,170,80,0.4); background:rgba(74,170,80,0.05); }
+.agi-icon { margin-bottom:4px; }
+.agi-name { font-size:11px; color:var(--text); font-weight:600; margin-bottom:3px; }
+.agi-price { font-size:10px; color:var(--amber); margin-bottom:5px; }
+.agi-owned-badge { font-size:10px; color:#4aaa60; font-weight:700; }
+
+.agil-courses { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+.agil-course-card { background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:10px; padding:14px; }
+.agil-course-card.agil-locked { opacity:0.55; }
+.agil-course-card.agil-active { border-color:rgba(201,135,62,0.5); background:rgba(201,135,62,0.06); }
+.agil-course-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.agil-course-name { font-family:'Cinzel',serif; font-size:14px; color:var(--text); }
+.agil-req { font-size:11px; padding:2px 8px; border-radius:10px; }
+.req-met  { background:rgba(74,170,80,0.15);  color:#4aaa60; border:1px solid rgba(74,170,80,0.3); }
+.req-locked{ background:rgba(196,64,32,0.15); color:#e06040; border:1px solid rgba(196,64,32,0.3); }
+.agil-course-meta { display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+.agil-xp,.agil-time,.agil-mark-chance { font-size:11px; color:var(--text-dim); background:rgba(255,255,255,0.05); padding:2px 7px; border-radius:8px; }
+.agil-obstacles { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+.agil-obstacle { font-size:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:4px; padding:2px 7px; color:var(--text-dim); }
+.agil-desc { font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+.agil-bonuses { background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; padding:12px; }
+.agil-bonuses h3 { font-size:13px; color:var(--amber); margin:0 0 8px; }
+.agil-bonus-row { font-size:12px; color:var(--text-dim); padding:3px 0; }
+
+/* ── SMITHING HEAT BAR ────────────────────────────────────────── */
+.heat-bar-wrap { background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin:6px 0 10px; transition:border-color 0.3s; }
+.heat-bar-wrap.heat-hot { border-color:rgba(255,100,0,0.5); box-shadow:0 0 12px rgba(255,80,0,0.15); }
+.heat-bar-label { display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:12px; }
+.heat-icon { font-size:14px; }
+.heat-pct { font-weight:700; margin-left:auto; }
+.heat-bonus { font-size:10px; background:rgba(255,100,0,0.2); border:1px solid rgba(255,100,0,0.4); border-radius:8px; padding:1px 6px; color:#ff8040; margin-left:4px; }
+.heat-bar { position:relative; height:8px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:visible; }
+.heat-fill { height:100%; border-radius:4px; transition:width 0.3s, background 0.5s; }
+.heat-threshold-line { position:absolute; top:-2px; bottom:-2px; width:2px; background:rgba(255,255,255,0.3); border-radius:1px; }
+
+/* ── BANK ITEM RICH TOOLTIP ───────────────────────────────────── */
+.bank-item { position:relative; cursor:pointer; }
+.bank-item:hover .bi-tooltip { display:block; }
+.bi-tooltip {
+  display:none; position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+  z-index:200; background:#1a1c22; border:1px solid rgba(201,135,62,0.4);
+  border-radius:8px; padding:10px 12px; min-width:180px; max-width:240px;
+  font-size:11px; color:var(--text); white-space:normal; pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,0.6);
+}
+.bi-tooltip-name { font-family:'Cinzel',serif; font-size:12px; color:var(--amber); margin-bottom:6px; border-bottom:1px solid var(--border); padding-bottom:4px; }
+.bi-tooltip-stat { display:flex; justify-content:space-between; padding:1px 0; color:var(--text-dim); }
+.bi-tooltip-stat span:last-child { color:#7ab87a; }
+.bi-tooltip-desc { font-size:10px; color:var(--text-dim); margin-top:6px; font-style:italic; }
+.bi-tooltip-req { font-size:10px; color:#e08040; margin-top:4px; }

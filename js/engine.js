@@ -252,6 +252,12 @@ class GameEngine {
     if (this.state.combat.active) this.tickCombat(safeDt);
     else if (this.state.activeSkill && this.state.activeAction) this.tickSkill(safeDt);
 
+    // Smithing heat decay (only when not smithing)
+    if (this.state._smithingHeat > 0 && GAME_DATA.smeltingHeat?.enabled) {
+      const decay = (GAME_DATA.smeltingHeat.decayPerSecond || 8) * safeDt;
+      this.state._smithingHeat = Math.max(0, (this.state._smithingHeat||0) - decay);
+    }
+
     this.tickFarming(now);
     this.initDailyQuests();
     this.tickBuffs(safeDt);
@@ -475,6 +481,18 @@ class GameEngine {
           this.emit('notification', { type:'rare', text:`📜 Clue scroll! Found on the hunt.` });
         }
       }
+
+      // ── AGILITY LAP BONUS ──────────────────────────────────────
+      if (skillId === 'agility') {
+        const lapBonus = action.lapBonus || 0;
+        if (lapBonus > 0) {
+          const mastLv = this.getMasteryLevel('agility', action.masteryId || action.id);
+          const bonusMult = 1 + mastLv * 0.01; // up to +10% at max mastery
+          const bonusXp = Math.floor(lapBonus * bonusMult);
+          // Lap bonus is already included in action.xp, but flash a notification
+          this.emit('notification', { type:'info', text:`Lap complete! +${action.xp + bonusXp} Agility XP` });
+        }
+      }
     } else if (skill.type === 'artisan' || skillId === 'summoning') {
       if (action.input && !this.hasItems(action.input)) { this.stopSkill(); this.emit('notification', { type:'warn', text:'Out of materials.' }); return; }
       if (action.input) this.removeItems(action.input);
@@ -565,6 +583,18 @@ class GameEngine {
       this.emit('thievingSuccess', { action, gold, hp: this.state.thievingHp || this.getMaxHp() });
     }
     this.addXp(skillId, action.xp);
+    // ── SMITHING HEAT BONUS ──────────────────────────────────
+    if (skillId === 'smithing' && GAME_DATA.smeltingHeat?.enabled) {
+      const cfg = GAME_DATA.smeltingHeat;
+      const heat = this.state._smithingHeat || 0;
+      if (heat >= (cfg.bonusThreshold || 60)) {
+        const bonus = Math.floor(action.xp * (cfg.bonusXpPct || 25) / 100);
+        this.addXp('smithing', bonus);
+        this.emit('xpGain', { skill:'smithing', amount:bonus, source:'heat' });
+      }
+      // Replenish heat on each completed action
+      this.state._smithingHeat = Math.min(100, (this.state._smithingHeat || 0) + (cfg.heatPerAction || 80));
+    }
     this.addMasteryXp(skillId, action.masteryId||action.id, action.xp);
     this.incrementStat(skillId);
     // v3: roll pet from skilling
@@ -1197,10 +1227,12 @@ class GameEngine {
       return;
     }
 
-    // Dodge chance (passive agility)
-    const dodgeChance = GAME_DATA.combatFormulas?.dodgeChance
+    // Dodge chance (passive agility — level provides passive bonus)
+    const agilLv = this.state.skills.agility?.level || 0;
+    const agilPassive = agilLv > 0 ? agilLv * 0.001 : 0; // 0.1% per agility level, up to 9.9% at 99
+    const dodgeChance = (GAME_DATA.combatFormulas?.dodgeChance
       ? GAME_DATA.combatFormulas.dodgeChance(dL, this.getStatTotal('agilityBonus') || 0)
-      : 0;
+      : 0) + agilPassive;
     if (Math.random() < dodgeChance) {
       this.emit('combatHit', { who:'monster', dmg:0, miss:true, dodge:true });
       return;
