@@ -1778,6 +1778,116 @@ class OnlineManager {
     } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
   }
 
+  // ── FULL ADMIN PLAYER CONTROL ─────────────────────────────────
+  async adminSetPlayerLevel(uid, skill, level) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save || !save.skills?.[skill]) { this.emit('notification',{type:'warn',text:'Save/skill not found.'}); return false; }
+      const xpTable = [0,83,174,276,388,512,650,801,969,1154,1358,1584,1833,2107,2411,2746,3115,3523,3973,4470,5018,5624,6291,7028,7842,8740,9730,10824,12031,13363,14833,16456,18247,20224,22406,24815,27473,30408,33648,37224,41171,45529,50339,55649,61512,67983,75127,83014,91721,101333,111945,123660,136594,150872,166636,184040,203254,224466,247886,273742,302288,333804,368599,407015,449428,496254,547953,605032,668051,737627,814445,899257,992895,1096278,1210421,1336443,1475581,1629200,1798808,1986068,2192818,2421087,2673114,2951373,3258594,3597792,3972294,4385776,4842295,5346332,5902831,6517253,7195629,7944614,8771558,9684577,10692629,11805606,13034431];
+      level = Math.max(1, Math.min(99, level));
+      save.skills[skill].level = level;
+      save.skills[skill].xp = xpTable[level - 1] || 0;
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) { this.emit('notification',{type:'success',text:`Set ${skill} to level ${level}`}); await this.adminLog('set_level_remote', { targetUid:uid, skill, level }); }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminSetPlayerGold(uid, amount) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save) { this.emit('notification',{type:'warn',text:'Save not found.'}); return false; }
+      save.gold = Math.max(0, amount);
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) { this.emit('notification',{type:'success',text:`Set gold to ${amount}`}); await this.adminLog('set_gold_remote', { targetUid:uid, amount }); }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminRemovePlayerItem(uid, itemId, qty) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save) { this.emit('notification',{type:'warn',text:'Save not found.'}); return false; }
+      if (!save.bank) save.bank = {};
+      save.bank[itemId] = Math.max(0, (save.bank[itemId] || 0) - qty);
+      if (save.bank[itemId] <= 0) delete save.bank[itemId];
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) { this.emit('notification',{type:'success',text:`Removed ${qty}x ${GAME_DATA.items[itemId]?.name||itemId}`}); await this.adminLog('remove_item_remote', { targetUid:uid, itemId, qty }); }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminSetPlayerStat(uid, path, value) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save) { this.emit('notification',{type:'warn',text:'Save not found.'}); return false; }
+      // Navigate to path and set value: e.g. "stats.monstersKilled" => save.stats.monstersKilled = value
+      const parts = path.split('.');
+      let obj = save;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!obj[parts[i]]) obj[parts[i]] = {};
+        obj = obj[parts[i]];
+      }
+      obj[parts[parts.length - 1]] = value;
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) { this.emit('notification',{type:'success',text:`Set ${path} = ${JSON.stringify(value)}`}); await this.adminLog('set_stat_remote', { targetUid:uid, path, value }); }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminResetPlayerSkills(uid) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save || !save.skills) { this.emit('notification',{type:'warn',text:'Save not found.'}); return false; }
+      for (const sk of Object.keys(save.skills)) { save.skills[sk].level = 1; save.skills[sk].xp = 0; }
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) { this.emit('notification',{type:'success',text:'All skills reset to 1'}); await this.adminLog('reset_skills_remote', { targetUid:uid }); }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminClearPlayerBank(uid) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save) return false;
+      save.bank = {};
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) { this.emit('notification',{type:'success',text:'Bank cleared'}); await this.adminLog('clear_bank_remote', { targetUid:uid }); }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminSetPlayerEquipment(uid, slot, itemId) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save) return false;
+      if (!save.equipment) save.equipment = {};
+      if (itemId) { save.equipment[slot] = itemId; } else { delete save.equipment[slot]; }
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) { this.emit('notification',{type:'success',text:`Set ${slot} = ${itemId||'empty'}`}); await this.adminLog('set_equip_remote', { targetUid:uid, slot, itemId }); }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
+  async adminMaxPlayerSkills(uid) {
+    if (!this.isOnline || typeof isAdmin !== 'function' || !isAdmin()) return false;
+    try {
+      const save = await this.adminGetPlayerSave(uid);
+      if (!save || !save.skills) return false;
+      for (const sk of Object.keys(save.skills)) { save.skills[sk].level = 99; save.skills[sk].xp = 13034431; }
+      const ok = await this.adminSetPlayerSave(uid, save);
+      if (ok) { this.emit('notification',{type:'success',text:'All skills maxed to 99'}); await this.adminLog('max_skills_remote', { targetUid:uid }); }
+      return ok;
+    } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
+  }
+
   // ── ADMIN: PUSH LIVE GAME SETTINGS ─────────────────────
   // These are read by clients on init and polled periodically
   async pushLiveUpdate(key, value) {

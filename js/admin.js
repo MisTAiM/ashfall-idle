@@ -195,53 +195,140 @@ function applyAdminPanel() {
 
       if (this._admPlayerEdit) {
         const p = this._admPlayerEdit;
+        const uid = p.uid;
         html += `<div class="adm-section">
           <h3>Editing: <span style="color:var(--accent)">${p.displayName||p.uid}</span></h3>
-          <button class="btn btn-xs" onclick="ui._admPlayerEdit=null;ui.renderPage('admin')" style="margin-bottom:10px">← Back</button>
+          <button class="btn btn-xs" onclick="ui._admPlayerEdit=null;ui._admPlayerSave=null;ui.renderPage('admin')" style="margin-bottom:10px">← Back to List</button>
           <div class="adm-grid" style="margin-bottom:10px">
-            <div class="adm-stat">UID: <code style="font-size:10px">${p.uid}</code></div>
+            <div class="adm-stat">UID: <code style="font-size:10px;cursor:pointer" onclick="navigator.clipboard?.writeText('${uid}')">${uid}</code></div>
             <div class="adm-stat">TL: ${p.totalLevel||'?'} | CL: ${p.combatLevel||'?'}</div>
             <div class="adm-stat">Kills: ${p.kills||0} | Quests: ${p.questsCompleted||0}</div>
             <div class="adm-stat">Last seen: ${p.lastSeen?.toDate?.()?.toLocaleDateString?.() || 'unknown'}</div>
           </div>
 
-          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Remote Modification (modifies their cloud save)</h4>
+          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Gold</h4>
           <div class="adm-remote-grid">
             <div class="adm-remote-card">
-              <span class="adm-rc-label">Give Gold</span>
+              <span class="adm-rc-label">Add Gold</span>
               <div class="adm-row-flex">
                 <input type="number" id="adm-rp-gold" class="bank-search-input" value="10000" style="width:100px">
-                <button class="btn btn-xs" onclick="online.adminGivePlayerGold('${p.uid}',parseInt(document.getElementById('adm-rp-gold').value)||0)">Give</button>
+                <button class="btn btn-xs" onclick="online.adminGivePlayerGold('${uid}',parseInt(document.getElementById('adm-rp-gold').value)||0)">+ Add</button>
               </div>
             </div>
             <div class="adm-remote-card">
-              <span class="adm-rc-label">Give Item</span>
+              <span class="adm-rc-label">Set Gold (exact)</span>
               <div class="adm-row-flex">
-                <input type="text" id="adm-rp-item" class="bank-search-input" placeholder="item_id" style="width:120px">
-                <input type="number" id="adm-rp-item-qty" class="bank-search-input" value="1" style="width:60px">
-                <button class="btn btn-xs" onclick="online.adminGivePlayerItem('${p.uid}',document.getElementById('adm-rp-item').value,parseInt(document.getElementById('adm-rp-item-qty').value)||1)">Give</button>
+                <input type="number" id="adm-rp-gold-set" class="bank-search-input" value="0" style="width:100px">
+                <button class="btn btn-xs" onclick="online.adminSetPlayerGold('${uid}',parseInt(document.getElementById('adm-rp-gold-set').value)||0)">Set</button>
+              </div>
+            </div>
+          </div>
+
+          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Skills — Set Level Directly</h4>
+          <div class="adm-remote-grid">
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">Set Skill Level</span>
+              <div class="adm-row-flex">
+                <select id="adm-rp-skill" class="bank-search-input" style="width:100px">
+                  ${Object.keys(game.state.skills).map(sk=>`<option value="${sk}">${sk}</option>`).join('')}
+                </select>
+                <input type="number" id="adm-rp-level" class="bank-search-input" value="99" min="1" max="99" style="width:60px">
+                <button class="btn btn-xs" onclick="online.adminSetPlayerLevel('${uid}',document.getElementById('adm-rp-skill').value,parseInt(document.getElementById('adm-rp-level').value)||1)">Set Level</button>
               </div>
             </div>
             <div class="adm-remote-card">
               <span class="adm-rc-label">Give XP</span>
               <div class="adm-row-flex">
-                <select id="adm-rp-skill" class="bank-search-input" style="width:100px">
+                <select id="adm-rp-skill-xp" class="bank-search-input" style="width:100px">
                   ${Object.keys(game.state.skills).map(sk=>`<option value="${sk}">${sk}</option>`).join('')}
                 </select>
                 <input type="number" id="adm-rp-xp" class="bank-search-input" value="50000" style="width:80px">
-                <button class="btn btn-xs" onclick="online.adminGivePlayerXp('${p.uid}',document.getElementById('adm-rp-skill').value,parseInt(document.getElementById('adm-rp-xp').value)||0)">Give</button>
+                <button class="btn btn-xs" onclick="online.adminGivePlayerXp('${uid}',document.getElementById('adm-rp-skill-xp').value,parseInt(document.getElementById('adm-rp-xp').value)||0)">Give XP</button>
               </div>
             </div>
             <div class="adm-remote-card">
-              <span class="adm-rc-label">View Full Save</span>
-              <button class="btn btn-xs" onclick="ui._admViewPlayerSave('${p.uid}')">Load Save JSON</button>
-              <div id="adm-rp-save" style="font-size:10px;max-height:200px;overflow:auto;margin-top:4px;color:var(--text-dim)"></div>
+              <div class="adm-row-flex" style="gap:4px">
+                <button class="btn btn-xs" onclick="if(confirm('Max ALL skills to 99?'))online.adminMaxPlayerSkills('${uid}')">Max All Skills</button>
+                <button class="btn btn-xs btn-danger" onclick="if(confirm('Reset ALL skills to 1?'))online.adminResetPlayerSkills('${uid}')">Reset All</button>
+              </div>
             </div>
           </div>
 
+          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Items</h4>
+          <div class="adm-remote-grid">
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">Give Item</span>
+              <div class="adm-row-flex">
+                <input type="text" id="adm-rp-item" class="bank-search-input" placeholder="item_id or search..." style="width:140px" list="adm-item-datalist">
+                <input type="number" id="adm-rp-item-qty" class="bank-search-input" value="1" style="width:60px">
+                <button class="btn btn-xs" onclick="online.adminGivePlayerItem('${uid}',document.getElementById('adm-rp-item').value,parseInt(document.getElementById('adm-rp-item-qty').value)||1)">Give</button>
+              </div>
+              <datalist id="adm-item-datalist">${Object.entries(GAME_DATA.items).slice(0,500).map(([id,it])=>`<option value="${id}">${it.name}</option>`).join('')}</datalist>
+            </div>
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">Remove Item</span>
+              <div class="adm-row-flex">
+                <input type="text" id="adm-rp-item-rm" class="bank-search-input" placeholder="item_id" style="width:140px" list="adm-item-datalist">
+                <input type="number" id="adm-rp-item-rm-qty" class="bank-search-input" value="1" style="width:60px">
+                <button class="btn btn-xs btn-danger" onclick="online.adminRemovePlayerItem('${uid}',document.getElementById('adm-rp-item-rm').value,parseInt(document.getElementById('adm-rp-item-rm-qty').value)||1)">Remove</button>
+              </div>
+            </div>
+            <div class="adm-remote-card">
+              <button class="btn btn-xs btn-danger" onclick="if(confirm('Clear entire bank?'))online.adminClearPlayerBank('${uid}')">Clear Entire Bank</button>
+            </div>
+          </div>
+
+          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Equipment</h4>
+          <div class="adm-remote-grid">
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">Set Equipment Slot</span>
+              <div class="adm-row-flex">
+                <select id="adm-rp-eq-slot" class="bank-search-input" style="width:80px">
+                  ${['weapon','head','body','legs','boots','gloves','shield','cape','ring','amulet','ammo'].map(s=>`<option value="${s}">${s}</option>`).join('')}
+                </select>
+                <input type="text" id="adm-rp-eq-item" class="bank-search-input" placeholder="item_id (blank=unequip)" style="width:120px" list="adm-item-datalist">
+                <button class="btn btn-xs" onclick="online.adminSetPlayerEquipment('${uid}',document.getElementById('adm-rp-eq-slot').value,document.getElementById('adm-rp-eq-item').value||null)">Set</button>
+              </div>
+            </div>
+          </div>
+
+          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Modify Any Stat</h4>
+          <div class="adm-remote-grid">
+            <div class="adm-remote-card">
+              <span class="adm-rc-label">Set Stat by Path</span>
+              <div class="adm-row-flex">
+                <input type="text" id="adm-rp-stat-path" class="bank-search-input" placeholder="e.g. stats.monstersKilled" style="width:180px">
+                <input type="text" id="adm-rp-stat-val" class="bank-search-input" placeholder="value" style="width:80px">
+                <button class="btn btn-xs" onclick="let v=document.getElementById('adm-rp-stat-val').value;try{v=JSON.parse(v)}catch(e){};online.adminSetPlayerStat('${uid}',document.getElementById('adm-rp-stat-path').value,v)">Set</button>
+              </div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Paths: gold, stats.monstersKilled, stats.dungeonsCompleted, alignment, prayerPoints, maxPrayerPoints, stats.barrowsCompletions, stats.infernoCompletions</div>
+            </div>
+          </div>
+
+          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">View / Edit Save</h4>
+          <div class="adm-remote-grid">
+            <div class="adm-remote-card" style="grid-column:1/-1">
+              <div class="adm-row-flex" style="margin-bottom:6px">
+                <button class="btn btn-xs" onclick="ui._admLoadFullSave('${uid}')">Load Full Save</button>
+                <button class="btn btn-xs" onclick="ui._admLoadPlayerBank('${uid}')">View Bank</button>
+                <button class="btn btn-xs" onclick="ui._admLoadPlayerSkills('${uid}')">View Skills</button>
+                <button class="btn btn-xs" onclick="ui._admLoadPlayerEquip('${uid}')">View Equipment</button>
+                <button class="btn btn-xs" onclick="ui._admLoadPlayerStats('${uid}')">View Stats</button>
+              </div>
+              <div id="adm-rp-save-display" style="font-size:11px;max-height:400px;overflow:auto;background:rgba(0,0,0,0.3);border-radius:4px;padding:8px;color:var(--text-dim)"></div>
+            </div>
+          </div>
+
+          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Raw JSON Editor</h4>
+          <div class="adm-remote-card" style="margin-bottom:10px">
+            <button class="btn btn-xs" onclick="ui._admLoadRawSave('${uid}')">Load Raw JSON</button>
+            <textarea id="adm-rp-raw-json" class="bank-search-input" style="width:100%;height:200px;font-family:monospace;font-size:10px;margin-top:6px;resize:vertical" placeholder="Load save first, then edit JSON and click Save..."></textarea>
+            <button class="btn btn-sm btn-danger" style="margin-top:4px" onclick="if(confirm('Overwrite entire save with the JSON above? This is dangerous.')){ui._admSaveRawJson('${uid}')}">Save Raw JSON</button>
+          </div>
+
           <div class="adm-btn-grid" style="margin-top:10px">
-            <button class="btn btn-sm btn-danger" onclick="ui._admDeletePlayer('${p.uid}','${(p.displayName||'?').replace(/'/g,"\\'")}')">🗑 Delete Player</button>
-            <button class="btn btn-sm" onclick="ui._admBanPlayer('${p.uid}','${(p.displayName||'?').replace(/'/g,"\\'")}')">🚫 Ban Player</button>
+            <button class="btn btn-sm btn-danger" onclick="ui._admDeletePlayer('${uid}','${(p.displayName||'?').replace(/'/g,"\\'")}')">🗑 Delete Player</button>
+            <button class="btn btn-sm" onclick="ui._admBanPlayer('${uid}','${(p.displayName||'?').replace(/'/g,"\\'")}')">🚫 Ban Player</button>
           </div>
         </div>`;
       }
@@ -1012,10 +1099,122 @@ function applyAdminPanel() {
     el.textContent = 'Loading...';
     const save = await online.adminGetPlayerSave(uid);
     if (!save) { el.textContent = 'No save found.'; return; }
-    // Show key stats summary
     const sk = save.skills || {};
     const skillStr = Object.entries(sk).map(([id,s])=>`${id}:${s.level}`).join(', ');
     el.innerHTML = `<strong>Gold:</strong> ${save.gold||0}<br><strong>Skills:</strong> ${skillStr}<br><strong>Bank items:</strong> ${Object.keys(save.bank||{}).filter(k=>(save.bank[k]||0)>0).length}<br><strong>Quests:</strong> ${save.quests?.completed?.length||0}<br><strong>Guild:</strong> ${save.guild?.name||'none'}<br><details><summary>Full JSON</summary><pre style="max-height:300px;overflow:auto;font-size:9px">${JSON.stringify(save,null,1)}</pre></details>`;
+  };
+
+  // ── ADMIN SAVE VIEWERS ──────────────────────────────────────
+  UI.prototype._admLoadFullSave = async function(uid) {
+    const el = document.getElementById('adm-rp-save-display');
+    if (!el) return;
+    el.innerHTML = '<span style="color:var(--amber)">Loading full save...</span>';
+    const save = await online.adminGetPlayerSave(uid);
+    if (!save) { el.innerHTML = 'No save found.'; return; }
+    ui._admPlayerSave = save;
+    const sk = save.skills || {};
+    let html = `<div style="margin-bottom:8px"><strong style="color:var(--amber)">Player Save — ${save.playerName||'Unknown'}</strong></div>`;
+    html += `<div><strong>Gold:</strong> ${(save.gold||0).toLocaleString()}</div>`;
+    html += `<div><strong>Alignment:</strong> ${save.alignment||'neutral'}</div>`;
+    html += `<div><strong>Prayer:</strong> ${save.prayerPoints||0}/${save.maxPrayerPoints||0}</div>`;
+    html += `<div><strong>Monsters Killed:</strong> ${save.stats?.monstersKilled||0}</div>`;
+    html += `<div><strong>Dungeons:</strong> ${save.stats?.dungeonsCompleted||0}</div>`;
+    html += `<div><strong>Barrows:</strong> ${save.stats?.barrowsCompletions||0}</div>`;
+    html += `<div><strong>Theatre:</strong> ${save.stats?.theatreCompletions||0}</div>`;
+    html += `<div><strong>Chambers:</strong> ${save.stats?.chambersCompletions||0}</div>`;
+    html += `<div><strong>Inferno:</strong> ${save.stats?.infernoCompletions||0}</div>`;
+    html += `<div><strong>Gauntlet:</strong> ${save.stats?.gauntletCompletions||0}</div>`;
+    html += `<div><strong>Play Time:</strong> ${Math.floor((save.stats?.totalPlayTime||0)/3600)}h</div>`;
+    html += `<div><strong>Bank Items:</strong> ${Object.keys(save.bank||{}).filter(k=>(save.bank[k]||0)>0).length}</div>`;
+    el.innerHTML = html;
+  };
+
+  UI.prototype._admLoadPlayerBank = async function(uid) {
+    const el = document.getElementById('adm-rp-save-display');
+    if (!el) return;
+    el.innerHTML = '<span style="color:var(--amber)">Loading bank...</span>';
+    const save = await online.adminGetPlayerSave(uid);
+    if (!save) { el.innerHTML = 'No save found.'; return; }
+    const bank = save.bank || {};
+    const items = Object.entries(bank).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+    if (!items.length) { el.innerHTML = 'Bank is empty.'; return; }
+    let html = `<div style="margin-bottom:6px"><strong style="color:var(--amber)">Bank (${items.length} items)</strong></div>`;
+    html += `<div style="display:grid;grid-template-columns:1fr 60px 60px;gap:2px;font-size:11px">`;
+    html += `<div style="font-weight:700;color:var(--amber)">Item</div><div style="font-weight:700;color:var(--amber)">Qty</div><div style="font-weight:700;color:var(--amber)">Action</div>`;
+    for (const [id, qty] of items) {
+      const name = GAME_DATA.items[id]?.name || id;
+      html += `<div>${name}</div><div>${qty.toLocaleString()}</div><div><button class="btn btn-xs" style="padding:0 4px;font-size:9px" onclick="online.adminRemovePlayerItem('${uid}','${id}',${qty})">Del</button></div>`;
+    }
+    html += `</div>`;
+    el.innerHTML = html;
+  };
+
+  UI.prototype._admLoadPlayerSkills = async function(uid) {
+    const el = document.getElementById('adm-rp-save-display');
+    if (!el) return;
+    el.innerHTML = '<span style="color:var(--amber)">Loading skills...</span>';
+    const save = await online.adminGetPlayerSave(uid);
+    if (!save || !save.skills) { el.innerHTML = 'No save found.'; return; }
+    let html = `<div style="margin-bottom:6px"><strong style="color:var(--amber)">Skills</strong></div>`;
+    html += `<div style="display:grid;grid-template-columns:1fr 40px 80px 80px;gap:2px;font-size:11px">`;
+    html += `<div style="font-weight:700;color:var(--amber)">Skill</div><div style="font-weight:700;color:var(--amber)">Lv</div><div style="font-weight:700;color:var(--amber)">XP</div><div style="font-weight:700;color:var(--amber)">Action</div>`;
+    for (const [id, sk] of Object.entries(save.skills)) {
+      html += `<div>${id}</div><div>${sk.level}</div><div>${(sk.xp||0).toLocaleString()}</div><div><button class="btn btn-xs" style="padding:0 4px;font-size:9px" onclick="online.adminSetPlayerLevel('${uid}','${id}',99)">→99</button></div>`;
+    }
+    html += `</div>`;
+    el.innerHTML = html;
+  };
+
+  UI.prototype._admLoadPlayerEquip = async function(uid) {
+    const el = document.getElementById('adm-rp-save-display');
+    if (!el) return;
+    el.innerHTML = '<span style="color:var(--amber)">Loading equipment...</span>';
+    const save = await online.adminGetPlayerSave(uid);
+    if (!save) { el.innerHTML = 'No save found.'; return; }
+    const eq = save.equipment || {};
+    let html = `<div style="margin-bottom:6px"><strong style="color:var(--amber)">Equipment</strong></div>`;
+    const slots = ['weapon','head','body','legs','boots','gloves','shield','cape','ring','amulet','ammo'];
+    for (const slot of slots) {
+      const itemId = eq[slot];
+      const name = itemId ? (GAME_DATA.items[itemId]?.name || itemId) : '<empty>';
+      html += `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--amber)">${slot}:</span><span>${name}</span>${itemId?`<button class="btn btn-xs" style="padding:0 4px;font-size:9px" onclick="online.adminSetPlayerEquipment('${uid}','${slot}',null)">Unequip</button>`:''}</div>`;
+    }
+    el.innerHTML = html;
+  };
+
+  UI.prototype._admLoadPlayerStats = async function(uid) {
+    const el = document.getElementById('adm-rp-save-display');
+    if (!el) return;
+    el.innerHTML = '<span style="color:var(--amber)">Loading stats...</span>';
+    const save = await online.adminGetPlayerSave(uid);
+    if (!save) { el.innerHTML = 'No save found.'; return; }
+    const stats = save.stats || {};
+    let html = `<div style="margin-bottom:6px"><strong style="color:var(--amber)">Stats</strong></div>`;
+    for (const [key, val] of Object.entries(stats).sort((a,b)=>a[0].localeCompare(b[0]))) {
+      const display = typeof val === 'object' ? JSON.stringify(val) : val;
+      html += `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11px"><span>${key}</span><span style="color:var(--text-dim)">${typeof display==='string'&&display.length>50?display.substring(0,50)+'...':display}</span></div>`;
+    }
+    el.innerHTML = html;
+  };
+
+  UI.prototype._admLoadRawSave = async function(uid) {
+    const el = document.getElementById('adm-rp-raw-json');
+    if (!el) return;
+    el.value = 'Loading...';
+    const save = await online.adminGetPlayerSave(uid);
+    if (!save) { el.value = 'No save found.'; return; }
+    el.value = JSON.stringify(save, null, 2);
+  };
+
+  UI.prototype._admSaveRawJson = async function(uid) {
+    const el = document.getElementById('adm-rp-raw-json');
+    if (!el) return;
+    try {
+      const save = JSON.parse(el.value);
+      const ok = await online.adminSetPlayerSave(uid, save);
+      if (ok) { ui.toast({type:'success',text:'Raw save written successfully'}); }
+      else { ui.toast({type:'warn',text:'Failed to write save'}); }
+    } catch(e) { ui.toast({type:'danger',text:'Invalid JSON: '+e.message}); }
   };
 
   // Live push specific settings
