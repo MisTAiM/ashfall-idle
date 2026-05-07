@@ -7111,3 +7111,32 @@ kbd {
   border:none; color:var(--text-dim); font-size:16px; cursor:pointer;
 }
 .tutorial-dismiss:hover { color:var(--text); }
+
+/* ── SETTINGS PAGE ─────────────────────────────────────────── */
+.settings-section { background:rgba(0,0,0,0.15); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; }
+.settings-section h3 { font-family:'Cinzel',serif; font-size:13px; color:var(--amber); margin:0 0 12px; }
+.settings-grid { display:flex; flex-direction:column; gap:8px; }
+.settings-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text); padding:6px 8px; background:rgba(255,255,255,0.03); border-radius:6px; cursor:pointer; }
+.settings-row:hover { background:rgba(255,255,255,0.06); }
+.settings-row input[type=checkbox] { width:16px; height:16px; accent-color:var(--amber); cursor:pointer; }
+.settings-about-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
+.sa-stat { text-align:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:6px; }
+.sa-stat span { display:block; font-family:'Cinzel',serif; font-size:16px; color:var(--amber); }
+.sa-stat { font-size:10px; color:var(--text-dim); }
+
+/* ── EQUIPMENT PRESETS ──────────────────────────────────────── */
+.preset-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.preset-slot { background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; padding:10px; }
+.preset-slot.preset-filled { border-color:rgba(201,135,62,0.3); }
+.preset-name { font-size:11px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.preset-items { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
+.preset-item { font-size:9px; background:rgba(255,255,255,0.06); padding:1px 5px; border-radius:4px; color:var(--text-dim); }
+.preset-empty { font-size:10px; color:var(--text-dim); margin-bottom:6px; }
+.preset-btns { display:flex; gap:4px; flex-wrap:wrap; }
+
+/* ── PERFORMANCE MODE ───────────────────────────────────────── */
+body.perf-mode * { animation:none !important; transition:none !important; }
+body.perf-mode .hit-splat { display:none !important; }
+
+/* ── AGILITY SPEED PASSIVE DISPLAY ─────────────────────────── */
+.tool-bonus { font-size:9px; color:#7ab87a; }

@@ -487,10 +487,10 @@ class GameEngine {
         const lapBonus = action.lapBonus || 0;
         if (lapBonus > 0) {
           const mastLv = this.getMasteryLevel('agility', action.masteryId || action.id);
-          const bonusMult = 1 + mastLv * 0.01; // up to +10% at max mastery
+          const bonusMult = 1 + mastLv * 0.01;
           const bonusXp = Math.floor(lapBonus * bonusMult);
-          // Lap bonus is already included in action.xp, but flash a notification
-          this.emit('notification', { type:'info', text:`Lap complete! +${action.xp + bonusXp} Agility XP` });
+          this.addXp('agility', bonusXp);
+          this.emit('notification', { type:'info', text:`Lap complete! +${bonusXp} bonus Agility XP` });
         }
       }
     } else if (skill.type === 'artisan' || skillId === 'summoning') {
@@ -2325,8 +2325,18 @@ class GameEngine {
   // Returns percentage speed bonus from equipped tool for a given skill
   getToolSpeedBonus(skillId) {
     const weapon = this.getEquippedItem('weapon');
-    if (!weapon?.toolSpeed) return 0;
-    return weapon.toolSpeed[skillId] || 0;
+    let bonus = weapon?.toolSpeed?.[skillId] || 0;
+    // Agility passive: +0.2% gathering speed per 5 agility levels
+    const agilLv = this.state.skills.agility?.level || 0;
+    if (agilLv >= 5 && GAME_DATA.skills[skillId]?.type === 'gathering') {
+      bonus += Math.floor(agilLv / 5) * 0.2;
+    }
+    // Graceful set bonus: wearing full graceful = +3% all gathering
+    const graceSlots = ['graceful_hood','graceful_top','graceful_legs','graceful_gloves','graceful_boots','graceful_cape'];
+    const equip = this.state.equipment || {};
+    const wearingFull = graceSlots.every(id => Object.values(equip).includes(id));
+    if (wearingFull && GAME_DATA.skills[skillId]?.type === 'gathering') bonus += 3;
+    return bonus;
   }
 
   consumeAmmo() {

@@ -2691,23 +2691,139 @@ class UI {
   }
 
   renderSettingsPage(el) {
-    let html = this.header('Settings','settings','Manage your game.',null);
+    const s = this.engine.state;
+    const prefs = s._prefs || {};
+    let html = this.header('Settings','settings','Customise your game experience.',null);
+
+    // Save Management
     html += `<div class="settings-section">
-      <h3>Save Management</h3>
+      <h3>💾 Save Management</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <button class="btn" onclick="game.save(); ui.toast({type:'success',text:'Game saved!'})">Save Game</button>
+        <button class="btn" onclick="game.save(); ui.toast({type:'success',text:'Game saved!'})">Save Now</button>
         <button class="btn" onclick="ui.exportSave()">Export Save</button>
         <button class="btn" onclick="ui.importSavePrompt()">Import Save</button>
         ${typeof online !== 'undefined' && online.isOnline ? '<button class="btn" onclick="online.saveToCloud()">Save to Cloud</button><button class="btn" onclick="online.loadFromCloud().then(d=>{if(d){game.migrateSave(d);game.save();location.reload();}})">Load from Cloud</button>' : ''}
       </div>
       <button class="btn btn-danger" onclick="if(confirm('Delete ALL progress? This cannot be undone.')){game.deleteSave(); location.reload();}">Delete Save</button>
-    </div>
-    <div class="settings-section">
-      <h3>About Ashfall Idle</h3>
-      <p>A dark fantasy idle RPG. ${Object.keys(GAME_DATA.items).length} items, ${Object.keys(GAME_DATA.skills).length} skills, ${Object.keys(GAME_DATA.monsters).length} monsters.</p>
-      <p>Version 5.7 &mdash; Summoning + Wilderness PvP</p>
     </div>`;
+
+    // Display Preferences
+    html += `<div class="settings-section">
+      <h3>🖥 Display Preferences</h3>
+      <div class="settings-grid">
+        <label class="settings-row">
+          <span>Show XP Gains in Combat</span>
+          <input type="checkbox" ${prefs.showCombatXp!==false?'checked':''} onchange="ui._setPref('showCombatXp',this.checked)">
+        </label>
+        <label class="settings-row">
+          <span>Show Floating Damage Numbers</span>
+          <input type="checkbox" ${prefs.showSplats!==false?'checked':''} onchange="ui._setPref('showSplats',this.checked)">
+        </label>
+        <label class="settings-row">
+          <span>Show Combat Log (auto-open)</span>
+          <input type="checkbox" ${prefs.autoCombatLog?'checked':''} onchange="ui._setPref('autoCombatLog',this.checked);ui._showCombatLog=this.checked">
+        </label>
+        <label class="settings-row">
+          <span>Compact Bank (smaller items)</span>
+          <input type="checkbox" ${prefs.compactBank?'checked':''} onchange="ui._setPref('compactBank',this.checked);ui.renderPage('bank')">
+        </label>
+        <label class="settings-row">
+          <span>Show Skill XP Bar in Sidebar</span>
+          <input type="checkbox" ${prefs.sidebarXp!==false?'checked':''} onchange="ui._setPref('sidebarXp',this.checked);ui.renderSidebar()">
+        </label>
+        <label class="settings-row">
+          <span>Performance Mode (reduce animations)</span>
+          <input type="checkbox" ${prefs.perfMode?'checked':''} onchange="ui._setPref('perfMode',this.checked);document.body.classList.toggle('perf-mode',this.checked)">
+        </label>
+      </div>
+    </div>`;
+
+    // Bank Presets
+    const presets = s._bankPresets || [];
+    html += `<div class="settings-section">
+      <h3>⚔ Equipment Presets</h3>
+      <p style="font-size:11px;color:var(--text-dim);margin:0 0 10px">Save your current equipment loadout to quickly re-equip.</p>
+      <div class="preset-grid">
+        ${[0,1,2,3].map(i => {
+          const p = presets[i];
+          return `<div class="preset-slot ${p?'preset-filled':''}">
+            <div class="preset-name">${p ? (p.name||`Preset ${i+1}`) : `Preset ${i+1}`}</div>
+            ${p ? `<div class="preset-items">${Object.entries(p.equip||{}).filter(([,v])=>v).map(([k,v])=>`<span class="preset-item" title="${k}">${GAME_DATA.items[v]?.name?.split(' ').pop()||v}</span>`).join('')}</div>` : '<div class="preset-empty">Empty</div>'}
+            <div class="preset-btns">
+              <button class="btn btn-xs" onclick="ui._savePreset(${i})">Save</button>
+              ${p ? `<button class="btn btn-xs" onclick="ui._loadPreset(${i})">Load</button>` : ''}
+              ${p ? `<button class="btn btn-xs btn-danger" onclick="ui._clearPreset(${i})">✕</button>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+    // Tutorial
+    html += `<div class="settings-section">
+      <h3>📖 Tutorial</h3>
+      <button class="btn btn-sm" onclick="game.state._tutorialDismissed=false;ui.showTutorial(0)">Restart Tutorial</button>
+    </div>`;
+
+    // About
+    html += `<div class="settings-section">
+      <h3>ℹ About Ashfall Idle</h3>
+      <div class="settings-about-grid">
+        <div class="sa-stat"><span>${Object.keys(GAME_DATA.items).length.toLocaleString()}</span>Items</div>
+        <div class="sa-stat"><span>${Object.keys(GAME_DATA.skills).length}</span>Skills</div>
+        <div class="sa-stat"><span>${Object.keys(GAME_DATA.monsters).length}</span>Monsters</div>
+        <div class="sa-stat"><span>${(GAME_DATA.quests||[]).length}</span>Quests</div>
+        <div class="sa-stat"><span>${Object.values(GAME_DATA.recipes||{}).reduce((a,r)=>a+r.length,0)}</span>Recipes</div>
+        <div class="sa-stat"><span>${(GAME_DATA.combatAreas||[]).length}</span>Areas</div>
+      </div>
+      <p style="font-size:11px;color:var(--text-dim);margin:10px 0 0">Ashfall Idle v9.5 — Dark Fantasy Idle RPG</p>
+    </div>`;
+
     el.innerHTML = html;
+    // Apply perf mode class
+    document.body.classList.toggle('perf-mode', !!(s._prefs?.perfMode));
+  }
+
+  _setPref(key, value) {
+    if (!this.engine.state._prefs) this.engine.state._prefs = {};
+    this.engine.state._prefs[key] = value;
+    this.engine.save?.();
+  }
+
+  _savePreset(idx) {
+    const s = this.engine.state;
+    if (!s._bankPresets) s._bankPresets = [];
+    const name = prompt(`Name for Preset ${idx+1}:`, `Preset ${idx+1}`);
+    if (name === null) return;
+    s._bankPresets[idx] = { name, equip: { ...s.equipment } };
+    this.toast({type:'success', text:`Preset ${idx+1} saved!`});
+    this.renderPage('settings_page');
+  }
+
+  _loadPreset(idx) {
+    const s = this.engine.state;
+    const preset = s._bankPresets?.[idx];
+    if (!preset) return;
+    // Return current equipped to bank, then equip preset
+    for (const [slot, id] of Object.entries(s.equipment)) {
+      if (id && slot !== 'ammo') { this.engine.addItem(id, 1); s.equipment[slot] = null; }
+    }
+    for (const [slot, id] of Object.entries(preset.equip || {})) {
+      if (id && s.bank[id] > 0) {
+        s.bank[id]--;
+        if (s.bank[id] <= 0) delete s.bank[id];
+        s.equipment[slot] = id;
+      }
+    }
+    this.engine.emit('equipmentChanged');
+    this.toast({type:'success', text:`Preset "${preset.name}" loaded!`});
+    this.renderPage('settings_page');
+  }
+
+  _clearPreset(idx) {
+    if (!this.engine.state._bankPresets) return;
+    this.engine.state._bankPresets[idx] = null;
+    this.renderPage('settings_page');
   }
 
   // ── SUMMONING PAGE ──────────────────────────────────────
