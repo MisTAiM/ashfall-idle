@@ -2102,8 +2102,12 @@ class OnlineManager {
       const snap = await this.firestore.collection('players').limit(200).get();
       const results = [];
       const q = query.toLowerCase();
-      const presenceSnap = await this.db.ref('presence').once('value');
-      const presenceData = presenceSnap.val() || {};
+      // Try to get presence data, but don't fail if it errors
+      let presenceData = {};
+      try {
+        const presenceSnap = await this.db.ref('presence').once('value');
+        presenceData = presenceSnap.val() || {};
+      } catch(e) { console.warn('[Party] Presence query failed, showing without online status'); }
       snap.forEach(doc => {
         const d = doc.data();
         if (d.displayName?.toLowerCase().includes(q) && doc.id !== this.user?.uid) {
