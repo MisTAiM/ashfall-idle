@@ -6788,3 +6788,126 @@ kbd {
 .igc-from { font-size:12px; color:var(--text); margin-bottom:2px; }
 .igc-item { font-size:14px; color:var(--amber); font-weight:600; }
 .igc-time { font-size:10px; color:var(--text-dim); margin-top:2px; }
+
+/* ── DWARF CANNON PANEL ──────────────────────────────────────── */
+.cannon-panel {
+  background: rgba(60,40,20,0.25);
+  border: 1px solid rgba(201,135,62,0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0;
+  transition: border-color 0.3s, background 0.3s;
+}
+.cannon-panel.cannon-active {
+  background: rgba(201,135,62,0.10);
+  border-color: rgba(201,135,62,0.55);
+  box-shadow: 0 0 12px rgba(201,135,62,0.15);
+  animation: cannon-pulse 2s infinite;
+}
+@keyframes cannon-pulse {
+  0%,100% { box-shadow: 0 0 8px rgba(201,135,62,0.1); }
+  50%      { box-shadow: 0 0 20px rgba(201,135,62,0.3); }
+}
+.cannon-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cannon-icon svg { width:20px; height:20px; }
+.cannon-title {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--amber);
+  flex: 1;
+}
+.cannon-balls {
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(0,0,0,0.3);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.cannon-status {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 7px;
+}
+.cannon-panel.cannon-active .cannon-status { color: #c9873e; font-weight: 600; }
+.cannon-toggle-btn {
+  width: 100%;
+  padding: 6px;
+  font-size: 12px;
+  font-family: 'Cinzel', serif;
+  background: rgba(201,135,62,0.12);
+  border: 1px solid rgba(201,135,62,0.3);
+  border-radius: 6px;
+  color: var(--amber);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cannon-toggle-btn:hover:not(:disabled) { background: rgba(201,135,62,0.25); }
+.cannon-btn-active {
+  background: rgba(196,64,32,0.2) !important;
+  border-color: rgba(196,64,32,0.5) !important;
+  color: #e06040 !important;
+}
+.cannon-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 6px;
+  border: 1px dashed rgba(201,135,62,0.2);
+  border-radius: 6px;
+  margin: 6px 0;
+}
+
+/* ── AMMO COUNTER BAR ────────────────────────────────────────── */
+.ammo-counter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.ammo-counter-bar .ammo-name { flex: 1; }
+.ammo-counter-bar .ammo-qty { color: var(--text); font-weight: 600; }
+.ammo-counter-bar .ammo-low { color: #e06040 !important; }
+.ammo-counter-bar.ammo-missing {
+  color: #e06040;
+  border-color: rgba(220,80,60,0.3);
+  justify-content: center;
+}
+
+/* ── CANNON HIT ANIMATION ────────────────────────────────────── */
+@keyframes cannon-hit {
+  0%   { transform: scale(1); opacity: 1; }
+  50%  { transform: scale(1.4); opacity: 0.7; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+.cannon-hit-flash {
+  animation: cannon-hit 0.35s ease-out forwards;
+  color: #c9873e;
+  font-weight: bold;
+}
+
+/* ── BOW TYPE BADGE ──────────────────────────────────────────── */
+.bow-type-badge {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  margin-left: 4px;
+  font-family: 'Cinzel', serif;
+  vertical-align: middle;
+}
+.bow-type-badge.shortbow { background: rgba(100,180,220,0.15); color: #7ab8c8; border: 1px solid rgba(100,180,220,0.3); }
+.bow-type-badge.longbow  { background: rgba(201,135,62,0.15);  color: var(--amber); border: 1px solid rgba(201,135,62,0.3); }
+
+/* Ammo slot quantity in equipment page */
+.ammo-slot-qty { font-size:10px; color:var(--text-dim); margin-left:4px; }

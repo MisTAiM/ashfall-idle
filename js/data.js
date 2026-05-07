@@ -173,11 +173,11 @@ const GAME_DATA = {
     add('moon_seed',  {name:'Moonpetal Seed',type:'seed',growTime:3600,yield:'moonpetal',sellPrice:50,sprite:'misc-seed',desc:'60 min grow time.'});
     add('potato', {name:'Potato',type:'food',heals:10,sellPrice:3,sprite:'food-veg',desc:'Raw potato. +10 HP.'});
     add('onion',  {name:'Onion', type:'food',heals:15,sellPrice:5,sprite:'food-veg',desc:'Raw onion. +15 HP.'});
-    add('bronze_arrows', {name:'Bronze Arrows', type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:2,  sellPrice:1, sprite:'arrow-bronze',desc:'Bronze-tipped arrows.'});
-    add('iron_arrows',   {name:'Iron Arrows',   type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:5,  sellPrice:3, sprite:'arrow-iron',  desc:'Iron arrows.'});
-    add('steel_arrows',  {name:'Steel Arrows',  type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:10, sellPrice:8, sprite:'arrow-steel', desc:'Steel arrows.'});
-    add('mithril_arrows',{name:'Mithril Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:18, sellPrice:20,sprite:'arrow-mithril',desc:'Mithril arrows.'});
-    add('adamant_arrows',{name:'Adamant Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:28, sellPrice:45,sprite:'arrow-adamant',desc:'Adamant arrows.'});
+    add('bronze_arrows', {name:'Bronze Arrows', type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:2,  stackable:true,sellPrice:1, sprite:'arrow-bronze',desc:'Bronze-tipped arrows. Requires any bow.'});
+    add('iron_arrows',   {name:'Iron Arrows',   type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:5,  stackable:true,sellPrice:3, sprite:'arrow-iron',  desc:'Iron arrows. Requires any bow.'});
+    add('steel_arrows',  {name:'Steel Arrows',  type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:10, stackable:true,sellPrice:8, sprite:'arrow-steel', desc:'Steel arrows. Requires any bow.'});
+    add('mithril_arrows',{name:'Mithril Arrows',type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:18, stackable:true,sellPrice:20,sprite:'arrow-mithril',desc:'Mithril arrows. Requires any bow.'});
+    add('adamant_arrows',{name:'Adamant Arrows',type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:28, stackable:true,sellPrice:45,sprite:'arrow-adamant',desc:'Adamant arrows. Requires any bow.'});
 
     // SWORDS (tier progression)
     add('bronze_sword',    {name:'Bronze Sword',    type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.4,stats:{attackBonus:5,strengthBonus:4},   levelReq:{attack:1}, sellPrice:15,   sprite:'sword-bronze', desc:'A basic bronze blade.'});
@@ -209,13 +209,18 @@ const GAME_DATA = {
     add('mithril_dagger',{name:'Mithril Dagger',type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.6,stats:{attackBonus:28,strengthBonus:19},levelReq:{attack:25},sellPrice:320,sprite:'dagger-mithril',desc:'A razor mithril dagger.'});
     add('adamant_dagger',{name:'Adamant Dagger',type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.6,stats:{attackBonus:42,strengthBonus:30},levelReq:{attack:35},sellPrice:800,sprite:'dagger-adamant',desc:'A deadly adamant dagger.'});
 
-    // BOWS
-    add('oak_shortbow',   {name:'Oak Shortbow',   type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.4,stats:{rangedBonus:8}, levelReq:{ranged:1}, sellPrice:20,   sprite:'bow-oak',    ammoType:'arrow',desc:'A simple oak bow.'});
-    add('willow_shortbow',{name:'Willow Shortbow',type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.2,stats:{rangedBonus:16},levelReq:{ranged:15},sellPrice:60,   sprite:'bow-willow', ammoType:'arrow',desc:'A supple willow bow.'});
-    add('maple_shortbow', {name:'Maple Shortbow', type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.2,stats:{rangedBonus:28},levelReq:{ranged:30},sellPrice:200,  sprite:'bow-maple',  ammoType:'arrow',desc:'A sturdy maple bow.'});
-    add('yew_longbow',    {name:'Yew Longbow',    type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6,stats:{rangedBonus:45},levelReq:{ranged:40},sellPrice:600,  sprite:'bow-yew',    ammoType:'arrow',desc:'A powerful yew longbow.'});
-    add('elder_bow',      {name:'Elder Bow',      type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.0,stats:{rangedBonus:65},levelReq:{ranged:55},sellPrice:3000, sprite:'bow-elder',  ammoType:'arrow',desc:'An elder wood bow.'});
-    add('ashwood_bow',    {name:'Ashwood Bow',    type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.8,stats:{rangedBonus:90},levelReq:{ranged:70},sellPrice:12000,sprite:'bow-ashwood',ammoType:'arrow',desc:'A charred ashwood bow.',unique:true});
+    // BOWS — Shortbows (fast, moderate bonus) | Longbows (slow, high bonus, extra range accuracy)
+    add('oak_shortbow',     {name:'Oak Shortbow',     type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.0,stats:{rangedBonus:8},  levelReq:{ranged:1},  sellPrice:20,   sprite:'bow-oak',    ammoType:'arrow',bowType:'shortbow',desc:'A simple oak shortbow. Fast attack speed.'});
+    add('oak_longbow',      {name:'Oak Longbow',       type:'weapon',slot:'weapon',style:'ranged',attackSpeed:3.2,stats:{rangedBonus:14}, levelReq:{ranged:5},  sellPrice:35,   sprite:'bow-oak',    ammoType:'arrow',bowType:'longbow', desc:'An oak longbow. Slower but hits harder.'});
+    add('willow_shortbow',  {name:'Willow Shortbow',   type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.9,stats:{rangedBonus:20}, levelReq:{ranged:20}, sellPrice:80,   sprite:'bow-willow', ammoType:'arrow',bowType:'shortbow',desc:'A supple willow shortbow.'});
+    add('willow_longbow',   {name:'Willow Longbow',    type:'weapon',slot:'weapon',style:'ranged',attackSpeed:3.0,stats:{rangedBonus:32}, levelReq:{ranged:25}, sellPrice:150,  sprite:'bow-willow', ammoType:'arrow',bowType:'longbow', desc:'A willow longbow. Hits harder at range.'});
+    add('maple_shortbow',   {name:'Maple Shortbow',    type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.8,stats:{rangedBonus:32}, levelReq:{ranged:30}, sellPrice:250,  sprite:'bow-maple',  ammoType:'arrow',bowType:'shortbow',desc:'A fast maple shortbow.'});
+    add('maple_longbow',    {name:'Maple Longbow',     type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.8,stats:{rangedBonus:48}, levelReq:{ranged:35}, sellPrice:450,  sprite:'bow-maple',  ammoType:'arrow',bowType:'longbow', desc:'A powerful maple longbow.'});
+    add('yew_shortbow',     {name:'Yew Shortbow',      type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.7,stats:{rangedBonus:42}, levelReq:{ranged:40}, sellPrice:750,  sprite:'bow-yew',    ammoType:'arrow',bowType:'shortbow',desc:'A fast yew shortbow.'});
+    add('yew_longbow',      {name:'Yew Longbow',       type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6,stats:{rangedBonus:60}, levelReq:{ranged:45}, sellPrice:1200, sprite:'bow-yew',    ammoType:'arrow',bowType:'longbow', desc:'A powerful yew longbow. Hits with great force.'});
+    add('elder_shortbow',   {name:'Elder Shortbow',    type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.6,stats:{rangedBonus:58}, levelReq:{ranged:55}, sellPrice:3000, sprite:'bow-elder',  ammoType:'arrow',bowType:'shortbow',desc:'A swift elder shortbow.',unique:true});
+    add('elder_longbow',    {name:'Elder Longbow',     type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.4,stats:{rangedBonus:76}, levelReq:{ranged:60}, sellPrice:5000, sprite:'bow-elder',  ammoType:'arrow',bowType:'longbow', desc:'A devastating elder longbow.',unique:true});
+    add('ashwood_bow',      {name:'Ashwood Shortbow',  type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.5,stats:{rangedBonus:90}, levelReq:{ranged:70}, sellPrice:12000,sprite:'bow-ashwood',ammoType:'arrow',bowType:'shortbow',desc:'A charred ashwood shortbow. Legendary speed.',unique:true});
 
     // MAGIC WEAPONS
     add('apprentice_wand',{name:'Apprentice Wand',type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4,stats:{magicBonus:5}, levelReq:{magic:1}, sellPrice:25,   sprite:'wand-wood',   desc:'A novice mage wand.'});
@@ -740,7 +745,7 @@ GAME_DATA.slayerShop = [
 // Slayer items
 GAME_DATA.items.slayer_helm = {id:'slayer_helm',name:'Slayer Helm',type:'armor',slot:'head',stats:{attackBonus:3,strengthBonus:3,defenceBonus:10,rangedBonus:3,magicBonus:3,damageReduction:2},levelReq:{defence:10,slayer:20},sellPrice:0,sprite:'helm-iron',desc:'+15% damage and accuracy vs slayer targets.',unique:true,slayerBonus:15};
 GAME_DATA.items.slayer_ring = {id:'slayer_ring',name:'Slayer Ring',type:'armor',slot:'ring',stats:{attackBonus:4,strengthBonus:2},levelReq:{slayer:15},sellPrice:0,sprite:'ring-ruby',desc:'+5% Slayer XP.',unique:true,slayerXpBonus:5};
-GAME_DATA.items.broad_arrows = {id:'broad_arrows',name:'Broad Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:12,sellPrice:5,sprite:'arrow-steel',desc:'Effective vs slayer creatures. +20% damage on task.'};
+GAME_DATA.items.broad_arrows = {id:'broad_arrows',name:'Broad Arrows',type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',stackable:true,rangedBonus:12,sellPrice:5,sprite:'arrow-steel',desc:'Effective vs slayer creatures. +20% damage on task.'};
 
 // ── SPELLBOOKS ───────────────────────────────────────────
 GAME_DATA.spellbooks = {
@@ -1040,9 +1045,19 @@ GAME_DATA.items.prayer_potion = {id:'prayer_potion',name:'Prayer Potion',type:'p
 GAME_DATA.items.super_restore = {id:'super_restore',name:'Super Restore',type:'potion',prayerRestore:100,heals:200,sellPrice:350,sprite:'potion-yellow',desc:'Restores 100 PP + heals 200.'};
 
 // New arrow tiers
-GAME_DATA.items.obsidian_arrows = {id:'obsidian_arrows',name:'Obsidian Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:38,sellPrice:80,sprite:'arrow-adamant',desc:'Obsidian-tipped arrows.'};
-GAME_DATA.items.dragon_arrows = {id:'dragon_arrows',name:'Dragon Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:50,sellPrice:150,sprite:'arrow-adamant',desc:'Dragon-scale arrows. Deadly.'};
-GAME_DATA.items.ashfire_arrows = {id:'ashfire_arrows',name:'Ashfire Arrows',type:'ammo',subtype:'arrow',ammoType:'arrow',rangedBonus:65,sellPrice:300,sprite:'arrow-adamant',desc:'Arrows forged in ashfire.'};
+GAME_DATA.items.obsidian_arrows = {id:'obsidian_arrows',name:'Obsidian Arrows',type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',stackable:true,rangedBonus:38,sellPrice:80,sprite:'arrow-adamant',desc:'Obsidian-tipped arrows.'};
+GAME_DATA.items.dragon_arrows = {id:'dragon_arrows',name:'Dragon Arrows',type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',stackable:true,rangedBonus:50,sellPrice:150,sprite:'arrow-adamant',desc:'Dragon-scale arrows. Deadly.'};
+GAME_DATA.items.ashfire_arrows = {id:'ashfire_arrows',name:'Ashfire Arrows',type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',stackable:true,rangedBonus:65,sellPrice:300,sprite:'arrow-adamant',desc:'Arrows forged in ashfire.'};
+
+// ── DWARF CANNON SYSTEM ───────────────────────────────────────────
+// Requires quest: Artillerist's Calling
+// Parts must be assembled into the full cannon
+GAME_DATA.items.cannon_base    = {id:'cannon_base',    name:'Cannon Base',    type:'resource',subtype:'cannon_part',sellPrice:500, sprite:'misc-gear',    desc:'The iron base of a dwarf cannon. One of four parts needed.'};
+GAME_DATA.items.cannon_stand   = {id:'cannon_stand',   name:'Cannon Stand',   type:'resource',subtype:'cannon_part',sellPrice:500, sprite:'misc-gear',    desc:'The rotating stand assembly. One of four parts needed.'};
+GAME_DATA.items.cannon_barrels = {id:'cannon_barrels', name:'Cannon Barrels', type:'resource',subtype:'cannon_part',sellPrice:500, sprite:'misc-gear',    desc:'The multi-barrel assembly. One of four parts needed.'};
+GAME_DATA.items.cannon_furnace = {id:'cannon_furnace', name:'Cannon Furnace', type:'resource',subtype:'cannon_part',sellPrice:500, sprite:'misc-gear',    desc:'The mithril-lined furnace. One of four parts needed.'};
+GAME_DATA.items.dwarf_cannon   = {id:'dwarf_cannon',   name:'Dwarf Cannon',   type:'special', slot:'cannon',       sellPrice:5000,sprite:'misc-cannon',   desc:'A powerful dwarf multi-cannon. Place in combat to fire cannonballs at multiple targets. Requires Artillerist\'s Calling quest.',questReq:'artillerists_calling',unique:true,isCannonItem:true};
+GAME_DATA.items.cannonball     = {id:'cannonball',     name:'Cannonball',     type:'ammo',    slot:'ammo',subtype:'cannonball',ammoType:'cannonball',stackable:true,rangedBonus:0,sellPrice:25,sprite:'misc-ball',desc:'Iron cannonball for the dwarf cannon.'};
 
 // New fish + food tiers
 GAME_DATA.items.raw_dark_crab = {id:'raw_dark_crab',name:'Raw Dark Crab',type:'resource',subtype:'fish',sellPrice:300,sprite:'fish-deep',desc:'A deep-sea dark crab.'};
@@ -1154,6 +1169,13 @@ GAME_DATA.recipes.smithing.push(
   {id:'smith_ashsteel_helm', name:'Ashsteel Helm',     level:91,xp:600,time:10.0,input:[{item:'ashsteel_bar',qty:3}],output:{item:'ashsteel_helm',qty:1}},
   {id:'smith_ashsteel_legs', name:'Ashsteel Platelegs',level:93,xp:900,time:12.0,input:[{item:'ashsteel_bar',qty:5}],output:{item:'ashsteel_legs',qty:1}},
   {id:'smith_ashsteel_shield',name:'Ashsteel Shield',  level:92,xp:700,time:11.0,input:[{item:'ashsteel_bar',qty:4}],output:{item:'ashsteel_shield',qty:1}},
+  // ── CANNON PARTS (requires Artillerist's Calling quest unlock tracked by UI) ──
+  {id:'smith_cannonball',     name:'Cannonballs (10)',  level:35,xp:250,time:3.0, input:[{item:'steel_bar',qty:1}],  output:{item:'cannonball',qty:10},  category:'Cannon', desc:'Forge 10 cannonballs from a steel bar.'},
+  {id:'smith_cannon_base',    name:'Cannon Base',       level:35,xp:400,time:8.0, input:[{item:'steel_bar',qty:8}],  output:{item:'cannon_base',qty:1},  category:'Cannon', desc:'Heavy base plate for the dwarf cannon.'},
+  {id:'smith_cannon_stand',   name:'Cannon Stand',      level:37,xp:400,time:8.0, input:[{item:'steel_bar',qty:6}],  output:{item:'cannon_stand',qty:1}, category:'Cannon', desc:'Rotating stand assembly.'},
+  {id:'smith_cannon_barrels', name:'Cannon Barrels',    level:40,xp:600,time:10.0,input:[{item:'steel_bar',qty:10}], output:{item:'cannon_barrels',qty:1},category:'Cannon', desc:'Quad-barrel firing mechanism.'},
+  {id:'smith_cannon_furnace', name:'Cannon Furnace',    level:40,xp:600,time:10.0,input:[{item:'steel_bar',qty:4},{item:'mithril_bar',qty:2}],output:{item:'cannon_furnace',qty:1},category:'Cannon', desc:'Mithril-lined furnace chamber.'},
+  {id:'smith_dwarf_cannon',   name:'Dwarf Cannon',      level:42,xp:2000,time:15.0,input:[{item:'cannon_base',qty:1},{item:'cannon_stand',qty:1},{item:'cannon_barrels',qty:1},{item:'cannon_furnace',qty:1}],output:{item:'dwarf_cannon',qty:1},category:'Cannon',desc:'Assemble the four cannon parts into a complete dwarf cannon.'},
 );
 // New fletching
 GAME_DATA.recipes.fletching.push(
@@ -1161,6 +1183,14 @@ GAME_DATA.recipes.fletching.push(
   {id:'fletch_dragon_arrows', name:'Dragon Arrows (15)', level:80,xp:1200,time:4.5,input:[{item:'elder_log',qty:1},{item:'dragon_bones',qty:1}],output:{item:'dragon_arrows',qty:15}},
   {id:'fletch_ashfire_arrows', name:'Ashfire Arrows (15)',level:90,xp:1800,time:5.0,input:[{item:'ash_log',qty:2},{item:'ashsteel_bar',qty:1}],output:{item:'ashfire_arrows',qty:15}},
   {id:'fletch_ashsteel_bow',  name:'Ashsteel Bow',       level:88,xp:2000,time:8.0,input:[{item:'spirit_log',qty:3},{item:'ashsteel_bar',qty:2}],output:{item:'ashsteel_bow',qty:1}},
+  // Longbows (fletching)
+  {id:'fletch_oak_longbow',     name:'Oak Longbow',      level:10,xp:80,  time:4.0,input:[{item:'oak_log',qty:3}],         output:{item:'oak_longbow',qty:1}},
+  {id:'fletch_willow_longbow',  name:'Willow Longbow',   level:25,xp:200, time:5.0,input:[{item:'willow_log',qty:3}],      output:{item:'willow_longbow',qty:1}},
+  {id:'fletch_maple_longbow',   name:'Maple Longbow',    level:40,xp:400, time:5.5,input:[{item:'maple_log',qty:4}],       output:{item:'maple_longbow',qty:1}},
+  {id:'fletch_yew_shortbow',    name:'Yew Shortbow',     level:45,xp:480, time:5.0,input:[{item:'yew_log',qty:2}],        output:{item:'yew_shortbow',qty:1}},
+  {id:'fletch_yew_longbow',     name:'Yew Longbow',      level:50,xp:600, time:6.0,input:[{item:'yew_log',qty:4}],        output:{item:'yew_longbow',qty:1}},
+  {id:'fletch_elder_shortbow',  name:'Elder Shortbow',   level:60,xp:900, time:6.5,input:[{item:'elder_log',qty:3}],      output:{item:'elder_shortbow',qty:1}},
+  {id:'fletch_elder_longbow',   name:'Elder Longbow',    level:65,xp:1200,time:7.0,input:[{item:'elder_log',qty:5}],      output:{item:'elder_longbow',qty:1}},
 );
 // New alchemy
 GAME_DATA.recipes.alchemy.push(
@@ -1204,6 +1234,12 @@ GAME_DATA.shop.push(
   {item:'obsidian_arrows',price:200,category:'equipment'},
   {item:'dragon_arrows',price:400,category:'equipment'},
   {item:'broad_arrows',price:50,category:'equipment'},
+  // Cannon shop items
+  {item:'cannonball',    price:30,  category:'equipment', desc:'Iron cannonball. Buy in bulk.'},
+  {item:'cannon_base',   price:2000,category:'equipment', desc:'Cannon base plate. One of 4 cannon parts.'},
+  {item:'cannon_stand',  price:2000,category:'equipment', desc:'Cannon stand. One of 4 cannon parts.'},
+  {item:'cannon_barrels',price:2500,category:'equipment', desc:'Cannon barrels. One of 4 cannon parts.'},
+  {item:'cannon_furnace',price:2500,category:'equipment', desc:'Cannon furnace. One of 4 cannon parts.'},
 );
 
 // ── MORE ACHIEVEMENTS ────────────────────────────────────

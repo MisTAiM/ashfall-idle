@@ -653,6 +653,18 @@ class GameEngine {
     if (c.monsterAttackTimer >= monsterSpeed && !monsterStunned) { c.monsterAttackTimer -= monsterSpeed; this.monsterAttack(monster); }
     // Auto-eat AFTER monster attack (critical - eat before death check)
     if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
+
+    // ── CANNON TICK ───────────────────────────────────────────────
+    if (!c.cannon) c.cannon = { active:false, timer:0 };
+    if (c.cannon.active) {
+      c.cannon.timer += dt;
+      const CANNON_SPEED = 3.0; // fires every 3 seconds
+      if (c.cannon.timer >= CANNON_SPEED) {
+        c.cannon.timer -= CANNON_SPEED;
+        this.fireCannon(monster);
+      }
+    }
+
     if (c.monsterHp <= 0) this.onMonsterDeath(monster, isWB);
     if (c.playerHp <= 0) this.onPlayerDeath();
   }
@@ -756,6 +768,15 @@ class GameEngine {
     } else if (style === 'ranged') {
       const rL = Math.floor(this.state.skills.ranged.level * (1 + pRngB/100));
       const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
+      // Validate: must have ammo equipped for bow-style ranged
+      const weapon = this.getEquippedItem('weapon');
+      const ammoId = this.state.equipment.ammo;
+      const ammoItem = ammoId ? GAME_DATA.items[ammoId] : null;
+      if (weapon && weapon.ammoType === 'arrow' && (!ammoItem || ammoItem.ammoType !== 'arrow')) {
+        this.emit('notification', { type:'warn', text:'You need arrows to use this bow! Equip arrows in the Ammo slot.' });
+        this.stopCombat();
+        return;
+      }
       accuracy = (rL + 8) * (rB + 64);
       maxHit = Math.floor((1 + rL / 10) * (1 + rB / 80) * 4);
       this.consumeAmmo();
@@ -1943,6 +1964,95 @@ class GameEngine {
   getEquippedItem(slot) { return this.state.equipment[slot] ? GAME_DATA.items[this.state.equipment[slot]] : null; }
   getAmmoBonus() { return this.getEquippedItem('ammo')?.rangedBonus || 0; }
 
+  // ── DWARF CANNON SYSTEM ─────────────────────────────────────────
+  hasCannon() {
+    return !!(this.state.bank['dwarf_cannon'] > 0 || this.state.equipment?.cannon === 'dwarf_cannon');
+  }
+
+  isCannonQuestComplete() {
+    return this.state.quests?.completed?.includes('artillerists_calling');
+  }
+
+  toggleCannon() {
+    if (!this.isCannonQuestComplete()) {
+      this.emit('notification', { type:'warn', text:'Quest required: Artillerist\'s Calling. Speak to the Dwarven Engineer.' });
+      return;
+    }
+    if (!this.hasCannon()) {
+      this.emit('notification', { type:'warn', text:'You need a Dwarf Cannon. Smith one from 4 cannon parts (Smithing 42).' });
+      return;
+    }
+    if (!this.state.combat.active) {
+      this.emit('notification', { type:'warn', text:'Cannon can only be deployed during combat.' });
+      return;
+    }
+    if (!this.state.combat.cannon) this.state.combat.cannon = { active:false, timer:0 };
+    const newActive = !this.state.combat.cannon.active;
+    if (newActive) {
+      const cballs = this.state.bank['cannonball'] || 0;
+      if (cballs <= 0) { this.emit('notification', { type:'warn', text:'Load cannonballs first! Equip cannonballs in the Ammo slot.' }); return; }
+      this.state.combat.cannon.active = true;
+      this.state.combat.cannon.timer = 0;
+      this.emit('notification', { type:'info', text:`Cannon deployed! ${cballs.toLocaleString()} cannonballs loaded.` });
+    } else {
+      this.state.combat.cannon.active = false;
+      this.emit('notification', { type:'info', text:'Cannon packed up.' });
+    }
+    this.emit('cannonToggled', { active: this.state.combat.cannon.active });
+  }
+
+  fireCannon(monster) {
+    // Consume cannonball from bank
+    const cballs = this.state.bank['cannonball'] || 0;
+    if (cballs <= 0) {
+      this.state.combat.cannon.active = false;
+      this.emit('notification', { type:'warn', text:'Cannon: out of cannonballs!' });
+      this.emit('cannonToggled', { active:false });
+      return;
+    }
+    this.state.bank['cannonball']--;
+    if (this.state.bank['cannonball'] <= 0) delete this.state.bank['cannonball'];
+
+    const rL = this.state.skills.ranged.level;
+    // Cannon max hit: scales with ranged level, caps at ~45 at level 99
+    const cannonMaxHit = Math.floor(8 + rL * 0.37);
+
+    // Multi-target: cannon hits 1–4 times per rotation (OSRS style splash)
+    const numHits = Math.floor(Math.random() * 4) + 1;
+    let totalDmg = 0;
+    const hits = [];
+
+    for (let i = 0; i < numHits; i++) {
+      // 80% accuracy for cannon (doesn't use defence evasion like player attacks)
+      if (Math.random() > 0.80) { hits.push(0); continue; }
+      const dmg = Math.floor(Math.random() * (cannonMaxHit + 1));
+      hits.push(dmg);
+      if (dmg > 0) {
+        this.state.combat.monsterHp -= dmg;
+        totalDmg += dmg;
+      }
+    }
+
+    // Emit each hit separately for animation
+    for (let i = 0; i < hits.length; i++) {
+      if (hits[i] >= 0) this.emit('combatHit', { who:'player', dmg:hits[i], style:'ranged', cannon:true, hitIndex:i });
+    }
+
+    // XP: 2 ranged xp per damage, 0.67 hp xp per damage (like OSRS cannon)
+    if (totalDmg > 0) {
+      this.addXp('ranged', Math.floor(totalDmg * 2));
+      this.addXp('hitpoints', Math.floor(totalDmg * 0.67));
+      // Session/lifetime dmg tracking
+      const sd = this.state.combat._sessionDmg;
+      if (sd) { sd.ranged = (sd.ranged||0)+totalDmg; sd.total = (sd.total||0)+totalDmg; }
+      if (!this.state.stats.dmg) this.state.stats.dmg = {};
+      this.state.stats.dmg.total = (this.state.stats.dmg.total||0)+totalDmg;
+      this.state.stats.dmg.ranged = (this.state.stats.dmg.ranged||0)+totalDmg;
+    }
+
+    this.emit('cannonFire', { hits, totalDmg, cannonballs: this.state.bank['cannonball'] || 0 });
+  }
+
   // ── MINING RANDOM EVENTS ────────────────────────────────
   _rollMiningEvent() {
     const ms = this.state.miningStats;
@@ -2059,9 +2169,19 @@ class GameEngine {
 
   consumeAmmo() {
     const id = this.state.equipment.ammo;
-    if (id && this.state.bank[id] > 0) {
+    if (!id) return;
+    if (this.state.bank[id] > 0) {
       this.state.bank[id]--;
-      if (this.state.bank[id] <= 0) { this.state.equipment.ammo = null; this.emit('notification', { type:'warn', text:'Out of ammo!' }); }
+      if (this.state.bank[id] <= 0) {
+        delete this.state.bank[id];
+        this.state.equipment.ammo = null;
+        this.emit('notification', { type:'warn', text:'Out of ammo!' });
+        this.emit('equipmentChanged');
+      }
+    } else {
+      this.state.equipment.ammo = null;
+      this.emit('notification', { type:'warn', text:'Out of ammo!' });
+      this.emit('equipmentChanged');
     }
   }
 
@@ -2529,6 +2649,22 @@ class GameEngine {
         if (this.state.skills[sk]?.level < lv) { this.emit('notification', { type:'warn', text:`Requires ${GAME_DATA.skills[sk]?.name} level ${lv}.` }); return; }
       }
     }
+    // Ammo slot: bank IS the quiver stack — just set the slot, never remove from bank
+    if (item.slot === 'ammo') {
+      // Validate ammo/weapon compatibility
+      const weapon = this.getEquippedItem('weapon');
+      if (item.ammoType === 'cannonball') {
+        // Cannonballs: only valid if player has a dwarf_cannon
+        const hasCannon = (this.state.bank['dwarf_cannon'] > 0);
+        if (!hasCannon) { this.emit('notification', { type:'warn', text:'You need a Dwarf Cannon to use cannonballs.' }); return; }
+      } else if (item.ammoType === 'arrow' && weapon && weapon.ammoType && weapon.ammoType !== 'arrow') {
+        this.emit('notification', { type:'warn', text:`${item.name} requires a bow, not a crossbow.` }); return;
+      }
+      this.state.equipment.ammo = itemId;
+      this.emit('equipmentChanged');
+      this.emit('notification', { type:'info', text:`${item.name} equipped (${this.state.bank[itemId].toLocaleString()} in quiver).` });
+      return;
+    }
     const cur = this.state.equipment[item.slot];
     if (cur) this.addItem(cur, 1);
     this.state.bank[itemId]--;
@@ -2540,7 +2676,8 @@ class GameEngine {
 
   unequipItem(slot) {
     const id = this.state.equipment[slot]; if (!id) return;
-    this.addItem(id, 1);
+    // Ammo: bank IS the quiver — just clear the slot, no item to return
+    if (slot !== 'ammo') this.addItem(id, 1);
     this.state.equipment[slot] = null;
     this.emit('equipmentChanged');
   }

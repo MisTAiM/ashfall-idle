@@ -197,4 +197,24 @@ _daily({ id:'daily_dungeon',   name:'Dungeon Delver',      desc:'Complete any du
   objectives:[{type:'dungeon_any',qty:1,desc:'Complete any dungeon'}],
   rewards:{gold:1500,xp:{attack:2000,defence:2000}}, cooldown:86400000 });
 
+// ── SERIES 7: The Artillerist's Path ──────────────────────────────
+_quest({
+  id:'artillerists_calling', name:"Artillerist's Calling", series:"Artillerist's Path", qp:4,
+  desc:'A grizzled Dwarven Engineer has arrived in the Ashfall settlement. He speaks of a weapon capable of cutting down entire formations — the Dwarf Cannon. Prove your worth to earn the right to wield it.',
+  npcId:'elder_vex', levelReqs:{smithing:35,ranged:40}, prereqs:['into_the_wastes'],
+  objectives:[
+    {type:'skill_level', skill:'smithing', level:40,  qty:1, desc:'Reach Smithing level 40'},
+    {type:'skill_level', skill:'ranged',   level:40,  qty:1, desc:'Reach Ranged level 40'},
+    {type:'craft',       item:'steel_bar', qty:50,         desc:'Smelt 50 Steel Bars (Smithing material)'},
+    {type:'kill',        monster:'hollow_knight', qty:30,  desc:'Slay 30 Hollow Knights (field test)'},
+    {type:'craft',       item:'cannon_base',       qty:1,  desc:'Smith a Cannon Base (Smithing 35)'},
+    {type:'craft',       item:'cannon_stand',      qty:1,  desc:'Smith a Cannon Stand (Smithing 37)'},
+    {type:'craft',       item:'cannon_barrels',    qty:1,  desc:'Smith Cannon Barrels (Smithing 40)'},
+    {type:'craft',       item:'cannon_furnace',    qty:1,  desc:'Smith a Cannon Furnace (Smithing 40)'},
+  ],
+  rewards:{ xp:{smithing:8000,ranged:8000,defence:3000}, gold:12000, qp:4,
+    items:[{id:'dwarf_cannon',qty:1},{id:'cannonball',qty:200}],
+    unlocks:'Unlocks: Dwarf Cannon — deployable multi-target ranged weapon.' },
+});
+
 console.log('[Ashfall] quests-data.js v2 loaded. Quests:', GAME_DATA.quests.length, '| Dailies:', GAME_DATA.dailyQuests.length);

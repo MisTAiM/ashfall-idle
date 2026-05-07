@@ -204,6 +204,9 @@ class UI {
     this.engine.on('petFound', () => { if (this.currentPage === 'pets') this.renderPage('pets'); });
     this.engine.on('collectionLogNew', (d) => { if (this.currentPage === 'codex') this.renderPage('codex'); });
     this.engine.on('init', () => { this.renderSidebar(); this.renderTrainingBar(); this.renderPage(this.currentPage); });
+    // Cannon events
+    this.engine.on('cannonFire', (d) => this.showCannonFire(d));
+    this.engine.on('cannonToggled', () => { if (this.currentPage === 'combat') this.renderPage('combat'); });
     // Online events
     if (typeof online !== 'undefined') {
       online.on('notification', (n) => this.toast(n));
@@ -1179,6 +1182,46 @@ class UI {
           ${weapon.specEffect.type === 'doubleHit' ? 'Double Hit' : weapon.specEffect.type === 'armorPierce' ? 'Armor Pierce' : weapon.specEffect.type === 'execute' ? 'Execute' : weapon.specEffect.type === 'burnStrike' ? 'Burn Strike' : weapon.specEffect.type === 'doubleShot' ? 'Double Shot' : weapon.specEffect.type === 'energyDrain' ? 'Energy Drain' : weapon.specEffect.type === 'magicShield' ? 'Magic Shield' : weapon.specEffect.type === 'runeRecovery' ? 'Rune Recovery' : 'Special'} (${weapon.specCost}%)
         </button>` : '<div class="spec-no-weapon">No spec weapon equipped</div>'}
       </div>`;
+
+      // ── DWARF CANNON PANEL ─────────────────────────────────────
+      const hasCannon = (s.bank?.['dwarf_cannon'] > 0);
+      const cannonQuest = s.quests?.completed?.includes('artillerists_calling');
+      const cannonActive = c.cannon?.active || false;
+      const cballs = s.bank?.['cannonball'] || 0;
+      const ammoItem = s.equipment?.ammo ? GAME_DATA.items[s.equipment?.ammo] : null;
+      const ammoQty = s.equipment?.ammo ? (s.bank?.[s.equipment.ammo] || 0) : 0;
+
+      if (cannonQuest || hasCannon) {
+        html += `<div class="cannon-panel ${cannonActive ? 'cannon-active' : ''}">
+          <div class="cannon-panel-header">
+            <span class="cannon-icon">${window.spriteFor ? spriteFor('misc-cannon') : '🔴'}</span>
+            <span class="cannon-title">Dwarf Cannon</span>
+            <span class="cannon-balls">${cballs.toLocaleString()} balls</span>
+          </div>
+          <div class="cannon-status">${hasCannon ? (cannonActive ? '⟳ FIRING — multi-target splash' : 'Packed up') : 'No cannon in bank'}</div>
+          <button class="btn cannon-toggle-btn ${cannonActive ? 'cannon-btn-active' : ''} ${!hasCannon || cballs <= 0 ? 'btn-disabled' : ''}"
+            onclick="game.toggleCannon()" ${!hasCannon || cballs <= 0 ? 'disabled' : ''}>
+            ${cannonActive ? '■ Pack Cannon' : '▶ Deploy Cannon'}
+          </button>
+        </div>`;
+      } else if (s.quests?.completed?.length > 0 || s.quests?.active?.length > 0) {
+        // Hint toward cannon quest
+        const questActive = s.quests?.active?.includes('artillerists_calling');
+        if (!questActive) {
+          html += `<div class="cannon-hint">Quest unlocks: <b>Artillerist's Calling</b> — multi-target Dwarf Cannon</div>`;
+        }
+      }
+
+      // Ammo counter (arrows/cannonballs)
+      if (ammoItem) {
+        html += `<div class="ammo-counter-bar">
+          <span class="ammo-icon">${window.renderItemSprite ? window.renderItemSprite(s.equipment.ammo, 14) : ''}</span>
+          <span class="ammo-name">${ammoItem.name}</span>
+          <span class="ammo-qty ${ammoQty < 50 ? 'ammo-low' : ''}">${ammoQty.toLocaleString()}</span>
+        </div>`;
+      } else if (c.combatStyle === 'ranged') {
+        html += `<div class="ammo-counter-bar ammo-missing">⚠ No ammo equipped — equip arrows in Equipment tab</div>`;
+      }
       // Active familiar in combat
       if (s.familiar?.active) {
         const mins = Math.floor(s.familiar.timeLeft / 60);
@@ -1768,8 +1811,12 @@ class UI {
     for (const slot of GAME_DATA.equipmentSlots) {
       const id = s.equipment[slot];
       const item = id ? GAME_DATA.items[id] : null;
+      // Ammo slot: show count from bank (bank IS the quiver)
+      const isAmmoSlot = slot === 'ammo';
+      const ammoQty = isAmmoSlot && id ? (s.bank?.[id] || 0) : null;
+      const bowTypeBadge = item?.bowType ? `<span class="bow-type-badge ${item.bowType}">${item.bowType === 'shortbow' ? 'SB' : 'LB'}</span>` : '';
       html += `<div class="equip-slot"><div class="es-label">${slot[0].toUpperCase()+slot.slice(1)}</div><div class="es-item ${item?'':'es-empty'}">
-        ${item?`<div class="es-icon">${window.renderItemSprite ? window.renderItemSprite(id, 40) : ''}</div><span class="es-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name}</span><button class="btn btn-xs btn-danger" onclick="game.unequipItem('${slot}')">X</button>`:'<span class="es-none">Empty</span>'}
+        ${item?`<div class="es-icon">${window.renderItemSprite ? window.renderItemSprite(id, 40) : ''}</div><span class="es-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name}${bowTypeBadge}${isAmmoSlot ? `<span class="ammo-slot-qty"> x${ammoQty?.toLocaleString()??0}</span>` : ''}</span><button class="btn btn-xs btn-danger" onclick="game.unequipItem('${slot}')">X</button>`:'<span class="es-none">Empty</span>'}
       </div></div>`;
     }
     html += '</div>';
@@ -4849,6 +4896,39 @@ class UI {
       const val   = document.getElementById('mm-mhp-val-'+i);
       if (fill) { fill.style.width = hPct.toFixed(1)+'%'; fill.style.opacity = alive ? '1' : '0.3'; }
       if (val)  val.textContent = alive ? Math.ceil(hp)+'/'+maxH : 'DEAD';
+    }
+  }
+
+  showCannonFire(d) {
+    // Show cannon hits as ranged splats with cannon indicator
+    const area = document.getElementById('monster-splats');
+    if (!area) return;
+    const { hits, totalDmg, cannonballs } = d;
+    // Show each hit
+    hits.forEach((dmg, i) => {
+      setTimeout(() => {
+        const splat = document.createElement('div');
+        if (dmg === 0) {
+          splat.className = 'hit-splat splat-miss cannon-hit-flash';
+          splat.textContent = 'MISS';
+        } else {
+          splat.className = `hit-splat splat-ranged cannon-hit-flash ${dmg >= 30 ? 'splat-big' : ''}`;
+          splat.textContent = `⦿${dmg}`;
+        }
+        splat.style.left = (10 + Math.random() * 75) + '%';
+        splat.style.top  = (5 + Math.random() * 40) + '%';
+        area.appendChild(splat);
+        setTimeout(() => { if (splat.parentNode) splat.remove(); }, 1200);
+      }, i * 120);
+    });
+    // Update cannonball count in panel without full re-render
+    const ballsEl = document.querySelector('.cannon-balls');
+    if (ballsEl) ballsEl.textContent = `${(cannonballs||0).toLocaleString()} balls`;
+    // Flash cannon panel
+    const panel = document.querySelector('.cannon-panel');
+    if (panel) {
+      panel.style.borderColor = 'rgba(201,135,62,0.9)';
+      setTimeout(() => { panel.style.borderColor = ''; }, 300);
     }
   }
 

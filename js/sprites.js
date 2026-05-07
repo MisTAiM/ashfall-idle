@@ -54,6 +54,27 @@ function spriteFor(spriteId) {
       if (variant === 'scroll') return `<svg viewBox="0 0 32 32"><circle cx="6" cy="16" r="4" fill="#7a5a3a"/><circle cx="26" cy="16" r="4" fill="#7a5a3a"/><rect x="6" y="12" width="20" height="8" fill="#e8d4a8"/></svg>`;
       if (variant === 'coin') return `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#d4a83a" stroke="#7a5a1a" stroke-width="1"/><text x="16" y="20" text-anchor="middle" fill="#7a5a1a" font-size="10" font-weight="bold">G</text></svg>`;
       if (variant === 'seed') return `<svg viewBox="0 0 32 32"><ellipse cx="16" cy="16" rx="6" ry="8" fill="#7a4a2a" stroke="#3a2a1a" stroke-width="1"/><path d="M16 8 L16 4" stroke="#3a8a1a" stroke-width="2"/></svg>`;
+      // Cannon parts
+      if (variant === 'gear') return `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="#9da4b4" stroke="#4a5060" stroke-width="1.5"/><circle cx="16" cy="16" r="4" fill="#3a3e4a"/><path d="M16 4 L17.5 8 L14.5 8 Z M28 16 L24 17.5 L24 14.5 Z M16 28 L14.5 24 L17.5 24 Z M4 16 L8 14.5 L8 17.5 Z M23 9 L21 12.5 L18.5 11 Z M23 23 L19.5 21 L21 18.5 Z M9 23 L11 19.5 L13.5 21 Z M9 9 L12.5 11 L11 13.5 Z" fill="#9da4b4" stroke="#4a5060" stroke-width="0.5"/></svg>`;
+      if (variant === 'cannon') return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <!-- Assembled Dwarf Cannon icon -->
+        <rect x="4" y="20" width="24" height="6" rx="2" fill="#5a5a6e" stroke="#2a2a3a" stroke-width="1"/>
+        <rect x="6" y="22" width="20" height="2" fill="#7a7a8e" opacity="0.5"/>
+        <!-- Wheels -->
+        <circle cx="8" cy="26" r="4" fill="#3a3a4a" stroke="#1a1a2a" stroke-width="1"/><circle cx="8" cy="26" r="2" fill="#5a5a6e"/>
+        <circle cx="24" cy="26" r="4" fill="#3a3a4a" stroke="#1a1a2a" stroke-width="1"/><circle cx="24" cy="26" r="2" fill="#5a5a6e"/>
+        <!-- Barrel -->
+        <rect x="10" y="13" width="18" height="8" rx="3" fill="#7a7a8e" stroke="#2a2a3a" stroke-width="1.5"/>
+        <rect x="10" y="13" width="4" height="8" rx="2" fill="#9a9aae" opacity="0.6"/>
+        <!-- Barrel mouth -->
+        <rect x="24" y="14" width="4" height="6" rx="1" fill="#2a2a3a"/>
+        <circle cx="26" cy="17" r="2" fill="#0a0b0f"/>
+        <!-- Amber ember glow -->
+        <circle cx="26" cy="17" r="1" fill="#c9873e" opacity="0.8"/>
+        <!-- Muzzle flash hint -->
+        <circle cx="14" cy="17" r="3" fill="#4a4a5e"/>
+      </svg>`;
+      if (variant === 'ball') return `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#3a3a4a" stroke="#1a1a2a" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="#5a5a6e" opacity="0.5"/><circle cx="13" cy="13" r="1.5" fill="#8a8a9e" opacity="0.4"/></svg>`;
       return defaultSprite();
     default: return defaultSprite();
   }
