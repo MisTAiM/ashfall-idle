@@ -2526,42 +2526,60 @@ class UI {
     const dState = s.dailyQuests || { active:[], completed:[], progress:{} };
     const msLeft = 86400000 - (Date.now() % 86400000);
     const hLeft = Math.floor(msLeft/3600000), mLeft = Math.floor((msLeft%3600000)/60000);
+    const completedCount = s.quests.completed.length;
+    const totalQuests = GAME_DATA.quests.length;
 
-    let html = this.header('Quest Log','scroll',`${s.quests.completed.length}/${GAME_DATA.quests.length} quests &mdash; ${qp}/${totalQP} Quest Points`,null);
+    let html = this.header('Quest Log','scroll',`${completedCount}/${totalQuests} quests complete`,null);
 
+    // Quest Points banner — prominent
     html += `<div class="qp-banner">
-      <div class="qp-info"><span class="qp-num">${qp}</span><span class="qp-label"> / ${totalQP} Quest Points</span></div>
-      <div class="qp-bar"><div class="qp-fill" style="width:${Math.min(100,qp/Math.max(1,totalQP)*100).toFixed(1)}%"></div></div>
+      <div class="qp-crown">👑</div>
+      <div class="qp-center">
+        <div class="qp-num">${qp} <span class="qp-of">/ ${totalQP}</span></div>
+        <div class="qp-label">Quest Points</div>
+        <div class="qp-bar-wrap"><div class="qp-bar"><div class="qp-fill" style="width:${Math.min(100,qp/Math.max(1,totalQP)*100).toFixed(1)}%"></div></div></div>
+      </div>
+      <div class="qp-progress-tag">${completedCount}/${totalQuests} done</div>
     </div>`;
 
     // Daily quests
     html += `<div class="quest-section">
-      <div class="qs-header"><span class="section-title">Daily Quests</span><span class="qs-timer">\u23f1 Resets in ${hLeft}h ${mLeft}m</span></div>
+      <div class="qs-header"><span class="qs-title">Daily Quests</span><span class="qs-timer">⏱ Resets ${hLeft}h ${mLeft}m</span></div>
       <div class="daily-grid">`;
     for (const dq of dailies) {
       const done = (dState.completed||[]).includes(dq.id);
       const prog = (dState.progress||{})[dq.id]||(dq.objectives||[]).map(()=>0);
-      const pct = (dq.objectives||[]).reduce((s,obj,i)=>s+(prog[i]||0)/Math.max(1,obj.qty),0)/Math.max(1,(dq.objectives||[]).length)*100;
+      const pct = (dq.objectives||[]).reduce((acc,obj,i)=>acc+(prog[i]||0)/Math.max(1,obj.qty),0)/Math.max(1,(dq.objectives||[]).length)*100;
+      const rewardStr = [
+        dq.rewards.gold ? `${this.fmt(dq.rewards.gold)}g` : '',
+        ...Object.entries(dq.rewards.xp||{}).map(([sk,xp])=>`+${this.fmt(xp)} ${GAME_DATA.skills[sk]?.name||sk}`)
+      ].filter(Boolean).join(' · ');
       html += `<div class="daily-card ${done?'daily-done':''}">
-        <div class="dc-name">${done?'\u2713 ':''} ${dq.name}</div>
+        <div class="dc-header">
+          <span class="dc-name">${done?'✓ ':''} ${dq.name}</span>
+          ${done?'<span class="dc-done-badge">Complete</span>':''}
+        </div>
         <div class="dc-desc">${dq.desc}</div>
         <div class="dc-prog-bar"><div class="dc-prog-fill" style="width:${done?100:pct.toFixed(0)}%"></div></div>
-        <div class="dc-reward">+${this.fmt(dq.rewards.gold||0)}g ${Object.entries(dq.rewards.xp||{}).map(([sk,xp])=>`+${this.fmt(xp)} ${GAME_DATA.skills[sk]?.name||sk} XP`).join(' ')}</div>
+        <div class="dc-reward">${rewardStr}</div>
       </div>`;
     }
     html += '</div></div>';
 
     // Active quests
     if (s.quests.active.length > 0) {
-      html += `<div class="quest-section"><div class="qs-header"><span class="section-title">Active Quests (${s.quests.active.length})</span></div>`;
+      html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Active (${s.quests.active.length})</span></div>`;
       for (const qId of s.quests.active) {
         const q = GAME_DATA.quests.find(x=>x.id===qId); if (!q) continue;
         const prog = s.quests.progress[qId]||[];
+        const allDone = (q.objectives||[]).every((_,i)=>(prog[i]||0)>=(q.objectives[i]?.qty||1));
         html += `<div class="quest-card-full">
           <div class="qcf-header">
-            <div class="qcf-name">${q.name}</div>
-            <div class="qcf-series">${q.series||''}</div>
-            <div class="qcf-qp">+${q.qp||0} QP</div>
+            <div>
+              <div class="qcf-name">${q.name}</div>
+              <div class="qcf-series">${q.series||''}</div>
+            </div>
+            <div class="qcf-qp-badge">+${q.qp||0} QP</div>
           </div>
           <div class="qcf-desc">${q.desc}</div>
           <div class="qcf-objectives">
@@ -2569,46 +2587,63 @@ class UI {
               const done=prog[i]||0; const pct=Math.min(100,done/Math.max(1,obj.qty)*100);
               const complete=done>=obj.qty;
               return `<div class="qo-row ${complete?'qo-done':''}">
-                <span class="qo-check">${complete?'\u2713':''}</span>
+                <span class="qo-check">${complete?'✓':''}</span>
                 <div class="qo-label">${obj.desc}</div>
-                <span class="qo-count">${done}/${obj.qty}</span>
+                <span class="qo-count">${this.fmt(Math.min(done,obj.qty))}/${this.fmt(obj.qty)}</span>
                 <div class="qo-bar"><div class="qo-fill" style="width:${pct.toFixed(0)}%"></div></div>
               </div>`;
             }).join('')}
           </div>
-          <div class="qcf-footer">
-            <div class="qcf-rewards">
-              Rewards: ${q.rewards.gold?`<span class="qcf-gold">${this.fmt(q.rewards.gold)}g</span>`:''}
-              ${Object.entries(q.rewards.xp||{}).map(([sk,xp])=>`<span class="qcf-xp">+${this.fmt(xp)} ${GAME_DATA.skills[sk]?.name||sk}</span>`).join('')}
-              ${(q.rewards.items||[]).map(it=>`<span class="qcf-item">${GAME_DATA.items[it.id||it.item]?.name||it.id||it.item} x${it.qty}</span>`).join('')}
+          <div class="qcf-rewards-block">
+            <div class="qcf-rewards-label">Rewards:</div>
+            <div class="qcf-rewards-row">
+              ${q.rewards.gold ? `<span class="qcf-gold">🪙 ${this.fmt(q.rewards.gold)}g</span>` : ''}
+              ${q.rewards.qp  ? `<span class="qcf-qp-reward">👑 +${q.rewards.qp} QP</span>` : ''}
+              ${Object.entries(q.rewards.xp||{}).map(([sk,xp])=>`<span class="qcf-xp">+${this.fmt(xp)} ${GAME_DATA.skills[sk]?.name||sk} XP</span>`).join('')}
+              ${(q.rewards.items||[]).map(it=>`<span class="qcf-item">📦 ${GAME_DATA.items[it.id||it.item]?.name||it.id||it.item} x${it.qty}</span>`).join('')}
             </div>
-            <button class="btn btn-xs btn-danger" onclick="game.abandonQuest('${qId}')">Abandon</button>
+            ${q.rewards.unlocks ? `<div class="qcf-unlocks">🔓 ${q.rewards.unlocks}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            ${allDone ? `<div class="qcf-ready">All objectives met! Talk to an NPC to complete.</div>` : ''}
+            <button class="btn btn-xs btn-danger" onclick="if(confirm('Abandon quest?'))game.abandonQuest('${qId}')">Abandon</button>
           </div>
         </div>`;
       }
       html += '</div>';
     }
 
-    // Available quests
+    // Available quests (grouped by series)
     const available = GAME_DATA.quests.filter(q => {
       if (s.quests.completed.includes(q.id)||s.quests.active.includes(q.id)) return false;
       const prereqs=q.prereqs||(q.prereq?[q.prereq]:[]);
       return prereqs.every(p=>s.quests.completed.includes(p));
     });
     if (available.length > 0) {
-      html += `<div class="quest-section"><div class="qs-header"><span class="section-title">Available Quests</span></div>`;
+      html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Available (${available.length})</span></div>`;
       const series = {};
-      for (const q of available) { if(!series[q.series||'Other']) series[q.series||'Other']=[]; series[q.series||'Other'].push(q); }
+      for (const q of available) { const s2=q.series||'Other'; if(!series[s2])series[s2]=[]; series[s2].push(q); }
       for (const [ser, quests] of Object.entries(series)) {
         html += `<div class="quest-series-group"><div class="qsg-label">${ser}</div>`;
         for (const q of quests) {
           const lreqs = q.levelReqs||{};
           const meetsLevel = Object.entries(lreqs).every(([sk,lv])=>(s.skills[sk]?.level||1)>=lv);
-          const reqs = !meetsLevel ? Object.entries(lreqs).filter(([sk,lv])=>(s.skills[sk]?.level||1)<lv).map(([sk,lv])=>`${GAME_DATA.skills[sk]?.name||sk} ${lv}`).join(', ') : '';
+          const lacking = Object.entries(lreqs).filter(([sk,lv])=>(s.skills[sk]?.level||1)<lv).map(([sk,lv])=>`${GAME_DATA.skills[sk]?.name||sk} ${lv}`);
           html += `<div class="quest-available-card ${meetsLevel?'':'qa-locked'}">
-            <div class="qa-name">${q.name} <span class="qa-qp">+${q.qp||0} QP</span></div>
+            <div class="qa-header">
+              <div>
+                <div class="qa-name">${q.name}</div>
+                <div class="qa-series">${q.series||''}</div>
+              </div>
+              <span class="qa-qp">+${q.qp||0} QP</span>
+            </div>
             <div class="qa-desc">${q.desc}</div>
-            ${reqs?`<div class="qa-reqs">Requires: ${reqs}</div>`:''}
+            ${lacking.length ? `<div class="qa-reqs">⚠ Requires: ${lacking.join(', ')}</div>` : ''}
+            <div class="qa-preview-rewards">
+              ${q.rewards.gold?`<span>🪙 ${this.fmt(q.rewards.gold)}g</span>`:''}
+              ${q.rewards.qp?`<span>👑 +${q.rewards.qp} QP</span>`:''}
+              ${q.rewards.unlocks?`<span>🔓 ${q.rewards.unlocks.split('.')[0]}</span>`:''}
+            </div>
             <button class="btn btn-xs" onclick="game.acceptQuest('${q.id}')" ${meetsLevel?'':'disabled'}>Accept Quest</button>
           </div>`;
         }
@@ -2617,12 +2652,33 @@ class UI {
       html += '</div>';
     }
 
+    // Locked quests (prereqs not met — show but locked)
+    const locked = GAME_DATA.quests.filter(q => {
+      if (s.quests.completed.includes(q.id)||s.quests.active.includes(q.id)) return false;
+      if (available.includes(q)) return false;
+      const prereqs=q.prereqs||(q.prereq?[q.prereq]:[]);
+      return !prereqs.every(p=>s.quests.completed.includes(p));
+    });
+    if (locked.length > 0) {
+      html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Locked (${locked.length})</span></div><div class="locked-quest-grid">`;
+      for (const q of locked) {
+        const prereqs=q.prereqs||(q.prereq?[q.prereq]:[]);
+        const missing=prereqs.filter(p=>!s.quests.completed.includes(p)).map(p=>GAME_DATA.quests.find(x=>x.id===p)?.name||p);
+        html += `<div class="locked-quest-card">
+          <div class="lqc-name">🔒 ${q.name}</div>
+          <div class="lqc-req">Complete: ${missing.join(', ')}</div>
+          <span class="lqc-qp">+${q.qp||0} QP</span>
+        </div>`;
+      }
+      html += '</div></div>';
+    }
+
     // Completed
     if (s.quests.completed.length > 0) {
-      html += `<div class="quest-section"><div class="qs-header"><span class="section-title">Completed (${s.quests.completed.length})</span></div><div class="completed-grid">`;
+      html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Completed (${s.quests.completed.length})</span></div><div class="completed-grid">`;
       for (const qId of s.quests.completed) {
         const q = GAME_DATA.quests.find(x=>x.id===qId); if(!q) continue;
-        html += `<div class="completed-quest"><span class="cq-check">\u2713</span><span class="cq-name">${q.name}</span><span class="cq-qp">+${q.qp||0} QP</span></div>`;
+        html += `<div class="completed-quest"><span class="cq-check">✓</span><span class="cq-name">${q.name}</span><span class="cq-qp">+${q.qp||0} QP</span></div>`;
       }
       html += '</div></div>';
     }

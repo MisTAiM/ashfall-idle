@@ -7252,3 +7252,89 @@ body.perf-mode .hit-splat { display:none !important; }
 .bo-info  { font-size:12px; color:var(--text-dim); margin-bottom:3px; }
 .bo-buyer { font-size:10px; color:var(--text-dim); margin-bottom:6px; }
 .bo-sell-row { display:flex; gap:6px; align-items:center; margin-top:6px; }
+
+/* ── QUEST PAGE OVERHAUL ─────────────────────────────────── */
+.qp-banner {
+  display:flex; align-items:center; gap:14px;
+  background:linear-gradient(135deg,rgba(201,135,62,0.10),rgba(0,0,0,0.2));
+  border:1px solid rgba(201,135,62,0.35); border-radius:12px;
+  padding:14px 16px; margin-bottom:14px;
+}
+.qp-crown { font-size:28px; }
+.qp-center { flex:1; }
+.qp-num { font-family:'Cinzel',serif; font-size:24px; color:var(--amber); font-weight:700; }
+.qp-of  { font-size:14px; color:var(--text-dim); }
+.qp-label { font-size:11px; color:var(--text-dim); margin-bottom:6px; }
+.qp-bar-wrap { }
+.qp-bar { height:6px; background:rgba(255,255,255,0.06); border-radius:3px; }
+.qp-fill { height:100%; background:linear-gradient(90deg,#c9873e,#d4a83a); border-radius:3px; transition:width 0.5s; }
+.qp-progress-tag { font-size:11px; color:var(--text-dim); text-align:right; white-space:nowrap; }
+
+.quest-section { margin-bottom:16px; }
+.qs-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+.qs-title { font-family:'Cinzel',serif; font-size:13px; color:var(--amber); }
+.qs-timer { font-size:11px; color:var(--text-dim); }
+
+.quest-card-full {
+  background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:10px;
+  padding:14px; margin-bottom:10px;
+}
+.qcf-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+.qcf-name   { font-family:'Cinzel',serif; font-size:14px; color:var(--text); font-weight:700; }
+.qcf-series { font-size:10px; color:var(--text-dim); margin-top:2px; }
+.qcf-qp-badge { background:rgba(201,135,62,0.15); border:1px solid rgba(201,135,62,0.3); border-radius:8px; padding:2px 8px; font-size:11px; color:var(--amber); white-space:nowrap; }
+.qcf-desc { font-size:12px; color:var(--text-dim); margin-bottom:10px; line-height:1.5; }
+.qcf-objectives { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.qo-row { display:grid; grid-template-columns:16px 1fr auto; gap:6px; align-items:center; font-size:11px; }
+.qo-row.qo-done .qo-label { text-decoration:line-through; opacity:0.6; }
+.qo-check { color:#4aaa60; font-weight:700; text-align:center; }
+.qo-label { color:var(--text-dim); }
+.qo-count { color:var(--text); font-size:10px; white-space:nowrap; }
+.qo-bar   { grid-column:1/-1; height:3px; background:rgba(255,255,255,0.06); border-radius:2px; margin-top:-2px; }
+.qo-fill  { height:100%; background:var(--amber); border-radius:2px; }
+.qcf-rewards-block { background:rgba(255,255,255,0.03); border-radius:6px; padding:8px 10px; margin-bottom:6px; }
+.qcf-rewards-label { font-size:10px; color:var(--text-dim); margin-bottom:5px; }
+.qcf-rewards-row { display:flex; flex-wrap:wrap; gap:6px; }
+.qcf-gold,.qcf-qp-reward,.qcf-xp,.qcf-item { font-size:11px; background:rgba(255,255,255,0.04); border-radius:6px; padding:2px 8px; color:var(--text-dim); }
+.qcf-gold { color:#d4a83a; }
+.qcf-qp-reward { color:var(--amber); }
+.qcf-unlocks { font-size:10px; color:#4aaa60; margin-top:6px; font-style:italic; }
+.qcf-ready { font-size:11px; color:#4aaa60; padding:4px 8px; background:rgba(74,170,80,0.08); border-radius:6px; border:1px solid rgba(74,170,80,0.2); flex:1; }
+
+.quest-available-card {
+  background:rgba(0,0,0,0.15); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px;
+}
+.quest-available-card.qa-locked { opacity:0.55; }
+.qa-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:5px; }
+.qa-name { font-size:13px; font-weight:700; color:var(--text); }
+.qa-series { font-size:10px; color:var(--text-dim); }
+.qa-qp { font-size:11px; color:var(--amber); white-space:nowrap; }
+.qa-desc { font-size:11px; color:var(--text-dim); margin-bottom:6px; }
+.qa-reqs { font-size:10px; color:#e06040; margin-bottom:6px; }
+.qa-preview-rewards { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+.qa-preview-rewards span { font-size:10px; background:rgba(255,255,255,0.04); padding:1px 6px; border-radius:4px; color:var(--text-dim); }
+
+.quest-series-group { margin-bottom:10px; }
+.qsg-label { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; padding-left:2px; }
+
+.locked-quest-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+.locked-quest-card { background:rgba(0,0,0,0.15); border:1px solid var(--border); border-radius:6px; padding:8px; opacity:0.6; }
+.lqc-name { font-size:11px; color:var(--text); margin-bottom:3px; }
+.lqc-req  { font-size:10px; color:var(--text-dim); margin-bottom:3px; }
+.lqc-qp   { font-size:10px; color:var(--amber); }
+
+.completed-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.completed-quest { display:flex; align-items:center; gap:6px; padding:5px 8px; background:rgba(74,170,80,0.05); border:1px solid rgba(74,170,80,0.15); border-radius:6px; font-size:11px; }
+.cq-check { color:#4aaa60; font-weight:700; }
+.cq-name  { flex:1; color:var(--text-dim); }
+.cq-qp    { color:var(--amber); font-size:10px; }
+
+.daily-card { background:rgba(0,0,0,0.15); border:1px solid var(--border); border-radius:8px; padding:10px; }
+.daily-card.daily-done { border-color:rgba(74,170,80,0.3); background:rgba(74,170,80,0.04); }
+.dc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+.dc-name { font-size:12px; font-weight:700; color:var(--text); }
+.dc-done-badge { font-size:9px; background:rgba(74,170,80,0.2); border:1px solid rgba(74,170,80,0.3); color:#4aaa60; padding:1px 6px; border-radius:8px; }
+.dc-desc { font-size:11px; color:var(--text-dim); margin-bottom:6px; }
+.dc-prog-bar { height:4px; background:rgba(255,255,255,0.06); border-radius:2px; margin-bottom:5px; }
+.dc-prog-fill { height:100%; background:var(--amber); border-radius:2px; transition:width 0.3s; }
+.dc-reward { font-size:10px; color:var(--text-dim); }

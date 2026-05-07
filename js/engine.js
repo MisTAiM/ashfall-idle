@@ -981,7 +981,7 @@ class GameEngine {
     maxHit = Math.floor((maxHit + affixFlatDmg) * (1 + affixDmgBonus));
 
     // ── MONSTER WEAKNESS BONUS ────────────────────────────────────
-    const weakness = GAME_DATA.monsterWeaknesses?.[c.monster];
+    const weakness = GAME_DATA.monsterWeaknesses?.[this.state.combat.monster];
     if (weakness && weakness.weak === style) {
       maxHit = Math.floor(maxHit * (1 + weakness.bonus / 100));
     }
