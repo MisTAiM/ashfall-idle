@@ -47,82 +47,80 @@ const ICONS = {
 function icon(name, size=18) { return `<span class="icon" style="width:${size}px;height:${size}px">${ICONS[name] || ICONS.sparkle}</span>`; }
 
 const NAV = [
-  { header:'Online', items:[
-    {id:'account',label:'Account',icon:'npc'},
-    {id:'character',label:'Character',icon:'shield'},
-    {id:'prestige',label:'Prestige',icon:'sparkle'},
-    {id:'guilds',label:'Guilds',icon:'faction'},
-    {id:'party',label:'Party Finder',icon:'combat'},
-    {id:'friends',label:'Friends',icon:'npc'},
-    {id:'inbox',label:'Inbox',icon:'scroll'},
-    {id:'chat',label:'Global Chat',icon:'scroll'},
-    {id:'pvp_arena',label:'PvP Arena',icon:'combat'},
-    {id:'bounty_board',label:'Bounty Board',icon:'coin'},
-    {id:'leaderboard',label:'Leaderboard',icon:'trophy'},
+  { header:'Combat', icon:'⚔', items:[
+    {id:'combat',       label:'Combat',        icon:'combat'},
+    {id:'abilities',    label:'Abilities',     icon:'banner'},
+    {id:'prayer',       label:'Prayer',        icon:'sparkle'},
+    {id:'slayer',       label:'Slayer',        icon:'target'},
+    {id:'wilderness',   label:'Wilderness',    icon:'combat'},
+    {id:'world_bosses', label:'World Bosses',  icon:'worldboss'},
+    {id:'dungeons',     label:'Dungeons',      icon:'dungeon'},
+    {id:'fight_cave',   label:'Fight Cave',    icon:'combat'},
+    {id:'theatre',      label:'Theatre of Ash',icon:'combat'},
+    {id:'chambers',     label:'Chambers',      icon:'dungeon'},
+    {id:'barrows',      label:'Barrows',       icon:'skull'},
   ]},
-  { header:'Inventory', items:[
-    {id:'bank',label:'Bank',icon:'bank'},
-    {id:'shop',label:'Shop',icon:'shop'},
-    {id:'bazaar',label:'Ashen Bazaar',icon:'coin'},
-    {id:'equipment',label:'Equipment',icon:'shield'},
-    {id:'gear_sets',label:'Gear Sets',icon:'shield'},
-    {id:'statistics',label:'Statistics',icon:'stats'},
-    {id:'settings_page',label:'Settings',icon:'settings'},
+  { header:'Magic', icon:'🔮', items:[
+    {id:'spellbooks',   label:'Spellbooks',   icon:'wand'},
+    {id:'necromancy',   label:'Necromancy',   icon:'skull'},
+    {id:'summoning',    label:'Summoning',    icon:'sparkle'},
+    {id:'incantation',  label:'Incantation',  icon:'wand'},
+    {id:'enchanting',   label:'Enchanting',   icon:'sparkle'},
   ]},
-  { header:'Combat Areas', items:[
-    {id:'combat',label:'Combat',icon:'combat'},
-    {id:'wilderness',label:'Wilderness',icon:'combat'},
-    {id:'slayer',label:'Slayer',icon:'target'},
+  { header:'Gathering', icon:'🌲', items:[
+    {id:'woodcutting',  label:'Woodcutting',  icon:'axe'},
+    {id:'mining',       label:'Mining',       icon:'pickaxe'},
+    {id:'fishing',      label:'Fishing',      icon:'fish'},
+    {id:'foraging',     label:'Foraging',     icon:'herb'},
+    {id:'hunting',      label:'Hunting',      icon:'paw'},
+    {id:'agility',      label:'Agility',      icon:'run'},
+    {id:'thieving',     label:'Thieving',     icon:'mask'},
+    {id:'farming',      label:'Farming',      icon:'seedling'},
+  ]},
+  { header:'Artisan', icon:'⚒', items:[
+    {id:'cooking',      label:'Cooking',      icon:'cauldron'},
+    {id:'smithing',     label:'Smithing',     icon:'anvil'},
+    {id:'fletching',    label:'Fletching',    icon:'bow'},
+    {id:'crafting',     label:'Crafting',     icon:'ring'},
+    {id:'alchemy',      label:'Alchemy',      icon:'potion'},
+  ]},
+  { header:'Inventory', icon:'🎒', items:[
+    {id:'bank',         label:'Bank',         icon:'bank'},
+    {id:'equipment',    label:'Equipment',    icon:'shield'},
+    {id:'shop',         label:'Shop',         icon:'shop'},
+    {id:'bazaar',       label:'Bazaar',       icon:'coin'},
+    {id:'gear_sets',    label:'Gear Sets',    icon:'shield'},
+  ]},
+  { header:'World', icon:'🌍', items:[
+    {id:'quests',       label:'Quests',       icon:'scroll'},
+    {id:'npcs',         label:'NPCs',         icon:'npc'},
+    {id:'factions',     label:'Factions',     icon:'faction'},
+    {id:'alignment',    label:'Alignment',    icon:'alignment'},
+    {id:'storyline',    label:'Storyline',    icon:'book'},
+    {id:'pets',         label:'Pets',         icon:'paw'},
+    {id:'achievements', label:'Achievements', icon:'trophy'},
+    {id:'codex',        label:'Codex',        icon:'book'},
+    {id:'collection_log',label:'Collection', icon:'scroll'},
+  ]},
+  { header:'Social', icon:'👥', items:[
+    {id:'account',      label:'Account',      icon:'npc'},
+    {id:'character',    label:'Character',    icon:'shield'},
+    {id:'prestige',     label:'Prestige',     icon:'sparkle'},
+    {id:'guilds',       label:'Guilds',       icon:'faction'},
+    {id:'friends',      label:'Friends',      icon:'npc'},
+    {id:'inbox',        label:'Inbox',        icon:'scroll'},
+    {id:'chat',         label:'Global Chat',  icon:'scroll'},
+    {id:'leaderboard',  label:'Leaderboard',  icon:'trophy'},
+    {id:'pvp_arena',    label:'PvP Arena',    icon:'combat'},
+    {id:'bounty_board', label:'Bounties',     icon:'coin'},
+    {id:'party',        label:'Party',        icon:'combat'},
+  ]},
+  { header:'System', icon:'⚙', items:[
+    {id:'statistics',   label:'Statistics',   icon:'stats'},
+    {id:'upgrades',     label:'Upgrades',     icon:'sparkle'},
+    {id:'settings_page',label:'Settings',     icon:'settings'},
+    {id:'wiki',         label:'Wiki',         icon:'book'},
     {id:'slayer_bosses',label:'Slayer Bosses',icon:'skull'},
-  ]},
-  { header:'Challenges', items:[
-    {id:'dungeons',label:'Dungeons',icon:'dungeon'},
-    {id:'fight_cave',label:'Fight Cave',icon:'combat'},
-    {id:'barrows',label:'Barrows',icon:'skull'},
-    {id:'gauntlet',label:'The Gauntlet',icon:'dungeon'},
-    {id:'inferno',label:'The Inferno',icon:'combat'},
-  ]},
-  { header:'Raids', items:[
-    {id:'theatre',label:'Theatre of Ash',icon:'combat'},
-    {id:'chambers',label:'Chambers of the King',icon:'dungeon'},
-  ]},
-  { header:'Bosses', items:[
-    {id:'world_bosses',label:'World Bosses',icon:'worldboss'},
-  ]},
-  { header:'Combat Skills', items:[
-    {id:'abilities',label:'Abilities',icon:'banner'},
-    {id:'prayer',label:'Prayer',icon:'sparkle'},
-    {id:'summoning',label:'Summoning',icon:'sparkle'},
-    {id:'spellbooks',label:'Spellbooks',icon:'wand'},
-    {id:'necromancy',label:'Necromancy',icon:'skull'},
-  ]},
-  { header:'Skills', items:[
-    {id:'woodcutting',label:'Woodcutting',icon:'axe'},
-    {id:'mining',label:'Mining',icon:'pickaxe'},
-    {id:'fishing',label:'Fishing',icon:'fish'},
-    {id:'foraging',label:'Foraging',icon:'herb'},
-    {id:'hunting',label:'Hunting',icon:'paw'},
-    {id:'cooking',label:'Cooking',icon:'cauldron'},
-    {id:'smithing',label:'Smithing',icon:'anvil'},
-    {id:'fletching',label:'Fletching',icon:'bow'},
-    {id:'crafting',label:'Crafting',icon:'ring'},
-    {id:'alchemy',label:'Alchemy',icon:'potion'},
-    {id:'enchanting',label:'Enchanting',icon:'sparkle'},
-    {id:'incantation',label:'Incantation',icon:'wand'},
-    {id:'farming',label:'Farming',icon:'seedling'},
-    {id:'thieving',label:'Thieving',icon:'mask'},
-  ]},
-  { header:'World', items:[
-    {id:'npcs',label:'NPCs',icon:'npc'},
-    {id:'quests',label:'Quests',icon:'scroll'},
-    {id:'storyline',label:'Storyline',icon:'book'},
-    {id:'factions',label:'Factions',icon:'faction'},
-    {id:'alignment',label:'Alignment',icon:'alignment'},
-    {id:'pets',label:'Pets',icon:'paw'},
-    {id:'codex',label:'Codex',icon:'book'},
-    {id:'achievements',label:'Achievements',icon:'trophy'},
-    {id:'collection_log',label:'Collection Log',icon:'scroll'},
-    {id:'wiki',label:'Wiki',icon:'book'},
   ]},
 ];
 
@@ -306,16 +304,30 @@ class UI {
       html += `<div class="lt-skill" id="lt-${sId}" title="${data.name}: Level ${sk.level}"><span class="lt-abbr">${abbr}</span><span class="lt-lvl">${sk.level}</span></div>`;
     }
     html += '</div>';
+    // Collapsible nav — restore collapse state from localStorage
+    const _navCollapsed = JSON.parse(localStorage.getItem('af_nav_collapsed') || '{}');
     for (const sec of NAV) {
-      html += `<div class="nav-section"><div class="nav-header">${sec.header}</div>`;
+      const key = sec.header;
+      const isCollapsed = _navCollapsed[key] === true;
+      // Auto-expand section containing active page
+      const hasActive = sec.items.some(i => i.id === this.currentPage);
+      const collapsed = isCollapsed && !hasActive;
+      html += `<div class="nav-section ${collapsed?'nav-collapsed':''}">
+        <div class="nav-header nav-header-toggle" onclick="ui._toggleNavSection('${key}')" title="Toggle ${key}">
+          <span class="nav-section-icon">${sec.icon||''}</span>
+          <span class="nav-section-label">${key}</span>
+          <span class="nav-chevron">${collapsed?'›':'⌄'}</span>
+        </div>
+        <div class="nav-section-items">`;
       for (const item of sec.items) {
         const active = this.currentPage === item.id ? ' active' : '';
         let badge = '';
         if (s.skills[item.id]) badge = `<span class="nav-level">${s.skills[item.id].level}</span>`;
         if (item.id === 'quests' && s.quests.active.length > 0) badge = `<span class="nav-level nav-active-count">${s.quests.active.length}</span>`;
-        html += `<div class="nav-item${active}" data-page="${item.id}">${icon(item.icon, 16)}<span class="nav-label">${item.label}</span>${badge}</div>`;
+        if (item.id === 'inbox') { /* badge could show unread count */ }
+        html += `<div class="nav-item${active}" data-page="${item.id}">${icon(item.icon, 15)}<span class="nav-label">${item.label}</span>${badge}</div>`;
       }
-      html += '</div>';
+      html += `</div></div>`;
     }
     sb.innerHTML = html;
     sb.querySelectorAll('.nav-item').forEach(el => {
@@ -550,18 +562,22 @@ class UI {
         let outputHtml = '';
         if (action.output) {
           const o = GAME_DATA.items[action.output.item];
-          outputHtml = `<div class="recipe-output">${o?.name||action.output.item}${action.output.qty>1?' x'+action.output.qty:''} <small data-item-qty="${action.output.item}">(${s.bank[action.output.item]||0})</small></div>`;
+          const oDesc = o?.desc ? `<span class="ac-output-desc">${o.desc}</span>` : '';
+          const oIcon = window.renderItemSprite ? renderItemSprite(action.output.item, 16) : '';
+          outputHtml = `<div class="recipe-output">${oIcon}<span class="ac-output-name">${o?.name||action.output.item}${action.output.qty>1?' ×'+action.output.qty:''}</span><small class="ac-have" data-item-qty="${action.output.item}">(${s.bank[action.output.item]||0})</small>${oDesc}</div>`;
         }
         if (action.loot) {
-          outputHtml = `<div class="recipe-output">${action.loot.map(l=>{const i=GAME_DATA.items[l.item]; return `${(i?.name||l.item)}${l.qty>1?' x'+l.qty:''} <small data-item-qty="${l.item}">(${s.bank[l.item]||0})</small>`;}).join(', ')}</div>`;
+          outputHtml = `<div class="recipe-output loot-output">${action.loot.slice(0,3).map(l=>{const i=GAME_DATA.items[l.item]; return `${window.renderItemSprite?renderItemSprite(l.item,14):''}<span>${(i?.name||l.item)}${l.qty>1?' ×'+l.qty:''}</span>`;}).join(' ')}</div>`;
         }
+        // Show action description if present (desc field)
+        const actionDescHtml = action.desc ? `<div class="ac-desc">${action.desc}</div>` : '';
         const artSvg = action._art && GAME_DATA.actionArt?.[action._art] ? `<div class="ac-art">${GAME_DATA.actionArt[action._art]}</div>` : '';
         html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('${sId}','${action.id}')"`}>
           ${artSvg}
           <div class="ac-header"><span class="ac-name">${action.name}</span><span class="ac-level">Lv ${action.level}</span></div>
           ${action.altarName ? `<div class="altar-info"><span class="altar-name">${action.altarName}</span>${action.altarDesc ? `<span class="altar-desc">${action.altarDesc}</span>`:''}</div>` : ''}
           ${inputHtml}${outputHtml}
-          <div class="ac-footer">
+          ${actionDescHtml}
             <span class="ac-xp">+${action.xp} XP</span>
             <span class="ac-time">${toolPct>0?(action.time*(1-toolPct/100)).toFixed(1)+'s':action.time+'s'}</span>
             ${m>0?`<span class="ac-mastery">M:${m}</span>`:''}
@@ -682,6 +698,13 @@ class UI {
     this.engine.addItem(itemId, 1);
     this.toast({type:'success', text:`${GAME_DATA.items[itemId]?.name} purchased!`});
     this.renderPage('agility');
+  }
+
+  _toggleNavSection(key) {
+    const stored = JSON.parse(localStorage.getItem('af_nav_collapsed') || '{}');
+    stored[key] = !stored[key];
+    localStorage.setItem('af_nav_collapsed', JSON.stringify(stored));
+    this.renderSidebar();
   }
 
   renderThievingPage(el) {
@@ -996,21 +1019,30 @@ class UI {
         </div>
       </div>
       <div class="cl-potions">
-        <div class="cs-header">${icon('potion',14)} Potion Belt</div>
+        <div class="cs-header">${icon('potion',14)} Potion Belt <span class="cs-header-sub">tap to drink</span></div>
         <div class="potion-belt" id="potion-belt">`;
     for (let i = 0; i < 4; i++) {
       const slot = s.potionBelt[i];
       const pot = slot?.id ? GAME_DATA.items[slot.id] : null;
       if (pot) {
-        html += `<button class="pb-slot pb-filled" onclick="game.drinkPotionBelt(${i})" title="${pot.name} - Click to drink">
-          <span class="pb-name">${pot.name.replace(' Potion','').replace('Super ','S.')}</span>
+        let effectStr = pot.desc || '';
+        if (pot.buff) { const sL = pot.buff.stat.replace('Bonus','').replace(/([A-Z])/g,' $1').trim(); effectStr = `+${pot.buff.value} ${sL} for ${pot.buff.duration||120}s`; }
+        if (pot.prayerRestore) effectStr = `+${pot.prayerRestore} Prayer`;
+        if (pot.heals) effectStr = effectStr ? effectStr + ` · Heals ${pot.heals}` : `Heals ${pot.heals}HP`;
+        const shortName = pot.name.replace(' Potion','').replace('Super ','S.');
+        html += `<button class="pb-slot pb-filled" onclick="game.drinkPotionBelt(${i})" title="${pot.name}&#10;${effectStr}&#10;${slot.qty} left">
+          <div class="pb-icon-wrap">${window.renderItemSprite?window.renderItemSprite(slot.id,18):'🧪'}</div>
+          <span class="pb-name">${shortName}</span>
           <span class="pb-qty" id="pb-qty-${i}">${slot.qty}</span>
+          <span class="pb-effect-line">${effectStr}</span>
         </button>`;
       } else {
-        html += `<div class="pb-slot pb-empty">${i+1}</div>`;
+        html += `<div class="pb-slot pb-empty"><span class="pb-empty-num">${i+1}</span><span class="pb-empty-label">Empty</span></div>`;
       }
     }
-    html += `</div></div>
+    html += `</div>
+        <button class="btn btn-xs pb-manage-btn" onclick="ui.currentPage='equipment';ui.renderPage('equipment')">⚙ Manage Belt</button>
+      </div>
       <div class="cl-stats">
         <div class="cs-header">${icon('shield',14)} Equipment Bonuses</div>
         <div class="cl-stat-chips">`;
@@ -1345,6 +1377,37 @@ class UI {
           <button class="btn" onclick="game.castTeleHome()">TeleHome (3 Fire + 5 Air)</button>
         </div>`;
       }
+
+      // ── COMBAT EQUIPMENT PANEL ──────────────────────────
+      const showEquipPanel = this._showEquipPanel !== false; // default open
+      const combatSlots = ['weapon','shield','head','body','legs','boots','gloves','ring','amulet','cape','ammo'];
+      html += `<div class="combat-equip-panel ${showEquipPanel?'':'cep-collapsed'}">
+        <div class="cep-header" onclick="ui._showEquipPanel=!ui._showEquipPanel;const b=document.querySelector('.combat-equip-panel');if(b){b.classList.toggle('cep-collapsed',!ui._showEquipPanel);document.querySelector('.cep-chevron').textContent=ui._showEquipPanel?'⌄':'›';}">
+          <span>⚔ Equipped Gear</span>
+          <span class="cep-chevron">${showEquipPanel?'⌄':'›'}</span>
+        </div>
+        <div class="cep-body">
+          <div class="cep-grid">`;
+      for (const slot of combatSlots) {
+        const eid = s.equipment[slot];
+        const eitem = eid ? GAME_DATA.items[eid] : null;
+        const isAmmo = slot === 'ammo';
+        const ammoQty = isAmmo && eid ? (s.bank[eid]||0) : null;
+        html += `<div class="cep-slot" title="${eitem ? eitem.name + (eitem.desc?'\n'+eitem.desc:'') : 'Empty '+slot}">
+          <div class="cep-slot-label">${slot.charAt(0).toUpperCase()+slot.slice(1)}</div>
+          <div class="cep-slot-item">
+            ${eitem ? `<div class="cep-icon">${window.renderItemSprite?renderItemSprite(eid,18):''}</div><span class="cep-name" style="${this.getRarityColor(eid)?'color:'+this.getRarityColor(eid):''}">${eitem.name.split(' ').pop()}</span>${isAmmo&&ammoQty!==null?`<span class="cep-ammo-qty">${ammoQty.toLocaleString()}</span>`:''}` : `<span class="cep-empty">-</span>`}
+          </div>
+        </div>`;
+      }
+      html += `</div>
+          <div class="cep-actions">
+            <button class="btn btn-xs" onclick="ui.currentPage='equipment';ui.renderPage('equipment')">⚙ Full Equipment</button>
+            <button class="btn btn-xs" onclick="ui.currentPage='bank';ui.renderPage('bank')">🎒 Bank</button>
+            <button class="btn btn-xs" onclick="ui.currentPage='gear_sets';ui.renderPage('gear_sets')">🔄 Gear Sets</button>
+          </div>
+        </div>
+      </div>`;
 
       // ── SPEC BAR ──
       const weapon = GAME_DATA.items[s.equipment.weapon];

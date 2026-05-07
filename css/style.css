@@ -7338,3 +7338,116 @@ body.perf-mode .hit-splat { display:none !important; }
 .dc-prog-bar { height:4px; background:rgba(255,255,255,0.06); border-radius:2px; margin-bottom:5px; }
 .dc-prog-fill { height:100%; background:var(--amber); border-radius:2px; transition:width 0.3s; }
 .dc-reward { font-size:10px; color:var(--text-dim); }
+
+/* ── POTION BELT OVERHAUL ────────────────────────────────── */
+.potion-belt {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  margin: 6px 0 4px;
+}
+.pb-slot {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 6px 5px;
+  text-align: center;
+  font-size: 10px;
+  transition: all 0.15s;
+  min-height: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.pb-filled {
+  background: rgba(74,138,62,0.10);
+  border-color: rgba(74,138,62,0.35);
+  cursor: pointer;
+}
+.pb-filled:hover, .pb-filled:active {
+  background: rgba(74,138,62,0.22);
+  border-color: #4a8a3e;
+  transform: scale(1.02);
+}
+.pb-empty {
+  background: rgba(255,255,255,0.02);
+  border-style: dashed;
+  cursor: default;
+  justify-content: center;
+  opacity: 0.5;
+}
+.pb-icon-wrap { line-height: 1; }
+.pb-name { font-family:'Cinzel',serif; font-size:9px; color:var(--text); line-height:1.2; }
+.pb-qty  { font-size:13px; color:#4a8a3e; font-weight:700; line-height:1; }
+.pb-effect-line { font-size:8px; color:var(--text-dim); line-height:1.2; text-align:center; max-width:80px; }
+.pb-empty-num   { font-size:16px; color:var(--text-dim); }
+.pb-empty-label { font-size:9px; color:var(--text-dim); }
+.pb-manage-btn  { font-size:10px; padding:3px 0; margin-top:3px; }
+.cs-header-sub  { font-size:9px; color:var(--text-dim); margin-left:5px; font-style:italic; }
+
+/* ── NAV SECTION COLLAPSIBLE ─────────────────────────────── */
+.nav-header-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+.nav-header-toggle:hover { background: rgba(255,255,255,0.05); }
+.nav-section-icon { font-size:13px; width:16px; text-align:center; }
+.nav-section-label { flex: 1; }
+.nav-chevron { font-size:13px; color:var(--text-dim); transition:transform 0.2s; }
+.nav-section.nav-collapsed .nav-chevron { transform:rotate(-90deg); }
+.nav-section.nav-collapsed .nav-section-items { display:none; }
+.nav-section-items { padding-bottom: 3px; }
+
+/* ── ACTION CARD: ITEM DESC ──────────────────────────────── */
+.ac-output-name { font-weight:600; }
+.ac-output-desc {
+  display:block; font-size:9px; color:var(--text-dim); font-style:italic;
+  margin-top:2px; line-height:1.3;
+}
+.ac-have { font-size:9px; color:var(--text-dim); margin-left:3px; }
+.ac-desc {
+  font-size:10px; color:var(--text-dim); font-style:italic;
+  margin: 2px 0 4px; padding:3px 5px;
+  background:rgba(255,255,255,0.02); border-radius:4px;
+  border-left:2px solid rgba(201,135,62,0.3);
+}
+.loot-output { display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+.recipe-output { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+
+/* ── COMBAT EQUIPMENT PANEL ──────────────────────────────── */
+.combat-equip-panel {
+  background:rgba(0,0,0,0.2); border:1px solid var(--border);
+  border-radius:10px; margin:8px 0; overflow:hidden;
+}
+.cep-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 12px; cursor:pointer; font-size:12px; font-family:'Cinzel',serif;
+  color:var(--text-dim); background:rgba(255,255,255,0.02); transition:background 0.2s;
+}
+.cep-header:hover { background:rgba(255,255,255,0.05); }
+.cep-chevron { font-size:14px; transition:transform 0.2s; }
+.combat-equip-panel.cep-collapsed .cep-body { display:none; }
+.combat-equip-panel.cep-collapsed .cep-chevron { transform:rotate(-90deg); }
+.cep-body { padding:8px 10px; }
+.cep-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:8px;
+}
+.cep-slot {
+  background:rgba(255,255,255,0.03); border:1px solid var(--border);
+  border-radius:6px; padding:4px 5px; text-align:center; min-height:48px;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+}
+.cep-slot-label { font-size:8px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; }
+.cep-slot-item  { display:flex; flex-direction:column; align-items:center; gap:1px; }
+.cep-icon { line-height:1; }
+.cep-name { font-size:8px; color:var(--text); line-height:1.2; text-align:center; max-width:52px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cep-ammo-qty { font-size:8px; color:#4a8a3e; font-weight:700; }
+.cep-empty { font-size:12px; color:rgba(255,255,255,0.1); }
+.cep-actions { display:flex; gap:4px; flex-wrap:wrap; }
+.cep-actions .btn { flex:1; font-size:10px; padding:4px 3px; }
