@@ -3688,6 +3688,7 @@ class UI {
     const inboxTab = this._inboxTab || 'conversations';
     html += `<div class="inbox-tabs">
       <button class="inbox-tab ${inboxTab==='conversations'?'inbox-tab-active':''}" onclick="ui._inboxTab='conversations';ui.renderPage('inbox')">Conversations</button>
+      <button class="inbox-tab ${inboxTab==='gifts'?'inbox-tab-active':''}" onclick="ui._inboxTab='gifts';ui.renderPage('inbox')">Gifts</button>
       <button class="inbox-tab ${inboxTab==='notifications'?'inbox-tab-active':''}" onclick="ui._inboxTab='notifications';ui.renderPage('inbox')">Notifications</button>
       <button class="inbox-tab ${inboxTab==='blocked'?'inbox-tab-active':''}" onclick="ui._inboxTab='blocked';ui.renderPage('inbox')">Blocked</button>
     </div>`;
@@ -3736,9 +3737,19 @@ class UI {
       if (notifs.length === 0) {
         container.innerHTML = '<div class="bank-empty">No notifications.</div>';
       } else {
-        const typeIcons = { friend_request:'&#9829;', guild_invite:'&#9878;', system:'&#9733;', trade:'&#9733;', pvp:'&#9876;' };
+        const typeIcons = { friend_request:'&#9829;', guild_invite:'&#9878;', system:'&#9733;', trade:'&#9733;', pvp:'&#9876;', gift:'&#127873;', party_invite:'&#9876;' };
         container.innerHTML = '<div class="inbox-notif-list">' + notifs.map(n => {
           const time = n.timestamp?.seconds ? new Date(n.timestamp.seconds * 1000).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+          let actionBtn = '';
+          if (!n.read) actionBtn = `<button class="btn btn-xs" onclick="event.stopPropagation();online.markInboxRead('${n.id}').then(()=>ui.renderPage('inbox'))">Read</button>`;
+          // Special action buttons
+          if (n.type === 'gift') {
+            actionBtn = `<button class="btn btn-xs" style="background:rgba(74,170,80,0.2);border-color:rgba(74,170,80,0.4)" onclick="event.stopPropagation();ui._inboxTab='gifts';ui.renderPage('inbox')">View Gifts</button>`;
+          } else if (n.type === 'party_invite' && n.partyId) {
+            actionBtn = `<button class="btn btn-xs" style="background:rgba(201,135,62,0.2);border-color:rgba(201,135,62,0.4)" onclick="event.stopPropagation();game.joinParty('${n.partyId}');online.markInboxRead('${n.id}')">Join Party</button>`;
+          } else if (n.type === 'friend_request' && n.from) {
+            actionBtn += ` <button class="btn btn-xs" style="background:rgba(74,170,80,0.2);border-color:rgba(74,170,80,0.4)" onclick="event.stopPropagation();online.acceptFriendRequest?.('${n.id}','${n.from}').then(()=>ui.renderPage('inbox'))">Accept</button>`;
+          }
           return `<div class="inbox-notif-v2 ${n.read?'':'inbox-notif-unread'}">
             <span class="inot-icon">${typeIcons[n.type]||'&#8226;'}</span>
             <div class="inot-body">
@@ -3746,7 +3757,28 @@ class UI {
               <span class="inot-text">${this.escHtml(n.preview||n.type)}</span>
               <span class="inot-time">${time}</span>
             </div>
-            ${!n.read?`<button class="btn btn-xs" onclick="event.stopPropagation();online.markInboxRead('${n.id}').then(()=>ui.renderPage('inbox'))">Read</button>`:''}
+            ${actionBtn}
+          </div>`;
+        }).join('') + '</div>';
+      }
+    }
+
+    else if (tab === 'gifts') {
+      // Load pending gifts
+      const gifts = await online.getPendingGifts();
+      if (gifts.length === 0) {
+        container.innerHTML = '<div class="bank-empty">No pending gifts. Friends can send you items and gold!</div>';
+      } else {
+        container.innerHTML = '<div class="inbox-gifts-list">' + gifts.map(g => {
+          const label = g.type === 'item' ? `${g.qty}x ${g.itemName||g.itemId}` : `${(g.amount||0).toLocaleString()} gold`;
+          const time = g.timestamp?.seconds ? new Date(g.timestamp.seconds * 1000).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+          return `<div class="inbox-gift-card">
+            <div class="igc-info">
+              <div class="igc-from">From: <strong>${this.escHtml(g.fromName||'Unknown')}</strong></div>
+              <div class="igc-item">${label}</div>
+              <div class="igc-time">${time}</div>
+            </div>
+            <button class="btn btn-sm" style="background:rgba(74,170,80,0.2);border-color:rgba(74,170,80,0.4);color:#8ad88a" onclick="online.claimGift('${g.id}').then(ok=>{if(ok){ui.toast({type:'success',text:'Gift claimed!'});online.saveToCloud?.();ui.renderPage('inbox')}})">Claim</button>
           </div>`;
         }).join('') + '</div>';
       }

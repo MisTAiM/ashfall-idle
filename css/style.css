@@ -6780,3 +6780,11 @@ kbd {
 .pra-title { font-family:'Cinzel',serif; font-size:16px; color:#c44020; margin-bottom:6px; }
 .pra-desc { font-size:12px; color:var(--text-dim); margin-bottom:12px; }
 @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(196,64,32,0.4); } 50% { box-shadow:0 0 12px 4px rgba(196,64,32,0.3); } }
+
+/* Inbox Gift Cards */
+.inbox-gifts-list { display:flex; flex-direction:column; gap:6px; }
+.inbox-gift-card { display:flex; justify-content:space-between; align-items:center; background:rgba(74,170,80,0.04); border:1px solid rgba(74,170,80,0.2); border-radius:6px; padding:10px 12px; }
+.igc-info { flex:1; }
+.igc-from { font-size:12px; color:var(--text); margin-bottom:2px; }
+.igc-item { font-size:14px; color:var(--amber); font-weight:600; }
+.igc-time { font-size:10px; color:var(--text-dim); margin-top:2px; }

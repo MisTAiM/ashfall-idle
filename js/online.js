@@ -1648,9 +1648,12 @@ class OnlineManager {
         this.emit('notification',{type:'success',text:`Claimed ${g.qty}x ${g.itemName||g.itemId}!`});
       } else if (g.type === 'gold') {
         game.state.gold += g.amount;
-        this.emit('notification',{type:'success',text:`Claimed ${g.amount}g!`});
+        this.emit('notification',{type:'success',text:`Claimed ${(g.amount||0).toLocaleString()}g!`});
       }
       await doc.ref.update({ claimed:true, claimedAt:firebase.firestore.FieldValue.serverTimestamp() });
+      // Auto-save so claimed items persist
+      game.save();
+      this.saveToCloud(true);
       return true;
     } catch(e) { this.emit('notification',{type:'danger',text:e.message}); return false; }
   }
@@ -2144,6 +2147,14 @@ class OnlineManager {
               this.emit('notification',{type:'info',text:`Message from ${d.fromName}: ${d.preview}`});
             } else if (d.type === 'friend_request') {
               this.emit('notification',{type:'info',text:`Friend request from ${d.fromName}`});
+            } else if (d.type === 'gift') {
+              this.emit('notification',{type:'success',text:`🎁 ${d.fromName} sent you a gift! Check your Inbox → Gifts tab to claim.`});
+              // Auto-navigate to inbox if on another page
+              if (window.ui && window.ui.currentPage !== 'inbox') {
+                // Just notify, don't force navigate
+              }
+            } else if (d.type === 'party_invite') {
+              this.emit('notification',{type:'info',text:`⚔️ ${d.fromName} invited you to party "${d.partyName||''}". Check your Inbox!`});
             }
           }
         });
