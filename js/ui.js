@@ -50,6 +50,7 @@ const NAV = [
   { header:'Online', items:[
     {id:'account',label:'Account',icon:'npc'},
     {id:'character',label:'Character',icon:'shield'},
+    {id:'prestige',label:'Prestige',icon:'sparkle'},
     {id:'guilds',label:'Guilds',icon:'faction'},
     {id:'party',label:'Party Finder',icon:'combat'},
     {id:'friends',label:'Friends',icon:'npc'},
@@ -135,7 +136,16 @@ class UI {
     this.bindEvents();
     this.engine.on('tick', () => this.onTick());
     this.engine.on('notification', (n) => this.toast(n));
-    this.engine.on('levelup', () => { this.renderSidebar(); this.renderPage(this.currentPage); });
+    this.engine.on('levelup', (d) => {
+      this.renderSidebar();
+      this.renderPage(this.currentPage);
+      // Dramatic level-up banner
+      this._showLevelUpBanner(d.skill, d.level);
+    });
+    this.engine.on('prestige', (d) => {
+      this._showPrestigeBanner(d.rank, d.rankData);
+      if (this.currentPage === 'prestige') this.renderPage('prestige');
+    });
     this.engine.on('skillStart', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('skillStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatStart', () => { this.currentPage = 'combat'; this.renderTrainingBar(); this.renderSidebar(); this.renderPage('combat'); });
@@ -399,6 +409,7 @@ class UI {
     else if (pageId === 'summoning') this.renderSummoningPage(main);
     else if (pageId === 'account') this.renderAccountPage(main);
     else if (pageId === 'character') this.renderCharacterPage(main);
+    else if (pageId === 'prestige') this.renderPrestigePage(main);
     else if (pageId === 'guilds') this.renderGuildsPage(main);
     else if (pageId === 'party') this.renderPartyPage(main);
     else if (pageId === 'friends') this.renderFriendsPage(main);
@@ -1926,6 +1937,7 @@ class UI {
         <div class="bi-qty" data-bank-qty="${id}">x${this.fmt(q)}</div>
         <div class="bi-actions">
           ${item.slot ? `<button class="btn btn-xs" onclick="game.equipItem('${id}')">Equip</button>` : ''}
+          ${item.slot ? `<button class="btn btn-xs" onclick="ui.showItemCompare('${id}')">Compare</button>` : ''}
           ${item.type==='food' ? `<button class="btn btn-xs" onclick="game.equipFood('${id}')">Add to Bag</button>` : ''}
           ${item.type==='potion' ? `<button class="btn btn-xs" onclick="ui.showPotionBeltSelect('${id}')">Belt</button>` : ''}
           ${item.subtype==='ore_bag' ? `<button class="btn btn-xs" onclick="game.upgradeOreBag('${id}');ui.renderPage('bank')">Apply</button>` : ''}
@@ -2065,53 +2077,167 @@ class UI {
   // ── ASHEN BAZAAR ───────────────────────────────────────
   renderBazaarPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
-    let html = this.header('Ashen Bazaar','coin','Trade items with other players. List items for sale, buy from others.',null);
+    let html = this.header('Ashen Bazaar','coin','Trade items with other players. List items for sale or post buy orders.',null);
 
     if (!isOnline || !online.user || online.user.isAnonymous) {
       html += '<div class="bank-empty">Create an account to access the Bazaar. Go to Online &gt; Account to register.</div>';
       el.innerHTML = html; return;
     }
 
-    // Gold + pending
+    // Tabs: Sell / Buy Orders / My Listings
+    const bzTab = this._bzTab || 'browse';
     html += `<div class="bazaar-header">
       <span class="bz-gold">${icon('coin',16)} <span data-bank-gold>${this.fmt(game.state.gold)}</span> Gold</span>
-      <button class="btn btn-sm" onclick="online.collectBazaarGold().then(()=>ui.renderPage('bazaar'))">Collect Pending Sales</button>
+      <button class="btn btn-sm" onclick="online.collectBazaarGold().then(()=>ui.renderPage('bazaar'))">Collect Sales</button>
+    </div>
+    <div class="bz-tabs">
+      <button class="bz-tab ${bzTab==='browse'?'bz-tab-active':''}" onclick="ui._bzTab='browse';ui.renderPage('bazaar')">Browse Listings</button>
+      <button class="bz-tab ${bzTab==='sell'?'bz-tab-active':''}" onclick="ui._bzTab='sell';ui.renderPage('bazaar')">Sell Item</button>
+      <button class="bz-tab ${bzTab==='buy'?'bz-tab-active':''}" onclick="ui._bzTab='buy';ui.renderPage('bazaar')">Buy Orders</button>
+      <button class="bz-tab ${bzTab==='mine'?'bz-tab-active':''}" onclick="ui._bzTab='mine';ui.renderPage('bazaar')">My Listings</button>
     </div>`;
 
-    // Post listing form
-    html += `<div class="bazaar-post">
-      <h3 class="section-title">Sell an Item</h3>
-      <div class="bp-form">
-        <select id="bz-item" class="chat-input-v2 bz-select">
-          <option value="">-- Select Item --</option>`;
-    const bankItems = Object.entries(game.state.bank).filter(([id,q]) => q > 0 && GAME_DATA.items[id]).sort((a,b) => (GAME_DATA.items[a[0]]?.name||'').localeCompare(GAME_DATA.items[b[0]]?.name||''));
-    for (const [id, qty] of bankItems) {
-      const item = GAME_DATA.items[id];
-      const rarCol = this.getRarityColor(id);
-      html += `<option value="${id}" style="${rarCol?'color:'+rarCol:''}">${item.name} (x${qty})</option>`;
+    if (bzTab === 'sell') {
+      html += `<div class="bazaar-post">
+        <h3 class="section-title">List Item for Sale</h3>
+        <div class="bp-form">
+          <select id="bz-item" class="chat-input-v2 bz-select">
+            <option value="">-- Select Item --</option>`;
+      const bankItems = Object.entries(game.state.bank).filter(([id,q]) => q > 0 && GAME_DATA.items[id]).sort((a,b) => (GAME_DATA.items[a[0]]?.name||'').localeCompare(GAME_DATA.items[b[0]]?.name||''));
+      for (const [id, qty] of bankItems) {
+        const item = GAME_DATA.items[id];
+        const rarCol = this.getRarityColor(id);
+        html += `<option value="${id}" style="${rarCol?'color:'+rarCol:''}">${item.name} (x${qty})</option>`;
+      }
+      html += `</select>
+          <input type="number" id="bz-qty" class="qty-input" min="1" value="1" placeholder="Qty" style="width:60px">
+          <input type="number" id="bz-price" class="qty-input" min="1" value="100" placeholder="Price/ea" style="width:80px">
+          <button class="btn" onclick="ui.postBazaarListing()">List for Sale</button>
+        </div>
+      </div>`;
     }
-    html += `</select>
-        <input type="number" id="bz-qty" class="qty-input" min="1" value="1" placeholder="Qty" style="width:60px">
-        <input type="number" id="bz-price" class="qty-input" min="1" value="100" placeholder="Price/ea" style="width:80px">
-        <button class="btn" onclick="ui.postBazaarListing()">List for Sale</button>
-      </div>
-    </div>`;
 
-    // Search
+    if (bzTab === 'buy') {
+      html += `<div class="bazaar-post">
+        <h3 class="section-title">Post a Buy Order</h3>
+        <p style="font-size:11px;color:var(--text-dim);margin:0 0 10px">Tell sellers what you want. They can fulfil your order and you'll receive the items automatically.</p>
+        <div class="bp-form">
+          <input type="text" id="bz-buy-item" class="chat-input-v2" placeholder="Item ID (e.g. dragon_bones)" style="flex:1">
+          <input type="number" id="bz-buy-qty" class="qty-input" min="1" value="100" placeholder="Qty wanted" style="width:70px">
+          <input type="number" id="bz-buy-price" class="qty-input" min="1" value="500" placeholder="Pay/ea" style="width:80px">
+          <button class="btn" onclick="ui._postBuyOrder()">Post Buy Order</button>
+        </div>
+        <p style="font-size:10px;color:var(--text-dim);margin:8px 0 0">Gold is locked until order is filled or cancelled. You have <strong>${this.fmt(game.state.gold)}g</strong>.</p>
+      </div>`;
+      html += '<div id="bazaar-listings"><div class="bank-empty">Loading buy orders...</div></div>';
+      el.innerHTML = html;
+      this._loadBuyOrders();
+      return;
+    }
+
+    // Search bar
     html += `<div class="bazaar-search">
-      <h3 class="section-title">Browse Listings</h3>
       <div style="display:flex;gap:6px;margin-bottom:10px">
         <input type="text" id="bz-search" class="chat-input-v2" placeholder="Search by item name..." style="flex:1">
         <button class="btn btn-sm" onclick="ui.searchBazaar()">Search</button>
         <button class="btn btn-sm" onclick="ui.loadBazaarAll()">All</button>
-        <button class="btn btn-sm" onclick="ui.loadBazaarMine()">My Listings</button>
+        ${bzTab==='mine' ? '' : ''}
       </div>
     </div>`;
 
     html += '<div id="bazaar-listings"><div class="bank-empty">Loading listings...</div></div>';
     el.innerHTML = html;
-    // Auto-load all listings on page visit
-    this.loadBazaarAll();
+    if (bzTab === 'mine') this.loadBazaarMine();
+    else this.loadBazaarAll();
+  }
+
+  async _postBuyOrder() {
+    const itemId = document.getElementById('bz-buy-item')?.value?.trim();
+    const qty = parseInt(document.getElementById('bz-buy-qty')?.value) || 1;
+    const priceEa = parseInt(document.getElementById('bz-buy-price')?.value) || 1;
+    if (!itemId) { this.toast({type:'warn',text:'Enter an item ID.'}); return; }
+    if (!GAME_DATA.items[itemId]) { this.toast({type:'warn',text:`Unknown item: "${itemId}"`}); return; }
+    const totalCost = qty * priceEa;
+    if (game.state.gold < totalCost) { this.toast({type:'warn',text:`Need ${this.fmt(totalCost)}g to post this order.`}); return; }
+    // Deduct gold immediately (locked in escrow)
+    game.state.gold -= totalCost;
+    if (typeof online !== 'undefined') {
+      await online.db?.ref('buy_orders').push({
+        buyer: online.user.uid,
+        buyerName: online.displayName || 'Unknown',
+        item: itemId,
+        itemName: GAME_DATA.items[itemId]?.name || itemId,
+        qty, priceEa, totalCost,
+        filled: 0,
+        createdAt: Date.now(),
+        status: 'open',
+      });
+    }
+    this.toast({type:'success', text:`Buy order posted: ${qty}x ${GAME_DATA.items[itemId]?.name} @ ${priceEa}g ea`});
+    this._bzTab = 'buy';
+    this.renderPage('bazaar');
+  }
+
+  async _loadBuyOrders() {
+    const container = document.getElementById('bazaar-listings');
+    if (!container) return;
+    container.innerHTML = '<div class="bank-empty">Loading buy orders...</div>';
+    try {
+      const snap = await online?.db?.ref('buy_orders').orderByChild('status').equalTo('open').limitToLast(50).once('value');
+      const orders = [];
+      snap?.forEach(child => orders.push({id:child.key, ...child.val()}));
+      if (!orders.length) { container.innerHTML = '<div class="bank-empty">No buy orders. Post the first one!</div>'; return; }
+      let html = '<div class="buy-orders-list">';
+      for (const o of orders.reverse()) {
+        const item = GAME_DATA.items[o.item];
+        const myUid = online?.user?.uid;
+        const isMine = o.buyer === myUid;
+        const canFulfil = !isMine && (game.state.bank[o.item]||0) >= 1;
+        html += `<div class="buy-order-card">
+          <div class="bo-item">${item?.name||o.itemName||o.item}</div>
+          <div class="bo-info">Wants <strong>${o.qty - (o.filled||0)}</strong> remaining @ <strong>${this.fmt(o.priceEa)}g</strong> ea</div>
+          <div class="bo-buyer">By: ${o.buyerName||'Unknown'}</div>
+          ${isMine ? `<button class="btn btn-xs btn-danger" onclick="ui._cancelBuyOrder('${o.id}',${o.totalCost - (o.filled||0)*o.priceEa})">Cancel Order</button>` : ''}
+          ${canFulfil ? `<div class="bo-sell-row">
+            <input type="number" min="1" max="${Math.min(o.qty-(o.filled||0),game.state.bank[o.item]||0)}" value="1" id="bo-qty-${o.id}" style="width:55px;padding:2px 4px;background:var(--bg-deep);border:1px solid var(--border);color:var(--text);border-radius:3px">
+            <button class="btn btn-xs" onclick="ui._fulfilBuyOrder('${o.id}','${o.item}',${o.priceEa})">Sell to Order</button>
+          </div>` : ''}
+        </div>`;
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    } catch(e) {
+      container.innerHTML = `<div class="bank-empty">Failed to load buy orders: ${e.message}</div>`;
+    }
+  }
+
+  async _cancelBuyOrder(orderId, refundAmount) {
+    if (!confirm('Cancel this buy order and get your gold back?')) return;
+    await online?.db?.ref(`buy_orders/${orderId}`).update({ status:'cancelled' });
+    game.state.gold += Math.floor(refundAmount);
+    this.toast({type:'success', text:`Order cancelled. ${this.fmt(refundAmount)}g refunded.`});
+    this.renderPage('bazaar');
+  }
+
+  async _fulfilBuyOrder(orderId, itemId, priceEa) {
+    const qtyEl = document.getElementById(`bo-qty-${orderId}`);
+    const qty = parseInt(qtyEl?.value) || 1;
+    const have = game.state.bank[itemId] || 0;
+    if (have < qty) { this.toast({type:'warn',text:'Not enough items.'}); return; }
+    // Remove items from seller, give gold
+    game.state.bank[itemId] -= qty;
+    if (game.state.bank[itemId] <= 0) delete game.state.bank[itemId];
+    const earned = qty * priceEa;
+    game.state.gold += earned;
+    // Update order in Firebase
+    await online?.db?.ref(`buy_orders/${orderId}`).transaction(order => {
+      if (!order) return order;
+      order.filled = (order.filled || 0) + qty;
+      if (order.filled >= order.qty) order.status = 'complete';
+      return order;
+    });
+    this.toast({type:'success', text:`Sold ${qty}x ${GAME_DATA.items[itemId]?.name} for ${this.fmt(earned)}g!`});
+    this.renderPage('bazaar');
   }
 
   async postBazaarListing() {
@@ -3276,6 +3402,104 @@ class UI {
   }
 
   // ── CHARACTER CREATOR ───────────────────────────────────
+  renderPrestigePage(el) {
+    const s = this.engine.state;
+    const cfg = GAME_DATA.prestige;
+    const currentRank = s._prestigeRank || 0;
+    const rankData = cfg?.ranks?.[currentRank - 1];
+    const nextRankData = cfg?.ranks?.[currentRank];
+    const check = this.engine.canPrestige();
+    const tl = this.engine.getTotalLevel();
+    const maxTl = Object.keys(s.skills).length * 99;
+
+    let html = this.header('Prestige','sparkle',`Rank ${currentRank} — Sacrifice everything to transcend.`,null);
+
+    // Current rank badge
+    if (currentRank > 0 && rankData) {
+      html += `<div class="prestige-rank-badge" style="border-color:${rankData.color};box-shadow:0 0 20px ${rankData.color}33">
+        <div class="prb-icon">${rankData.icon}</div>
+        <div class="prb-name" style="color:${rankData.color}">${rankData.name}</div>
+        <div class="prb-rank">Prestige Rank ${currentRank}</div>
+        <div class="prb-bonuses">
+          ${Object.entries(rankData.bonuses).map(([k,v]) => {
+            const labels = {xpMult:'XP', goldMult:'Gold', dropMult:'Drops', dmgMult:'Damage', startLevel:'Skill Start Lv'};
+            return `<span class="prb-bonus">+${typeof v==='number'&&v<1?(v*100).toFixed(0)+'%':v} ${labels[k]||k}</span>`;
+          }).join('')}
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="prestige-intro">
+        <div class="pi-icon">⭐</div>
+        <div class="pi-title">Prestige System</div>
+        <div class="pi-desc">When all skills reach 99, you may Prestige — resetting your skills in exchange for permanent bonuses that carry across all future lives. Each prestige rank makes you stronger forever.</div>
+      </div>`;
+    }
+
+    // Prestige check panel
+    html += `<div class="prestige-check-panel ${check.ok?'check-ready':'check-not-ready'}">
+      <div class="pcp-header">${check.ok ? '✅ Ready to Prestige!' : '⏳ Requirements'}</div>
+      <div class="pcp-row ${tl >= (cfg?.minTotalLevel||2000)?'req-met':'req-locked'}">
+        Total Level ${tl} / ${cfg?.minTotalLevel||2000}
+      </div>
+      <div class="pcp-row ${check.ok?'req-met':'req-locked'}">
+        All skills level 99
+      </div>
+      ${check.ok ? '' : `<div class="pcp-reason">${check.reason}</div>`}
+    </div>`;
+
+    // TL progress bar
+    const tlPct = Math.min(100, (tl / maxTl) * 100);
+    html += `<div class="prestige-tl-bar">
+      <div class="ptlb-label"><span>Total Level</span><span>${tl.toLocaleString()} / ${maxTl}</span></div>
+      <div class="ptlb-track"><div class="ptlb-fill" style="width:${tlPct.toFixed(1)}%"></div></div>
+    </div>`;
+
+    // Prestige button
+    if (check.ok) {
+      html += `<div class="prestige-action">
+        <div class="pa-warning">⚠ All skills reset to ${nextRankData?.bonuses?.startLevel||1}. Most bank items wiped. This cannot be undone.</div>
+        <button class="btn prestige-btn" onclick="if(confirm('PRESTIGE? Skills and most items will be reset. Permanent bonuses unlocked. Are you SURE?'))game.performPrestige()">
+          ${nextRankData?.icon||'⭐'} Prestige → ${nextRankData?.name||'Next Rank'}
+        </button>
+      </div>`;
+    }
+
+    // All ranks overview
+    html += '<h2 class="section-title">Prestige Ranks</h2><div class="prestige-ranks-grid">';
+    for (let i = 0; i < (cfg?.ranks?.length||5); i++) {
+      const r = cfg.ranks[i];
+      const unlocked = currentRank > i;
+      const isCurrent = currentRank === i + 1;
+      html += `<div class="prestige-rank-card ${unlocked?'rank-unlocked':''} ${isCurrent?'rank-current':''}">
+        <div class="prc-icon">${r.icon}</div>
+        <div class="prc-name" style="${unlocked?'color:'+r.color:''}">${r.name}</div>
+        <div class="prc-rank">Rank ${i+1}</div>
+        <div class="prc-bonuses">
+          ${Object.entries(r.bonuses).map(([k,v])=>{
+            const labels={xpMult:'XP',goldMult:'Gold',dropMult:'Drops',dmgMult:'Dmg',startLevel:'Start Lv'};
+            return `<span>${labels[k]||k}: ${typeof v==='number'&&v<1?(v*100).toFixed(0)+'%':v}</span>`;
+          }).join('<br>')}
+        </div>
+        ${unlocked ? '<div class="prc-owned">✓ Achieved</div>' : ''}
+      </div>`;
+    }
+    html += '</div>';
+
+    // Prestige history
+    if ((s._prestigeHistory||[]).length > 0) {
+      html += '<h2 class="section-title">Your History</h2>';
+      for (const h of [...(s._prestigeHistory||[])].reverse()) {
+        html += `<div class="prestige-hist-row">
+          <span>${cfg.ranks[h.rank-1]?.icon||'⭐'} Rank ${h.rank}</span>
+          <span>TL ${h.totalLevel} when reset</span>
+          <span>${new Date(h.at).toLocaleDateString()}</span>
+        </div>`;
+      }
+    }
+
+    el.innerHTML = html;
+  }
+
   renderCharacterPage(el) {
     const s = this.engine.state;
     if (!s.profile) s.profile = { avatarSeed:'', hair:'short04', skinColor:'c68642', hairColor:'2c1b18', accessory:'', mouth:'happy01', eyes:'variant04', clothing:'variant04', clothingColor:'4a90d4', bio:'' };
@@ -5509,6 +5733,142 @@ class UI {
       const pSide = document.querySelector('.player-side');
       if (pSide) { pSide.classList.add('hit-flash'); setTimeout(()=>pSide.classList.remove('hit-flash'), 300); }
     }
+  }
+
+  _showLevelUpBanner(skillId, level) {
+    const skill = GAME_DATA.skills[skillId];
+    if (!skill) return;
+    // Remove existing banner
+    const existing = document.getElementById('levelup-banner');
+    if (existing) existing.remove();
+    const banner = document.createElement('div');
+    banner.id = 'levelup-banner';
+    banner.className = 'levelup-banner';
+    const milestones = [10,20,30,40,50,60,70,80,90,99];
+    const isMilestone = milestones.includes(level);
+    banner.innerHTML = `
+      <div class="lub-icon">${isMilestone ? '🌟' : '⬆'}</div>
+      <div class="lub-text">
+        <div class="lub-skill">${skill.name}</div>
+        <div class="lub-level ${isMilestone?'lub-milestone':''}">Level ${level}${level===99?' — MAXED!':''}</div>
+      </div>
+    `;
+    if (isMilestone) banner.classList.add('lub-big');
+    document.body.appendChild(banner);
+    this._playSound(level === 99 ? 'rare' : 'levelup');
+    setTimeout(() => { banner.classList.add('lub-fade'); setTimeout(() => banner?.remove(), 600); }, level === 99 ? 4000 : 2500);
+  }
+
+  _showPrestigeBanner(rank, rankData) {
+    const existing = document.getElementById('prestige-banner');
+    if (existing) existing.remove();
+    const banner = document.createElement('div');
+    banner.id = 'prestige-banner';
+    banner.className = 'prestige-banner-full';
+    banner.innerHTML = `
+      <div class="pb-bg"></div>
+      <div class="pb-content">
+        <div class="pb-stars">⭐⭐⭐</div>
+        <div class="pb-title">PRESTIGE ${rank}</div>
+        <div class="pb-name" style="color:${rankData?.color||'#c9873e'}">${rankData?.icon||'⭐'} ${rankData?.name||'Prestige'}</div>
+        <div class="pb-desc">${rankData?.desc||'You have transcended.'}</div>
+        <button class="btn pb-close" onclick="document.getElementById('prestige-banner').remove()">Continue →</button>
+      </div>
+    `;
+    document.body.appendChild(banner);
+    this._playSound('prestige');
+  }
+
+  // ── SOUND ENGINE (Web Audio API, no file downloads) ─────
+  _initAudio() {
+    if (this._audioCtx) return;
+    try { this._audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+
+  _playSound(type) {
+    const prefs = this.engine.state?._prefs;
+    if (!prefs?.sounds || prefs?.muteAll) return;
+    this._initAudio();
+    if (!this._audioCtx) return;
+    const cfg = GAME_DATA.sounds?.defs?.[type];
+    if (!cfg) return;
+    try {
+      const vol = (GAME_DATA.sounds?.volume || 0.3) * (prefs?.volume || 1);
+      const ctx = this._audioCtx;
+      const gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(vol * (cfg.vol||0.2), ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (cfg.dur||0.1) * 3);
+      gainNode.connect(ctx.destination);
+      const freqs = Array.isArray(cfg.freqs) ? cfg.freqs : [cfg.freq || 440];
+      freqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = cfg.type === 'thud' || cfg.type === 'boom' ? 'sine' : cfg.type === 'crack' ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * (cfg.dur||0.1));
+        osc.connect(gainNode);
+        osc.start(ctx.currentTime + i * (cfg.dur||0.1) * 0.8);
+        osc.stop(ctx.currentTime + (cfg.dur||0.1) * (freqs.length + 2));
+      });
+    } catch(e) {}
+  }
+
+  // ── ITEM COMPARISON ──────────────────────────────────────
+  showItemCompare(itemId) {
+    if (!this._compareItem1) {
+      this._compareItem1 = itemId;
+      this.toast({ type:'info', text:`Comparing: ${GAME_DATA.items[itemId]?.name}. Click another item to compare.` });
+      return;
+    }
+    if (this._compareItem1 === itemId) { this._compareItem1 = null; return; }
+    this._showCompareModal(this._compareItem1, itemId);
+    this._compareItem1 = null;
+  }
+
+  _showCompareModal(id1, id2) {
+    const item1 = GAME_DATA.items[id1];
+    const item2 = GAME_DATA.items[id2];
+    if (!item1 || !item2) return;
+    const existing = document.getElementById('compare-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'compare-modal';
+    modal.className = 'compare-modal';
+    const stats = GAME_DATA.compareStats || ['attackBonus','strengthBonus','defenceBonus','rangedBonus','magicBonus','damageReduction'];
+    const statsRows = stats.map(stat => {
+      const v1 = item1.stats?.[stat] || item1[stat] || 0;
+      const v2 = item2.stats?.[stat] || item2[stat] || 0;
+      if (v1 === 0 && v2 === 0) return '';
+      const better1 = v1 > v2, better2 = v2 > v1;
+      const label = stat.replace('Bonus','').replace(/([A-Z])/g,' $1').trim();
+      return `<div class="cmp-row">
+        <span class="cmp-v1 ${better1?'cmp-better':better2?'cmp-worse':''}">${v1>0?'+':''}${v1}</span>
+        <span class="cmp-stat">${label}</span>
+        <span class="cmp-v2 ${better2?'cmp-better':better1?'cmp-worse':''}">${v2>0?'+':''}${v2}</span>
+      </div>`;
+    }).filter(Boolean).join('');
+
+    modal.innerHTML = `
+      <div class="compare-backdrop" onclick="document.getElementById('compare-modal').remove()"></div>
+      <div class="compare-card">
+        <button class="compare-close" onclick="document.getElementById('compare-modal').remove()">✕</button>
+        <div class="compare-header">
+          <div class="cmp-item">
+            <div class="cmp-icon">${window.renderItemSprite?window.renderItemSprite(id1,32):''}</div>
+            <div class="cmp-name" style="${this.getRarityColor(id1)?'color:'+this.getRarityColor(id1):''}">${item1.name}</div>
+          </div>
+          <div class="cmp-vs">VS</div>
+          <div class="cmp-item">
+            <div class="cmp-icon">${window.renderItemSprite?window.renderItemSprite(id2,32):''}</div>
+            <div class="cmp-name" style="${this.getRarityColor(id2)?'color:'+this.getRarityColor(id2):''}">${item2.name}</div>
+          </div>
+        </div>
+        <div class="compare-stats">${statsRows || '<div class="cmp-no-stats">No comparable stats.</div>'}</div>
+        <div class="compare-desc">
+          <div class="cmp-desc-col">${item1.desc||''}</div>
+          <div class="cmp-desc-col">${item2.desc||''}</div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
   }
 
   showTutorial(step = 0) {

@@ -258,6 +258,9 @@ class GameEngine {
       this.state._smithingHeat = Math.max(0, (this.state._smithingHeat||0) - decay);
     }
 
+    // Auto-bank overflow check
+    if (this.state._autoBankConfig?.enabled) this._autoBankTick();
+
     this.tickFarming(now);
     this.initDailyQuests();
     this.tickBuffs(safeDt);
@@ -611,9 +614,16 @@ class GameEngine {
       if (align.bonus.gatherXp && skill?.type === 'gathering') amount = Math.floor(amount * (1 + align.bonus.gatherXp/100));
       if (align.bonus.diplomacyXp && skillId === 'diplomacy') amount = Math.floor(amount * (1 + align.bonus.diplomacyXp/100));
     }
+    // Live server XP multiplier (admin-controlled)
+    const xpMult = this._liveFlags?.xp_multiplier || 1;
+    if (xpMult !== 1) amount = Math.floor(amount * xpMult);
     // 5% XP reduction for levels 10+ (slows mid-late game progression)
-    if (this.state.skills[skillId].level >= 10) {
-      amount = Math.floor(amount * 0.95);
+    if (this.state.skills[skillId].level >= 10) amount = Math.floor(amount * 0.95);
+    // ── PRESTIGE XP BONUS ──────────────────────────────────
+    const prestigeRank = this.state._prestigeRank || 0;
+    if (prestigeRank > 0 && GAME_DATA.prestige?.ranks?.[prestigeRank - 1]) {
+      const pBonus = GAME_DATA.prestige.ranks[prestigeRank - 1].bonuses.xpMult || 0;
+      amount = Math.floor(amount * (1 + pBonus));
     }
     const before = this.state.skills[skillId].level;
     this.state.skills[skillId].xp += amount;
@@ -3600,6 +3610,102 @@ class GameEngine {
   on(event, fn) { if (!this.listeners[event]) this.listeners[event] = []; this.listeners[event].push(fn); }
   emit(event, data) { if (this.listeners[event]) for (const fn of this.listeners[event]) fn(data); }
   getTotalLevel() { return Object.values(this.state.skills).reduce((sum, s) => sum + s.level, 0); }
+
+  // ── PRESTIGE SYSTEM ─────────────────────────────────────
+  canPrestige() {
+    const cfg = GAME_DATA.prestige;
+    if (!cfg?.enabled) return { ok:false, reason:'Prestige not enabled.' };
+    const tl = this.getTotalLevel();
+    const minTl = cfg.minTotalLevel || 2000;
+    if (tl < minTl) return { ok:false, reason:`Total level ${tl}/${minTl} required.` };
+    const allMax = Object.values(this.state.skills).every(s => s.level >= (cfg.skillFloor || 99));
+    if (!allMax) {
+      const missing = Object.entries(this.state.skills).filter(([,s])=>s.level < (cfg.skillFloor||99)).map(([id])=>GAME_DATA.skills[id]?.name||id).slice(0,3);
+      return { ok:false, reason:`All skills must be 99. Missing: ${missing.join(', ')}...` };
+    }
+    const currentRank = this.state._prestigeRank || 0;
+    if (currentRank >= (cfg.ranks?.length||5)) return { ok:false, reason:'Maximum prestige rank reached!' };
+    return { ok:true };
+  }
+
+  performPrestige() {
+    const check = this.canPrestige();
+    if (!check.ok) { this.emit('notification', { type:'warn', text:check.reason }); return false; }
+    const cfg = GAME_DATA.prestige;
+    const newRank = (this.state._prestigeRank || 0) + 1;
+    const rankData = cfg.ranks[newRank - 1];
+    const startLevel = rankData?.bonuses?.startLevel || 1;
+    const keepItems = new Set(cfg.keepItems || []);
+
+    // Wipe bank except kept items
+    const newBank = {};
+    for (const [id, qty] of Object.entries(this.state.bank)) {
+      if (keepItems.has(id)) newBank[id] = qty;
+    }
+
+    // Keep equipment that's in keepItems, unequip rest
+    const newEquip = {};
+    for (const [slot, id] of Object.entries(this.state.equipment)) {
+      newEquip[slot] = id && keepItems.has(id) ? id : null;
+    }
+
+    // Reset skills to startLevel
+    const newSkills = {};
+    for (const [sk, data] of Object.entries(this.state.skills)) {
+      newSkills[sk] = { level: startLevel, xp: GAME_DATA.xpTable?.[startLevel] || 0 };
+    }
+
+    // Apply prestige
+    this.state._prestigeRank = newRank;
+    this.state._prestigeHistory = [...(this.state._prestigeHistory||[]), { rank:newRank, at:Date.now(), totalLevel:this.getTotalLevel() }];
+    this.state.skills = newSkills;
+    this.state.bank = newBank;
+    this.state.equipment = newEquip;
+    this.state.gold = 0;
+    this.state.questPoints = 0;
+    this.state.quests = { completed:[], active:[], progress:{} };
+    this.state.combat = { active:false, area:null, monster:null, combatStyle:'melee', xpMode:'controlled', autoEat:true };
+    this.state.actionProgress = 0;
+    this.state.activeSkill = null;
+    this.state.activeAction = null;
+    this.state.specEnergy = 100;
+    this.state.prayerPoints = 1;
+    this.state.activePrayers = [];
+
+    this.emit('notification', { type:'achievement', text:`⭐ PRESTIGE ${newRank}: ${rankData.name}! ${rankData.desc}` });
+    this.emit('prestige', { rank:newRank, rankData });
+    this.emit('init');
+    this.save();
+    return true;
+  }
+
+  getPrestigeBonuses() {
+    const rank = this.state._prestigeRank || 0;
+    if (!rank || !GAME_DATA.prestige?.ranks?.[rank-1]) return {};
+    return GAME_DATA.prestige.ranks[rank - 1].bonuses || {};
+  }
+
+  // ── AUTO-BANK ────────────────────────────────────────────
+  _autoBankTick() {
+    const cfg = this.state._autoBankConfig;
+    if (!cfg?.enabled || !this.state.activeSkill) return;
+    if (!this._lastAutoBank) this._lastAutoBank = Date.now();
+    const elapsed = (Date.now() - this._lastAutoBank) / 1000;
+    if (elapsed < (cfg.intervalSeconds || 300)) return;
+    this._lastAutoBank = Date.now();
+    // Nothing to do — items go directly to bank in this architecture
+    // Auto-bank in our system means: sell overflow items above a qty threshold
+    const overflowSell = cfg.overflow || {};
+    for (const [itemId, maxQty] of Object.entries(overflowSell)) {
+      const have = this.state.bank[itemId] || 0;
+      const excess = have - maxQty;
+      if (excess > 0) {
+        this.sellItem(itemId, excess);
+        this.emit('notification', { type:'info', text:`Auto-sold ${excess}x ${GAME_DATA.items[itemId]?.name || itemId}` });
+      }
+    }
+    this.emit('notification', { type:'info', text:'Auto-bank check complete.' });
+  }
 
   // ── PRAYER SYSTEM ──────────────────────────────────────
   buryBones(boneId, qty) {
