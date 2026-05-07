@@ -196,6 +196,9 @@ function applyAdminPanel() {
       if (this._admPlayerEdit) {
         const p = this._admPlayerEdit;
         const uid = p.uid;
+        const sv = this._admPlayerSave; // loaded save data
+        const svLoading = this._admSaveLoading;
+        
         html += `<div class="adm-section">
           <h3>Editing: <span style="color:var(--accent)">${p.displayName||p.uid}</span></h3>
           <button class="btn btn-xs" onclick="ui._admPlayerEdit=null;ui._admPlayerSave=null;ui.renderPage('admin')" style="margin-bottom:10px">← Back to List</button>
@@ -204,64 +207,64 @@ function applyAdminPanel() {
             <div class="adm-stat">TL: ${p.totalLevel||'?'} | CL: ${p.combatLevel||'?'}</div>
             <div class="adm-stat">Kills: ${p.kills||0} | Quests: ${p.questsCompleted||0}</div>
             <div class="adm-stat">Last seen: ${p.lastSeen?.toDate?.()?.toLocaleDateString?.() || 'unknown'}</div>
-          </div>
+          </div>`;
 
-          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Gold</h4>
+        if (svLoading) {
+          html += `<div style="color:var(--amber);padding:20px;text-align:center">Loading player save data...</div>`;
+        } else if (!sv) {
+          html += `<div style="color:#cc6666;padding:20px;text-align:center">Could not load save. Player may not have a cloud save.</div>`;
+        } else {
+          // ── GOLD (from live save) ─────────────────────────
+          html += `<h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Gold — <span style="color:var(--text)">${(sv.gold||0).toLocaleString()}</span></h4>
           <div class="adm-remote-grid">
             <div class="adm-remote-card">
               <span class="adm-rc-label">Add Gold</span>
               <div class="adm-row-flex">
                 <input type="number" id="adm-rp-gold" class="bank-search-input" value="10000" style="width:100px">
-                <button class="btn btn-xs" onclick="online.adminGivePlayerGold('${uid}',parseInt(document.getElementById('adm-rp-gold').value)||0)">+ Add</button>
+                <button class="btn btn-xs" onclick="online.adminGivePlayerGold('${uid}',parseInt(document.getElementById('adm-rp-gold').value)||0).then(()=>ui._admRefreshSave('${uid}'))">+ Add</button>
               </div>
             </div>
             <div class="adm-remote-card">
               <span class="adm-rc-label">Set Gold (exact)</span>
               <div class="adm-row-flex">
-                <input type="number" id="adm-rp-gold-set" class="bank-search-input" value="0" style="width:100px">
-                <button class="btn btn-xs" onclick="online.adminSetPlayerGold('${uid}',parseInt(document.getElementById('adm-rp-gold-set').value)||0)">Set</button>
+                <input type="number" id="adm-rp-gold-set" class="bank-search-input" value="${sv.gold||0}" style="width:100px">
+                <button class="btn btn-xs" onclick="online.adminSetPlayerGold('${uid}',parseInt(document.getElementById('adm-rp-gold-set').value)||0).then(()=>ui._admRefreshSave('${uid}'))">Set</button>
               </div>
             </div>
-          </div>
+          </div>`;
 
-          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Skills — Set Level Directly</h4>
-          <div class="adm-remote-grid">
-            <div class="adm-remote-card">
-              <span class="adm-rc-label">Set Skill Level</span>
-              <div class="adm-row-flex">
-                <select id="adm-rp-skill" class="bank-search-input" style="width:100px">
-                  ${Object.keys(game.state.skills).map(sk=>`<option value="${sk}">${sk}</option>`).join('')}
-                </select>
-                <input type="number" id="adm-rp-level" class="bank-search-input" value="99" min="1" max="99" style="width:60px">
-                <button class="btn btn-xs" onclick="online.adminSetPlayerLevel('${uid}',document.getElementById('adm-rp-skill').value,parseInt(document.getElementById('adm-rp-level').value)||1)">Set Level</button>
-              </div>
-            </div>
-            <div class="adm-remote-card">
-              <span class="adm-rc-label">Give XP</span>
-              <div class="adm-row-flex">
-                <select id="adm-rp-skill-xp" class="bank-search-input" style="width:100px">
-                  ${Object.keys(game.state.skills).map(sk=>`<option value="${sk}">${sk}</option>`).join('')}
-                </select>
-                <input type="number" id="adm-rp-xp" class="bank-search-input" value="50000" style="width:80px">
-                <button class="btn btn-xs" onclick="online.adminGivePlayerXp('${uid}',document.getElementById('adm-rp-skill-xp').value,parseInt(document.getElementById('adm-rp-xp').value)||0)">Give XP</button>
-              </div>
-            </div>
-            <div class="adm-remote-card">
-              <div class="adm-row-flex" style="gap:4px">
-                <button class="btn btn-xs" onclick="if(confirm('Max ALL skills to 99?'))online.adminMaxPlayerSkills('${uid}')">Max All Skills</button>
-                <button class="btn btn-xs btn-danger" onclick="if(confirm('Reset ALL skills to 1?'))online.adminResetPlayerSkills('${uid}')">Reset All</button>
-              </div>
-            </div>
+          // ── SKILLS (from live save — show actual level + XP) ──
+          const skills = sv.skills || {};
+          html += `<h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Skills</h4>
+          <div class="adm-row-flex" style="margin-bottom:8px;gap:4px">
+            <button class="btn btn-xs" onclick="if(confirm('Max ALL skills to 99?'))online.adminMaxPlayerSkills('${uid}').then(()=>ui._admRefreshSave('${uid}'))">Max All → 99</button>
+            <button class="btn btn-xs btn-danger" onclick="if(confirm('Reset ALL skills to 1?'))online.adminResetPlayerSkills('${uid}').then(()=>ui._admRefreshSave('${uid}'))">Reset All → 1</button>
+            <button class="btn btn-xs" onclick="ui._admRefreshSave('${uid}')">🔄 Refresh</button>
           </div>
+          <div style="display:grid;grid-template-columns:90px 35px 75px 120px 90px;gap:2px;font-size:11px;margin-bottom:12px">
+            <div style="font-weight:700;color:var(--amber)">Skill</div>
+            <div style="font-weight:700;color:var(--amber)">Lv</div>
+            <div style="font-weight:700;color:var(--amber)">XP</div>
+            <div style="font-weight:700;color:var(--amber)">Set Level</div>
+            <div style="font-weight:700;color:var(--amber)">Give XP</div>`;
+          for (const [id, sk] of Object.entries(skills)) {
+            html += `<div style="color:var(--text)">${id}</div>
+              <div style="color:var(--amber);font-weight:700">${sk.level}</div>
+              <div style="color:var(--text-dim)">${(sk.xp||0).toLocaleString()}</div>
+              <div><div class="adm-row-flex" style="gap:2px"><input type="number" id="adm-sl-${id}" class="bank-search-input" value="${sk.level}" min="1" max="99" style="width:45px;padding:1px 3px;font-size:10px"><button class="btn btn-xs" style="padding:0 4px;font-size:9px" onclick="online.adminSetPlayerLevel('${uid}','${id}',parseInt(document.getElementById('adm-sl-${id}').value)||1).then(()=>ui._admRefreshSave('${uid}'))">Set</button></div></div>
+              <div><div class="adm-row-flex" style="gap:2px"><input type="number" id="adm-xp-${id}" class="bank-search-input" value="50000" style="width:55px;padding:1px 3px;font-size:10px"><button class="btn btn-xs" style="padding:0 4px;font-size:9px" onclick="online.adminGivePlayerXp('${uid}','${id}',parseInt(document.getElementById('adm-xp-${id}').value)||0).then(()=>ui._admRefreshSave('${uid}'))">+XP</button></div></div>`;
+          }
+          html += `</div>`;
 
-          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Items</h4>
+          // ── ITEMS ─────────────────────────────────────────
+          html += `<h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Items</h4>
           <div class="adm-remote-grid">
             <div class="adm-remote-card">
               <span class="adm-rc-label">Give Item</span>
               <div class="adm-row-flex">
-                <input type="text" id="adm-rp-item" class="bank-search-input" placeholder="item_id or search..." style="width:140px" list="adm-item-datalist">
+                <input type="text" id="adm-rp-item" class="bank-search-input" placeholder="item_id..." style="width:140px" list="adm-item-datalist">
                 <input type="number" id="adm-rp-item-qty" class="bank-search-input" value="1" style="width:60px">
-                <button class="btn btn-xs" onclick="online.adminGivePlayerItem('${uid}',document.getElementById('adm-rp-item').value,parseInt(document.getElementById('adm-rp-item-qty').value)||1)">Give</button>
+                <button class="btn btn-xs" onclick="online.adminGivePlayerItem('${uid}',document.getElementById('adm-rp-item').value,parseInt(document.getElementById('adm-rp-item-qty').value)||1).then(()=>ui._admRefreshSave('${uid}'))">Give</button>
               </div>
               <datalist id="adm-item-datalist">${Object.entries(GAME_DATA.items).slice(0,500).map(([id,it])=>`<option value="${id}">${it.name}</option>`).join('')}</datalist>
             </div>
@@ -270,63 +273,68 @@ function applyAdminPanel() {
               <div class="adm-row-flex">
                 <input type="text" id="adm-rp-item-rm" class="bank-search-input" placeholder="item_id" style="width:140px" list="adm-item-datalist">
                 <input type="number" id="adm-rp-item-rm-qty" class="bank-search-input" value="1" style="width:60px">
-                <button class="btn btn-xs btn-danger" onclick="online.adminRemovePlayerItem('${uid}',document.getElementById('adm-rp-item-rm').value,parseInt(document.getElementById('adm-rp-item-rm-qty').value)||1)">Remove</button>
+                <button class="btn btn-xs btn-danger" onclick="online.adminRemovePlayerItem('${uid}',document.getElementById('adm-rp-item-rm').value,parseInt(document.getElementById('adm-rp-item-rm-qty').value)||1).then(()=>ui._admRefreshSave('${uid}'))">Remove</button>
               </div>
             </div>
             <div class="adm-remote-card">
-              <button class="btn btn-xs btn-danger" onclick="if(confirm('Clear entire bank?'))online.adminClearPlayerBank('${uid}')">Clear Entire Bank</button>
+              <button class="btn btn-xs btn-danger" onclick="if(confirm('Clear entire bank?'))online.adminClearPlayerBank('${uid}').then(()=>ui._admRefreshSave('${uid}'))">Clear Entire Bank</button>
             </div>
-          </div>
+          </div>`;
 
-          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Equipment</h4>
-          <div class="adm-remote-grid">
-            <div class="adm-remote-card">
-              <span class="adm-rc-label">Set Equipment Slot</span>
-              <div class="adm-row-flex">
-                <select id="adm-rp-eq-slot" class="bank-search-input" style="width:80px">
-                  ${['weapon','head','body','legs','boots','gloves','shield','cape','ring','amulet','ammo'].map(s=>`<option value="${s}">${s}</option>`).join('')}
-                </select>
-                <input type="text" id="adm-rp-eq-item" class="bank-search-input" placeholder="item_id (blank=unequip)" style="width:120px" list="adm-item-datalist">
-                <button class="btn btn-xs" onclick="online.adminSetPlayerEquipment('${uid}',document.getElementById('adm-rp-eq-slot').value,document.getElementById('adm-rp-eq-item').value||null)">Set</button>
-              </div>
+          // ── EQUIPMENT ─────────────────────────────────────
+          html += `<h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Equipment</h4>
+          <div class="adm-remote-grid"><div class="adm-remote-card">
+            <div class="adm-row-flex">
+              <select id="adm-rp-eq-slot" class="bank-search-input" style="width:80px">
+                ${['weapon','head','body','legs','boots','gloves','shield','cape','ring','amulet','ammo'].map(s=>`<option value="${s}">${s}</option>`).join('')}
+              </select>
+              <input type="text" id="adm-rp-eq-item" class="bank-search-input" placeholder="item_id (blank=unequip)" style="width:120px" list="adm-item-datalist">
+              <button class="btn btn-xs" onclick="online.adminSetPlayerEquipment('${uid}',document.getElementById('adm-rp-eq-slot').value,document.getElementById('adm-rp-eq-item').value||null).then(()=>ui._admRefreshSave('${uid}'))">Set</button>
+            </div>`;
+          // Show current equipment
+          const eq = sv.equipment || {};
+          const slots = ['weapon','head','body','legs','boots','gloves','shield','cape','ring','amulet','ammo'];
+          for (const slot of slots) {
+            const itemId = eq[slot];
+            if (itemId) {
+              const name = GAME_DATA.items[itemId]?.name || itemId;
+              html += `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--amber)">${slot}:</span><span>${name}</span><button class="btn btn-xs" style="padding:0 4px;font-size:9px" onclick="online.adminSetPlayerEquipment('${uid}','${slot}',null).then(()=>ui._admRefreshSave('${uid}'))">×</button></div>`;
+            }
+          }
+          html += `</div></div>`;
+
+          // ── STAT EDITOR ───────────────────────────────────
+          html += `<h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Modify Any Stat</h4>
+          <div class="adm-remote-grid"><div class="adm-remote-card">
+            <div class="adm-row-flex">
+              <input type="text" id="adm-rp-stat-path" class="bank-search-input" placeholder="e.g. stats.monstersKilled" style="width:180px">
+              <input type="text" id="adm-rp-stat-val" class="bank-search-input" placeholder="value" style="width:80px">
+              <button class="btn btn-xs" onclick="let v=document.getElementById('adm-rp-stat-val').value;try{v=JSON.parse(v)}catch(e){};online.adminSetPlayerStat('${uid}',document.getElementById('adm-rp-stat-path').value,v).then(()=>ui._admRefreshSave('${uid}'))">Set</button>
             </div>
-          </div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Paths: gold, alignment, prayerPoints, stats.monstersKilled, stats.dungeonsCompleted, stats.barrowsCompletions, stats.infernoCompletions</div>
+          </div></div>`;
 
-          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Modify Any Stat</h4>
-          <div class="adm-remote-grid">
-            <div class="adm-remote-card">
-              <span class="adm-rc-label">Set Stat by Path</span>
-              <div class="adm-row-flex">
-                <input type="text" id="adm-rp-stat-path" class="bank-search-input" placeholder="e.g. stats.monstersKilled" style="width:180px">
-                <input type="text" id="adm-rp-stat-val" class="bank-search-input" placeholder="value" style="width:80px">
-                <button class="btn btn-xs" onclick="let v=document.getElementById('adm-rp-stat-val').value;try{v=JSON.parse(v)}catch(e){};online.adminSetPlayerStat('${uid}',document.getElementById('adm-rp-stat-path').value,v)">Set</button>
-              </div>
-              <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Paths: gold, stats.monstersKilled, stats.dungeonsCompleted, alignment, prayerPoints, maxPrayerPoints, stats.barrowsCompletions, stats.infernoCompletions</div>
+          // ── VIEWERS ───────────────────────────────────────
+          html += `<h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">View Data</h4>
+          <div class="adm-remote-grid"><div class="adm-remote-card" style="grid-column:1/-1">
+            <div class="adm-row-flex" style="margin-bottom:6px">
+              <button class="btn btn-xs" onclick="ui._admLoadPlayerBank('${uid}')">View Bank</button>
+              <button class="btn btn-xs" onclick="ui._admLoadPlayerStats('${uid}')">View Stats</button>
+              <button class="btn btn-xs" onclick="ui._admLoadRawSave('${uid}')">Load Raw JSON</button>
             </div>
-          </div>
+            <div id="adm-rp-save-display" style="font-size:11px;max-height:400px;overflow:auto;background:rgba(0,0,0,0.3);border-radius:4px;padding:8px;color:var(--text-dim)"></div>
+          </div></div>`;
 
-          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">View / Edit Save</h4>
-          <div class="adm-remote-grid">
-            <div class="adm-remote-card" style="grid-column:1/-1">
-              <div class="adm-row-flex" style="margin-bottom:6px">
-                <button class="btn btn-xs" onclick="ui._admLoadFullSave('${uid}')">Load Full Save</button>
-                <button class="btn btn-xs" onclick="ui._admLoadPlayerBank('${uid}')">View Bank</button>
-                <button class="btn btn-xs" onclick="ui._admLoadPlayerSkills('${uid}')">View Skills</button>
-                <button class="btn btn-xs" onclick="ui._admLoadPlayerEquip('${uid}')">View Equipment</button>
-                <button class="btn btn-xs" onclick="ui._admLoadPlayerStats('${uid}')">View Stats</button>
-              </div>
-              <div id="adm-rp-save-display" style="font-size:11px;max-height:400px;overflow:auto;background:rgba(0,0,0,0.3);border-radius:4px;padding:8px;color:var(--text-dim)"></div>
-            </div>
-          </div>
-
-          <h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Raw JSON Editor</h4>
+          // ── RAW JSON ──────────────────────────────────────
+          html += `<h4 style="color:var(--accent);font-size:13px;margin:12px 0 6px">Raw JSON Editor</h4>
           <div class="adm-remote-card" style="margin-bottom:10px">
-            <button class="btn btn-xs" onclick="ui._admLoadRawSave('${uid}')">Load Raw JSON</button>
-            <textarea id="adm-rp-raw-json" class="bank-search-input" style="width:100%;height:200px;font-family:monospace;font-size:10px;margin-top:6px;resize:vertical" placeholder="Load save first, then edit JSON and click Save..."></textarea>
-            <button class="btn btn-sm btn-danger" style="margin-top:4px" onclick="if(confirm('Overwrite entire save with the JSON above? This is dangerous.')){ui._admSaveRawJson('${uid}')}">Save Raw JSON</button>
-          </div>
+            <button class="btn btn-xs" onclick="ui._admLoadRawSave('${uid}')" style="margin-bottom:4px">Load Raw JSON</button>
+            <textarea id="adm-rp-raw-json" class="bank-search-input" style="width:100%;height:200px;font-family:monospace;font-size:10px;resize:vertical" placeholder="Click Load Raw JSON first..."></textarea>
+            <button class="btn btn-sm btn-danger" style="margin-top:4px" onclick="if(confirm('Overwrite entire save?')){ui._admSaveRawJson('${uid}')}">Save Raw JSON</button>
+          </div>`;
+        }
 
-          <div class="adm-btn-grid" style="margin-top:10px">
+        html += `<div class="adm-btn-grid" style="margin-top:10px">
             <button class="btn btn-sm btn-danger" onclick="ui._admDeletePlayer('${uid}','${(p.displayName||'?').replace(/'/g,"\\'")}')">🗑 Delete Player</button>
             <button class="btn btn-sm" onclick="ui._admBanPlayer('${uid}','${(p.displayName||'?').replace(/'/g,"\\'")}')">🚫 Ban Player</button>
           </div>
@@ -348,7 +356,7 @@ function applyAdminPanel() {
             <span>${p.combatLevel||'?'}</span>
             <span>${p.kills||0}</span>
             <span class="adm-pt-btns">
-              <button class="btn btn-xs" onclick="ui._admPlayerEdit=${JSON.stringify(p).replace(/"/g,'&quot;').replace(/'/g,"\\'")};;ui.renderPage('admin')" onclick2="ui._admShowPlayer('${p.uid}')">View</button>
+              <button class="btn btn-xs" onclick="ui._admOpenPlayer(${JSON.stringify(p).replace(/"/g,'&quot;').replace(/'/g,"\\'")})">View</button>
               ${!isMe?`<button class="btn btn-xs btn-danger" data-adm-delete-uid="${p.uid}" data-adm-delete-name="${safe}">Delete</button>`:''}
             </span>
           </div>`;
@@ -1101,7 +1109,33 @@ function applyAdminPanel() {
     if (!save) { el.textContent = 'No save found.'; return; }
     const sk = save.skills || {};
     const skillStr = Object.entries(sk).map(([id,s])=>`${id}:${s.level}`).join(', ');
-    el.innerHTML = `<strong>Gold:</strong> ${save.gold||0}<br><strong>Skills:</strong> ${skillStr}<br><strong>Bank items:</strong> ${Object.keys(save.bank||{}).filter(k=>(save.bank[k]||0)>0).length}<br><strong>Quests:</strong> ${save.quests?.completed?.length||0}<br><strong>Guild:</strong> ${save.guild?.name||'none'}<br><details><summary>Full JSON</summary><pre style="max-height:300px;overflow:auto;font-size:9px">${JSON.stringify(save,null,1)}</pre></details>`;
+    el.innerHTML = `<strong>Gold:</strong> ${save.gold||0}<br><strong>Skills:</strong> ${skillStr}`;
+  };
+
+  // Open player editor — auto-loads their cloud save
+  UI.prototype._admOpenPlayer = async function(profileData) {
+    this._admPlayerEdit = profileData;
+    this._admPlayerSave = null;
+    this._admSaveLoading = true;
+    this.renderPage('admin');
+    try {
+      const save = await online.adminGetPlayerSave(profileData.uid);
+      this._admPlayerSave = save;
+      this._admSaveLoading = false;
+      this.renderPage('admin');
+    } catch(e) {
+      this._admSaveLoading = false;
+      this.renderPage('admin');
+    }
+  };
+
+  // Refresh save after modification — reloads from Firebase and re-renders
+  UI.prototype._admRefreshSave = async function(uid) {
+    try {
+      const save = await online.adminGetPlayerSave(uid);
+      this._admPlayerSave = save;
+      this.renderPage('admin');
+    } catch(e) { console.error('[Admin] Refresh failed:', e); }
   };
 
   // ── ADMIN SAVE VIEWERS ──────────────────────────────────────
