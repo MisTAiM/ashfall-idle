@@ -431,11 +431,20 @@ GameEngine.prototype.initPartySystem = function() {
       readyCheck:false, allReady:false,
       raidActive:false, raidStarted:false,
       chat:[],
-      // Live raid state for party members
-      memberStatus:{}, // { memberId: {hp, maxHp, alive, dps, totalDmg} }
-      totalPartyDmg:0,
+      memberStatus:{}, totalPartyDmg:0,
     };
   }
+  // Patch old saves missing new fields
+  const p = this.state.party;
+  if (!p.npcMembers) p.npcMembers = [];
+  if (p.raidTarget === undefined) p.raidTarget = null;
+  if (!p.memberStatus) p.memberStatus = {};
+  if (p.totalPartyDmg === undefined) p.totalPartyDmg = 0;
+  if (p.readyCheck === undefined) p.readyCheck = false;
+  if (p.allReady === undefined) p.allReady = false;
+  if (p.raidStarted === undefined) p.raidStarted = false;
+  if (!p.chat) p.chat = [];
+  if (!p.members) p.members = [];
 };
 
 GameEngine.prototype.createParty = function(partyName) {
@@ -703,6 +712,7 @@ GameEngine.prototype.findRaidGroup = async function(raidType) {
 
 // ── PARTY PAGE UI ───────────────────────────────────────────────
 UI.prototype.renderPartyPage = function(el) {
+  try {
   const s = this.engine.state;
   this.engine.initPartySystem();
   const p = s.party;
@@ -798,6 +808,7 @@ UI.prototype.renderPartyPage = function(el) {
     html += `</div>`;
   }
   el.innerHTML = html;
+  } catch(e) { el.innerHTML = `<div class="bank-empty" style="color:#cc6666">Party page error: ${e.message}<br><small>${e.stack?.split('\n')[1]||''}</small></div>`; console.error('[Party UI]', e); }
 };
 
 UI.prototype.findGroups = async function(raidType) {

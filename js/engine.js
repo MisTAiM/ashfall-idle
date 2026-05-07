@@ -190,7 +190,15 @@ class GameEngine {
     if (!s.stats.chambersCompletions) s.stats.chambersCompletions = 0;
     if (!s.stats.chambersBestTier) s.stats.chambersBestTier = '';
     // Party system
-    if (!s.party) s.party = { active:false, id:null, name:null, leader:null, members:[], raidActive:false, raidType:null, chat:[] };
+    if (!s.party) s.party = { active:false, id:null, name:null, leader:null, members:[], npcMembers:[], raidTarget:null, readyCheck:false, allReady:false, raidActive:false, raidStarted:false, chat:[], memberStatus:{}, totalPartyDmg:0 };
+    // Patch old saves missing new party fields
+    if (!s.party.npcMembers) s.party.npcMembers = [];
+    if (s.party.raidTarget === undefined) s.party.raidTarget = null;
+    if (!s.party.memberStatus) s.party.memberStatus = {};
+    if (s.party.totalPartyDmg === undefined) s.party.totalPartyDmg = 0;
+    if (s.party.readyCheck === undefined) s.party.readyCheck = false;
+    if (s.party.allReady === undefined) s.party.allReady = false;
+    if (s.party.raidStarted === undefined) s.party.raidStarted = false;
     // Barrows
     if (!s.barrows) s.barrows = { active:false };
     if (s.barrows.active) s.barrows = { active:false };
