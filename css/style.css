@@ -6749,3 +6749,12 @@ kbd {
 /* Fight Info Bar */
 .ce-fight-info { display:flex; justify-content:center; gap:16px; font-size:12px; color:var(--text-dim); padding:6px 0; }
 .ce-boss-hint { color:#aaa; text-align:center; margin:4px 0 8px; font-size:12px; font-style:italic; }
+
+/* Collection Log */
+.ce-clog-grid { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; }
+.ce-clog-item { font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:rgba(255,255,255,0.02); display:flex; align-items:center; gap:4px; }
+.ce-clog-has { border-color:rgba(74,170,80,0.4); background:rgba(74,170,80,0.08); }
+.ce-clog-miss { opacity:0.4; }
+.ce-clog-name { color:var(--text); }
+.ce-clog-has .ce-clog-name { color:#8ad88a; }
+.ce-clog-check { color:#4aaa50; font-weight:700; font-size:12px; }

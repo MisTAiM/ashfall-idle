@@ -120,6 +120,7 @@ const NAV = [
     {id:'pets',label:'Pets',icon:'paw'},
     {id:'codex',label:'Codex',icon:'book'},
     {id:'achievements',label:'Achievements',icon:'trophy'},
+    {id:'collection_log',label:'Collection Log',icon:'scroll'},
     {id:'wiki',label:'Wiki',icon:'book'},
   ]},
 ];
@@ -326,6 +327,7 @@ class UI {
     else if (pageId === 'bazaar') this.renderBazaarPage(main);
     else if (pageId === 'gear_sets') this.renderGearSetsPage(main);
     else if (pageId === 'achievements') this.renderAchievementsPage(main);
+    else if (pageId === 'collection_log') this.renderCollectionLogPage(main);
     else if (pageId === 'codex') this.renderCodexPage(main);
     else if (pageId === 'wiki') this.renderWikiPage(main);
     else if (pageId === 'statistics') this.renderStatsPage(main);
