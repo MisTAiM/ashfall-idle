@@ -281,12 +281,17 @@ class GameEngine {
     // Auto-bank overflow check
     if (this.state._autoBankConfig?.enabled) this._autoBankTick();
 
-    this.tickFarming(now);
-    this.initDailyQuests();
+    // Throttle expensive checks (every 5s instead of every 100ms tick)
+    if (!this._lastSlowCheck) this._lastSlowCheck = 0;
+    if (now - this._lastSlowCheck > 5000) {
+      this._lastSlowCheck = now;
+      this.tickFarming(now);
+      this.initDailyQuests();
+      this.checkAchievements();
+    }
     this.tickBuffs(safeDt);
     this.tickAbilityCooldowns(safeDt);
     this.tickFamiliar(safeDt);
-    this.checkAchievements();
     // Random events (check every ~30 seconds of play)
     if (!this._lastEventCheck) this._lastEventCheck = now;
     if (now - this._lastEventCheck > 30000 && (this.state.activeSkill || this.state.combat.active)) {
@@ -750,6 +755,9 @@ class GameEngine {
     c._multiMobMode = false;
     if (this.state.multiMob) this.state.multiMob = null;
     c._pvpArena = false; c._pvpOpponent = null;
+    // Clean up temporary PvP monsters from GAME_DATA
+    if (GAME_DATA.monsters.pvp_opponent) delete GAME_DATA.monsters.pvp_opponent;
+    if (GAME_DATA.monsters.pvp_arena_opponent) delete GAME_DATA.monsters.pvp_arena_opponent;
     c.statusEffects = { player:{}, monster:{} };
     c.playerHp = this.getMaxHp();
     // Clear session loot so it doesn't persist into next session
@@ -803,7 +811,6 @@ class GameEngine {
         c._enrageBonus = enrageBonus;
       }
     }
-    if (c.autoEat && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
     this._tickStatusEffects(c.statusEffects.monster, dt, 'monster');
     this._tickStatusEffects(c.statusEffects.player, dt, 'player');
     const playerSpeed = this.getPlayerAttackSpeed();
@@ -1037,9 +1044,9 @@ class GameEngine {
         delete this.state.combat.statusEffects.player.radiant;
       }
 
-      // Freeze bonus (shatter)
+      // Freeze bonus (shatter) — only if actively frozen
       const fz = this.state.combat.statusEffects.monster.freeze;
-      if (fz) { dmg = Math.floor(dmg * 2.5); delete this.state.combat.statusEffects.monster.freeze; }
+      if (fz && fz.stacks > 0) { dmg = Math.floor(dmg * 2.5); delete this.state.combat.statusEffects.monster.freeze; }
 
       this.state.combat.monsterHp -= dmg;
 
@@ -1586,7 +1593,7 @@ class GameEngine {
     }
 
     if (isWB) {
-      const boss = GAME_DATA.worldBosses.find(b => b.id === mId);
+      const boss = (GAME_DATA.worldBosses||[]).find(b => b.id === mId);
       if (boss) {
         this.state.worldBossRespawns[mId] = Date.now();
         this.state.stats.worldBossKills++;
@@ -2740,9 +2747,11 @@ class GameEngine {
     if (!slot || slot.qty <= 0) return;
     const item = GAME_DATA.items[slot.id]; if (!item) return;
     const max = this.getMaxHp();
-    if (item.type === 'food') {
+    if (item.heals && item.type === 'food') {
       if (this.state.combat.playerHp >= max) return;
       this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + (item.heals || 0));
+    } else if (item.heals && item.type === 'potion') {
+      this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + item.heals);
     }
     if (item.buff) {
       const existing = this.state.combat.activeBuffs.find(b => b.stat === item.buff.stat);
@@ -2751,9 +2760,6 @@ class GameEngine {
     }
     if (item.prayerRestore) {
       this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
-    }
-    if (item.heals && item.type === 'potion') {
-      this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + item.heals);
     }
     slot.qty--;
     this.state.stats.foodEaten = (this.state.stats.foodEaten || 0) + 1;
@@ -2774,8 +2780,10 @@ class GameEngine {
     const item = GAME_DATA.items[slot.id]; if (!item) return;
     const max = this.getMaxHp();
     if (this.state.combat.playerHp >= max) return;
-    if (item.type === 'food') {
+    if (item.heals && item.type === 'food') {
       this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + (item.heals || 0));
+    } else if (item.heals && item.type === 'potion') {
+      this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + item.heals);
     }
     if (item.buff) {
       const existing = this.state.combat.activeBuffs.find(b => b.stat === item.buff.stat);
@@ -2784,9 +2792,6 @@ class GameEngine {
     }
     if (item.prayerRestore) {
       this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
-    }
-    if (item.heals && item.type === 'potion') {
-      this.state.combat.playerHp = Math.min(max, this.state.combat.playerHp + item.heals);
     }
     slot.qty--;
     this.state.stats.foodEaten = (this.state.stats.foodEaten || 0) + 1;
@@ -2928,6 +2933,7 @@ class GameEngine {
   sellItem(id, qty) {
     const item = GAME_DATA.items[id];
     if (!item || !this.state.bank[id]) return;
+    if (!item.sellPrice) { this.emit('notification', { type:'warn', text:'This item cannot be sold.' }); return; }
     qty = Math.min(qty, this.state.bank[id]);
     let gold = item.sellPrice * qty;
     // Trading skill bonus + alignment
@@ -3085,8 +3091,8 @@ class GameEngine {
     const type = plot.type||'allotment';
     const compostTier = plot.compostTier, compostBonus = plot.compostBonus, diseaseReduction = plot.diseaseReduction;
     Object.assign(plot, this._makePlot(type));
-    // Preserve compost if it wasn't used yet (dead crop case)
-    if (plot.dead || true) { plot.compostTier = compostTier; plot.compostBonus = compostBonus; plot.diseaseReduction = diseaseReduction; }
+    // Preserve compost only if the crop died (don't penalize disease)
+    if (plot.dead) { plot.compostTier = compostTier; plot.compostBonus = compostBonus; plot.diseaseReduction = diseaseReduction; }
     this.emit('farmingChanged');
     this.emit('notification',{type:'info',text:'Plot cleared.'});
   }
@@ -3333,7 +3339,7 @@ class GameEngine {
   // ── SAVE / LOAD ────────────────────────────────────────
   save() {
     this.state.lastSave = Date.now();
-    try { localStorage.setItem('ashfall_save', JSON.stringify(this.state)); } catch(e) {}
+    try { localStorage.setItem('ashfall_save', JSON.stringify(this.state)); } catch(e) { console.error('[Ashfall] Save failed:', e.message); this.emit('notification', { type:'danger', text:'Save failed — storage may be full.' }); }
   }
 
   loadSave() {
@@ -3374,7 +3380,10 @@ class GameEngine {
       if (skill) {
         const action = this._findAction(sId, aId);
         if (action) {
-          const num = Math.floor(offlineSec / action.time);
+          const masteryRed = 1 + (this.getMasteryLevel(sId, action.masteryId||action.id) * 0.005);
+          const toolRed = 1 + (this.getToolSpeedBonus(sId) / 100);
+          const effectiveTime = action.time / masteryRed / toolRed;
+          const num = Math.floor(offlineSec / effectiveTime);
           let done = 0;
           for (let i = 0; i < num; i++) {
             if (skill.type === 'artisan' && action.input && !this.hasItems(action.input)) break;
@@ -3910,7 +3919,7 @@ class GameEngine {
         if (action.statusChance) {
           for (const [effect, chance] of Object.entries(action.statusChance)) {
             if (Math.random() < chance) {
-              this._applyStatusEffect('monster', effect, { stacks: action.stacksApplied||1 });
+              this.applyStatus('monster', effect, action.stacksApplied||1, 8);
             }
           }
         }
@@ -3929,7 +3938,7 @@ class GameEngine {
         if (action.statusChance) {
           for (const [effect, chance] of Object.entries(action.statusChance)) {
             if (Math.random() < chance) {
-              this._applyStatusEffect('monster', effect, { stacks: action.stacksApplied||1 });
+              this.applyStatus('monster', effect, action.stacksApplied||1, 8);
               this.emit('petAction', { pet, action:action.desc||'applies '+effect, type:'status', effect });
             }
           }
@@ -4017,11 +4026,9 @@ class GameEngine {
     if (!this.state.slayerTask) return;
     const task = this.state.slayerTask;
     const m = GAME_DATA.monsters[monsterId];
-    // Direct ID match OR family match (e.g. task:"goblin" matches "goblin_king")
+    // Direct ID match OR explicit family match only
     const matches = task.monster === monsterId
-      || (m?.family && m.family === GAME_DATA.monsters[task.monster]?.family)
-      || (task.monster && monsterId.startsWith(task.monster))
-      || (task.monster && task.monster.startsWith(monsterId));
+      || (m?.family && m.family === GAME_DATA.monsters[task.monster]?.family);
     if (!matches) return;
     task.killed++;
     this.state.stats.slayerKillsOnTask = (this.state.stats.slayerKillsOnTask || 0) + 1;

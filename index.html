@@ -445,5 +445,15 @@
   <script src="js/codex.js"></script>
   <script src="js/upgrades.js"></script>
   <script src="js/music-player.js"></script>
+  <script>
+    // Global error boundary — prevent silent crashes
+    window.addEventListener('error', function(e) {
+      console.error('[Ashfall] Uncaught error:', e.message, e.filename, e.lineno);
+      if (typeof ui !== 'undefined') ui.toast({ type:'danger', text:'Error: ' + (e.message||'').slice(0,80) });
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[Ashfall] Unhandled promise:', e.reason);
+    });
+  </script>
 </body>
 </html>
