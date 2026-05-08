@@ -223,7 +223,7 @@ class UI {
     this.engine.on('lootDrop', (d) => {
       this.showLootBag(d);
       if (!this._combatLog) this._combatLog = [];
-      this._combatLog.push({ type:'kill', text:`${d.monsterName||'Monster'} defeated!` });
+      this._combatLog.push({ type:'kill', text:`${d.monster||d.monsterName||'Monster'} defeated!` });
     });
     this.engine.on('petAction', (d) => this.showPetAction(d));
     this.engine.on('petChanged', () => { if (this.currentPage === 'combat') this.renderPage('combat'); if (this.currentPage === 'pets') this.renderPage('pets'); });
@@ -948,14 +948,15 @@ class UI {
     const s = this.engine.state, c = s.combat;
     if (!c) { el.innerHTML = '<div class="bank-empty">Combat state error. Try refreshing.</div>'; return; }
     const xpMode = c.xpMode || 'controlled';
+    const combatStyle = c.combatStyle || 'melee';
     // Determine which skills get XP based on style + mode
     let xpSkills = {};
-    if (c.combatStyle === 'melee') {
+    if (combatStyle === 'melee') {
       if (xpMode==='accurate')   xpSkills = {attack:90,defence:10};
       else if (xpMode==='aggressive') xpSkills = {strength:90,defence:10};
       else if (xpMode==='defensive')  xpSkills = {defence:90,attack:10};
       else xpSkills = {attack:33,strength:33,defence:34};
-    } else if (c.combatStyle === 'ranged') {
+    } else if (combatStyle === 'ranged') {
       if (xpMode==='accurate')   xpSkills = {ranged:90,defence:10};
       else if (xpMode==='rapid') xpSkills = {ranged:100};
       else xpSkills = {ranged:50,defence:50};
@@ -988,16 +989,16 @@ class UI {
     // Style
     html += '<div class="cc-group"><div class="cc-label">Combat Style</div><div class="cc-btns">';
     for (const [id,label,ic] of [['melee','Melee','sword'],['ranged','Ranged','target'],['magic','Magic','wand']]) {
-      html += `<button class="cc-btn ${c.combatStyle===id?'cc-btn-active':''}" onclick="ui.setStyle('${id}')">${icon(ic,14)} ${label}</button>`;
+      html += `<button class="cc-btn ${combatStyle===id?'cc-btn-active':''}" onclick="ui.setStyle('${id}')">${icon(ic,14)} ${label}</button>`;
     }
     html += '</div></div>';
     // XP Mode
     html += '<div class="cc-group"><div class="cc-label">XP Mode</div><div class="cc-btns">';
-    if (c.combatStyle === 'melee') {
+    if (combatStyle === 'melee') {
       for (const [id,label,desc] of [['accurate','Attack','90% Atk XP'],['aggressive','Strength','90% Str XP'],['defensive','Defence','90% Def XP'],['controlled','Shared','Equal split']]) {
         html += `<button class="cc-btn ${xpMode===id?'cc-btn-active':''}" onclick="ui.setXpMode('${id}')" title="${desc}">${label}</button>`;
       }
-    } else if (c.combatStyle === 'ranged') {
+    } else if (combatStyle === 'ranged') {
       for (const [id,label,desc] of [['accurate','Accurate','90% Rng + Def'],['rapid','Rapid','100% Ranged'],['longrange','Longrange','50/50 Rng+Def']]) {
         html += `<button class="cc-btn ${xpMode===id?'cc-btn-active':''}" onclick="ui.setXpMode('${id}')" title="${desc}">${label}</button>`;
       }
@@ -1560,7 +1561,7 @@ class UI {
           <span class="ammo-name">${ammoItem.name}</span>
           <span class="ammo-qty ${ammoQty < 50 ? 'ammo-low' : ''}">${ammoQty.toLocaleString()}</span>
         </div>`;
-      } else if (c.combatStyle === 'ranged') {
+      } else if (combatStyle === 'ranged') {
         html += `<div class="ammo-counter-bar ammo-missing">⚠ No ammo equipped — equip arrows in Equipment tab</div>`;
       }
       // Active familiar in combat
@@ -2076,20 +2077,27 @@ class UI {
         statStr += (statStr?' | ':'') + `Req: ${reqs}`;
       }
 
-      html += `<div class="bank-item" data-rarity="${item.rarity||'common'}">
-        <div class="bi-tooltip">
-          <div class="bi-tooltip-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name} ${this.getRarityTag(id)}</div>
-          ${item.stats ? Object.entries(item.stats).filter(([,v])=>v).map(([k,v])=>`<div class="bi-tooltip-stat"><span>${k.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}</span><span>+${v}</span></div>`).join('') : ''}
+      let _tooltipHtml = '';
+      try {
+        const _stats = item.stats && typeof item.stats === 'object' && !Array.isArray(item.stats) ? item.stats : {};
+        const _statRows = Object.entries(_stats).filter(([,v])=>v&&typeof v==='number').map(([k,v])=>`<div class="bi-tooltip-stat"><span>${k.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}</span><span>+${v}</span></div>`).join('');
+        const _lreq = item.levelReq && typeof item.levelReq === 'object' ? Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ') : '';
+        _tooltipHtml = `<div class="bi-tooltip">
+          <div class="bi-tooltip-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name}</div>
+          ${_statRows}
           ${item.heals ? `<div class="bi-tooltip-stat"><span>Heals</span><span>+${item.heals} HP</span></div>` : ''}
           ${item.rangedBonus && item.type==='ammo' ? `<div class="bi-tooltip-stat"><span>Ranged Bonus</span><span>+${item.rangedBonus}</span></div>` : ''}
           ${item.prayerRestore ? `<div class="bi-tooltip-stat"><span>Prayer Restore</span><span>+${item.prayerRestore}</span></div>` : ''}
           ${item.attackSpeed ? `<div class="bi-tooltip-stat"><span>Attack Speed</span><span>${item.attackSpeed}s</span></div>` : ''}
           ${item.agilBonus ? `<div class="bi-tooltip-stat"><span>Agility Bonus</span><span>-${item.agilBonus} weight</span></div>` : ''}
-          ${item.levelReq ? `<div class="bi-tooltip-req">Req: ${Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ')}</div>` : ''}
+          ${_lreq ? `<div class="bi-tooltip-req">Req: ${_lreq}</div>` : ''}
           ${item.providesAllRunes ? `<div class="bi-tooltip-stat"><span>Provides</span><span>All runes ∞</span></div>` : ''}
           <div class="bi-tooltip-desc">${item.desc||''}</div>
-          ${item.sellPrice ? `<div class="bi-tooltip-stat" style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px"><span>Sell price</span><span>${item.sellPrice}g ea</span></div>` : ''}
-        </div>
+          ${item.sellPrice ? `<div class="bi-tooltip-stat" style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px"><span>Sell</span><span>${item.sellPrice}g ea</span></div>` : ''}
+        </div>`;
+      } catch(_e) { _tooltipHtml = ''; }
+      html += `<div class="bank-item" data-rarity="${item.rarity||'common'}">
+        ${_tooltipHtml}
         <div class="bi-icon">${window.renderItemSprite ? window.renderItemSprite(id, 32) : ''}</div>
         <div class="bi-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name} ${this.getRarityTag(id)}</div>
         ${statStr ? `<div class="bi-stats">${statStr}</div>` : ''}
@@ -2149,7 +2157,7 @@ class UI {
     const s = this.engine.state;
     let html = this.header('Shop','shop','Buy supplies and equipment.',null);
     html += `<div class="bank-gold">${icon('coin',20)} <span id="shop-gold">${this.fmt(s.gold)}</span> Gold</div>`;
-    const cats = [...new Set(GAME_DATA.shop.map(i=>i.category))];
+    const cats = [...new Set(GAME_DATA.shop.map(i=>i.category).filter(Boolean))];
     for (const cat of cats) {
       html += `<h2 class="section-title">${cat[0].toUpperCase()+cat.slice(1)}</h2><div class="actions-grid">`;
       for (let i = 0; i < GAME_DATA.shop.length; i++) {
@@ -2193,9 +2201,9 @@ class UI {
         ${item ? `
           <div class="bi-tooltip">
             <div class="bi-tooltip-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name}</div>
-            ${item.stats ? Object.entries(item.stats).filter(([,v])=>v).map(([k,v])=>`<div class="bi-tooltip-stat"><span>${k.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}</span><span>+${v}</span></div>`).join('') : ''}
+            ${(item.stats&&typeof item.stats==='object'&&!Array.isArray(item.stats)) ? Object.entries(item.stats).filter(([,v])=>v&&typeof v==='number').map(([k,v])=>`<div class="bi-tooltip-stat"><span>${k.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}</span><span>+${v}</span></div>`).join('') : ''}
             ${item.attackSpeed ? `<div class="bi-tooltip-stat"><span>Speed</span><span>${item.attackSpeed}s</span></div>` : ''}
-            ${item.levelReq ? `<div class="bi-tooltip-req">Req: ${Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ')}</div>` : ''}
+            ${(item.levelReq&&typeof item.levelReq==='object') ? `<div class="bi-tooltip-req">Req: ${Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ')}</div>` : ''}
             <div class="bi-tooltip-desc">${item.desc||''}</div>
           </div>
           <div class="es-icon">${window.renderItemSprite ? window.renderItemSprite(id, 40) : ''}</div>
@@ -2336,6 +2344,9 @@ class UI {
     if (game.state.gold < totalCost) { this.toast({type:'warn',text:`Need ${this.fmt(totalCost)}g to post this order.`}); return; }
     // Deduct gold immediately (locked in escrow)
     game.state.gold -= totalCost;
+    // Immediately update gold display
+    const goldEl = document.getElementById('bank-gold-val') || document.getElementById('shop-gold');
+    if (goldEl) goldEl.textContent = ui.fmt(game.state.gold);
     if (typeof online !== 'undefined') {
       await online.db?.ref('buy_orders').push({
         buyer: online.user.uid,
@@ -2962,7 +2973,7 @@ class UI {
       ['Combat Level', this.engine.getCombatLevel()],
       ['Total XP', this.fmt(totalXp)],
       ['Gold', this.fmt(s.gold)],
-      ['Alignment', `${al.name} (${al.axis})`],
+      ['Alignment', al ? `${al.name} (${al.axis})` : s.alignment||'Unknown'],
       ['Play Time', this.fmtTime(Math.floor(s.stats.totalPlayTime))],
     ];
     for (const [l, v] of overview) html += `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value">${v}</div></div>`;

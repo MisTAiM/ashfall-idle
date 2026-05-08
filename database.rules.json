@@ -7,42 +7,43 @@
         ".validate": "newData.hasChildren(['uid', 'text', 'timestamp'])"
       }
     },
-    "chat_trade": {
-      ".read": true,
-      ".write": "auth != null"
-    },
-    "chat_lfg": {
-      ".read": true,
-      ".write": "auth != null"
-    },
-    "chat_pvp": {
-      ".read": true,
-      ".write": "auth != null"
-    },
+    "chat_trade": { ".read": true, ".write": "auth != null" },
+    "chat_lfg":   { ".read": true, ".write": "auth != null" },
+    "chat_pvp":   { ".read": true, ".write": "auth != null" },
     "guild_chat": {
-      "$guildId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      }
+      "$guildId": { ".read": "auth != null", ".write": "auth != null" }
     },
     "party_chat": {
-      "$partyId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      }
+      "$partyId": { ".read": "auth != null", ".write": "auth != null" }
     },
     "party_state": {
-      "$partyId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      }
+      "$partyId": { ".read": "auth != null", ".write": "auth != null" }
     },
     "presence": {
       ".read": "auth != null",
-      "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+      "$uid": { ".write": "auth != null && auth.uid === $uid" }
+    },
+
+    "buy_orders": {
+      ".read": "auth != null",
+      "$orderId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChild('buyer') || !newData.exists()"
       }
     },
+
+    "trades": {
+      ".read": "auth != null",
+      "$tradeId": { ".write": "auth != null" }
+    },
+
+    "clue_scrolls": {
+      "$userId": {
+        ".read": "auth != null && auth.uid === $userId",
+        ".write": "auth != null && auth.uid === $userId"
+      }
+    },
+
     "monster_images": {
       ".read": true,
       ".write": "auth != null && auth.uid === 'ndLiweJRdGbaqWIbPgIj0Izigez2'"

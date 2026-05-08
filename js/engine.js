@@ -19,6 +19,7 @@ class GameEngine {
   }
 
   init() {
+    this._liveFlags = {}; // Initialize before any XP calls
     this.state = this.loadSave() || this.newGame();
     this.migrateSave();
     // Reset stale combat (monster from previous session may not exist)
@@ -242,6 +243,11 @@ class GameEngine {
     if (!s.dailyQuests) s.dailyQuests = { active:[], progress:{}, lastRefresh:0, completed:[] };
     // Clue scroll state
     if (!s.clueScroll) s.clueScroll = { active:false };
+    // Mastery: ensure all current skills have a mastery slot
+    if (!s.mastery) s.mastery = {};
+    for (const sId of Object.keys(GAME_DATA.skills)) {
+      if (!s.mastery[sId]) s.mastery[sId] = {};
+    }
     s.version = 2;
     return s;
   }
@@ -730,7 +736,9 @@ class GameEngine {
     c._multiMobMode = false;
     c._petAttackCounter = 0;
     c._permDebuffs = {};
-    c._bossPhase = 0; c._enrageTimer = 0; c._enrageBonus = 0; // reset phase state
+    c._bossPhase = 0; c._enrageTimer = 0; c._enrageBonus = 0;
+    if (!c.cannon) c.cannon = { active:false, timer:0 };
+    c._sessionStartTime = Date.now(); // Fix 20: DPS resets per fight
     if (this.state.multiMob) this.state.multiMob = null;
   }
 
@@ -1603,7 +1611,7 @@ class GameEngine {
         if (!this.state.combat._sessionLoot['_gold']) this.state.combat._sessionLoot['_gold'] = {qty:0, rarity:'common'};
         this.state.combat._sessionLoot['_gold'].qty += _goldEarned;
       }
-      this.emit('lootDrop', { bag:_lootBag, monster:monster?.name || mId, sessionLoot:this.state.combat._sessionLoot, kills:this.state.combat._sessionKills });
+      this.emit('lootDrop', { bag:_lootBag, monster:monster?.name || mId, monsterName:monster?.name||mId, sessionLoot:this.state.combat._sessionLoot, kills:this.state.combat._sessionKills });
     }
 
     if (this.state.combat.dungeon) {
@@ -2862,7 +2870,12 @@ class GameEngine {
       }
       this.state.equipment.ammo = itemId;
       this.emit('equipmentChanged');
-      this.emit('notification', { type:'info', text:`${item.name} equipped (${this.state.bank[itemId].toLocaleString()} in quiver).` });
+      const ammoQty = this.state.bank[itemId] || 0;
+      if (ammoQty > 0) {
+        this.emit('notification', { type:'info', text:`${item.name} equipped (${ammoQty.toLocaleString()} in quiver).` });
+      } else {
+        this.emit('notification', { type:'warn', text:`${item.name} set as ammo type, but none in bank. Buy or craft some.` });
+      }
       return;
     }
     const cur = this.state.equipment[item.slot];
@@ -2922,7 +2935,7 @@ class GameEngine {
     this.state.gold += gold;
     this.state.stats.goldEarned += gold;
     this.addXp('trading', Math.floor(gold * 0.05));
-    this.emit('notification', { type:'info', text:`Sold ${qty}x ${item.name} for ${gold} gold.` });
+    if (gold > 0) this.emit('notification', { type:'info', text:`Sold ${qty}x ${item.name} for ${gold} gold.` });
     this.emit('bankChanged');
   }
 
@@ -3360,8 +3373,14 @@ class GameEngine {
           for (let i = 0; i < num; i++) {
             if (skill.type === 'artisan' && action.input && !this.hasItems(action.input)) break;
             if (skill.type === 'artisan' && action.input) this.removeItems(action.input);
-            if (skill.type === 'gathering') {
-              for (const drop of action.loot) this.addItem(drop.item, drop.qty);
+            if (skill.type === 'gathering' || skill.type === 'agility') {
+              if (action.loot) {
+                for (const drop of action.loot) {
+                  // Respect drop chance (was missing before — every drop was 100% offline)
+                  if (drop.chance !== undefined && Math.random() > drop.chance) continue;
+                  if (drop.item && drop.qty > 0) this.addItem(drop.item, drop.qty);
+                }
+              }
             } else if (action.output) {
               if (action.burnChance && Math.random() < action.burnChance) { this.addXp(sId, Math.floor(action.xp * 0.2)); continue; }
               this.addItem(action.output.item, action.output.qty);
@@ -3989,18 +4008,23 @@ class GameEngine {
   }
 
   trackSlayerKill(monsterId) {
-    if (!this.state.slayerTask || this.state.slayerTask.monster !== monsterId) return;
-    this.state.slayerTask.killed++;
-    this.state.stats.slayerKillsOnTask = (this.state.stats.slayerKillsOnTask || 0) + 1;
-    // Slayer XP = 10% of monster HP
+    if (!this.state.slayerTask) return;
+    const task = this.state.slayerTask;
     const m = GAME_DATA.monsters[monsterId];
+    // Direct ID match OR family match (e.g. task:"goblin" matches "goblin_king")
+    const matches = task.monster === monsterId
+      || (m?.family && m.family === GAME_DATA.monsters[task.monster]?.family)
+      || (task.monster && monsterId.startsWith(task.monster))
+      || (task.monster && task.monster.startsWith(monsterId));
+    if (!matches) return;
+    task.killed++;
+    this.state.stats.slayerKillsOnTask = (this.state.stats.slayerKillsOnTask || 0) + 1;
     if (m) {
       let slayerXp = Math.floor(m.hp * 0.10);
-      // Slayer ring bonus
       if (this.state.equipment.ring === 'slayer_ring') slayerXp = Math.floor(slayerXp * 1.05);
       this.addXp('slayer', slayerXp);
     }
-    if (this.state.slayerTask.killed >= this.state.slayerTask.amount) {
+    if (task.killed >= task.amount) {
       this.completeSlayerTask();
     }
   }

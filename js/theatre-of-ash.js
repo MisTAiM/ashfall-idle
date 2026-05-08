@@ -341,6 +341,9 @@ GameEngine.prototype._startTheatreRoom = function(roomIdx) {
   c.monsterAttackTimer = 0;
   c.statusEffects = { player:{}, monster:{} };
   c._multiMobMode = false;
+  c._bossPhase = 0; c._enrageTimer = 0; c._enrageBonus = 0;
+  if (!c.cannon) c.cannon = { active:false, timer:0 };
+  else c.cannon.timer = 0; // reset fire timer but keep active state
 
   t.phase = 0;
   t.mechanic = null;
