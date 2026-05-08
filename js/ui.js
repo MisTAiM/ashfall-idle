@@ -282,7 +282,7 @@ class UI {
     const align = GAME_DATA.alignments[s.alignment] || GAME_DATA.alignments['true_neutral'] || { axis:'NN', name:'Neutral' };
     const _prof = s.profile || {};
     const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
-    const _avUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${_prof.hair||'short04'}&skinColor=${_prof.skinColor||'c68642'}&size=32`;
+    const _avUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${_prof.hair||'short04'}&skinColor=${_prof.skinColor||'c68642'}&hairColor=${_prof.hairColor||'2c1b18'}&eyes=${_prof.eyes||'variant04'}&mouth=${_prof.mouth||'happy01'}&clothing=${_prof.clothing||'variant04'}&clothingColor=${_prof.clothingColor||'4a90d4'}${_prof.accessory?'&accessories='+_prof.accessory:''}&size=32`;
     let html = `<div class="sidebar-header">
       <img src="logo.png" alt="Ashfall Idle" class="sidebar-logo-img">
     </div>
@@ -1237,7 +1237,7 @@ class UI {
       // Player avatar
       const _prof = s.profile || {};
       const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
-      const _playerAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&size=64`;
+      const _playerAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${s.profile?.hair||'short04'}&skinColor=${s.profile?.skinColor||'c68642'}&hairColor=${s.profile?.hairColor||'2c1b18'}&eyes=${s.profile?.eyes||'variant04'}&mouth=${s.profile?.mouth||'happy01'}&clothing=${s.profile?.clothing||'variant04'}&clothingColor=${s.profile?.clothingColor||'4a90d4'}&size=64`;
 
       // Boss phase data
       const bossPhaseIdx = c._bossPhase || 0;
@@ -3826,24 +3826,24 @@ class UI {
           <div class="char-opt-row">
             <label class="char-opt-label">Skin Tone</label>
             <div class="char-swatches">
-              ${['ffdbb4','e8b88a','c68642','8d5524','5a3a1a','f0d0b0','d4a080','a06040'].map(c =>
-                `<button class="char-swatch ${skinColor===c?'swatch-active':''}" style="background:#${c}" onclick="ui._previewChar('skinColor','${c}')" title="#${c}"></button>`
+              ${['ffdbb4','e8b88a','c68642','8d5524','5a3a1a','f0d0b0','d4a080','a06040','dfc094','b07840'].map(c =>
+                `<button class="char-swatch ${skinColor===c?'swatch-active':''}" style="background:#${c}" data-charkey="skinColor" data-charval="${c}" onclick="ui._previewChar('skinColor','${c}')" title="#${c}"></button>`
               ).join('')}
             </div>
           </div>
           <div class="char-opt-row">
             <label class="char-opt-label">Hair Style</label>
             <div class="char-select-grid">
-              ${['short01','short02','short03','short04','short05','long01','long02','long03','long04','long05','long06'].map(h =>
-                `<button class="char-opt-btn ${hair===h?'opt-active':''}" onclick="ui._previewChar('hair','${h}')">${h.replace('short','S').replace('long','L')}</button>`
+              ${['short01','short02','short03','short04','short05','long01','long02','long03','long04','long05','long06','long07','long08','long09','long10'].map((h,i) =>
+                `<button class="char-opt-btn ${hair===h?'opt-active':''}" data-charkey="hair" data-charval="${h}" onclick="ui._previewChar('hair','${h}')">${h.replace('short','S').replace('long','L')}</button>`
               ).join('')}
             </div>
           </div>
           <div class="char-opt-row">
             <label class="char-opt-label">Hair Color</label>
             <div class="char-swatches">
-              ${['2c1b18','d4a83a','c44040','1a1a1f','7a4a2a','e8e0d4','5a2a8a','3a8a5e','c4843a','4a6a9e'].map(c =>
-                `<button class="char-swatch ${hairColor===c?'swatch-active':''}" style="background:#${c}" onclick="ui._previewChar('hairColor','${c}')" title="#${c}"></button>`
+              ${['2c1b18','d4a83a','c44040','1a1a1f','7a4a2a','e8e0d4','5a2a8a','3a8a5e','c4843a','4a6a9e','ff6b6b','6bcfff','ff9f43','a29bfe','fd79a8','00b894'].map(c =>
+                `<button class="char-swatch ${hairColor===c?'swatch-active':''}" style="background:#${c}" data-charkey="hairColor" data-charval="${c}" onclick="ui._previewChar('hairColor','${c}')" title="#${c}"></button>`
               ).join('')}
             </div>
           </div>
@@ -3851,31 +3851,55 @@ class UI {
             <label class="char-opt-label">Eyes</label>
             <div class="char-select-grid">
               ${['variant01','variant02','variant03','variant04','variant05','variant06','variant07','variant08','variant09','variant10','variant11','variant12'].map((e,i) =>
-                `<button class="char-opt-btn ${eyes===e?'opt-active':''}" onclick="ui._previewChar('eyes','${e}')">${i+1}</button>`
+                `<button class="char-opt-btn ${eyes===e?'opt-active':''}" data-charkey="eyes" data-charval="${e}" onclick="ui._previewChar('eyes','${e}')">${i+1}</button>`
               ).join('')}
             </div>
           </div>
           <div class="char-opt-row">
             <label class="char-opt-label">Mouth</label>
             <div class="char-select-grid">
-              ${['happy01','happy02','happy03','happy04','happy05','happy06','sad01','sad02','surprised01','surprised02'].map((m,i) =>
-                `<button class="char-opt-btn ${mouth===m?'opt-active':''}" onclick="ui._previewChar('mouth','${m}')">${m.replace('happy','😄').replace('sad','😞').replace('surprised','😮').replace(/0\d/,'')}</button>`
+              ${['happy01','happy02','happy03','happy04','happy05','happy06','happy07','happy08','happy09','happy10','happy11','happy12','sad01','sad02','sad03','sad04','sad05','sad06','surprised01','surprised02'].map((m,i) =>
+                `<button class="char-opt-btn ${mouth===m?'opt-active':''}" data-charkey="mouth" data-charval="${m}" onclick="ui._previewChar('mouth','${m}')">${i+1}</button>`
               ).join('')}
             </div>
           </div>
           <div class="char-opt-row">
             <label class="char-opt-label">Clothing</label>
             <div class="char-select-grid">
-              ${['variant01','variant02','variant03','variant04','variant05','variant06','variant07','variant08','variant09','variant10','variant11','variant12','variant13','variant14','variant15'].map((v,i) =>
-                `<button class="char-opt-btn ${clothing===v?'opt-active':''}" onclick="ui._previewChar('clothing','${v}')">${i+1}</button>`
+              ${Array.from({length:25},(_,i)=>'variant'+(i+1).toString().padStart(2,'0')).map((v,i) =>
+                `<button class="char-opt-btn ${clothing===v?'opt-active':''}" data-charkey="clothing" data-charval="${v}" onclick="ui._previewChar('clothing','${v}')">${i+1}</button>`
               ).join('')}
             </div>
           </div>
           <div class="char-opt-row">
             <label class="char-opt-label">Shirt Color</label>
             <div class="char-swatches">
-              ${['4a90d4','c44040','5a8a3e','d4a83a','8a5ec4','1a1a1f','e8e0d4','c47a3a','0a7a7a','9a3a6a'].map(c =>
-                `<button class="char-swatch ${clothingColor===c?'swatch-active':''}" style="background:#${c}" onclick="ui._previewChar('clothingColor','${c}')" title="#${c}"></button>`
+              ${['4a90d4','c44040','5a8a3e','d4a83a','8a5ec4','1a1a1f','e8e0d4','c47a3a','0a7a7a','9a3a6a','ff6b6b','2980b9','27ae60','f39c12','8e44ad','e74c3c','1abc9c','d35400','2c3e50','f1c40f'].map(c =>
+                `<button class="char-swatch ${clothingColor===c?'swatch-active':''}" style="background:#${c}" data-charkey="clothingColor" data-charval="${c}" onclick="ui._previewChar('clothingColor','${c}')" title="#${c}"></button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Accessory</label>
+            <div class="char-select-grid">
+              ${[{v:'',l:'None'},{v:'variant01',l:'A1'},{v:'variant02',l:'A2'},{v:'variant03',l:'A3'},{v:'variant04',l:'A4'}].map(({v,l}) =>
+                `<button class="char-opt-btn ${(p.accessory||'')===v?'opt-active':''}" data-charkey="accessory" data-charval="${v}" onclick="ui._previewChar('accessory','${v}')">${l}</button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Background</label>
+            <div class="char-swatches">
+              ${['0a0b0f','1a1c2a','2a1a0a','0a1a2a','1a0a2a','2a2a1a','transparent','b7c9d3','c9a084','a8d5a2'].map(c =>
+                `<button class="char-swatch ${(p.bgColor||'0a0b0f')===c?'swatch-active':''}" style="background:${c==='transparent'?'repeating-conic-gradient(#555 0% 25%, #222 0% 50%) 0 0/8px 8px':'#'+c}" data-charkey="bgColor" data-charval="${c}" onclick="ui._previewChar('bgColor','${c}')" title="${c}"></button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Title</label>
+            <div class="char-select-grid">
+              ${ui._getUnlockedTitles(s).map(t =>
+                `<button class="char-opt-btn ${(p.title||'')===t.id?'opt-active':''}" data-charkey="title" data-charval="${t.id}" onclick="ui._previewChar('title','${t.id}')" title="${t.desc}">${t.name}</button>`
               ).join('')}
             </div>
           </div>
@@ -4001,55 +4025,83 @@ class UI {
     el.innerHTML = html;
   }
 
-  _previewChar(key, value) {
-    // Update profile instantly and re-render avatar preview
-    if (!game.state.profile) game.state.profile = {};
-    game.state.profile[key] = value;
-    // Update the preview images without full re-render
-    const p = game.state.profile;
+  getAvatarUrl(size = 80) {
+    const p = game.state.profile || {};
     const displayName = (typeof online !== 'undefined' && online.displayName) || p.displayName || 'Survivor';
     const seed = p.avatarSeed || displayName;
-    const url = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair||'short04'}&skinColor=${p.skinColor||'c68642'}&hairColor=${p.hairColor||'2c1b18'}&mouth=${p.mouth||'happy01'}&eyes=${p.eyes||'variant04'}&clothing=${p.clothing||'variant04'}&clothingColor=${p.clothingColor||'4a90d4'}${p.accessory?'&accessories='+p.accessory:''}&size=160`;
-    const main = document.getElementById('char-avatar-img');
-    const prev = document.getElementById('char-preview-img');
-    if (main) main.src = url;
-    if (prev) prev.src = url;
-    // Update active state on swatches/buttons without full re-render
-    document.querySelectorAll(`[onclick*="_previewChar('${key}'"]`).forEach(btn => {
-      const val = btn.getAttribute('onclick').match(/'([^']+)'\)$/)?.[1];
-      btn.classList.toggle('swatch-active', val === value);
-      btn.classList.toggle('opt-active', val === value);
+    const bg = p.bgColor && p.bgColor !== 'transparent' ? `&backgroundColor=${p.bgColor}` : '&backgroundColor=0a0b0f';
+    return `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair||'short04'}&skinColor=${p.skinColor||'c68642'}&hairColor=${p.hairColor||'2c1b18'}&eyes=${p.eyes||'variant04'}&mouth=${p.mouth||'happy01'}&clothing=${p.clothing||'variant04'}&clothingColor=${p.clothingColor||'4a90d4'}${p.accessory?'&accessories='+p.accessory:''}${bg}&size=${size}`;
+  }
+
+  _getUnlockedTitles(s) {
+    const all = [
+      { id:'',              name:'None',         desc:'No title', req: true },
+      { id:'wanderer',      name:'Wanderer',      desc:'Default title', req: true },
+      { id:'ashling',       name:'Ashling',       desc:'Complete 5 quests', req: (s.quests?.completed?.length||0) >= 5 },
+      { id:'hunter',        name:'Hunter',        desc:'Kill 1,000 monsters', req: (s.stats?.monstersKilled||0) >= 1000 },
+      { id:'veteran',       name:'Veteran',       desc:'Kill 10,000 monsters', req: (s.stats?.monstersKilled||0) >= 10000 },
+      { id:'slayer',        name:'Slayer',        desc:'Complete 10 slayer tasks', req: (s.stats?.slayerTasksCompleted||0) >= 10 },
+      { id:'master_smith',  name:'Master Smith',  desc:'Smithing level 80+', req: (s.skills?.smithing?.level||0) >= 80 },
+      { id:'archmage',      name:'Archmage',      desc:'Magic level 80+', req: (s.skills?.magic?.level||0) >= 80 },
+      { id:'ranger',        name:'Ranger',        desc:'Ranged level 80+', req: (s.skills?.ranged?.level||0) >= 80 },
+      { id:'druid',         name:'Druid',         desc:'Farming + Foraging 70+', req: (s.skills?.farming?.level||0) >= 70 && (s.skills?.foraging?.level||0) >= 70 },
+      { id:'questmaster',   name:'Questmaster',   desc:'Complete 20 quests', req: (s.quests?.completed?.length||0) >= 20 },
+      { id:'max_combat',    name:'Lord of War',   desc:'Combat level 126', req: this.engine.getCombatLevel() >= 126 },
+      { id:'total_master',  name:'Total Master',  desc:'Total level 2000+', req: this.engine.getTotalLevel() >= 2000 },
+      { id:'boss_slayer',   name:'Boss Slayer',   desc:'Kill 10 world bosses', req: (s.stats?.worldBossKills||0) >= 10 },
+      { id:'prestige1',     name:'The Reborn',    desc:'Prestige once', req: (s._prestigeRank||0) >= 1 },
+      { id:'prestige3',     name:'Ascendant',     desc:'Prestige 3 times', req: (s._prestigeRank||0) >= 3 },
+      { id:'millionaire',   name:'Millionaire',   desc:'Earn 1,000,000 gold', req: (s.stats?.goldEarned||0) >= 1000000 },
+    ];
+    return all.filter(t => t.req);
+  }
+
+  _previewChar(key, value) {
+    if (!game.state.profile) game.state.profile = {};
+    game.state.profile[key] = value;
+    const url160 = this.getAvatarUrl(160);
+    const url32  = this.getAvatarUrl(32);
+    // Update ALL avatar images on page immediately
+    ['char-avatar-img','char-preview-img'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.src = url160;
+    });
+    // Update sidebar mini-avatar immediately (no re-render needed)
+    document.querySelectorAll('.player-avatar-mini').forEach(img => img.src = url32);
+    // Update active states on buttons
+    document.querySelectorAll(`[data-charkey="${key}"]`).forEach(btn => {
+      btn.classList.toggle('swatch-active', btn.dataset.charval === value);
+      btn.classList.toggle('opt-active',    btn.dataset.charval === value);
     });
   }
 
   saveCharacter(sync = false) {
     const s = game.state;
     if (!s.profile) s.profile = {};
-    // Pull all values from inputs
     const seedInput = document.getElementById('co-seed');
     const bioInput  = document.getElementById('co-bio');
     if (seedInput) s.profile.avatarSeed = seedInput.value.trim();
     if (bioInput)  s.profile.bio = bioInput.value.trim();
-    // Save local
     game.save();
-    // Update sidebar avatar immediately
+    // Force update ALL avatar instances site-wide
+    const url32  = this.getAvatarUrl(32);
+    const url160 = this.getAvatarUrl(160);
+    document.querySelectorAll('.player-avatar-mini').forEach(img => img.src = url32);
+    document.querySelectorAll('#char-avatar-img,#char-preview-img').forEach(img => img.src = url160);
+    // Re-render sidebar to rebuild the HTML with saved values
     this.renderSidebar();
-    // Sync to cloud
     if (sync && typeof online !== 'undefined' && online.isOnline) {
       online.syncProfileFull().then(() => {
         const el = document.getElementById('char-save-status');
-        if (el) { el.textContent = '☁ Synced!'; el.style.color = '#4aaa60'; setTimeout(()=>{ if(el)el.textContent=''; }, 3000); }
+        if (el) { el.textContent = '☁ Synced!'; el.style.color='#4aaa60'; setTimeout(()=>{ if(el) el.textContent=''; }, 3000); }
       });
     } else {
       const el = document.getElementById('char-save-status');
-      if (el) { el.textContent = '✓ Saved locally'; el.style.color = '#4aaa60'; setTimeout(()=>{ if(el)el.textContent=''; }, 2000); }
+      if (el) { el.textContent = '✓ Saved!'; el.style.color='#4aaa60'; setTimeout(()=>{ if(el) el.textContent=''; }, 2000); }
     }
-    this.toast({ type:'success', text: sync ? 'Character saved and synced to cloud!' : 'Character saved!' });
+    this.toast({ type:'success', text: sync ? 'Character saved and synced!' : 'Character saved!' });
   }
 
-  setCharOpt(key, value) {
-    this._previewChar(key, value);
-  }
+  setCharOpt(key, value) { this._previewChar(key, value); }
 
   // ── GUILDS PAGE ────────────────────────────────────────
   renderGuildsPage(el) {
