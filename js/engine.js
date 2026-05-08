@@ -319,7 +319,7 @@ class GameEngine {
 
   _findAction(skillId, actionId) {
     const skill = GAME_DATA.skills[skillId]; if (!skill) return null;
-    if (skill.type === 'gathering') {
+    if (skill.type === 'gathering' || skill.type === 'agility') {
       // Check fishing zones first
       if (skillId === 'fishing' && actionId.startsWith('zone_')) {
         const zone = GAME_DATA.fishingZones?.find(z => z.id === actionId.replace('zone_',''));
@@ -350,7 +350,7 @@ class GameEngine {
 
   completeAction(skillId, action) {
     const skill = GAME_DATA.skills[skillId];
-    if (skill.type === 'gathering') {
+    if (skill.type === 'gathering' || skill.type === 'agility') {
       // Zone-based fishing
       if (action._fishZone) {
         const zone = action._fishZone;
@@ -580,7 +580,11 @@ class GameEngine {
       const gold = this.randInt(action.gold.min, action.gold.max);
       this.state.gold += gold; this.state.stats.goldEarned += gold;
       for (const drop of (action.loot || [])) {
-        if (Math.random() < drop.chance) this.addItem(drop.item, drop.qty);
+        if (Math.random() < drop.chance) {
+          this.addItem(drop.item, drop.qty);
+          // Track loot drops as 'gather' so quest objectives like "collect 10 lockpicks" register
+          this.trackQuestProgress('gather', { item: drop.item, qty: drop.qty });
+        }
       }
       this.trackQuestProgress('thieve', { target:action.id, qty:1 });
       this.emit('thievingSuccess', { action, gold, hp: this.state.thievingHp || this.getMaxHp() });
@@ -2338,7 +2342,7 @@ class GameEngine {
     let bonus = weapon?.toolSpeed?.[skillId] || 0;
     // Agility passive: +0.2% gathering speed per 5 agility levels
     const agilLv = this.state.skills.agility?.level || 0;
-    if (agilLv >= 5 && GAME_DATA.skills[skillId]?.type === 'gathering') {
+    if (agilLv >= 5 && (GAME_DATA.skills[skillId]?.type === 'gathering' || GAME_DATA.skills[skillId]?.type === 'agility')) {
       bonus += Math.floor(agilLv / 5) * 0.2;
     }
     // Graceful set bonus: wearing full graceful = +3% all gathering
