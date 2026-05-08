@@ -7751,3 +7751,8 @@ body.perf-mode .hit-splat { display:none !important; }
 .qdm-choice-btn:hover { background:rgba(90,175,62,0.25); border-color:#7dcc44; }
 
 .qs-title { font-family:'Cinzel',serif; font-size:14px; color:var(--text); }
+
+/* Turn In Quest Button */
+.btn-turnin { background:rgba(90,175,62,0.25) !important; border-color:#7dcc44 !important; color:#7dcc44 !important; font-weight:700; animation:turnin-pulse 1.5s ease-in-out infinite; }
+.btn-turnin:hover { background:rgba(90,175,62,0.45) !important; }
+@keyframes turnin-pulse { 0%,100%{box-shadow:0 0 4px rgba(90,175,62,0.3)} 50%{box-shadow:0 0 12px rgba(90,175,62,0.6)} }

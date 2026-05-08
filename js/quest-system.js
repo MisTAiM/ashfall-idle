@@ -55,11 +55,9 @@ E.acceptQuest = function(questId) {
     // Process initial dialogue stage(s) — auto-advance through dialogue to first objectives
     this._processQuestStage(questId);
   } else {
-    // Legacy flat quest — init progress array
-    this.state.quests.progress[questId] = (q.objectives||[]).map((obj, i) => {
-      if (obj.type === 'skill_level') return (this.state.skills[obj.skill]?.level||1) >= obj.level ? obj.qty : 0;
-      return 0;
-    });
+    // Legacy flat quest — init all progress to 0. Tracking will fill on next tick.
+    this.state.quests.progress[questId] = (q.objectives||[]).map(() => 0);
+    if (!this.state.quests._readyToComplete) this.state.quests._readyToComplete = {};
   }
 
   this.emit('notification',{type:'success',text:`Quest accepted: ${q.name}`});
@@ -208,9 +206,14 @@ E._trackAllQuests = function(type, data) {
       if (_trackObjectives(q.objectives, p, type, data, this.state)) {
         this.state.quests.progress[qId] = p;
       }
-      // Auto-complete when all objectives met
+      // Flag as ready — do NOT auto-complete. Player must click "Turn In".
       if (q.objectives.every((_, i) => (p[i]||0) >= q.objectives[i].qty)) {
-        this.completeQuest(qId);
+        if (!this.state.quests._readyToComplete) this.state.quests._readyToComplete = {};
+        if (!this.state.quests._readyToComplete[qId]) {
+          this.state.quests._readyToComplete[qId] = true;
+          this.emit('notification',{type:'success',text:`Quest ready to turn in: ${q.name}`});
+          this.emit('questsChanged');
+        }
       }
     }
   }
@@ -413,7 +416,9 @@ U.renderQuestsPage = function(el) {
   const s = this.engine.state;
   const qp = s.questPoints || 0;
   const totalQP = GAME_DATA.quests.reduce((sum,q)=>sum+(q.qp||0),0);
-  const completedCount = s.quests.completed.length;
+  // Only count completed quests that still exist in GAME_DATA
+  const validCompleted = (s.quests.completed||[]).filter(id => GAME_DATA.quests.find(q=>q.id===id));
+  const completedCount = validCompleted.length;
   const totalQuests = GAME_DATA.quests.length;
 
   // Quest filter state
@@ -636,6 +641,7 @@ U._renderActiveQuestCard = function(q, s) {
       ${rewHtml}
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
+      ${(s.quests._readyToComplete?.[q.id]) ? `<button class="btn btn-xs btn-turnin" onclick="game.turnInQuest('${q.id}')">Turn In Quest</button>` : ''}
       <button class="btn btn-xs btn-danger" onclick="if(confirm('Abandon quest?'))game.abandonQuest('${q.id}')">Abandon</button>
     </div>
   </div>`;
@@ -695,6 +701,13 @@ if (_origInit) {
   }
 }
 
+// ── ENGINE: Turn in a quest (manual completion for legacy quests) ─
+E.turnInQuest = function(questId) {
+  if (!this.state.quests._readyToComplete?.[questId]) return;
+  delete this.state.quests._readyToComplete[questId];
+  this.completeQuest(questId);
+};
+
 // ── ENGINE: Override abandonQuest ────────────────────────
 E.abandonQuest = function(questId) {
   const i = this.state.quests.active.indexOf(questId);
@@ -702,6 +715,7 @@ E.abandonQuest = function(questId) {
     this.state.quests.active.splice(i, 1);
     delete this.state.quests.progress[questId];
     if (this.state.quests.stages) delete this.state.quests.stages[questId];
+    if (this.state.quests._readyToComplete) delete this.state.quests._readyToComplete[questId];
     this.emit('questsChanged');
   }
 };
@@ -725,22 +739,29 @@ if (GAME_DATA.npcs && !GAME_DATA.npcs.cook_henrick) {
 
 // ── ONE-TIME MIGRATION: QP recalc + missing reward items ─
 // Runs after engine is fully initialized. Self-marks so it only runs once per version.
-const MIGRATION_KEY = '_questMigration_v3_1';
+const MIGRATION_KEY = '_questMigration_v3_2';
 
 function _runQuestMigration(engine) {
   const s = engine.state;
   if (!s || !s.quests) return;
-  if (s[MIGRATION_KEY]) return; // Already migrated this version
+  if (s[MIGRATION_KEY]) return;
 
-  console.log('[Ashfall] Running quest migration v3.1...');
+  console.log('[Ashfall] Running quest migration v3.2...');
   let qpBefore = s.questPoints || 0;
   let itemsGranted = [];
 
-  // Ensure stages object exists
   if (!s.quests.stages) s.quests.stages = {};
   if (!s.quests.progress) s.quests.progress = {};
+  if (!s.quests._readyToComplete) s.quests._readyToComplete = {};
 
-  // 1. Recalculate QP from ALL completed quests
+  // 1. Clean orphaned completed quest IDs (quests that no longer exist in GAME_DATA)
+  const orphaned = (s.quests.completed || []).filter(id => !GAME_DATA.quests.find(q => q.id === id));
+  if (orphaned.length > 0) {
+    console.log(`[Ashfall] Removing ${orphaned.length} orphaned completed quest IDs:`, orphaned);
+    s.quests.completed = s.quests.completed.filter(id => GAME_DATA.quests.find(q => q.id === id));
+  }
+
+  // 2. Recalculate QP from all VALID completed quests
   let correctQP = 0;
   for (const qId of (s.quests.completed || [])) {
     const q = GAME_DATA.quests.find(x => x.id === qId);
@@ -748,7 +769,7 @@ function _runQuestMigration(engine) {
   }
   s.questPoints = correctQP;
 
-  // 2. Grant missing reward items from completed quests
+  // 3. Grant missing reward items from completed quests
   for (const qId of (s.quests.completed || [])) {
     const q = GAME_DATA.quests.find(x => x.id === qId);
     if (!q || !q.rewards || !q.rewards.items) continue;
@@ -756,7 +777,6 @@ function _runQuestMigration(engine) {
       const itemId = ri.id || ri.item;
       const qty = ri.qty || 1;
       if (!itemId) continue;
-      // Only grant if player doesn't already have the item
       if ((s.bank[itemId] || 0) === 0) {
         engine.addItem(itemId, qty);
         itemsGranted.push({ name: GAME_DATA.items[itemId]?.name || itemId, qty });
@@ -764,7 +784,7 @@ function _runQuestMigration(engine) {
     }
   }
 
-  // 3. Migrate active quests that have stages but no stage state
+  // 4. Migrate active multi-stage quests missing stage state
   for (const qId of (s.quests.active || [])) {
     const q = GAME_DATA.quests.find(x => x.id === qId);
     if (q && q.stages && q.stages.length > 0 && !s.quests.stages[qId]) {
@@ -773,14 +793,15 @@ function _runQuestMigration(engine) {
     }
   }
 
-  // Mark migration complete
+  // 5. Clean orphaned active quest IDs
+  s.quests.active = (s.quests.active || []).filter(id => GAME_DATA.quests.find(q => q.id === id));
+
   s[MIGRATION_KEY] = Date.now();
 
-  // Notify player
-  if (correctQP !== qpBefore) {
+  if (correctQP !== qpBefore || orphaned.length > 0) {
     engine.emit('notification', {
       type: 'achievement',
-      text: `Quest Points recalculated: ${qpBefore} → ${correctQP} QP`
+      text: `Quest Points recalculated: ${correctQP} QP (${s.quests.completed.length} quests)`
     });
   }
   if (itemsGranted.length > 0) {
@@ -791,7 +812,7 @@ function _runQuestMigration(engine) {
     });
   }
 
-  console.log(`[Ashfall] Migration complete. QP: ${qpBefore} → ${correctQP}. Items granted: ${itemsGranted.length}`);
+  console.log(`[Ashfall] Migration v3.2 complete. QP: ${qpBefore} → ${correctQP}. Orphans removed: ${orphaned.length}. Items granted: ${itemsGranted.length}`);
   engine.emit('questsChanged');
 }
 

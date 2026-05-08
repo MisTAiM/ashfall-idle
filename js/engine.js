@@ -3271,6 +3271,7 @@ class GameEngine {
     this.state.quests.completed.push(questId);
     delete this.state.quests.progress[questId];
     if (this.state.quests.stages) delete this.state.quests.stages[questId];
+    if (this.state.quests._readyToComplete) delete this.state.quests._readyToComplete[questId];
     if (q.rewards.gold)  { this.state.gold += q.rewards.gold; this.state.stats.goldEarned += q.rewards.gold; }
     if (q.rewards.xp)    for (const [sk,amt] of Object.entries(q.rewards.xp)) this.addXp(sk,amt);
     if (q.rewards.items) for (const it of q.rewards.items) this.addItem(it.id||it.item, it.qty);
