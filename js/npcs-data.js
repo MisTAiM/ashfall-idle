@@ -28,7 +28,7 @@ _npc('elder_vex', {
       "The Void Emperor is older than the Ashfall. Some say he caused it.",
     ]
   },
-  questGiver: ['ashen_beginnings', 'into_the_wastes', 'hollow_awakening'],
+  questGiver: ['ashen_beginnings', 'goblin_diplomacy', 'restless_dead', 'into_the_wastes', 'pet_tamers_journey', 'hollow_awakening', 'song_of_elders', 'while_world_burns'],
 });
 
 _npc('captain_lyra', {
@@ -47,7 +47,7 @@ _npc('captain_lyra', {
       "We guard three holy shrines. If any falls, the Hollow surge through the gap. That cannot happen.",
     ]
   },
-  questGiver: ['hollow_awakening'],
+  questGiver: ['dragon_slayer', 'hollow_awakening', 'shadow_of_order'],
 });
 
 _npc('greybeard_tormund', {
@@ -70,6 +70,7 @@ _npc('greybeard_tormund', {
     { item:'spade',             price:80   },
     { item:'rake',              price:100  },
   ],
+  questGiver: ['trial_of_the_forge', 'enchanted_chisel_q', 'artillerists_calling', 'forge_eternal'],
 });
 
 _npc('shadow_morrigan', {
@@ -92,7 +93,7 @@ _npc('shadow_morrigan', {
     { item:'poison_vial',       price:90   },
     { item:'obsidian_cape',     price:15000 },
   ],
-  questGiver: ['thief_of_ashfall'],
+  questGiver: ['bloodfang_initiation', 'flames_of_ashfall', 'curse_of_amulet', 'the_void_rift'],
 });
 
 _npc('herbalist_elena', {
@@ -117,7 +118,7 @@ _npc('herbalist_elena', {
     { item:'herb_seed',         price:30   },
     { item:'ranarr_seed',       price:200  },
   ],
-  questGiver: ['seeds_of_hope'],
+  questGiver: ['lost_apprentice', 'seeds_of_hope', 'herbalists_trial', 'friend_of_wild'],
 });
 
 _npc('slayer_master_dorn', {
@@ -135,6 +136,7 @@ _npc('slayer_master_dorn', {
       "My best student took on Jad with 12 HP left. I thought she was dead. She wasn\'t.",
     ]
   },
+  questGiver: ['first_assignment', 'master_slayer'],
 });
 
 // ── NPC LORE DATABASE ─────────────────────────────────────────────

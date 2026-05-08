@@ -1573,6 +1573,8 @@ class GameEngine {
     }
 
     this.trackQuestProgress('kill', { monster:mId, qty:1 });
+    // Quest-specific drops (multi-stage system)
+    if (this.checkQuestDrop) this.checkQuestDrop(mId);
     // v3: Slayer, Pets, Magic kills
     this.trackSlayerKill(mId);
     this.rollPetDrop(mId);
@@ -3268,6 +3270,7 @@ class GameEngine {
     this.state.quests.active.splice(i,1);
     this.state.quests.completed.push(questId);
     delete this.state.quests.progress[questId];
+    if (this.state.quests.stages) delete this.state.quests.stages[questId];
     if (q.rewards.gold)  { this.state.gold += q.rewards.gold; this.state.stats.goldEarned += q.rewards.gold; }
     if (q.rewards.xp)    for (const [sk,amt] of Object.entries(q.rewards.xp)) this.addXp(sk,amt);
     if (q.rewards.items) for (const it of q.rewards.items) this.addItem(it.id||it.item, it.qty);
