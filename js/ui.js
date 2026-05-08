@@ -3744,111 +3744,311 @@ class UI {
 
   renderCharacterPage(el) {
     const s = this.engine.state;
-    if (!s.profile) s.profile = { avatarSeed:'', hair:'short04', skinColor:'c68642', hairColor:'2c1b18', accessory:'', mouth:'happy01', eyes:'variant04', clothing:'variant04', clothingColor:'4a90d4', bio:'' };
+    if (!s.profile) s.profile = {};
     const p = s.profile;
-    const seed = p.avatarSeed || (typeof online !== 'undefined' ? online.displayName : 'Survivor') || 'Survivor';
-    const avatarUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair}&skinColor=${p.skinColor}&hairColor=${p.hairColor}&mouth=${p.mouth}&eyes=${p.eyes}&clothing=${p.clothing}&clothingColor=${p.clothingColor}${p.accessory?'&accessories='+p.accessory:''}`;
-    const align = GAME_DATA.alignments[s.alignment];
+    const isOnline = typeof online !== 'undefined' && online.isOnline;
+    const displayName = (isOnline && online.displayName) ? online.displayName : (p.displayName || 'Survivor');
+    const align = GAME_DATA.alignments[s.alignment] || GAME_DATA.alignments['true_neutral'] || { name:'Neutral', axis:'NN' };
+    const pRank = s._prestigeRank || 0;
+    const prestigeData = pRank > 0 ? GAME_DATA.prestige?.ranks?.[pRank - 1] : null;
+    const qpTotal = GAME_DATA.quests?.reduce((a,q)=>a+(q.qp||0),0) || 0;
 
-    let html = this.header('Character','shield','Customize your avatar and set up your profile.',null);
+    // Build avatar URL from profile
+    const seed = p.avatarSeed || displayName || 'Survivor';
+    const hair = p.hair || 'short04';
+    const skinColor = p.skinColor || 'c68642';
+    const hairColor = p.hairColor || '2c1b18';
+    const eyes = p.eyes || 'variant04';
+    const mouth = p.mouth || 'happy01';
+    const clothing = p.clothing || 'variant04';
+    const clothingColor = p.clothingColor || '4a90d4';
+    const accessories = p.accessory ? `&accessories=${p.accessory}` : '';
+    const avatarUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${hair}&skinColor=${skinColor}&hairColor=${hairColor}&mouth=${mouth}&eyes=${eyes}&clothing=${clothing}&clothingColor=${clothingColor}${accessories}&size=160`;
 
-    // Profile card
-    html += `<div class="char-profile-card">
-      <div class="char-avatar"><img src="${avatarUrl}" alt="Avatar" width="128" height="128" id="char-avatar-img"></div>
-      <div class="char-info">
-        <div class="char-name">${typeof online !== 'undefined' ? online.displayName || 'Survivor' : 'Survivor'}</div>
-        <div class="char-title">${align.name} (${align.axis})</div>
-        <div class="char-stats">
-          <span>Combat: ${this.engine.getCombatLevel()}</span>
-          <span>Total: ${this.engine.getTotalLevel()}</span>
-          <span>Gold: ${this.fmt(s.gold)}</span>
-          <span>Kills: ${this.fmt(s.stats.monstersKilled)}</span>
+    // Rank title based on total level + prestige
+    const tl = this.engine.getTotalLevel();
+    const cl = this.engine.getCombatLevel();
+    let rankTitle = tl < 500 ? 'Ashen Wanderer' : tl < 1000 ? 'Ember Scout' : tl < 1500 ? 'Ashland Veteran' : tl < 2000 ? 'Cinder Knight' : 'Lord of the Ashlands';
+    if (prestigeData) rankTitle = prestigeData.name;
+
+    let html = `<div class="char-page-wrap">`;
+
+    // ── TOP HERO CARD ─────────────────────────────────────
+    html += `<div class="char-hero-card">
+      <div class="char-avatar-zone">
+        <div class="char-avatar-frame">
+          <img src="${avatarUrl}" alt="Avatar" id="char-avatar-img" width="160" height="160">
+          ${pRank > 0 ? `<div class="char-prestige-ring" style="border-color:${prestigeData?.color||'#c9873e'}" title="Prestige ${pRank}">
+            <span class="char-prestige-icon">${prestigeData?.icon||'⭐'}</span>
+          </div>` : ''}
         </div>
-        ${p.bio ? `<div class="char-bio">${this.escHtml(p.bio)}</div>` : ''}
+        <div class="char-online-dot ${isOnline?'dot-online':'dot-offline'}" title="${isOnline?'Online':'Offline'}"></div>
+      </div>
+      <div class="char-hero-info">
+        <div class="char-hero-name">
+          <span id="char-name-display">${this.escHtml(displayName)}</span>
+          ${pRank > 0 ? `<span class="char-prestige-badge" style="color:${prestigeData?.color||'#c9873e'}">${prestigeData?.icon} ${prestigeData?.name}</span>` : ''}
+        </div>
+        <div class="char-hero-title">${rankTitle}</div>
+        <div class="char-hero-align">
+          <span class="char-align-chip">${align.name}</span>
+          <span class="char-align-axis">${align.axis}</span>
+        </div>
+        ${p.bio ? `<div class="char-bio-display">${this.escHtml(p.bio)}</div>` : `<div class="char-bio-display char-bio-empty">No bio set. Add one below.</div>`}
+        <div class="char-kpi-row">
+          <div class="char-kpi"><div class="char-kpi-val">${cl}</div><div class="char-kpi-lbl">Combat</div></div>
+          <div class="char-kpi"><div class="char-kpi-val">${tl.toLocaleString()}</div><div class="char-kpi-lbl">Total Lv</div></div>
+          <div class="char-kpi"><div class="char-kpi-val">${s.questPoints||0}<span class="char-kpi-of">/${qpTotal}</span></div><div class="char-kpi-lbl">QP</div></div>
+          <div class="char-kpi"><div class="char-kpi-val">${s.quests?.completed?.length||0}</div><div class="char-kpi-lbl">Quests</div></div>
+          <div class="char-kpi"><div class="char-kpi-val">${this.fmt(s.stats?.monstersKilled||0)}</div><div class="char-kpi-lbl">Kills</div></div>
+          <div class="char-kpi"><div class="char-kpi-val">${this.fmt(s.gold||0)}</div><div class="char-kpi-lbl">Gold</div></div>
+        </div>
       </div>
     </div>`;
 
-    // Avatar customizer
-    html += '<h2 class="section-title">Customize Avatar</h2><div class="char-customizer">';
-    const options = {
-      'Avatar Seed': {key:'avatarSeed', type:'text', placeholder:'Type a name or word'},
-      'Hair Style': {key:'hair', type:'select', opts:['short01','short02','short03','short04','short05','long01','long02','long03','long04','long05','long06','long07','long08','long09','long10','long11','long12','long13','long14','long15']},
-      'Hair Color': {key:'hairColor', type:'color', opts:['2c1b18','d4a83a','c44040','1a1a1f','7a4a2a','e8e0d4','5a2a8a','3a8a5e']},
-      'Skin': {key:'skinColor', type:'color', opts:['f8d9c0','e8b88a','c68642','8d5524','5a3a1a','f0d0b0']},
-      'Eyes': {key:'eyes', type:'select', opts:['variant01','variant02','variant03','variant04','variant05','variant06','variant07','variant08','variant09','variant10','variant11','variant12']},
-      'Mouth': {key:'mouth', type:'select', opts:['happy01','happy02','happy03','happy04','happy05','happy06','happy07','happy08','happy09','happy10','happy11','happy12','sad01','sad02','sad03','sad04','sad05','sad06','sad07','sad08','surprised01','surprised02']},
-      'Clothing': {key:'clothing', type:'select', opts:['variant01','variant02','variant03','variant04','variant05','variant06','variant07','variant08','variant09','variant10','variant11','variant12','variant13','variant14','variant15','variant16','variant17','variant18','variant19','variant20','variant21','variant22','variant23','variant24','variant25']},
-      'Clothing Color': {key:'clothingColor', type:'color', opts:['4a90d4','c44040','5a8a3e','d4a83a','8a5ec4','1a1a1f','e8e0d4','c47a3a']},
-      'Accessory': {key:'accessory', type:'select', opts:['','variant01','variant02','variant03','variant04']},
-    };
-    for (const [label, cfg] of Object.entries(options)) {
-      html += `<div class="cc-row"><label class="cc-label">${label}</label>`;
-      if (cfg.type === 'text') {
-        html += `<input type="text" class="chat-input" value="${this.escHtml(p[cfg.key]||'')}" placeholder="${cfg.placeholder}" onchange="ui.setCharOpt('${cfg.key}',this.value)">`;
-      } else if (cfg.type === 'select') {
-        html += '<div class="cc-opts">';
-        for (const opt of cfg.opts) {
-          const active = p[cfg.key] === opt;
-          const display = opt ? opt.replace('variant','V').replace('short','S').replace('long','L').replace('happy','H').replace('sad','Sd').replace('surprised','!') : 'None';
-          html += `<button class="btn btn-xs ${active?'btn-active':''}" onclick="ui.setCharOpt('${cfg.key}','${opt}')">${display}</button>`;
-        }
-        html += '</div>';
-      } else if (cfg.type === 'color') {
-        html += '<div class="cc-colors">';
-        for (const c of cfg.opts) {
-          const active = p[cfg.key] === c;
-          html += `<button class="cc-swatch ${active?'cc-swatch-active':''}" style="background:#${c}" onclick="ui.setCharOpt('${cfg.key}','${c}')"></button>`;
-        }
-        html += '</div>';
+    // ── CUSTOMIZER ────────────────────────────────────────
+    html += `<div class="char-section">
+      <div class="char-section-header">
+        <span class="char-section-title">⚔ Customize Avatar</span>
+        <span class="char-section-sub">Changes preview instantly</span>
+      </div>
+      <div class="char-customizer-layout">
+        <div class="char-preview-panel">
+          <img src="${avatarUrl}" alt="Preview" id="char-preview-img" width="120" height="120" class="char-preview-img">
+          <div class="char-preview-name">${this.escHtml(displayName)}</div>
+          <div class="char-preview-rank">${rankTitle}</div>
+        </div>
+        <div class="char-options-panel">
+          <div class="char-opt-row">
+            <label class="char-opt-label">Name / Seed</label>
+            <input type="text" class="char-input" id="co-seed" value="${this.escHtml(p.avatarSeed||displayName||'')}" placeholder="${this.escHtml(displayName)}" oninput="ui._previewChar('avatarSeed',this.value)">
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Skin Tone</label>
+            <div class="char-swatches">
+              ${['ffdbb4','e8b88a','c68642','8d5524','5a3a1a','f0d0b0','d4a080','a06040'].map(c =>
+                `<button class="char-swatch ${skinColor===c?'swatch-active':''}" style="background:#${c}" onclick="ui._previewChar('skinColor','${c}')" title="#${c}"></button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Hair Style</label>
+            <div class="char-select-grid">
+              ${['short01','short02','short03','short04','short05','long01','long02','long03','long04','long05','long06'].map(h =>
+                `<button class="char-opt-btn ${hair===h?'opt-active':''}" onclick="ui._previewChar('hair','${h}')">${h.replace('short','S').replace('long','L')}</button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Hair Color</label>
+            <div class="char-swatches">
+              ${['2c1b18','d4a83a','c44040','1a1a1f','7a4a2a','e8e0d4','5a2a8a','3a8a5e','c4843a','4a6a9e'].map(c =>
+                `<button class="char-swatch ${hairColor===c?'swatch-active':''}" style="background:#${c}" onclick="ui._previewChar('hairColor','${c}')" title="#${c}"></button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Eyes</label>
+            <div class="char-select-grid">
+              ${['variant01','variant02','variant03','variant04','variant05','variant06','variant07','variant08','variant09','variant10','variant11','variant12'].map((e,i) =>
+                `<button class="char-opt-btn ${eyes===e?'opt-active':''}" onclick="ui._previewChar('eyes','${e}')">${i+1}</button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Mouth</label>
+            <div class="char-select-grid">
+              ${['happy01','happy02','happy03','happy04','happy05','happy06','sad01','sad02','surprised01','surprised02'].map((m,i) =>
+                `<button class="char-opt-btn ${mouth===m?'opt-active':''}" onclick="ui._previewChar('mouth','${m}')">${m.replace('happy','😄').replace('sad','😞').replace('surprised','😮').replace(/0\d/,'')}</button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Clothing</label>
+            <div class="char-select-grid">
+              ${['variant01','variant02','variant03','variant04','variant05','variant06','variant07','variant08','variant09','variant10','variant11','variant12','variant13','variant14','variant15'].map((v,i) =>
+                `<button class="char-opt-btn ${clothing===v?'opt-active':''}" onclick="ui._previewChar('clothing','${v}')">${i+1}</button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Shirt Color</label>
+            <div class="char-swatches">
+              ${['4a90d4','c44040','5a8a3e','d4a83a','8a5ec4','1a1a1f','e8e0d4','c47a3a','0a7a7a','9a3a6a'].map(c =>
+                `<button class="char-swatch ${clothingColor===c?'swatch-active':''}" style="background:#${c}" onclick="ui._previewChar('clothingColor','${c}')" title="#${c}"></button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Bio</label>
+            <textarea class="char-input char-bio-input" id="co-bio" placeholder="Describe your character, your goals, your legend..." rows="3">${this.escHtml(p.bio||'')}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="char-save-row">
+        <button class="btn char-save-btn" onclick="ui.saveCharacter()">💾 Save Character</button>
+        ${isOnline ? `<button class="btn btn-sm char-sync-btn" onclick="ui.saveCharacter(true)">☁ Save & Sync to Cloud</button>` : ''}
+        <span id="char-save-status" class="char-save-status"></span>
+      </div>
+    </div>`;
+
+    // ── COMBAT STATISTICS ─────────────────────────────────
+    const dmg = s.stats?.dmg || {};
+    const totalDmg = dmg.total || 0;
+    const totalTaken = dmg.taken || 0;
+    const kills = s.stats?.monstersKilled || 0;
+    const playTimeMins = Math.floor((s.stats?.totalPlayTime||0) / 60);
+    const playTimeHrs = Math.floor(playTimeMins / 60);
+    const dps = playTimeMins > 0 ? Math.floor(totalDmg / (playTimeMins * 60)) : 0;
+    const allSkillXp = Object.values(s.skills).reduce((a,sk)=>a+(sk.xp||0),0);
+    const xpPerHour = playTimeHrs > 0 ? Math.floor(allSkillXp / Math.max(1, (s.stats?.totalPlayTime||0) / 3600)) : 0;
+
+    html += `<div class="char-section">
+      <div class="char-section-header"><span class="char-section-title">📊 Lifetime Statistics</span></div>
+      <div class="char-stats-grid">
+        <div class="csg-card csg-combat">
+          <div class="csg-icon">⚔</div>
+          <div class="csg-title">Combat</div>
+          <div class="csg-row"><span>Monsters Killed</span><span class="csg-val">${this.fmt(kills)}</span></div>
+          <div class="csg-row"><span>Total Damage</span><span class="csg-val">${this.fmt(totalDmg)}</span></div>
+          <div class="csg-row"><span>Damage Taken</span><span class="csg-val" style="color:#e06040">${this.fmt(totalTaken)}</span></div>
+          <div class="csg-row"><span>Damage Ratio</span><span class="csg-val">${totalTaken>0?(totalDmg/totalTaken).toFixed(2)+'x':'—'}</span></div>
+          <div class="csg-row"><span>Highest Hit</span><span class="csg-val">${this.fmt(s.stats?.highestHit||0)}</span></div>
+          <div class="csg-row"><span>Boss Kills</span><span class="csg-val">${this.fmt(s.stats?.worldBossKills||0)}</span></div>
+          <div class="csg-row"><span>Deaths</span><span class="csg-val" style="color:#e06040">${s.stats?.deaths||0}</span></div>
+        </div>
+        <div class="csg-card csg-skills">
+          <div class="csg-icon">📚</div>
+          <div class="csg-title">Skills</div>
+          <div class="csg-row"><span>Total XP</span><span class="csg-val">${this.fmt(allSkillXp)}</span></div>
+          <div class="csg-row"><span>XP / Hour</span><span class="csg-val">${this.fmt(xpPerHour)}</span></div>
+          <div class="csg-row"><span>Play Time</span><span class="csg-val">${playTimeHrs}h ${playTimeMins%60}m</span></div>
+          <div class="csg-row"><span>Items Crafted</span><span class="csg-val">${this.fmt(s.stats?.itemsCrafted||0)}</span></div>
+          <div class="csg-row"><span>Dungeons</span><span class="csg-val">${s.stats?.dungeonsCompleted||0}</span></div>
+          <div class="csg-row"><span>Caskets Opened</span><span class="csg-val">${s.stats?.casketsOpened||0}</span></div>
+          <div class="csg-row"><span>Gold Earned</span><span class="csg-val">${this.fmt(s.stats?.goldEarned||0)}</span></div>
+        </div>
+      </div>
+
+      <!-- Damage breakdown bar -->
+      ${totalDmg > 0 ? `<div class="char-dmg-bar-wrap">
+        <div class="char-dmg-title">Damage Style Breakdown</div>
+        <div class="char-dmg-bar">
+          ${['melee','ranged','magic','ability'].map(type => {
+            const val = dmg[type]||0; const pct = Math.round(val/totalDmg*100);
+            const colors = {melee:'#c44040',ranged:'#4aaa60',magic:'#5a8aee',ability:'#c9873e'};
+            return pct>0?`<div class="char-dmg-seg" style="width:${pct}%;background:${colors[type]}" title="${type}: ${this.fmt(val)} (${pct}%)"></div>`:'';
+          }).join('')}
+        </div>
+        <div class="char-dmg-legend">
+          ${['melee','ranged','magic','ability'].map(type => {
+            const val = dmg[type]||0; const pct = Math.round(val/totalDmg*100);
+            const colors = {melee:'#c44040',ranged:'#4aaa60',magic:'#5a8aee',ability:'#c9873e'};
+            return pct>0?`<span class="char-dmg-lbl"><span class="char-dmg-dot" style="background:${colors[type]}"></span>${type} ${pct}%</span>`:'';
+          }).join('')}
+        </div>
+      </div>` : ''}
+    </div>`;
+
+    // ── SKILL MASTERY OVERVIEW ────────────────────────────
+    html += `<div class="char-section">
+      <div class="char-section-header"><span class="char-section-title">⚡ Skill Levels</span></div>
+      <div class="char-skill-grid">`;
+    const skillGroups = [
+      { label:'Combat', icon:'⚔', skills:['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy'] },
+      { label:'Gathering', icon:'🌲', skills:['woodcutting','mining','fishing','foraging','hunting','agility','thieving','farming'] },
+      { label:'Artisan', icon:'⚒', skills:['cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','summoning'] },
+    ];
+    for (const group of skillGroups) {
+      html += `<div class="cskill-group"><div class="cskill-group-label">${group.icon} ${group.label}</div>`;
+      for (const sId of group.skills) {
+        const sk = s.skills[sId]; if (!sk) continue;
+        const skData = GAME_DATA.skills[sId]; if (!skData) continue;
+        const lv = sk.level;
+        const isMax = lv >= 99;
+        html += `<div class="cskill-row ${isMax?'cskill-max':lv>=70?'cskill-high':lv>=40?'cskill-mid':''}">
+          <span class="cskill-name">${skData.name.substring(0,8)}</span>
+          <div class="cskill-bar-outer">
+            <div class="cskill-bar-fill" style="width:${(lv/99*100).toFixed(0)}%"></div>
+          </div>
+          <span class="cskill-lv ${isMax?'cskill-lv-max':''}">${lv}</span>
+        </div>`;
       }
       html += '</div>';
     }
-    html += '</div>';
+    html += '</div></div>';
 
-    // Bio + Save
-    html += `<h2 class="section-title">Bio</h2>
-      <div style="display:flex;gap:8px"><textarea id="bio-input" class="chat-input" rows="3" placeholder="Write about your character..." style="flex:1;resize:vertical">${this.escHtml(p.bio||'')}</textarea></div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn" onclick="ui.saveCharacter()">Save & Update Profile</button>
-        ${typeof online !== 'undefined' && online.isOnline ? '<button class="btn btn-sm" onclick="online.saveToCloud();online.syncProfile()">Sync to Cloud</button>' : ''}
+    // ── TOP MONSTERS KILLED ───────────────────────────────
+    const monsterKillLog = s.stats?.monsterKills || {};
+    const topMonsters = Object.entries(monsterKillLog).sort(([,a],[,b])=>b-a).slice(0,8);
+    if (topMonsters.length > 0) {
+      html += `<div class="char-section">
+        <div class="char-section-header"><span class="char-section-title">💀 Most Slain</span></div>
+        <div class="char-monster-list">
+          ${topMonsters.map(([id, count]) => {
+            const mon = GAME_DATA.monsters[id];
+            return `<div class="cml-row">
+              <span class="cml-name">${mon?.name||id}</span>
+              <div class="cml-bar-outer"><div class="cml-bar-fill" style="width:${Math.min(100,(count/topMonsters[0][1])*100).toFixed(0)}%"></div></div>
+              <span class="cml-count">${this.fmt(count)}</span>
+            </div>`;
+          }).join('')}
+        </div>
       </div>`;
-
-    // Equipment requirements quick reference
-    html += '<h2 class="section-title">Equipment Level Guide</h2><div class="equip-guide">';
-    const tiers = [
-      {name:'Bronze', level:1, color:'#a06a3c'},
-      {name:'Iron', level:10, color:'#7a8294'},
-      {name:'Steel', level:20, color:'#9da4b4'},
-      {name:'Mithril', level:30, color:'#7ab8c8'},
-      {name:'Adamant', level:40, color:'#4a8a5e'},
-      {name:'Obsidian', level:50, color:'#5a3060'},
-      {name:'Dragon', level:55, color:'#5a8a3e'},
-      {name:'Ashfire', level:60, color:'#d63a1a'},
-    ];
-    for (const t of tiers) {
-      html += `<div class="eg-tier"><span class="eg-dot" style="background:${t.color}"></span><span class="eg-name">${t.name}</span><span class="eg-level">Lv ${t.level}+</span></div>`;
     }
-    html += `<div class="eg-note">Melee weapons require Attack level. Ranged weapons require Ranged. Magic weapons require Magic. Armor requires Defence. Hybrid gear has multiple requirements.</div></div>`;
 
+    html += '</div>'; // char-page-wrap
     el.innerHTML = html;
   }
 
-  setCharOpt(key, value) {
+  _previewChar(key, value) {
+    // Update profile instantly and re-render avatar preview
     if (!game.state.profile) game.state.profile = {};
     game.state.profile[key] = value;
-    this.renderPage('character');
+    // Update the preview images without full re-render
+    const p = game.state.profile;
+    const displayName = (typeof online !== 'undefined' && online.displayName) || p.displayName || 'Survivor';
+    const seed = p.avatarSeed || displayName;
+    const url = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair||'short04'}&skinColor=${p.skinColor||'c68642'}&hairColor=${p.hairColor||'2c1b18'}&mouth=${p.mouth||'happy01'}&eyes=${p.eyes||'variant04'}&clothing=${p.clothing||'variant04'}&clothingColor=${p.clothingColor||'4a90d4'}${p.accessory?'&accessories='+p.accessory:''}&size=160`;
+    const main = document.getElementById('char-avatar-img');
+    const prev = document.getElementById('char-preview-img');
+    if (main) main.src = url;
+    if (prev) prev.src = url;
+    // Update active state on swatches/buttons without full re-render
+    document.querySelectorAll(`[onclick*="_previewChar('${key}'"]`).forEach(btn => {
+      const val = btn.getAttribute('onclick').match(/'([^']+)'\)$/)?.[1];
+      btn.classList.toggle('swatch-active', val === value);
+      btn.classList.toggle('opt-active', val === value);
+    });
   }
 
-  saveCharacter() {
-    const bio = document.getElementById('bio-input')?.value || '';
-    game.state.profile.bio = bio;
+  saveCharacter(sync = false) {
+    const s = game.state;
+    if (!s.profile) s.profile = {};
+    // Pull all values from inputs
+    const seedInput = document.getElementById('co-seed');
+    const bioInput  = document.getElementById('co-bio');
+    if (seedInput) s.profile.avatarSeed = seedInput.value.trim();
+    if (bioInput)  s.profile.bio = bioInput.value.trim();
+    // Save local
     game.save();
-    if (typeof online !== 'undefined' && online.isOnline) {
-      online.syncProfile();
-      online.saveToCloud();
-    }
+    // Update sidebar avatar immediately
     this.renderSidebar();
-    this.toast({ type:'success', text:'Character saved and synced.' });
+    // Sync to cloud
+    if (sync && typeof online !== 'undefined' && online.isOnline) {
+      online.syncProfileFull().then(() => {
+        const el = document.getElementById('char-save-status');
+        if (el) { el.textContent = '☁ Synced!'; el.style.color = '#4aaa60'; setTimeout(()=>{ if(el)el.textContent=''; }, 3000); }
+      });
+    } else {
+      const el = document.getElementById('char-save-status');
+      if (el) { el.textContent = '✓ Saved locally'; el.style.color = '#4aaa60'; setTimeout(()=>{ if(el)el.textContent=''; }, 2000); }
+    }
+    this.toast({ type:'success', text: sync ? 'Character saved and synced to cloud!' : 'Character saved!' });
+  }
+
+  setCharOpt(key, value) {
+    this._previewChar(key, value);
   }
 
   // ── GUILDS PAGE ────────────────────────────────────────

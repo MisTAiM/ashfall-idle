@@ -576,36 +576,55 @@ class OnlineManager {
 
   async syncProfile() {
     if (!this.isOnline || !this.user || !game) return;
-    // Anonymous users do NOT sync to the leaderboard — prevents ghost accounts
+    if (this.user.isAnonymous) return;
+    return this.syncProfileFull();
+  }
+
+  async syncProfileFull() {
+    if (!this.isOnline || !this.user || !game) return;
     if (this.user.isAnonymous) return;
     try {
       const s = game.state;
-      const skillLevels = {};
-      const skillXp = {};
+      const p = s.profile || {};
+      const skillLevels = {}, skillXp = {};
       let totalXp = 0;
       for (const [id, sk] of Object.entries(s.skills)) {
-        skillLevels[id] = sk.level;
-        skillXp[id] = sk.xp;
-        totalXp += sk.xp;
+        skillLevels[id] = sk.level; skillXp[id] = sk.xp; totalXp += sk.xp;
       }
+      const seed = p.avatarSeed || this.displayName || 'Survivor';
+      const avatarUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair||'short04'}&skinColor=${p.skinColor||'c68642'}&hairColor=${p.hairColor||'2c1b18'}&mouth=${p.mouth||'happy01'}&eyes=${p.eyes||'variant04'}&clothing=${p.clothing||'variant04'}&clothingColor=${p.clothingColor||'4a90d4'}${p.accessory?'&accessories='+p.accessory:''}&size=80`;
       await this.firestore.collection('players').doc(this.user.uid).set({
         displayName: this.displayName,
         uid: this.user.uid,
         combatLevel: game.getCombatLevel(),
         totalLevel: game.getTotalLevel(),
-        totalXp: totalXp,
+        totalXp, skills: skillLevels, skillsXp: skillXp,
         pvpRating: this.pvpRating,
         alignment: s.alignment,
-        kills: s.stats.monstersKilled || 0,
+        kills: s.stats?.monstersKilled || 0,
         gold: s.gold,
-        goldEarned: s.stats.goldEarned || 0,
+        goldEarned: s.stats?.goldEarned || 0,
         questsCompleted: s.quests?.completed?.length || 0,
-        dungeonClears: s.stats.dungeonsCompleted || 0,
-        playTime: Math.floor(s.stats.totalPlayTime || 0),
-        skills: skillLevels,
-        skillsXp: skillXp,
-        pvpWins: s.stats.pvpWins || 0,
-        pvpLosses: s.stats.pvpLosses || 0,
+        questPoints: s.questPoints || 0,
+        dungeonClears: s.stats?.dungeonsCompleted || 0,
+        playTime: Math.floor(s.stats?.totalPlayTime || 0),
+        pvpWins: s.stats?.pvpWins || 0,
+        pvpLosses: s.stats?.pvpLosses || 0,
+        prestigeRank: s._prestigeRank || 0,
+        // Avatar & profile data
+        profile: {
+          avatarSeed: p.avatarSeed || this.displayName || 'Survivor',
+          hair: p.hair || 'short04',
+          skinColor: p.skinColor || 'c68642',
+          hairColor: p.hairColor || '2c1b18',
+          eyes: p.eyes || 'variant04',
+          mouth: p.mouth || 'happy01',
+          clothing: p.clothing || 'variant04',
+          clothingColor: p.clothingColor || '4a90d4',
+          accessory: p.accessory || '',
+          bio: p.bio || '',
+        },
+        avatarUrl,
         lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
     } catch(e) { console.error('Sync profile error:', e); }

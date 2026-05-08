@@ -1395,6 +1395,8 @@ class GameEngine {
     this.state.stats.monstersKilled++;
     if (!this.state.stats.uniqueKills) this.state.stats.uniqueKills = {};
     this.state.stats.uniqueKills[mId] = (this.state.stats.uniqueKills[mId] || 0) + 1;
+    if (!this.state.stats.monsterKills) this.state.stats.monsterKills = {};
+    this.state.stats.monsterKills[mId] = (this.state.stats.monsterKills[mId] || 0) + 1;
 
     const style = this.state.combat.combatStyle;
     const xpMode = this.state.combat.xpMode || 'controlled';
