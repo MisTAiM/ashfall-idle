@@ -240,8 +240,10 @@ class GameEngine {
     if (!s.combat.cannon) s.combat.cannon = { active:false, timer:0 };
     // Daily quests state
     if (!s.dailyQuests) s.dailyQuests = { active:[], progress:{}, lastRefresh:0, completed:[] };
-    // Thieving anger init
-    if (!s.thievingAnger) s.thievingAnger = {};
+    // Clue scroll state
+    if (!s.clueScroll) s.clueScroll = { active:false };
+    s.version = 2;
+    return s;
   }
 
   // ── TICK ───────────────────────────────────────────────

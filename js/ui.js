@@ -279,7 +279,7 @@ class UI {
   renderSidebar() {
     const sb = document.getElementById('sidebar');
     const s = this.engine.state;
-    const align = GAME_DATA.alignments[s.alignment];
+    const align = GAME_DATA.alignments[s.alignment] || GAME_DATA.alignments['true_neutral'] || { axis:'NN', name:'Neutral' };
     const _prof = s.profile || {};
     const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
     const _avUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${_prof.hair||'short04'}&skinColor=${_prof.skinColor||'c68642'}&size=32`;
@@ -325,7 +325,7 @@ class UI {
         const active = this.currentPage === item.id ? ' active' : '';
         let badge = '';
         if (s.skills[item.id]) badge = `<span class="nav-level">${s.skills[item.id].level}</span>`;
-        if (item.id === 'quests' && s.quests.active.length > 0) badge = `<span class="nav-level nav-active-count">${s.quests.active.length}</span>`;
+        if (item.id === 'quests' && (s.quests?.active?.length||0) > 0) badge = `<span class="nav-level nav-active-count">${s.quests.active.length}</span>`;
         if (item.id === 'inbox') { /* badge could show unread count */ }
         html += `<div class="nav-item${active}" data-page="${item.id}">${icon(item.icon, 15)}<span class="nav-label">${item.label}</span>${badge}</div>`;
       }
