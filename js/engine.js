@@ -228,8 +228,20 @@ class GameEngine {
     // Ore Bag system
     if (!s.oreBag) s.oreBag = { capacity:100, contents:{}, upgrades:[] };
     if (!s.miningStats) s.miningStats = { luck:0, security:0, danger:0, totalMined:0, eventsTriggered:0 };
-    s.version = 2;
-    return s;
+    // Segments 2-4 fields — must exist for new features to work
+    if (s._prestigeRank === undefined) s._prestigeRank = 0;
+    if (!s._prestigeHistory) s._prestigeHistory = [];
+    if (!s._prefs) s._prefs = {};
+    if (!s._bankPresets) s._bankPresets = [null,null,null,null];
+    if (s._tutorialDismissed === undefined) s._tutorialDismissed = false;
+    if (s._smithingHeat === undefined) s._smithingHeat = 0;
+    if (!s._autoBankConfig) s._autoBankConfig = { enabled:false, intervalSeconds:300, overflow:{} };
+    // Combat cannon state
+    if (!s.combat.cannon) s.combat.cannon = { active:false, timer:0 };
+    // Daily quests state
+    if (!s.dailyQuests) s.dailyQuests = { active:[], progress:{}, lastRefresh:0, completed:[] };
+    // Thieving anger init
+    if (!s.thievingAnger) s.thievingAnger = {};
   }
 
   // ── TICK ───────────────────────────────────────────────
@@ -2781,8 +2793,8 @@ class GameEngine {
     const slot = this.state.potionBelt[slotIdx];
     // Return existing potion to bank
     if (slot.id && slot.qty > 0) this.addItem(slot.id, slot.qty);
-    // Fill belt slot (max 5)
-    const amt = Math.min(have, 5);
+    // Fill belt slot — take up to 28 (same as food bag capacity)
+    const amt = Math.min(have, 28);
     this.state.bank[itemId] -= amt;
     if (this.state.bank[itemId] <= 0) delete this.state.bank[itemId];
     this.state.potionBelt[slotIdx] = { id:itemId, qty:amt };
@@ -3171,7 +3183,13 @@ class GameEngine {
       }
     }
     this.state.quests.active.push(questId);
-    this.state.quests.progress[questId] = (q.objectives||[]).map(() => 0);
+    this.state.quests.progress[questId] = (q.objectives||[]).map((obj, i) => {
+      // Auto-complete skill_level objectives if player already meets requirement
+      if (obj.type === 'skill_level') {
+        return (this.state.skills[obj.skill]?.level||1) >= obj.level ? obj.qty : 0;
+      }
+      return 0;
+    });
     this.emit('notification',{type:'success',text:`Quest accepted: ${q.name}`});
     this.emit('questsChanged');
   }
@@ -3237,6 +3255,10 @@ class GameEngine {
     if (q.rewards.xp)    for (const [sk,amt] of Object.entries(q.rewards.xp)) this.addXp(sk,amt);
     if (q.rewards.items) for (const it of q.rewards.items) this.addItem(it.id||it.item, it.qty);
     if (q.rewards.qp)    { this.state.questPoints = (this.state.questPoints||0) + q.rewards.qp; }
+    if (q.rewards.rep)   for (const [fac,amt] of Object.entries(q.rewards.rep)) {
+      if (!this.state.reputation) this.state.reputation = {};
+      this.state.reputation[fac] = (this.state.reputation[fac]||0) + amt;
+    }
     this.state.stats.questsCompleted++;
     this.emit('questComplete', { quest:q });
     this.emit('notification',{type:'achievement',text:`⚔ Quest complete: ${q.name}! +${q.rewards.qp||0} QP`});

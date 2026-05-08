@@ -93,6 +93,7 @@ const NAV = [
   ]},
   { header:'World', icon:'🌍', items:[
     {id:'quests',       label:'Quests',       icon:'scroll'},
+    {id:'clue_scrolls', label:'Clue Scrolls', icon:'scroll'},
     {id:'npcs',         label:'NPCs',         icon:'npc'},
     {id:'factions',     label:'Factions',     icon:'faction'},
     {id:'alignment',    label:'Alignment',    icon:'alignment'},
@@ -255,6 +256,7 @@ class UI {
     // Cannon events
     this.engine.on('cannonFire', (d) => this.showCannonFire(d));
     this.engine.on('cannonToggled', () => { if (this.currentPage === 'combat') this.renderPage('combat'); });
+    this.engine.on('clueScrollUpdated', () => { if (this.currentPage === 'clue_scrolls') this.renderPage('clue_scrolls'); });
     this.engine.on('bossPhase', (d) => {
       // Flash the combat arena with a phase transition effect
       const arena = document.querySelector('.combat-arena');
@@ -383,6 +385,7 @@ class UI {
     // Named pages that override the generic skill renderer
     if (pageId === 'agility') { this.renderAgilityPage(main); return; }
     if (pageId === 'thieving') { this.renderThievingPage(main); return; }
+    if (pageId === 'clue_scrolls') { this.renderClueScrollPage(main); return; }
     const skill = GAME_DATA.skills[pageId];
     if (skill && (skill.type === 'gathering' || skill.type === 'artisan')) this.renderSkillPage(main, pageId, skill);
     else if (pageId === 'combat') this.renderCombatPage(main);
@@ -615,6 +618,96 @@ class UI {
       }
       html += '</div>';
     }
+
+    el.innerHTML = html;
+  }
+
+  renderClueScrollPage(el) {
+    const s = this.engine.state;
+    const cs = s.clueScroll || { active:false };
+    const tiers = ['easy','medium','hard','elite'];
+    const tierColors = { easy:'#d4a83a', medium:'#4a90d4', hard:'#c44040', elite:'#b585e0' };
+    const completed = s.stats?.clueScrollsCompleted || {};
+    let html = this.header('Clue Scrolls','scroll','Solve riddles, collect rewards. Found while skilling, thieving, and fighting.',null);
+
+    // Active clue display
+    if (cs.active) {
+      const def = GAME_DATA.clueScrolls?.[cs.tier];
+      const color = tierColors[cs.tier] || '#c9873e';
+      const step = cs.steps?.[cs.currentStep];
+      html += `<div class="clue-active-panel" style="border-color:${color}40;background:${color}08">
+        <div class="cap-header">
+          <span class="cap-tier" style="color:${color}">📜 ${def?.label||cs.tier} Clue</span>
+          <span class="cap-progress">${(cs.currentStep||0)+1} / ${cs.steps?.length||1} steps</span>
+        </div>
+        <div class="cap-step-bar">
+          ${cs.steps?.map((st, i) => `<div class="csb-step ${st.complete?'csb-done':i===cs.currentStep?'csb-current':''}">${i+1}</div>`).join('') || ''}
+        </div>
+        ${step ? `<div class="cap-step-desc">
+          <span class="cap-step-num">Step ${(cs.currentStep||0)+1}:</span>
+          <span class="cap-step-text">${step.desc}</span>
+          ${step.type==='gather'||step.type==='kill'||step.type==='craft' ? `<div class="cap-step-progress">
+            ${step.type==='kill' ? (() => { const prog = cs._killProgress?.[step.id]||0; return `<div class="cap-prog-bar"><div class="cap-prog-fill" style="width:${Math.min(100,prog/step.qty*100)}%;background:${color}"></div></div><span class="cap-prog-text">${prog}/${step.qty}</span>`; })() : ''}
+            ${step.type==='gather' ? (() => { const prog = cs._gatherProgress?.[step.id]||0; return `<div class="cap-prog-bar"><div class="cap-prog-fill" style="width:${Math.min(100,prog/step.qty*100)}%;background:${color}"></div></div><span class="cap-prog-text">${prog}/${step.qty}</span>`; })() : ''}
+            ${step.type==='craft' ? (() => { const prog = cs._craftProgress?.[step.id]||0; return `<div class="cap-prog-bar"><div class="cap-prog-fill" style="width:${Math.min(100,prog/step.qty*100)}%;background:${color}"></div></div><span class="cap-prog-text">${prog}/${step.qty}</span>`; })() : ''}
+          </div>` : ''}
+        </div>` : `<div class="cap-step-desc" style="color:#4aaa60">✅ All steps complete! Reward casket added to bank.</div>`}
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-sm btn-danger" onclick="if(confirm('Abandon this clue scroll?'))game.abandonClueScroll();ui.renderPage('clue_scrolls')">Abandon</button>
+        </div>
+      </div>`;
+    }
+
+    // Owned scrolls
+    html += '<h2 class="section-title">Your Clue Scrolls</h2><div class="clue-tier-grid">';
+    let anyScrolls = false;
+    for (const tier of tiers) {
+      const scrollId = `clue_scroll_${tier}`;
+      const casketId = `casket_${tier}`;
+      const count = s.bank?.[scrollId] || 0;
+      const caskets = s.bank?.[casketId] || 0;
+      const def = GAME_DATA.clueScrolls?.[tier];
+      const color = tierColors[tier];
+      const done = completed[tier] || 0;
+      if (count > 0 || caskets > 0) anyScrolls = true;
+      html += `<div class="clue-tier-card" style="border-color:${color}30">
+        <div class="ctc-header" style="color:${color}">${def?.label||tier}</div>
+        <div class="ctc-row"><span>Scrolls:</span><span>${count}</span></div>
+        <div class="ctc-row"><span>Caskets:</span><span>${caskets}</span></div>
+        <div class="ctc-row ctc-done"><span>Completed:</span><span>${done}</span></div>
+        <div class="ctc-steps">~${def?.steps||3} steps • ${def?.cluePool?.length||8} possible clues</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+          ${count > 0 && !cs.active ? `<button class="btn btn-xs" style="border-color:${color}60;color:${color}" onclick="game.startClueScroll('${tier}');ui.renderPage('clue_scrolls')">▶ Start</button>` : ''}
+          ${caskets > 0 ? `<button class="btn btn-xs" style="background:rgba(201,135,62,0.15);border-color:rgba(201,135,62,0.4);color:var(--amber)" onclick="game.openCasket('${casketId}');ui.renderPage('clue_scrolls')">🎁 Open Casket</button>` : ''}
+        </div>
+      </div>`;
+    }
+    if (!anyScrolls) {
+      html += `<div class="clue-empty">No clue scrolls yet.<br><span style="font-size:11px;color:var(--text-dim)">Earn them from: thieving (rogues, gem stalls), hunting (dragons), fishing (rare catch), and killing world bosses.</span></div>`;
+    }
+    html += '</div>';
+
+    // How to get clues
+    html += `<h2 class="section-title">How to Get Clue Scrolls</h2>
+    <div class="clue-sources">
+      <div class="cs-src"><span class="cs-tier easy-clr">Easy</span><span>Pickpocket Rogues (3%), fishing rare catch (1.5%), hunting level 55+ (1%)</span></div>
+      <div class="cs-src"><span class="cs-tier med-clr">Medium</span><span>Gem stall theft (5%), hunting dragons (5%), monster kills 50+ level (rare)</span></div>
+      <div class="cs-src"><span class="cs-tier hard-clr">Hard</span><span>Opening medium caskets (4% chance), slayer tasks 60+ (0.5%)</span></div>
+      <div class="cs-src"><span class="cs-tier elite-clr">Elite</span><span>World bosses: Ashen Overlord, Void Emperor, Storm Reaver (5% each)</span></div>
+    </div>
+
+    <h2 class="section-title">Reward Examples</h2>
+    <div class="clue-reward-preview">
+      ${tiers.map(tier => {
+        const def = GAME_DATA.clueScrolls?.[tier];
+        const color = tierColors[tier];
+        return `<div class="crp-tier">
+          <div class="crp-label" style="color:${color}">${def?.label}</div>
+          ${def?.rewards?.slice(0,4).map(r => `<div class="crp-item">${GAME_DATA.items[r.item]?.name||r.item}${r.qty>1?` ×${r.qty}`:''}</div>`).join('') || ''}
+          <div class="crp-item crp-more">+${Math.max(0,(def?.rewards?.length||0)-4)} more…</div>
+        </div>`;
+      }).join('')}
+    </div>`;
 
     el.innerHTML = html;
   }
@@ -2004,6 +2097,7 @@ class UI {
         <div class="bi-actions">
           ${item.slot ? `<button class="btn btn-xs" onclick="game.equipItem('${id}')">Equip</button>` : ''}
           ${item.slot ? `<button class="btn btn-xs" onclick="ui.showItemCompare('${id}')">Compare</button>` : ''}
+          ${item.subtype === 'casket' ? `<button class="btn btn-xs" style="background:rgba(201,135,62,0.2);border-color:rgba(201,135,62,0.5);color:var(--amber)" onclick="game.openCasket('${id}');ui.renderPage('bank')">🎁 Open</button>` : ''}
           ${item.type==='food' ? `<button class="btn btn-xs" onclick="game.equipFood('${id}')">Add to Bag</button>` : ''}
           ${item.type==='potion' ? `<button class="btn btn-xs" onclick="ui.showPotionBeltSelect('${id}')">Belt</button>` : ''}
           ${item.subtype==='ore_bag' ? `<button class="btn btn-xs" onclick="game.upgradeOreBag('${id}');ui.renderPage('bank')">Apply</button>` : ''}
@@ -2096,7 +2190,22 @@ class UI {
       const ammoQty = isAmmoSlot && id ? (s.bank?.[id] || 0) : null;
       const bowTypeBadge = item?.bowType ? `<span class="bow-type-badge ${item.bowType}">${item.bowType === 'shortbow' ? 'SB' : 'LB'}</span>` : '';
       html += `<div class="equip-slot"><div class="es-label">${slot[0].toUpperCase()+slot.slice(1)}</div><div class="es-item ${item?'':'es-empty'}">
-        ${item?`<div class="es-icon">${window.renderItemSprite ? window.renderItemSprite(id, 40) : ''}</div><span class="es-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name}${bowTypeBadge}${isAmmoSlot ? `<span class="ammo-slot-qty"> x${ammoQty?.toLocaleString()??0}</span>` : ''}</span><button class="btn btn-xs btn-danger" onclick="game.unequipItem('${slot}')">X</button>`:'<span class="es-none">Empty</span>'}
+        ${item ? `
+          <div class="bi-tooltip">
+            <div class="bi-tooltip-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">${item.name}</div>
+            ${item.stats ? Object.entries(item.stats).filter(([,v])=>v).map(([k,v])=>`<div class="bi-tooltip-stat"><span>${k.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}</span><span>+${v}</span></div>`).join('') : ''}
+            ${item.attackSpeed ? `<div class="bi-tooltip-stat"><span>Speed</span><span>${item.attackSpeed}s</span></div>` : ''}
+            ${item.levelReq ? `<div class="bi-tooltip-req">Req: ${Object.entries(item.levelReq).map(([k,v])=>`${k} ${v}`).join(', ')}</div>` : ''}
+            <div class="bi-tooltip-desc">${item.desc||''}</div>
+          </div>
+          <div class="es-icon">${window.renderItemSprite ? window.renderItemSprite(id, 40) : ''}</div>
+          <span class="es-name" style="${this.getRarityColor(id)?'color:'+this.getRarityColor(id):''}">
+            ${item.name}${bowTypeBadge}${isAmmoSlot ? `<span class="ammo-slot-qty"> x${ammoQty?.toLocaleString()??0}</span>` : ''}
+          </span>
+          <div class="es-actions">
+            ${item.slot ? `<button class="btn btn-xs" onclick="ui.showItemCompare('${id}')">⇌</button>` : ''}
+            <button class="btn btn-xs btn-danger" onclick="game.unequipItem('${slot}')">X</button>
+          </div>` : '<span class="es-none">Empty</span>'}
       </div></div>`;
     }
     html += '</div>';

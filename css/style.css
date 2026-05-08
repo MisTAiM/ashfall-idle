@@ -7470,3 +7470,47 @@ body.perf-mode .hit-splat { display:none !important; }
 .cep-empty { font-size:12px; color:rgba(255,255,255,0.1); }
 .cep-actions { display:flex; gap:4px; flex-wrap:wrap; }
 .cep-actions .btn { flex:1; font-size:10px; padding:4px 3px; }
+
+/* ── CLUE SCROLLS PAGE ───────────────────────────────────── */
+.clue-active-panel {
+  border:2px solid; border-radius:12px; padding:14px; margin-bottom:14px;
+}
+.cap-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.cap-tier { font-family:'Cinzel',serif; font-size:14px; font-weight:700; }
+.cap-progress { font-size:11px; color:var(--text-dim); }
+.cap-step-bar { display:flex; gap:6px; margin-bottom:12px; }
+.csb-step { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-dim); }
+.csb-step.csb-done { background:rgba(74,170,80,0.2); border-color:#4aaa60; color:#4aaa60; }
+.csb-step.csb-current { background:rgba(201,135,62,0.15); border-color:var(--amber); color:var(--amber); font-weight:700; }
+.cap-step-desc { background:rgba(0,0,0,0.2); border-radius:8px; padding:10px; }
+.cap-step-num { font-size:11px; color:var(--text-dim); margin-right:6px; }
+.cap-step-text { font-size:13px; color:var(--text); display:block; margin-bottom:8px; }
+.cap-step-progress { display:flex; align-items:center; gap:8px; margin-top:6px; }
+.cap-prog-bar { flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; }
+.cap-prog-fill { height:100%; border-radius:3px; transition:width 0.3s; }
+.cap-prog-text { font-size:11px; color:var(--text-dim); white-space:nowrap; }
+
+.clue-tier-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:14px; }
+.clue-tier-card { background:rgba(0,0,0,0.2); border:1px solid; border-radius:10px; padding:12px; }
+.ctc-header { font-family:'Cinzel',serif; font-size:13px; font-weight:700; margin-bottom:8px; }
+.ctc-row { display:flex; justify-content:space-between; font-size:12px; color:var(--text-dim); padding:2px 0; }
+.ctc-done span:last-child { color:#4aaa60; font-weight:700; }
+.ctc-steps { font-size:10px; color:var(--text-dim); margin-top:4px; }
+.clue-empty { grid-column:1/-1; text-align:center; padding:20px; color:var(--text-dim); font-size:12px; border:1px dashed var(--border); border-radius:10px; line-height:1.6; }
+
+.clue-sources { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.cs-src { display:flex; align-items:flex-start; gap:10px; font-size:11px; color:var(--text-dim); padding:6px; background:rgba(0,0,0,0.15); border-radius:6px; }
+.cs-tier { font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px; white-space:nowrap; }
+.easy-clr { background:rgba(212,168,58,0.15); color:#d4a83a; }
+.med-clr  { background:rgba(74,144,212,0.15); color:#4a90d4; }
+.hard-clr { background:rgba(196,64,64,0.15); color:#c44040; }
+.elite-clr{ background:rgba(181,133,224,0.15); color:#b585e0; }
+
+.clue-reward-preview { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.crp-tier { background:rgba(0,0,0,0.15); border:1px solid var(--border); border-radius:8px; padding:10px; }
+.crp-label { font-family:'Cinzel',serif; font-size:12px; font-weight:700; margin-bottom:6px; }
+.crp-item { font-size:10px; color:var(--text-dim); padding:2px 0; }
+.crp-more { font-style:italic; }
+
+/* Equipment page slot actions */
+.es-actions { display:flex; gap:3px; margin-top:4px; }
