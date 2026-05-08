@@ -135,93 +135,95 @@ E.advanceQuestStage = function(questId, nextStageId) {
   this.emit('questsChanged');
 };
 
-// ── ENGINE: Override quest tracking for multi-stage ──────
+// ── ENGINE: Override quest tracking — handles multi-stage, legacy flat, AND dailies ──
 const _origTrack = E._trackAllQuests;
+
+// Shared objective matcher used by all quest types
+function _matchObj(obj, type, data, state) {
+  switch(obj.type) {
+    case 'kill':         return type==='kill' && obj.monster===data.monster ? data.qty : 0;
+    case 'kill_any':     return type==='kill' ? data.qty : 0;
+    case 'gather':       return type==='gather' && obj.item===data.item ? data.qty : 0;
+    case 'gather_any':   return type==='gather' ? data.qty : 0;
+    case 'harvest':      return type==='harvest' && obj.item===data.item ? data.qty : 0;
+    case 'craft':        return type==='craft' && obj.item===data.item ? data.qty : 0;
+    case 'craft_any':    return type==='craft' ? data.qty : 0;
+    case 'craft_cooking':return type==='craft' && GAME_DATA.items[data.item]?.type==='food' ? data.qty : 0;
+    case 'thieve':       return type==='thieve' && obj.target===data.target ? data.qty : 0;
+    case 'thieve_any':   return type==='thieve' ? data.qty : 0;
+    case 'dungeon':      return type==='dungeon' && obj.dungeon===data.dungeon ? 1 : 0;
+    case 'dungeon_any':  return type==='dungeon' ? 1 : 0;
+    case 'slayer_tasks': return type==='slayer_tasks' ? -(state.stats.slayerTasksCompleted||0) : 0; // negative = absolute set
+    case 'slayer_kills': return type==='kill' && state.combat?.onSlayerTask ? data.qty : 0;
+    case 'skill_level':  return type==='skill_level' && obj.skill===data.skill ? -((state.skills[obj.skill]?.level||1)>=obj.level?obj.qty:0) : 0;
+    case 'gold':         return -(Math.min(obj.qty, state.gold));
+    case 'pets':         return -(Math.min(obj.qty, (state.pets||[]).length));
+    case 'magic_kills':  return type==='magic_kills' ? (data.qty||0) : 0;
+    case 'bury_bones': case 'bury_big_bones': case 'bury_dragon_bones':
+      return type===obj.type ? (data.qty||1) : 0;
+    default: return 0;
+  }
+}
+
+function _trackObjectives(objectives, progress, type, data, state) {
+  let updated = false;
+  (objectives||[]).forEach((obj, i) => {
+    const cur = progress[i]||0;
+    if (cur >= obj.qty) return;
+    const result = _matchObj(obj, type, data, state);
+    if (result < 0) { // Absolute set (negative convention)
+      progress[i] = Math.min(obj.qty, -result);
+      updated = true;
+    } else if (result > 0) { // Incremental add
+      progress[i] = Math.min(obj.qty, cur + result);
+      updated = true;
+    }
+  });
+  return updated;
+}
+
 E._trackAllQuests = function(type, data) {
-  // Track multi-stage quests
+  // ── 1. Track active main quests ──
   for (const qId of [...this.state.quests.active]) {
     const q = GAME_DATA.quests.find(x => x.id === qId); if (!q) continue;
     
     if (q.stages && q.stages.length > 0) {
+      // MULTI-STAGE quest
       const stageState = this.state.quests.stages?.[qId];
       if (!stageState) continue;
       const stage = q.stages.find(s => s.id === stageState.currentStageId);
       if (!stage || stage.type !== 'objectives') continue;
       
       const p = this.state.quests.progress[qId] || [];
-      let updated = false;
-      
-      (stage.objectives||[]).forEach((obj, i) => {
-        const cur = p[i]||0;
-        if (cur >= obj.qty) return;
-        let add = 0;
-        switch(obj.type) {
-          case 'kill':         if (type==='kill'    && obj.monster===data.monster)  add=data.qty; break;
-          case 'kill_any':     if (type==='kill')                                    add=data.qty; break;
-          case 'gather':       if (type==='gather'  && obj.item===data.item)        add=data.qty; break;
-          case 'gather_any':   if (type==='gather')                                  add=data.qty; break;
-          case 'harvest':      if (type==='harvest' && obj.item===data.item)        add=data.qty; break;
-          case 'craft':        if (type==='craft'   && obj.item===data.item)        add=data.qty; break;
-          case 'craft_any':    if (type==='craft')                                   add=data.qty; break;
-          case 'craft_cooking':if (type==='craft' && GAME_DATA.items[data.item]?.type==='food') add=data.qty; break;
-          case 'thieve':       if (type==='thieve'  && obj.target===data.target)    add=data.qty; break;
-          case 'thieve_any':   if (type==='thieve')                                  add=data.qty; break;
-          case 'dungeon':      if (type==='dungeon' && obj.dungeon===data.dungeon)  add=1; break;
-          case 'dungeon_any':  if (type==='dungeon')                                 add=1; break;
-          case 'slayer_tasks': if (type==='slayer_tasks') { p[i]=Math.min(obj.qty,this.state.stats.slayerTasksCompleted||0); updated=true; return; }
-          case 'skill_level':  if (type==='skill_level' && obj.skill===data.skill) { p[i]=(this.state.skills[obj.skill]?.level||1)>=obj.level?obj.qty:0; updated=true; return; }
-          case 'gold':         { p[i]=Math.min(obj.qty,this.state.gold); updated=true; return; }
-          case 'pets':         { p[i]=Math.min(obj.qty,(this.state.pets||[]).length); updated=true; return; }
-          case 'bury_bones': case 'bury_big_bones': case 'bury_dragon_bones':
-            if (type===obj.type) add=data.qty||1; break;
-        }
-        if (add>0) { p[i]=Math.min(obj.qty,cur+add); updated=true; }
-      });
-      if (updated) this.state.quests.progress[qId]=p;
-      
-      // Check if all objectives met — advance to onComplete stage
-      if ((stage.objectives||[]).every((_,i)=>(p[i]||0)>=stage.objectives[i].qty)) {
-        if (stage.onComplete) {
-          this.advanceQuestStage(qId, stage.onComplete);
-        }
+      if (_trackObjectives(stage.objectives, p, type, data, this.state)) {
+        this.state.quests.progress[qId] = p;
+      }
+      // Auto-advance when all objectives met
+      if ((stage.objectives||[]).every((_, i) => (p[i]||0) >= stage.objectives[i].qty)) {
+        if (stage.onComplete) this.advanceQuestStage(qId, stage.onComplete);
+      }
+    } else if (q.objectives && q.objectives.length > 0) {
+      // LEGACY FLAT quest (no stages, uses q.objectives directly)
+      const p = this.state.quests.progress[qId] || [];
+      if (_trackObjectives(q.objectives, p, type, data, this.state)) {
+        this.state.quests.progress[qId] = p;
+      }
+      // Auto-complete when all objectives met
+      if (q.objectives.every((_, i) => (p[i]||0) >= q.objectives[i].qty)) {
+        this.completeQuest(qId);
       }
     }
   }
 
-  // Also track dailies using original logic
-  const allDaily = ((this.state.dailyQuests?.active)||[]).map(id=>({id,list:GAME_DATA.dailyQuests||[],prog:this.state.dailyQuests?.progress||{},isDaily:true}));
-  for (const {id:qId, list, prog, isDaily} of allDaily) {
-    const q = list.find(x=>x.id===qId); if (!q) continue;
+  // ── 2. Track daily quests ──
+  for (const qId of [...((this.state.dailyQuests?.active)||[])]) {
+    const q = (GAME_DATA.dailyQuests||[]).find(x => x.id === qId); if (!q) continue;
+    const prog = this.state.dailyQuests?.progress || {};
     const p = prog[qId] || [];
-    let updated = false;
-    (q.objectives||[]).forEach((obj,i) => {
-      const cur = p[i]||0;
-      if (cur >= obj.qty) return;
-      let add = 0;
-      switch(obj.type) {
-        case 'kill':         if (type==='kill'    && obj.monster===data.monster)  add=data.qty; break;
-        case 'kill_any':     if (type==='kill')                                    add=data.qty; break;
-        case 'gather':       if (type==='gather'  && obj.item===data.item)        add=data.qty; break;
-        case 'gather_any':   if (type==='gather')                                  add=data.qty; break;
-        case 'harvest':      if (type==='harvest' && obj.item===data.item)        add=data.qty; break;
-        case 'craft':        if (type==='craft'   && obj.item===data.item)        add=data.qty; break;
-        case 'craft_any':    if (type==='craft')                                   add=data.qty; break;
-        case 'craft_cooking':if (type==='craft' && GAME_DATA.items[data.item]?.type==='food') add=data.qty; break;
-        case 'thieve':       if (type==='thieve'  && obj.target===data.target)    add=data.qty; break;
-        case 'thieve_any':   if (type==='thieve')                                  add=data.qty; break;
-        case 'dungeon':      if (type==='dungeon' && obj.dungeon===data.dungeon)  add=1; break;
-        case 'dungeon_any':  if (type==='dungeon')                                 add=1; break;
-        case 'slayer_tasks': if (type==='slayer_tasks') { p[i]=Math.min(obj.qty,this.state.stats.slayerTasksCompleted||0); updated=true; return; }
-        case 'skill_level':  if (type==='skill_level' && obj.skill===data.skill) { p[i]=(this.state.skills[obj.skill]?.level||1)>=obj.level?obj.qty:0; updated=true; return; }
-        case 'gold':         { p[i]=Math.min(obj.qty,this.state.gold); updated=true; return; }
-        case 'pets':         { p[i]=Math.min(obj.qty,(this.state.pets||[]).length); updated=true; return; }
-        case 'bury_bones': case 'bury_big_bones': case 'bury_dragon_bones':
-          if (type===obj.type) add=data.qty||1; break;
-      }
-      if (add>0) { p[i]=Math.min(obj.qty,cur+add); updated=true; }
-    });
-    if (updated) prog[qId]=p;
-    if ((q.objectives||[]).every((_,i)=>(p[i]||0)>=q.objectives[i].qty)) {
+    if (_trackObjectives(q.objectives, p, type, data, this.state)) {
+      prog[qId] = p;
+    }
+    if ((q.objectives||[]).every((_, i) => (p[i]||0) >= q.objectives[i].qty)) {
       this._completeDailyQuest(qId);
     }
   }
@@ -282,10 +284,20 @@ E.migrateSave = function(s) {
   for (const qId of (s.quests.active || [])) {
     const q = GAME_DATA.quests.find(x => x.id === qId);
     if (q && q.stages && q.stages.length > 0 && !s.quests.stages[qId]) {
-      // Find the first objectives stage
       const firstObjStage = q.stages.find(st => st.type === 'objectives') || q.stages[0];
       s.quests.stages[qId] = { currentStageId: firstObjStage.id, stageHistory: [] };
     }
+  }
+
+  // Recalculate QP from all completed quests (handles retroactive QP from patched legacy quests)
+  let correctQP = 0;
+  for (const qId of (s.quests.completed || [])) {
+    const q = GAME_DATA.quests.find(x => x.id === qId);
+    if (q && q.qp) correctQP += q.qp;
+  }
+  if (correctQP !== (s.questPoints || 0)) {
+    console.log(`[Ashfall] QP migration: ${s.questPoints||0} → ${correctQP} (recalculated from ${s.quests.completed.length} completed quests)`);
+    s.questPoints = correctQP;
   }
   return s;
 };
