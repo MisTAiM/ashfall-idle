@@ -17,8 +17,13 @@ E.acceptQuest = function(questId) {
   if (this.state.quests.completed.includes(questId)) { this.emit('notification',{type:'warn',text:'Quest already completed.'}); return; }
   if (this.state.quests.active.includes(questId)) { this.emit('notification',{type:'warn',text:'Quest already active.'}); return; }
 
-  // QP gate
-  const playerQP = this.state.questPoints || 0;
+  // QP gate — calculate live, never trust saved value
+  let playerQP = 0;
+  for (const cId of (this.state.quests.completed||[])) {
+    const cq = GAME_DATA.quests.find(x=>x.id===cId);
+    if (cq && cq.qp) playerQP += cq.qp;
+  }
+  this.state.questPoints = playerQP; // sync
   if ((q.qpRequired||0) > playerQP) {
     this.emit('notification',{type:'warn',text:`Requires ${q.qpRequired} Quest Points (you have ${playerQP}).`}); return;
   }
@@ -414,11 +419,25 @@ U.showQuestDialogue = function(data) {
 const _origRenderQuests = U.renderQuestsPage;
 U.renderQuestsPage = function(el) {
   const s = this.engine.state;
-  const qp = s.questPoints || 0;
+
+  // ── LIVE CLEANUP: remove orphaned completed IDs that don't exist in GAME_DATA ──
+  const beforeLen = (s.quests.completed||[]).length;
+  s.quests.completed = (s.quests.completed||[]).filter(id => GAME_DATA.quests.find(q=>q.id===id));
+  if (s.quests.completed.length !== beforeLen) {
+    console.log(`[Ashfall] Cleaned ${beforeLen - s.quests.completed.length} orphaned quest IDs`);
+  }
+
+  // ── LIVE QP: always recalculate from completed quests, never trust saved value ──
+  let liveQP = 0;
+  for (const qId of s.quests.completed) {
+    const q = GAME_DATA.quests.find(x => x.id === qId);
+    if (q && q.qp) liveQP += q.qp;
+  }
+  s.questPoints = liveQP; // sync back to state
+
+  const qp = liveQP;
   const totalQP = GAME_DATA.quests.reduce((sum,q)=>sum+(q.qp||0),0);
-  // Only count completed quests that still exist in GAME_DATA
-  const validCompleted = (s.quests.completed||[]).filter(id => GAME_DATA.quests.find(q=>q.id===id));
-  const completedCount = validCompleted.length;
+  const completedCount = s.quests.completed.length;
   const totalQuests = GAME_DATA.quests.length;
 
   // Quest filter state
