@@ -723,19 +723,93 @@ if (GAME_DATA.npcs && !GAME_DATA.npcs.cook_henrick) {
   };
 }
 
-// Ensure dialogue event binding happens when UI is constructed
-// This catches cases where init/bindEngine patterns differ
+// ── ONE-TIME MIGRATION: QP recalc + missing reward items ─
+// Runs after engine is fully initialized. Self-marks so it only runs once per version.
+const MIGRATION_KEY = '_questMigration_v3_1';
+
+function _runQuestMigration(engine) {
+  const s = engine.state;
+  if (!s || !s.quests) return;
+  if (s[MIGRATION_KEY]) return; // Already migrated this version
+
+  console.log('[Ashfall] Running quest migration v3.1...');
+  let qpBefore = s.questPoints || 0;
+  let itemsGranted = [];
+
+  // Ensure stages object exists
+  if (!s.quests.stages) s.quests.stages = {};
+  if (!s.quests.progress) s.quests.progress = {};
+
+  // 1. Recalculate QP from ALL completed quests
+  let correctQP = 0;
+  for (const qId of (s.quests.completed || [])) {
+    const q = GAME_DATA.quests.find(x => x.id === qId);
+    if (q && q.qp) correctQP += q.qp;
+  }
+  s.questPoints = correctQP;
+
+  // 2. Grant missing reward items from completed quests
+  for (const qId of (s.quests.completed || [])) {
+    const q = GAME_DATA.quests.find(x => x.id === qId);
+    if (!q || !q.rewards || !q.rewards.items) continue;
+    for (const ri of q.rewards.items) {
+      const itemId = ri.id || ri.item;
+      const qty = ri.qty || 1;
+      if (!itemId) continue;
+      // Only grant if player doesn't already have the item
+      if ((s.bank[itemId] || 0) === 0) {
+        engine.addItem(itemId, qty);
+        itemsGranted.push({ name: GAME_DATA.items[itemId]?.name || itemId, qty });
+      }
+    }
+  }
+
+  // 3. Migrate active quests that have stages but no stage state
+  for (const qId of (s.quests.active || [])) {
+    const q = GAME_DATA.quests.find(x => x.id === qId);
+    if (q && q.stages && q.stages.length > 0 && !s.quests.stages[qId]) {
+      const firstObjStage = q.stages.find(st => st.type === 'objectives') || q.stages[0];
+      s.quests.stages[qId] = { currentStageId: firstObjStage.id, stageHistory: [] };
+    }
+  }
+
+  // Mark migration complete
+  s[MIGRATION_KEY] = Date.now();
+
+  // Notify player
+  if (correctQP !== qpBefore) {
+    engine.emit('notification', {
+      type: 'achievement',
+      text: `Quest Points recalculated: ${qpBefore} → ${correctQP} QP`
+    });
+  }
+  if (itemsGranted.length > 0) {
+    const names = itemsGranted.map(i => `${i.name}${i.qty > 1 ? ' x' + i.qty : ''}`);
+    engine.emit('notification', {
+      type: 'achievement',
+      text: `Retroactive quest rewards: ${names.join(', ')}`
+    });
+  }
+
+  console.log(`[Ashfall] Migration complete. QP: ${qpBefore} → ${correctQP}. Items granted: ${itemsGranted.length}`);
+  engine.emit('questsChanged');
+}
+
+// Ensure dialogue event binding + run migration after engine init
 setTimeout(() => {
   if (typeof ui !== 'undefined' && ui.engine) {
-    // Remove any existing listener to avoid duplicates
     ui.engine.on('questDialogue', (data) => {
       if (!document.getElementById('quest-dialogue-overlay')) {
         ui.showQuestDialogue(data);
       }
     });
+    // Run one-time migration
+    _runQuestMigration(ui.engine);
+  } else if (typeof game !== 'undefined') {
+    _runQuestMigration(game);
   }
-}, 500);
+}, 800);
 
-console.log('[Ashfall] quest-system.js v3.0 loaded. Multi-stage quest engine active.');
+console.log('[Ashfall] quest-system.js v3.1 loaded. Multi-stage quest engine active.');
 
 })();
