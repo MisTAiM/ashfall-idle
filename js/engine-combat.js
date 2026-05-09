@@ -40,7 +40,7 @@
     if (fx.type === 'buff') {
       // Power Strike — next hit multiplied
       const dur = fx.hits ? 999 : (fx.duration || 10);
-      c.activeBuffs.push({ stat:fx.stat, value:fx.value, remaining:fx.hits||1, _maxDuration:fx.hits||1, type:'hits', _hitsLeft:fx.hits||1 });
+      c.activeBuffs.push({ stat:fx.stat||'damageMult', value:fx.value, remaining:fx.hits||1, _maxDuration:fx.hits||1, type:'hits', _hitsLeft:fx.hits||1 });
       this.emit('notification',{type:'success',text:`${ab.name}: Next hit ×${fx.value}!`});
       this.emit('abilityUsed',{ability:ab, source:'buff'});
 

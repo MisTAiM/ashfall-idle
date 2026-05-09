@@ -1126,7 +1126,7 @@ class UI {
       const pot = slot?.id ? GAME_DATA.items[slot.id] : null;
       if (pot) {
         let effectStr = pot.desc || '';
-        if (pot.buff) { const sL = pot.buff.stat.replace('Bonus','').replace(/([A-Z])/g,' $1').trim(); effectStr = `+${pot.buff.value} ${sL} for ${pot.buff.duration||120}s`; }
+        if (pot.buff) { const sL = (pot.buff.stat||'buff').replace('Bonus','').replace(/([A-Z])/g,' $1').trim(); effectStr = `+${pot.buff.value} ${sL} for ${pot.buff.duration||120}s`; }
         if (pot.prayerRestore) effectStr = `+${pot.prayerRestore} Prayer`;
         if (pot.heals) effectStr = effectStr ? effectStr + ` · Heals ${pot.heals}` : `Heals ${pot.heals}HP`;
         const shortName = pot.name.replace(' Potion','').replace('Super ','S.');
@@ -1169,7 +1169,11 @@ class UI {
         else if (buff.stat === 'rangedBonus')    { label = `+${buff.value} Rng`; icon = '🏹'; color = '#4a8a3e'; }
         else if (buff.stat === 'magicBonus')     { label = `+${buff.value} Mag`; icon = '🔮'; color = '#8a5ec4'; }
         else if (buff.stat === 'speedBonus')     { label = `+${buff.value}% Speed`; icon = '⚡'; color = '#c9873e'; }
-        else { label = buff.stat.replace(/([A-Z])/g,' $1').replace('Bonus','').trim() + ' +' + buff.value; icon = '✦'; color = '#c9873e'; }
+        else if (buff.stat === 'dodgeCharges')   { label = `${buff.value} Dodge${buff.value!==1?'s':''}`; icon = '✦'; color = '#9b30d0'; }
+        else if (buff.stat === 'vengeance')      { label = `Vengeance ×${buff.value}`; icon = '🔁'; color = '#c44040'; }
+        else if (buff.stat === 'onKillHeal')     { label = `Heal ${buff.value}% on kill`; icon = '💉'; color = '#4abe6c'; }
+        else if (buff.stat === 'runeRecovery')   { label = `Rune Save ${Math.round(buff.value*100)}%`; icon = '♦'; color = '#8a5ec4'; }
+        else { label = (buff.stat||'Buff').replace(/([A-Z])/g,' $1').replace('Bonus','').trim() + ' +' + buff.value; icon = '✦'; color = '#c9873e'; }
 
         const durText = isTime ? `${Math.ceil(buff.remaining)}s` : isHits ? `${buff.remaining} hit${buff.remaining!==1?'s':''}` : '';
         const pct = isTime && buff._maxDuration ? Math.max(0, (buff.remaining / buff._maxDuration) * 100) : 100;
@@ -2775,7 +2779,7 @@ class UI {
             ${(q.objectives||[]).map((obj,i)=>{
               const done=prog[i]||0; const pct=Math.min(100,done/Math.max(1,obj.qty)*100);
               const complete=done>=obj.qty;
-              return `<div class="qo-row ${complete?'qo-done':''}">
+              return `<div class="qo-row ${complete?'qo-done':''}" data-qid="${qId}-${i}">
                 <span class="qo-check">${complete?'✓':''}</span>
                 <div class="qo-label">${obj.desc}</div>
                 <span class="qo-count">${this.fmt(Math.min(done,obj.qty))}/${this.fmt(obj.qty)}</span>
@@ -6626,7 +6630,10 @@ class UI {
           else if (buff.stat === 'magicBonus')     { label = `+${buff.value} Mag`; ic = '🔮'; color = '#8a5ec4'; }
           else if (buff.stat === 'speedBonus')     { label = `+${buff.value}% Spd`; ic = '⚡'; color = '#c9873e'; }
           else if (buff.stat === 'dodgeCharges')   { label = `${buff._dodges||buff.value} Dodge${(buff._dodges||buff.value)!==1?'s':''}`; ic = '✦'; color = '#9b30d0'; }
-          else { label = buff.stat.replace(/([A-Z])/g,' $1').replace('Bonus','').trim() + ' +' + buff.value; ic = '✦'; color = '#c9873e'; }
+          else if (buff.stat === 'vengeance')      { label = `Vengeance ×${buff.value}`; ic = '🔁'; color = '#c44040'; }
+          else if (buff.stat === 'onKillHeal')     { label = `Heal ${buff.value}% on kill`; ic = '💉'; color = '#4abe6c'; }
+          else if (buff.stat === 'runeRecovery')   { label = `Rune Save ${Math.round(buff.value*100)}%`; ic = '♦'; color = '#8a5ec4'; }
+          else { label = (buff.stat||'Buff').replace(/([A-Z])/g,' $1').replace('Bonus','').trim() + ' +' + buff.value; ic = '✦'; color = '#c9873e'; }
           const durText = isTime ? `${Math.ceil(buff.remaining)}s` : isHits ? `${buff.remaining} hit${buff.remaining!==1?'s':''}` : '';
           const pct = isTime && buff._maxDuration ? Math.max(0, (buff.remaining / buff._maxDuration) * 100) : 100;
           return `<div class="buff-chip-v2" style="border-color:${color}20;background:${color}10">
@@ -6759,6 +6766,60 @@ class UI {
       }
       const statsEl = obSection.querySelector('.ob-stats');
       if (statsEl) statsEl.innerHTML = `<span>Total Mined: ${this.fmt(s.miningStats?.totalMined||0)}</span><span>Events: ${s.miningStats?.eventsTriggered||0}</span>`;
+    }
+
+    // ── DAILY QUEST LIVE UPDATES ──
+    if (this.currentPage === 'quests') {
+      const dState = s.dailyQuests || { active:[], completed:[], progress:{} };
+      const dailies = GAME_DATA.dailyQuests || [];
+      const cards = document.querySelectorAll('.daily-card');
+      if (cards.length > 0) {
+        dailies.forEach((dq, idx) => {
+          const card = cards[idx]; if (!card) return;
+          const done = (dState.completed||[]).includes(dq.id);
+          const prog = (dState.progress||{})[dq.id]||(dq.objectives||[]).map(()=>0);
+          const pct = (dq.objectives||[]).reduce((acc,obj,i)=>acc+(prog[i]||0)/Math.max(1,obj.qty),0)/Math.max(1,(dq.objectives||[]).length)*100;
+          const fill = card.querySelector('.dc-prog-fill');
+          if (fill) fill.style.width = (done ? 100 : pct.toFixed(0)) + '%';
+          if (done && !card.classList.contains('daily-done')) {
+            card.classList.add('daily-done');
+            const badge = card.querySelector('.dc-done-badge');
+            if (!badge) {
+              const hdr = card.querySelector('.dc-header');
+              if (hdr) { const b = document.createElement('span'); b.className='dc-done-badge'; b.textContent='Complete'; hdr.appendChild(b); }
+            }
+          }
+        });
+      }
+      // Also update active quest objective counts live
+      const qoRows = document.querySelectorAll('.qo-row');
+      if (qoRows.length > 0) {
+        for (const qId of s.quests.active) {
+          const q = GAME_DATA.quests.find(x=>x.id===qId); if (!q) continue;
+          const prog = s.quests.progress[qId]||[];
+          // Use stage objectives if multi-stage quest
+          let objectives = q.objectives || [];
+          if (q.stages && s.quests.stages?.[qId]) {
+            const stage = q.stages.find(st => st.id === s.quests.stages[qId].currentStageId);
+            if (stage?.objectives) objectives = stage.objectives;
+          }
+          objectives.forEach((obj, i) => {
+            const count = Math.min(prog[i]||0, obj.qty);
+            const row = document.querySelector(`.qo-row[data-qid="${qId}-${i}"]`);
+            if (row) {
+              const countEl = row.querySelector('.qo-count');
+              if (countEl) countEl.textContent = `${this.fmt(count)}/${this.fmt(obj.qty)}`;
+              const fillEl = row.querySelector('.qo-fill');
+              if (fillEl) fillEl.style.width = Math.min(100, count/Math.max(1,obj.qty)*100).toFixed(0) + '%';
+              if (count >= obj.qty && !row.classList.contains('qo-done')) {
+                row.classList.add('qo-done');
+                const chk = row.querySelector('.qo-check');
+                if (chk) chk.textContent = '✓';
+              }
+            }
+          });
+        }
+      }
     }
   }
 

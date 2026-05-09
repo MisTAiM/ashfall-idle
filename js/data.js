@@ -546,7 +546,7 @@ const GAME_DATA = {
   abilities: [
     // ── MELEE ────────────────────────────────────────────────────────────────
     {id:'power_strike',    name:'Power Strike',    style:'melee', tacticsReq:1,  cooldown:15, desc:'Next melee hit deals 200% damage.',
-      effect:{type:'buff', value:2}},
+      effect:{type:'buff', stat:'damageMult', value:2, hits:1}},
     {id:'cleave',          name:'Cleave',           style:'melee', tacticsReq:8,  cooldown:20, desc:'Three wide swings at 70% damage each.',
       effect:{type:'cleave', hits:3, mult:0.7}},
     {id:'venom_strike',    name:'Venom Strike',     style:'melee', tacticsReq:15, cooldown:20, desc:'Strike that applies 3 stacks of Poison.',

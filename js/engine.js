@@ -591,24 +591,26 @@ class GameEngine {
         if (!this.state.thievingHp) this.state.thievingHp = this.getMaxHp();
         this.state.thievingHp = Math.max(0, this.state.thievingHp - damage);
 
-        // Auto-eat from food bag if HP falls below 40%
+        // ── ANGER: accumulate anger on this target
+        if (!this.state.thievingAnger) this.state.thievingAnger = {};
+        this.state.thievingAnger[action.id] = Math.min(1.0, (this.state.thievingAnger[action.id] || 0) + 0.15);
+
+        // ── DEATH CHECK (before auto-eat — lethal blow kills)
+        if (this.state.thievingHp <= 0) {
+          this.state.thievingHp = 1;
+          this.emit('thievingStun', { action, damage, angerMult, hp: this.state.thievingHp, maxHp: this.getMaxHp() });
+          this.emit('notification', { type:'warn', text:`Stunned! ${action.name} hits you for ${damage} damage.` });
+          this._thievingDeath();
+          return;
+        }
+
+        // Auto-eat from food bag if HP falls below 40% (only when alive)
         if (this.state.thievingHp < this.getMaxHp() * 0.40) {
           this._thievingAutoEat();
         }
 
         this.emit('thievingStun', { action, damage, angerMult, hp: this.state.thievingHp, maxHp: this.getMaxHp() });
         this.emit('notification', { type:'warn', text:`Stunned! ${action.name} hits you for ${damage} damage.` });
-
-        // ── ANGER: accumulate anger on this target
-        if (!this.state.thievingAnger) this.state.thievingAnger = {};
-        this.state.thievingAnger[action.id] = Math.min(1.0, (this.state.thievingAnger[action.id] || 0) + 0.15);
-
-        // ── DEATH CHECK
-        if (this.state.thievingHp <= 0) {
-          this.state.thievingHp = 1;
-          this._thievingDeath();
-          return;
-        }
 
         // ── FIGHT TRIGGER: angry target may pull you into combat
         const fightChance = this._calcThievingFightChance(action);
@@ -2862,7 +2864,7 @@ class GameEngine {
       } else {
         this.state.combat.activeBuffs.push({ ...item.buff, remaining: item.buff.duration || 120 });
       }
-      this.emit('notification', { type:'info', text:`${item.name}: +${item.buff.value} ${item.buff.stat.replace('Bonus','')} for ${item.buff.duration||120}s` });
+      this.emit('notification', { type:'info', text:`${item.name}: +${item.buff.value} ${(item.buff.stat||'buff').replace('Bonus','')} for ${item.buff.duration||120}s` });
     }
     if (item.prayerRestore) {
       this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);

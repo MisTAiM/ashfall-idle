@@ -602,7 +602,7 @@ U._renderActiveQuestCard = function(q, s) {
       objectivesHtml = (stage.objectives||[]).map((obj,i) => {
         const done = prog[i]||0; const pct = Math.min(100,done/Math.max(1,obj.qty)*100);
         const complete = done >= obj.qty;
-        return `<div class="qo-row ${complete?'qo-done':''}">
+        return `<div class="qo-row ${complete?'qo-done':''}" data-qid="${q.id}-${i}">
           <span class="qo-check">${complete?'✓':''}</span>
           <div class="qo-label">${obj.desc}</div>
           <span class="qo-count">${this.fmt(Math.min(done,obj.qty))}/${this.fmt(obj.qty)}</span>
@@ -622,7 +622,7 @@ U._renderActiveQuestCard = function(q, s) {
     objectivesHtml = (q.objectives||[]).map((obj,i) => {
       const done = prog[i]||0; const pct = Math.min(100,done/Math.max(1,obj.qty)*100);
       const complete = done >= obj.qty;
-      return `<div class="qo-row ${complete?'qo-done':''}">
+      return `<div class="qo-row ${complete?'qo-done':''}" data-qid="${q.id}-${i}">
         <span class="qo-check">${complete?'✓':''}</span>
         <div class="qo-label">${obj.desc}</div>
         <span class="qo-count">${this.fmt(Math.min(done,obj.qty))}/${this.fmt(obj.qty)}</span>
