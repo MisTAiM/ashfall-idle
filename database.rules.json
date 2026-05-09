@@ -7,14 +7,44 @@
         ".validate": "newData.hasChildren(['uid', 'text', 'timestamp'])"
       }
     },
-    "chat_trade": { ".read": true, ".write": "auth != null" },
-    "chat_lfg":   { ".read": true, ".write": "auth != null" },
-    "chat_pvp":   { ".read": true, ".write": "auth != null" },
+    "chat_trade": {
+      ".read": true,
+      ".write": "auth != null",
+      "$messageId": {
+        ".validate": "newData.hasChildren(['uid', 'text', 'timestamp']) && newData.child('text').val().length <= 300 && newData.child('uid').val() === auth.uid"
+      }
+    },
+    "chat_lfg": {
+      ".read": true,
+      ".write": "auth != null",
+      "$messageId": {
+        ".validate": "newData.hasChildren(['uid', 'text', 'timestamp']) && newData.child('text').val().length <= 300 && newData.child('uid').val() === auth.uid"
+      }
+    },
+    "chat_pvp": {
+      ".read": true,
+      ".write": "auth != null",
+      "$messageId": {
+        ".validate": "newData.hasChildren(['uid', 'text', 'timestamp']) && newData.child('text').val().length <= 300 && newData.child('uid').val() === auth.uid"
+      }
+    },
     "guild_chat": {
-      "$guildId": { ".read": "auth != null", ".write": "auth != null" }
+      "$guildId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$messageId": {
+          ".validate": "newData.hasChildren(['uid', 'text', 'timestamp']) && newData.child('text').val().length <= 300"
+        }
+      }
     },
     "party_chat": {
-      "$partyId": { ".read": "auth != null", ".write": "auth != null" }
+      "$partyId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$messageId": {
+          ".validate": "newData.hasChildren(['uid', 'text', 'timestamp']) && newData.child('text').val().length <= 300"
+        }
+      }
     },
     "party_state": {
       "$partyId": { ".read": "auth != null", ".write": "auth != null" }

@@ -451,7 +451,7 @@ GameEngine.prototype.createParty = function(partyName) {
   this.initPartySystem();
   if (this.state.party.active) { this.emit('notification',{type:'warn',text:'Already in a party.'}); return; }
   if (!online?.isOnline || !online?.user) { this.emit('notification',{type:'warn',text:'Must be logged in to create a party.'}); return; }
-  const partyId = 'party_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+  const partyId = 'party_' + Date.now() + '_' + Math.random().toString(36).substring(2,8);
   const playerName = this.state.playerName || online.displayName || 'Player';
   const cl = this.getCombatLevel();
   this.state.party = {

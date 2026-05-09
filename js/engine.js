@@ -20,6 +20,10 @@ class GameEngine {
 
   init() {
     this._liveFlags = {}; // Initialize before any XP calls
+    // Clean up any previous intervals (prevents leaks on reinit)
+    if (this.tickInterval) clearInterval(this.tickInterval);
+    if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
+    if (this._sessionPingInterval) clearInterval(this._sessionPingInterval);
     this.state = this.loadSave() || this.newGame();
     this.migrateSave();
     // Reset stale combat (monster from previous session may not exist)
@@ -239,6 +243,22 @@ class GameEngine {
     if (!s._autoBankConfig) s._autoBankConfig = { enabled:false, intervalSeconds:300, overflow:{} };
     // Combat cannon state
     if (!s.combat.cannon) s.combat.cannon = { active:false, timer:0 };
+    // Combat session tracking
+    if (!s.combat._sessionLoot) s.combat._sessionLoot = {};
+    if (!s.combat._sessionKills) s.combat._sessionKills = 0;
+    if (!s.combat._sessionDmg) s.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, burn:0, poison:0, bleed:0, total:0, taken:0, hits:0, misses:0, crits:0 };
+    // Stats integrity
+    if (!s.stats) s.stats = {};
+    if (!s.stats.totalActions) s.stats.totalActions = {};
+    if (!s.stats.uniqueKills) s.stats.uniqueKills = {};
+    if (s.stats.monstersKilled === undefined) s.stats.monstersKilled = 0;
+    if (s.stats.dungeonsCompleted === undefined) s.stats.dungeonsCompleted = 0;
+    if (s.stats.totalXpGained === undefined) s.stats.totalXpGained = 0;
+    if (s.stats.itemsCrafted === undefined) s.stats.itemsCrafted = 0;
+    if (s.stats.foodEaten === undefined) s.stats.foodEaten = 0;
+    if (s.stats.goldEarned === undefined) s.stats.goldEarned = 0;
+    if (s.stats.goldSpent === undefined) s.stats.goldSpent = 0;
+    if (s.stats.totalPlayTime === undefined) s.stats.totalPlayTime = 0;
     // Daily quests state
     if (!s.dailyQuests) s.dailyQuests = { active:[], progress:{}, lastRefresh:0, completed:[] };
     // Clue scroll state
@@ -253,7 +273,7 @@ class GameEngine {
   }
 
   // ── TICK ───────────────────────────────────────────────
-  startTick() { this.tickInterval = setInterval(() => this.tick(), this.tickRate); }
+  startTick() { if (this.tickInterval) clearInterval(this.tickInterval); this.tickInterval = setInterval(() => this.tick(), this.tickRate); }
 
   tick() {
     const now = Date.now();
@@ -368,7 +388,7 @@ class GameEngine {
     const actionTime = action.time / masteryRed / toolRed;
     this.state.actionProgress += dt;
     if (this.state.actionProgress >= actionTime) {
-      this.state.actionProgress -= actionTime;
+      this.state.actionProgress = Math.max(0, this.state.actionProgress - actionTime);
       this.completeAction(sId, action);
     }
   }
@@ -379,7 +399,9 @@ class GameEngine {
       // Zone-based fishing
       if (action._fishZone) {
         const zone = action._fishZone;
+        if (!zone.fish || zone.fish.length === 0) { this.stopSkill(); return; }
         const totalWeight = zone.fish.reduce((s,f)=>s+f.weight, 0);
+        if (totalWeight <= 0) { this.stopSkill(); return; }
         let roll = Math.random() * totalWeight;
         let caught = zone.fish[0];
         for (const f of zone.fish) {
@@ -637,6 +659,7 @@ class GameEngine {
   addXp(skillId, amount) {
     if (!this.state.skills[skillId]) return;
     amount = Math.floor(amount);
+    if (amount <= 0 || !isFinite(amount)) return;
     const skill = GAME_DATA.skills[skillId];
     const align = GAME_DATA.alignments[this.state.alignment];
     if (align?.bonus) {
@@ -674,6 +697,7 @@ class GameEngine {
     if (!s || s.level >= 99) return 1;
     const cur = s.xp - this.getXpForLevel(s.level);
     const need = this.getXpForLevel(s.level + 1) - this.getXpForLevel(s.level);
+    if (need <= 0) return 1;
     return Math.min(1, cur / need);
   }
 
@@ -711,8 +735,10 @@ class GameEngine {
   startDungeon(dungeonId) {
     this.stopSkill();
     const d = GAME_DATA.dungeons.find(x => x.id === dungeonId); if (!d) return;
+    if (!d.waves || d.waves.length === 0) { this.emit('notification', { type:'warn', text:'Dungeon has no waves.' }); return; }
     if (this.getCombatLevel() < d.levelReq) { this.emit('notification', { type:'warn', text:`Requires combat level ${d.levelReq}.` }); return; }
     const m = GAME_DATA.monsters[d.waves[0]];
+    if (!m) { this.emit('notification', { type:'warn', text:`Dungeon monster not found.` }); return; }
     this._setupCombat(m, d.waves[0]);
     this.state.combat.dungeon = dungeonId;
     this.state.combat.dungeonWave = 0;
@@ -759,6 +785,8 @@ class GameEngine {
     if (GAME_DATA.monsters.pvp_opponent) delete GAME_DATA.monsters.pvp_opponent;
     if (GAME_DATA.monsters.pvp_arena_opponent) delete GAME_DATA.monsters.pvp_arena_opponent;
     c.statusEffects = { player:{}, monster:{} };
+    c.abilityCooldowns = {};
+    c.activeBuffs = [];
     c.playerHp = this.getMaxHp();
     // Clear session loot so it doesn't persist into next session
     c._sessionLoot = {};
@@ -816,7 +844,7 @@ class GameEngine {
     const playerSpeed = this.getPlayerAttackSpeed();
     c.playerAttackTimer += dt;
     if (c.playerAttackTimer >= playerSpeed) {
-      c.playerAttackTimer -= playerSpeed;
+      c.playerAttackTimer = Math.max(0, c.playerAttackTimer - playerSpeed);
       try {
         this.playerAttack(monster);
       } catch(err) {
@@ -838,9 +866,9 @@ class GameEngine {
     const mShock = c.statusEffects?.monster?.shock;
     let monsterStunned = !!(c.statusEffects?.monster?.stun?.timer > 0);
     if (!monsterStunned && mShock && mShock.stacks > 0 && Math.random() < 0.05 * mShock.stacks) monsterStunned = true;
-    if (c.monsterAttackTimer >= monsterSpeed && !monsterStunned) { c.monsterAttackTimer -= monsterSpeed; this.monsterAttack(monster); }
+    if (c.monsterAttackTimer >= monsterSpeed && !monsterStunned) { c.monsterAttackTimer = Math.max(0, c.monsterAttackTimer - monsterSpeed); this.monsterAttack(monster); }
     // Auto-eat AFTER monster attack (critical - eat before death check)
-    if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.4) this.eatFood();
+    if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.4 && Array.isArray(this.state.foodBag) && this.state.foodBag.length > 0) this.eatFood();
 
     // ── CANNON TICK ───────────────────────────────────────────────
     if (!c.cannon) c.cannon = { active:false, timer:0 };
@@ -1022,7 +1050,7 @@ class GameEngine {
     // Hit chance calculation
     const evasion = monster.evasion?.[style] || 0;
     const defence = (monster.combatLevel + 8) * (evasion + 64);
-    const hitChance = Math.min(0.95, Math.max(0.05, accuracy / (accuracy + defence)));
+    const hitChance = Math.min(0.95, Math.max(0.05, accuracy / (accuracy + defence + 1)));
 
     if (Math.random() < hitChance) {
       let dmg = this.randInt(Math.floor(maxHit * 0.1), maxHit); // min 10% of max, not 1
@@ -1128,7 +1156,7 @@ class GameEngine {
       this.emit('notification',{type:'warn',text:`Need ${weapon.specCost}% spec energy. Have ${this.state.specEnergy||0}%.`}); return;
     }
     // Consume spec energy
-    this.state.specEnergy -= weapon.specCost;
+    this.state.specEnergy = Math.max(0, (this.state.specEnergy || 0) - weapon.specCost);
 
     const monster = GAME_DATA.monsters[c.monster] || GAME_DATA.worldBosses.find(b=>b.id===c.monster);
     if (!monster) return;
@@ -1627,6 +1655,7 @@ class GameEngine {
 
     if (this.state.combat.dungeon) {
       const d = GAME_DATA.dungeons.find(x => x.id === this.state.combat.dungeon);
+      if (!d || !d.waves) { this.emit('notification',{type:'warn',text:'Dungeon data missing.'}); this.stopCombat(); return; }
       this.state.combat.dungeonWave++;
       if (this.state.combat.dungeonWave >= d.waves.length) {
         this.state.stats.dungeonsCompleted++;
@@ -1891,7 +1920,7 @@ class GameEngine {
     const playerSpeed = this.getPlayerAttackSpeed();
     c.playerAttackTimer += dt;
     if (c.playerAttackTimer >= playerSpeed) {
-      c.playerAttackTimer -= playerSpeed;
+      c.playerAttackTimer = Math.max(0, c.playerAttackTimer - playerSpeed);
       const tgt = mm.mobs[mm.targetIdx];
       if (tgt && mm.alive[mm.targetIdx]) {
         c.monsterHp = mm.hp[mm.targetIdx]; // sync IN
@@ -2031,7 +2060,7 @@ class GameEngine {
     return Math.floor(base + Math.max(m, r, mg));
   }
 
-  getMaxHp(skills) { const s = skills || this.state.skills; return Math.floor(s.hitpoints.level * 10 + 10); }
+  getMaxHp(skills) { const s = skills || this.state?.skills; if (!s?.hitpoints) return 110; return Math.floor(s.hitpoints.level * 10 + 10); }
 
   // ── THIEVING HELPERS ───────────────────────────────────
   _getThievingAnger(targetId) {
@@ -2141,7 +2170,7 @@ class GameEngine {
     let speed = w ? w.attackSpeed : 2.4;
     // Global speed boost - 40% faster combat
     speed *= 0.6;
-    for (const buff of this.state.combat.activeBuffs) if (buff.stat === 'speedBonus') speed *= (1 - buff.value/100);
+    for (const buff of (this.state.combat.activeBuffs||[])) if (buff.stat === 'speedBonus') speed *= (1 - buff.value/100);
     // Weapon affix speed bonus
     const affixData = this.state._affixedItems?.[this.state.equipment?.weapon];
     if (affixData?.effects?.atkSpeedBonus) speed += affixData.effects.atkSpeedBonus;
@@ -2164,13 +2193,13 @@ class GameEngine {
       const item = this.getEquippedItem(slot);
       if (item?.stats?.[stat]) total += item.stats[stat];
     }
-    for (const buff of this.state.combat.activeBuffs) if (buff.stat === stat) total += buff.value;
+    for (const buff of (this.state.combat.activeBuffs||[])) if (buff.stat === stat) total += buff.value;
     // Familiar bonus
     total += this.getFamiliarBonus(stat);
     return total;
   }
 
-  getEquippedItem(slot) { return this.state.equipment[slot] ? GAME_DATA.items[this.state.equipment[slot]] : null; }
+  getEquippedItem(slot) { return this.state.equipment[slot] ? (GAME_DATA.items[this.state.equipment[slot]] || null) : null; }
   getAmmoBonus() { return this.getEquippedItem('ammo')?.rangedBonus || 0; }
 
   // ── DWARF CANNON SYSTEM ─────────────────────────────────────────
@@ -2389,17 +2418,13 @@ class GameEngine {
   consumeAmmo() {
     const id = this.state.equipment.ammo;
     if (!id) return;
-    if (this.state.bank[id] > 0) {
-      this.state.bank[id]--;
-      if (this.state.bank[id] <= 0) {
-        delete this.state.bank[id];
-        this.state.equipment.ammo = null;
-        this.emit('notification', { type:'warn', text:'Out of ammo!' });
-        this.emit('equipmentChanged');
-      }
-    } else {
+    if (!this.removeItem(id, 1)) {
       this.state.equipment.ammo = null;
       this.emit('notification', { type:'warn', text:'Out of ammo!' });
+      this.emit('equipmentChanged');
+    } else if ((this.state.bank[id]||0) <= 0) {
+      this.state.equipment.ammo = null;
+      this.emit('notification', { type:'warn', text:'Last ammo used!' });
       this.emit('equipmentChanged');
     }
   }
@@ -2659,6 +2684,7 @@ class GameEngine {
   }
 
   tickBuffs(dt) {
+    if (!Array.isArray(this.state.combat.activeBuffs)) { this.state.combat.activeBuffs = []; return; }
     for (let i = this.state.combat.activeBuffs.length - 1; i >= 0; i--) {
       this.state.combat.activeBuffs[i].remaining -= dt;
       if (this.state.combat.activeBuffs[i].remaining <= 0) this.state.combat.activeBuffs.splice(i, 1);
@@ -2695,15 +2721,15 @@ class GameEngine {
     // Check if already in bag
     const existing = this.state.foodBag.find(f => f.id === itemId);
     if (existing) {
-      const add = Math.min(this.state.bank[itemId], 28 - existing.qty);
+      const add = Math.min(this.state.bank[itemId] || 0, 28 - existing.qty);
       if (add <= 0) { this.emit('notification',{type:'warn',text:'Food bag full for this type (28 max).'}); return; }
-      this.state.bank[itemId] -= add;
+      this.removeItem(itemId, add);
       existing.qty += add;
     } else {
       if (this.state.foodBag.length >= 4) { this.emit('notification',{type:'warn',text:'Food bag full (4 types max). Remove one first.'}); return; }
-      const add = Math.min(this.state.bank[itemId], 28);
-      this.state.bank[itemId] -= add;
-      if (this.state.bank[itemId] <= 0) delete this.state.bank[itemId];
+      const add = Math.min(this.state.bank[itemId] || 0, 28);
+      if (add <= 0) return;
+      this.removeItem(itemId, add);
       this.state.foodBag.push({ id: itemId, qty: add });
     }
     // Keep legacy food field in sync for backward compat
@@ -2889,9 +2915,21 @@ class GameEngine {
     }
     const cur = this.state.equipment[item.slot];
     if (cur) this.addItem(cur, 1);
-    this.state.bank[itemId]--;
-    if (this.state.bank[itemId] <= 0) delete this.state.bank[itemId];
+    this.removeItem(itemId, 1);
     this.state.equipment[item.slot] = itemId;
+    // 2H weapons: unequip shield
+    if (item.slot === 'weapon' && item.twoHanded && this.state.equipment.shield) {
+      this.addItem(this.state.equipment.shield, 1);
+      this.state.equipment.shield = null;
+    }
+    // Shield: unequip 2H weapon
+    if (item.slot === 'shield' && this.state.equipment.weapon) {
+      const wpn = GAME_DATA.items[this.state.equipment.weapon];
+      if (wpn?.twoHanded) {
+        this.addItem(this.state.equipment.weapon, 1);
+        this.state.equipment.weapon = null;
+      }
+    }
     if (item.slot === 'weapon' && item.style) this.state.combat.combatStyle = item.style;
     this.emit('equipmentChanged');
   }
@@ -2906,6 +2944,8 @@ class GameEngine {
 
   // ── BANK ───────────────────────────────────────────────
   addItem(id, qty) {
+    qty = Math.floor(qty);
+    if (!id || qty <= 0 || !isFinite(qty)) return;
     if (!this.state.bank[id]) this.state.bank[id] = 0;
     this.state.bank[id] += qty;
     // Collection Log: track first discovery
@@ -2920,9 +2960,11 @@ class GameEngine {
   }
 
   removeItem(id, qty) {
+    qty = Math.floor(qty);
+    if (qty <= 0 || !isFinite(qty)) return false;
     if (!this.state.bank[id] || this.state.bank[id] < qty) return false;
     this.state.bank[id] -= qty;
-    if (this.state.bank[id] <= 0) delete this.state.bank[id];
+    if (this.state.bank[id] <= 0) { this.state.bank[id] = 0; delete this.state.bank[id]; }
     return true;
   }
 
@@ -2931,6 +2973,8 @@ class GameEngine {
   removeItems(items) { for (const r of items) this.removeItem(r.item, r.qty); }
 
   sellItem(id, qty) {
+    qty = Math.floor(qty);
+    if (qty <= 0 || !isFinite(qty)) return;
     const item = GAME_DATA.items[id];
     if (!item || !this.state.bank[id]) return;
     if (!item.sellPrice) { this.emit('notification', { type:'warn', text:'This item cannot be sold.' }); return; }
@@ -2950,15 +2994,17 @@ class GameEngine {
   }
 
   buyItem(idx, qty) {
+    qty = Math.floor(qty);
+    if (qty <= 0 || !isFinite(qty)) return;
     const si = GAME_DATA.shop[idx]; if (!si) return;
     let price = si.price;
     const al = GAME_DATA.alignments[this.state.alignment];
     if (al?.bonus?.shopDiscount) price = Math.floor(price * (1 - al.bonus.shopDiscount/100));
-    const tLvl = this.state.skills.trading.level;
-    price = Math.floor(price * (1 - tLvl * 0.003));
+    const tLvl = this.state.skills.trading?.level || 1;
+    price = Math.max(1, Math.floor(price * (1 - tLvl * 0.003)));
     const total = price * qty;
     if (this.state.gold < total) { this.emit('notification', { type:'warn', text:'Not enough gold.' }); return; }
-    this.state.gold -= total;
+    this.state.gold = Math.max(0, this.state.gold - total);
     this.state.stats.goldSpent += total;
     this.addItem(si.item, qty);
     this.emit('notification', { type:'info', text:`Bought ${qty}x ${GAME_DATA.items[si.item].name}.` });
@@ -3251,8 +3297,8 @@ class GameEngine {
           case 'thieve_any':   if (type==='thieve')                                  add=data.qty; break;
           case 'dungeon':      if (type==='dungeon' && obj.dungeon===data.dungeon)  add=1; break;
           case 'dungeon_any':  if (type==='dungeon')                                 add=1; break;
-          case 'slayer_tasks': if (type==='slayer_tasks') { p[i]=Math.min(obj.qty,this.state.stats.slayerTasksCompleted||0); updated=true; return; }
-          case 'skill_level':  if (type==='skill_level' && obj.skill===data.skill) { p[i]=(this.state.skills[obj.skill]?.level||1)>=obj.level?obj.qty:0; updated=true; return; }
+          case 'slayer_tasks': if (type==='slayer_tasks') { p[i]=Math.min(obj.qty,this.state.stats.slayerTasksCompleted||0); updated=true; return; } break;
+          case 'skill_level':  if (type==='skill_level' && obj.skill===data.skill) { p[i]=(this.state.skills[obj.skill]?.level||1)>=obj.level?obj.qty:0; updated=true; return; } break;
           case 'gold':         { p[i]=Math.min(obj.qty,this.state.gold); updated=true; return; }
           case 'pets':         { p[i]=Math.min(obj.qty,(this.state.pets||[]).length); updated=true; return; }
           case 'bury_bones': case 'bury_big_bones': case 'bury_dragon_bones':
@@ -3339,16 +3385,25 @@ class GameEngine {
   // ── SAVE / LOAD ────────────────────────────────────────
   save() {
     this.state.lastSave = Date.now();
-    try { localStorage.setItem('ashfall_save', JSON.stringify(this.state)); } catch(e) { console.error('[Ashfall] Save failed:', e.message); this.emit('notification', { type:'danger', text:'Save failed — storage may be full.' }); }
+    try {
+      const payload = JSON.stringify(this.state);
+      if (!payload || payload.length < 50) { console.error('[Ashfall] Save aborted: payload too small'); return; }
+      localStorage.setItem('ashfall_save_backup', localStorage.getItem('ashfall_save') || '');
+      localStorage.setItem('ashfall_save', payload);
+    } catch(e) { console.error('[Ashfall] Save failed:', e.message); this.emit('notification', { type:'danger', text:'Save failed — storage may be full.' }); }
   }
 
   loadSave() {
-    try { const raw = localStorage.getItem('ashfall_save'); if (raw) return JSON.parse(raw); } catch(e) {}
+    try { const raw = localStorage.getItem('ashfall_save'); if (raw) return JSON.parse(raw); } catch(e) {
+      console.error('[Ashfall] Main save corrupted, trying backup...');
+      try { const backup = localStorage.getItem('ashfall_save_backup'); if (backup) { const data = JSON.parse(backup); this.emit('notification', { type:'warn', text:'Loaded from backup save.' }); return data; } } catch(e2) {}
+    }
     return null;
   }
 
   deleteSave() {
     localStorage.removeItem('ashfall_save');
+    localStorage.removeItem('ashfall_save_backup');
     this.state = this.newGame();
     this.emit('init', this.state);
   }
@@ -3358,12 +3413,13 @@ class GameEngine {
   importSave(str) {
     try {
       const d = JSON.parse(atob(str));
+      if (!d || !d.skills || !d.bank || !d.combat) { this.emit('notification', { type:'danger', text:'Invalid save data.' }); return false; }
       this.state = d;
       this.migrateSave();
       this.save();
       this.emit('init', this.state);
       return true;
-    } catch(e) { return false; }
+    } catch(e) { this.emit('notification', { type:'danger', text:'Import failed: corrupted data.' }); return false; }
   }
 
   // ── OFFLINE ────────────────────────────────────────────
@@ -3383,7 +3439,7 @@ class GameEngine {
           const masteryRed = 1 + (this.getMasteryLevel(sId, action.masteryId||action.id) * 0.005);
           const toolRed = 1 + (this.getToolSpeedBonus(sId) / 100);
           const effectiveTime = action.time / masteryRed / toolRed;
-          const num = Math.floor(offlineSec / effectiveTime);
+          const num = Math.min(Math.floor(offlineSec / effectiveTime), 50000); // cap at 50k actions to prevent freeze
           let done = 0;
           for (let i = 0; i < num; i++) {
             if (skill.type === 'artisan' && action.input && !this.hasItems(action.input)) break;
@@ -3401,6 +3457,7 @@ class GameEngine {
               this.addItem(action.output.item, action.output.qty);
             }
             this.addXp(sId, action.xp);
+            this.addMasteryXp(sId, action.masteryId||action.id, action.xp);
             done++;
           }
           if (done > 0) report.push(`${GAME_DATA.skills[sId].name}: ${done} actions`);
@@ -3780,14 +3837,14 @@ class GameEngine {
     this.removeItem(boneId, qty);
     const points = Math.floor(boneData.points * qty);
     const xp = Math.floor(boneData.xp * qty);
-    this.state.prayerPoints += points;
+    this.state.prayerPoints = Math.min(99, (this.state.prayerPoints || 0) + points);
     this.addXp('prayer', xp);
     this.state.stats.bonesBuried = (this.state.stats.bonesBuried || 0) + qty;
     // Quest tracking for bury objectives
     if (boneId === 'bones') this.trackQuestProgress('bury_bones', { qty });
     if (boneId === 'big_bones') this.trackQuestProgress('bury_big_bones', { qty });
     if (boneId === 'dragon_bones') this.trackQuestProgress('bury_dragon_bones', { qty });
-    this.emit('notification', { type:'info', text:`Buried ${qty}x ${GAME_DATA.items[boneId].name}: +${points} prayer points, +${xp} XP.` });
+    this.emit('notification', { type:'info', text:`Buried ${qty}x ${GAME_DATA.items[boneId]?.name||boneId}: +${points} prayer points, +${xp} XP.` });
     this.emit('bankChanged');
   }
 
@@ -3834,7 +3891,7 @@ class GameEngine {
       const p = GAME_DATA.prayers.find(x => x.id === id);
       if (p) totalCost += p.pointCost;
     }
-    this.state.prayerPoints -= totalCost;
+    this.state.prayerPoints = Math.max(0, this.state.prayerPoints - totalCost);
     if (this.state.prayerPoints <= 0) {
       this.state.prayerPoints = 0;
       this.state.activePrayers = [];

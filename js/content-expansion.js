@@ -458,11 +458,11 @@ Object.assign(GAME_DATA.monsterArt, {
 
 });
 
-console.log('[Ashfall] Content Expansion v9.5 loaded:');
-console.log('  Barrows brothers:', Object.keys(BARROWS_BROTHERS).length);
-console.log('  Inferno monsters:', ['jal_nib','jal_mejrah','jal_ak','jal_ak_small','jal_imkot','jal_xil','jal_zek','jaltok_jad','tzkal_zuk'].filter(id=>GAME_DATA.monsters[id]).length);
-console.log('  Slayer bosses:', GAME_DATA.slayerBosses.length);
-console.log('  New art registered:', ['dharok','ahrim','karil','guthan','torag','verac','crystalline_hunllef','corrupted_hunllef','cerberus','kraken','smoke_devil_boss','abyssal_sire','grotesque_guardians','jal_nib','jal_mejrah','jal_ak','jal_imkot','jal_xil','jal_zek','jaltok_jad','tzkal_zuk'].filter(id=>GAME_DATA.monsterArt[id]).length);
+// console.log('[Ashfall] Content Expansion v9.5 loaded:');
+// console.log('  Barrows brothers:', Object.keys(BARROWS_BROTHERS).length);
+// console.log('  Inferno monsters:', ['jal_nib','jal_mejrah','jal_ak','jal_ak_small','jal_imkot','jal_xil','jal_zek','jaltok_jad','tzkal_zuk'].filter(id=>GAME_DATA.monsters[id]).length);
+// console.log('  Slayer bosses:', GAME_DATA.slayerBosses.length);
+// console.log('  New art registered:', ['dharok','ahrim','karil','guthan','torag','verac','crystalline_hunllef','corrupted_hunllef','cerberus','kraken','smoke_devil_boss','abyssal_sire','grotesque_guardians','jal_nib','jal_mejrah','jal_ak','jal_imkot','jal_xil','jal_zek','jaltok_jad','tzkal_zuk'].filter(id=>GAME_DATA.monsterArt[id]).length);
 
 // ================================================================
 // UI RENDERING — Barrows, Gauntlet, Inferno, Slayer Bosses

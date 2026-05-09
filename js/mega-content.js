@@ -259,9 +259,9 @@ GameEngine.prototype.migrateSave = function(s) {
   return s;
 };
 
-console.log('[Ashfall] Mega Content Pack v9.6 loaded:');
-console.log('  GWD bosses:', ['general_graardor','kreearra','commander_zilyana','kril_tsutsaroth'].filter(id=>GAME_DATA.monsters[id]).length);
-console.log('  Wilderness bosses:', ['callisto','vetion','venenatis','chaos_elemental','scorpia'].filter(id=>GAME_DATA.monsters[id]).length);
-console.log('  Other bosses:', ['the_nightmare','corporeal_beast','dagannoth_rex','dagannoth_prime','dagannoth_supreme','giant_mole','kalphite_queen','sarachnis','zulrah'].filter(id=>GAME_DATA.monsters[id]).length);
-console.log('  New art:', Object.keys(GAME_DATA.monsterArt).length, 'total');
-console.log('  Collection log categories:', Object.keys(GAME_DATA.collectionLog).length);
+// console.log('[Ashfall] Mega Content Pack v9.6 loaded:');
+// console.log('  GWD bosses:', ['general_graardor','kreearra','commander_zilyana','kril_tsutsaroth'].filter(id=>GAME_DATA.monsters[id]).length);
+// console.log('  Wilderness bosses:', ['callisto','vetion','venenatis','chaos_elemental','scorpia'].filter(id=>GAME_DATA.monsters[id]).length);
+// console.log('  Other bosses:', ['the_nightmare','corporeal_beast','dagannoth_rex','dagannoth_prime','dagannoth_supreme','giant_mole','kalphite_queen','sarachnis','zulrah'].filter(id=>GAME_DATA.monsters[id]).length);
+// console.log('  New art:', Object.keys(GAME_DATA.monsterArt).length, 'total');
+// console.log('  Collection log categories:', Object.keys(GAME_DATA.collectionLog).length);

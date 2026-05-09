@@ -96,7 +96,7 @@ _shopAdd('shark',                 800,  'food');
 _shopAdd('anglerfish',           1100,  'food');
 _shopAdd('dark_crab',             950,  'food');
 
-console.log('[Ashfall] items-new.js loaded. New items added:', ['blade_of_saeldor','scythe_of_vitur','tumeken_shadow','dharoks_greataxe','prayer_potion','shark','anglerfish'].filter(id=>GAME_DATA.items[id]).length);
+// console.log('[Ashfall] items-new.js loaded. New items added:', ['blade_of_saeldor','scythe_of_vitur','tumeken_shadow','dharoks_greataxe','prayer_potion','shark','anglerfish'].filter(id=>GAME_DATA.items[id]).length);
 
 // ================================================================
 // THEATRE OF ASH — Exclusive Items
@@ -184,9 +184,9 @@ if (!GAME_DATA.combatPets.find(p => p.id === 'lil_veriax')) {
   });
 }
 
-console.log('[Ashfall] Theatre of Ash items registered:', 
-  ['veriax_scythe','bloodfire_staff','ashen_rapier','judicator_helm','judicator_plate',
-   'judicator_legs','hollow_ward','void_tear','veriax_eye','lil_veriax'].filter(id=>GAME_DATA.items[id]).length);
+// console.log('[Ashfall] Theatre of Ash items registered:', 
+//   ['veriax_scythe','bloodfire_staff','ashen_rapier','judicator_helm','judicator_plate',
+//    'judicator_legs','hollow_ward','void_tear','veriax_eye','lil_veriax'].filter(id=>GAME_DATA.items[id]).length);
 
 // ── MISSING QUEST/UTILITY ITEMS ─────────────────────────────────
 if (!GAME_DATA.items.herb_sack)

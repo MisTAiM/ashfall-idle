@@ -1258,7 +1258,7 @@ GAME_DATA.achievements.push(
   {id:'fifty_quests',  name:'Questaholic',     desc:'Complete 48 quests.',         check:(g)=>(g.quests?.completed?.length||0)>=48},
 );
 
-console.log('[Ashfall] v4.0 expansion loaded:', Object.keys(GAME_DATA.items).length, 'items');
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] v4.0 expansion loaded:', Object.keys(GAME_DATA.items).length, 'items');
 
 // ── STORYLINE QUESTS ─────────────────────────────────────
 // Multi-step quest chains with narrative and alignment impact
@@ -1323,7 +1323,7 @@ GAME_DATA.storylines = [
   },
 ];
 
-console.log('[Ashfall] Storylines loaded:', GAME_DATA.storylines.length, 'quest chains');
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Storylines loaded:', GAME_DATA.storylines.length, 'quest chains');
 
 // ================================================================
 // v5.1 MASSIVE UPDATE: Bazaar, Item Sets, Thieving, Art, Items
@@ -1442,7 +1442,7 @@ GAME_DATA.npcArt = {
 // ── ITEM SETS ────────────────────────────────────────────
 GAME_DATA.presetSlots = ['weapon','head','body','legs','boots','shield','gloves','ring','amulet','cape','ammo'];
 
-console.log('[Ashfall] v5.1 expansion loaded:', Object.keys(GAME_DATA.items).length, 'items,', Object.keys(GAME_DATA.monsterArt).length, 'monster arts');
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.1 expansion loaded:', Object.keys(GAME_DATA.items).length, 'items,', Object.keys(GAME_DATA.monsterArt).length, 'monster arts');
 
 // ── NEW MONSTERS ─────────────────────────────────────────
 Object.assign(GAME_DATA.monsters, {
@@ -1501,7 +1501,7 @@ GAME_DATA.recipes.crafting.push(
   {id:'craft_leather_gloves',name:'Leather Gloves',level:1,xp:5,time:2.0,input:[{item:'leather',qty:2}],output:{item:'leather_gloves',qty:1}},
 );
 
-console.log('[Ashfall] v5.2 loaded:', Object.keys(GAME_DATA.monsters).length, 'monsters,', GAME_DATA.combatAreas.length, 'areas');
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.2 loaded:', Object.keys(GAME_DATA.monsters).length, 'monsters,', GAME_DATA.combatAreas.length, 'areas');
 
 // ================================================================
 // v5.3 FISHING ZONES (50 fish), WILDERNESS PVP, DEATH MECHANICS
@@ -1642,9 +1642,9 @@ GAME_DATA.pvpSpells = [
   {id:'teleblock',name:'TeleBlock',level:35,runes:[{item:'chaos_rune',qty:3},{item:'death_rune',qty:1}],desc:'35% chance to block enemy teleport for 10 combat rounds. 5 min cooldown.',blockChance:0.35,blockDuration:10,cooldown:300},
 ];
 
-console.log('[Ashfall] v5.3 loaded: Fishing zones, wilderness PvP, protection jewelry');
-console.log('  Fish items:', Object.keys(GAME_DATA.items).filter(k=>k.startsWith('raw_')).length);
-console.log('  Cooking recipes:', GAME_DATA.recipes.cooking.length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.3 loaded: Fishing zones, wilderness PvP, protection jewelry');
+if(window._ASHFALL_DEBUG) console.log('  Fish items:', Object.keys(GAME_DATA.items).filter(k=>k.startsWith('raw_')).length);
+if(window._ASHFALL_DEBUG) console.log('  Cooking recipes:', GAME_DATA.recipes.cooking.length);
 
 // ================================================================
 // v5.4 INCANTATION CRAFTING (Runecrafting)
@@ -1763,10 +1763,10 @@ GAME_DATA.shop.push(
   {item:'pure_essence',price:12,category:'materials'},
 );
 
-console.log('[Ashfall] v5.4 loaded: Incantation Crafting');
-console.log('  Altars:', GAME_DATA.altars.length);
-console.log('  Rune recipes:', GAME_DATA.recipes.incantation.length);
-console.log('  Spells:', GAME_DATA.spells.length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.4 loaded: Incantation Crafting');
+if(window._ASHFALL_DEBUG) console.log('  Altars:', GAME_DATA.altars.length);
+if(window._ASHFALL_DEBUG) console.log('  Rune recipes:', GAME_DATA.recipes.incantation.length);
+if(window._ASHFALL_DEBUG) console.log('  Spells:', GAME_DATA.spells.length);
 
 // ================================================================
 // v5.5 ITEM RARITY SYSTEM + EXPANDED DROPS
@@ -1859,12 +1859,12 @@ for (const wb of GAME_DATA.worldBosses) {
   if (wb.id === 'ashen_overlord') { wb.rewards.push({item:'wrath_rune',qty:10,chance:0.30}); wb.rewards.push({item:'barrows_gloves',qty:1,chance:0.005}); wb.rewards.push({item:'fury_amulet',qty:1,chance:0.003}); }
 }
 
-console.log('[Ashfall] v5.5 loaded: Rarity system, expanded drops');
-console.log('  Mythic items:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='mythic').length);
-console.log('  Legendary:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='legendary').length);
-console.log('  Epic:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='epic').length);
-console.log('  Rare:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='rare').length);
-console.log('  Uncommon:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='uncommon').length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.5 loaded: Rarity system, expanded drops');
+if(window._ASHFALL_DEBUG) console.log('  Mythic items:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='mythic').length);
+if(window._ASHFALL_DEBUG) console.log('  Legendary:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='legendary').length);
+if(window._ASHFALL_DEBUG) console.log('  Epic:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='epic').length);
+if(window._ASHFALL_DEBUG) console.log('  Rare:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='rare').length);
+if(window._ASHFALL_DEBUG) console.log('  Uncommon:', Object.values(GAME_DATA.items).filter(i=>i.rarity==='uncommon').length);
 
 // ── BUG FIX: Missing gold_ore + gold_bar ─────────────────
 GAME_DATA.items.gold_ore = {id:'gold_ore',name:'Gold Ore',type:'resource',subtype:'ore',sellPrice:60,sprite:'ore-gold',desc:'A shimmering gold ore.',rarity:'uncommon'};
@@ -1884,7 +1884,7 @@ GAME_DATA.recipes.smithing.push(
 GAME_DATA.monsters.ogre.drops.push({item:'gold_ore',qty:2,chance:0.08});
 GAME_DATA.monsters.dragon.drops.push({item:'gold_ore',qty:3,chance:0.12});
 
-console.log('[Ashfall] Gold ore/bar fix applied. Items:', Object.keys(GAME_DATA.items).length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Gold ore/bar fix applied. Items:', Object.keys(GAME_DATA.items).length);
 
 // ── MORE ACHIEVEMENTS ────────────────────────────────────
 GAME_DATA.achievements.push(
@@ -1905,7 +1905,7 @@ GAME_DATA.achievements.push(
   {id:'story_ch1',    name:'Chapter 1 Complete', desc:'Complete Ashfall Prophecy Ch1.',check:(g)=>g.storyline?.main_story?.chapter>=1},
 );
 
-console.log('[Ashfall] Final achievements:', GAME_DATA.achievements.length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Final achievements:', GAME_DATA.achievements.length);
 
 // ================================================================
 // v5.7 SUMMONING SYSTEM
@@ -1986,8 +1986,8 @@ for (const [mId, mon] of Object.entries(GAME_DATA.monsters)) {
   }
 }
 
-console.log('[Ashfall] v5.7 Summoning loaded:', _familiars.length, 'familiars,', GAME_DATA.recipes.summoning.length, 'recipes');
-console.log('  Items:', Object.keys(GAME_DATA.items).length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.7 Summoning loaded:', _familiars.length, 'familiars,', GAME_DATA.recipes.summoning.length, 'recipes');
+if(window._ASHFALL_DEBUG) console.log('  Items:', Object.keys(GAME_DATA.items).length);
 
 // ── MISSING MONSTER ART ──────────────────────────────────
 Object.assign(GAME_DATA.monsterArt, {
@@ -2013,10 +2013,10 @@ GAME_DATA.worldBosses.push(
   {id:'void_emperor',name:'The Void Emperor',hp:60000,maxHit:280,combatLevel:120,style:'magic',attackSpeed:2.0,evasion:{melee:80,ranged:75,magic:95},desc:'Ruler of the void between worlds. Reality bends around him.',respawn:21600,xp:200000,gold:{min:15000,max:40000},rewards:[{item:'void_bones',qty:5,chance:1.0},{item:'wrath_rune',qty:15,chance:0.40},{item:'celestial_essence',qty:5,chance:0.20},{item:'occult_necklace',qty:1,chance:0.01},{item:'barrows_gloves',qty:1,chance:0.008}]},
 );
 
-console.log('[Ashfall] v5.9 loaded: All monster art complete, new dungeons');
-console.log('  Monster art:', Object.keys(GAME_DATA.monsterArt).length);
-console.log('  Dungeons:', GAME_DATA.dungeons.length);
-console.log('  World Bosses:', GAME_DATA.worldBosses.length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.9 loaded: All monster art complete, new dungeons');
+if(window._ASHFALL_DEBUG) console.log('  Monster art:', Object.keys(GAME_DATA.monsterArt).length);
+if(window._ASHFALL_DEBUG) console.log('  Dungeons:', GAME_DATA.dungeons.length);
+if(window._ASHFALL_DEBUG) console.log('  World Bosses:', GAME_DATA.worldBosses.length);
 
 // ── MULTI-MOB ENCOUNTERS ─────────────────────────────────
 // These are special encounters where multiple mobs attack at once.
@@ -2036,7 +2036,7 @@ GAME_DATA.combatAreas.forEach(area => {
   area.multiMobs = GAME_DATA.multiMobEncounters.filter(e => e.levelReq <= area.levelReq + 10 && e.levelReq >= area.levelReq - 10);
 });
 
-console.log('[Ashfall] Multi-mob encounters:', GAME_DATA.multiMobEncounters.length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Multi-mob encounters:', GAME_DATA.multiMobEncounters.length);
 
 // ================================================================
 // SPELLBOOK CONFIGURATION — Physical unlock tomes + book polish
@@ -2110,7 +2110,7 @@ GAME_DATA.shop.push(
   {item:'necromantic_tome',   price:45000, category:'magic'},
 );
 
-console.log('[Ashfall] Spellbook tomes configured:', _spellbookTomes.length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Spellbook tomes configured:', _spellbookTomes.length);
 
 // ================================================================
 // FARMING SYSTEM v2.0 — Real mechanics, compost, tools, watering
@@ -2316,7 +2316,7 @@ GAME_DATA.combatPets = [
 // Keep GAME_DATA.pets for legacy compat (pets page still lists all)
 GAME_DATA.pets = GAME_DATA.combatPets;
 
-console.log('[Ashfall] Farming v2 + Combat Pets loaded. Seeds:', Object.values(GAME_DATA.items).filter(i=>i.type==='seed').length, 'Combat pets:', GAME_DATA.combatPets.length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Farming v2 + Combat Pets loaded. Seeds:', Object.values(GAME_DATA.items).filter(i=>i.type==='seed').length, 'Combat pets:', GAME_DATA.combatPets.length);
 
 // ── THIEVING v2 ITEMS ─────────────────────────────────────────────
 if (!GAME_DATA.items.lockpick)    GAME_DATA.items.lockpick    = {id:'lockpick',    name:'Lockpick',    type:'tool',subtype:'thieving',sellPrice:15, desc:'Used to pick locks on chests and doors.'};
@@ -2417,7 +2417,7 @@ GAME_DATA.combatPets.push(
 
 // Keep GAME_DATA.pets in sync
 GAME_DATA.pets = GAME_DATA.combatPets;
-console.log('[Ashfall] Total combat pets:', GAME_DATA.combatPets.length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Total combat pets:', GAME_DATA.combatPets.length);
 
 // ================================================================
 // DROP TABLE OVERHAUL + NEW ENDGAME ITEMS
@@ -2689,4 +2689,4 @@ for (const [mId, mon] of Object.entries(GAME_DATA.monsters)) {
   if (cl >= 85           && !mon.drops.find(d=>d.item==='lantadyme_seed'))   mon.drops.push({item:'lantadyme_seed', qty:1,chance:0.008});
 }
 
-console.log('[Ashfall] Farming depth applied. Cooking crop recipes:', GAME_DATA.recipes.cooking.filter(r=>['potato_stew','tomato_soup','sweetcorn_bread','strawberry_tart','watermelon_slice','blood_stew','farm_feast'].includes(r.output?.item)).length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Farming depth applied. Cooking crop recipes:', GAME_DATA.recipes.cooking.filter(r=>['potato_stew','tomato_soup','sweetcorn_bread','strawberry_tart','watermelon_slice','blood_stew','farm_feast'].includes(r.output?.item)).length);

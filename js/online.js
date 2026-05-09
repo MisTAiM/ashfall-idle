@@ -346,6 +346,8 @@ class OnlineManager {
   }
 
   async setDisplayName(name) {
+    name = (name||'').trim().replace(/[<>"'&]/g,'').substring(0, 20);
+    if (!name || name.length < 1) { this.emit('notification', { type:'warn', text:'Name must be 1-20 characters.' }); return; }
     this.displayName = name;
     localStorage.setItem('ashfall_displayName', name);
     if (this.user && !this.user.isAnonymous) {
@@ -1496,7 +1498,17 @@ class OnlineManager {
     if (!this.isOnline || !this.user) return;
     text = (text||'').trim();
     if (!text || text.length > 300) return;
+    // Rate limit: max 1 message per 1.5 seconds
+    const now = Date.now();
+    if (this._lastChatSend && now - this._lastChatSend < 1500) {
+      this.emit('notification', { type:'warn', text:'Sending too fast, slow down.' }); return;
+    }
+    this._lastChatSend = now;
+    // Sanitize HTML entities to prevent XSS
+    text = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const validChannels = ['general','trade','lfg','pvp'];
     const refPath = (!channel || channel === 'general') ? 'chat' : `chat_${channel}`;
+    if (channel && channel !== 'general' && !validChannels.includes(channel)) return;
     try {
       const msgData = {
         uid: this.user.uid,
@@ -1583,11 +1595,11 @@ class OnlineManager {
     if (targetUid === this.user.uid) { this.emit('notification',{type:'warn',text:"Can't gift yourself."}); return false; }
     if (this.isUntradeable(itemId)) { this.emit('notification',{type:'warn',text:`${GAME_DATA.items[itemId]?.name||itemId} is untradeable.`}); return false; }
     if (!GAME_DATA.items[itemId]) { this.emit('notification',{type:'warn',text:'Invalid item.'}); return false; }
-    if (qty <= 0 || (game.state.bank[itemId]||0) < qty) { this.emit('notification',{type:'warn',text:'Not enough items.'}); return false; }
+    qty = Math.floor(qty);
+    if (qty <= 0 || !isFinite(qty) || (game.state.bank[itemId]||0) < qty) { this.emit('notification',{type:'warn',text:'Not enough items.'}); return false; }
     try {
-      // Remove from sender bank
-      game.state.bank[itemId] -= qty;
-      if (game.state.bank[itemId] <= 0) delete game.state.bank[itemId];
+      // Remove from sender bank safely
+      if (!game.removeItem(itemId, qty)) { this.emit('notification',{type:'warn',text:'Not enough items.'}); return false; }
       // Create gift in Firestore
       await this.firestore.collection('gifts').add({
         from: this.user.uid, fromName: this.displayName,
@@ -1617,9 +1629,10 @@ class OnlineManager {
     if (!this.isOnline || !this.user || !game) return false;
     if (this.user.isAnonymous) { this.emit('notification',{type:'warn',text:'Create an account first.'}); return false; }
     if (targetUid === this.user.uid) { this.emit('notification',{type:'warn',text:"Can't gift yourself."}); return false; }
-    if (amount <= 0 || game.state.gold < amount) { this.emit('notification',{type:'warn',text:'Not enough gold.'}); return false; }
+    amount = Math.floor(amount);
+    if (amount <= 0 || !isFinite(amount) || game.state.gold < amount) { this.emit('notification',{type:'warn',text:'Not enough gold.'}); return false; }
     try {
-      game.state.gold -= amount;
+      game.state.gold = Math.max(0, game.state.gold - amount);
       await this.firestore.collection('gifts').add({
         from: this.user.uid, fromName: this.displayName,
         to: targetUid, toName: targetName,

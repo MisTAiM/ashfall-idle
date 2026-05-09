@@ -509,7 +509,7 @@ GameEngine.prototype.emit = function(event, data) {
   }
 };
 
-console.log('[Ashfall] Chambers of the Ashen King loaded. Bosses:', Object.keys(COA_BOSSES).length);
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Chambers of the Ashen King loaded. Bosses:', Object.keys(COA_BOSSES).length);
 
 // ── CHAMBERS UNIQUE ITEMS ───────────────────────────────────────
 function _itCOA(id, def) {
@@ -602,7 +602,7 @@ if (!GAME_DATA.combatPets.find(p => p.id === 'olmlet')) {
   });
 }
 
-console.log('[Ashfall] Chambers items registered:',
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Chambers items registered:',
   ['twisted_bow','elder_maul','kodai_wand','dragon_claws','dinhs_bulwark',
    'ancestral_hat','ancestral_robe_top','ancestral_robe_bottom',
    'dexterous_scroll','arcane_scroll','olmlet'].filter(id=>GAME_DATA.items[id]).length);
@@ -895,7 +895,7 @@ console.log('[Ashfall] Chambers items registered:',
     <path d="M70 50 Q72 58 70 64" stroke="#4aaa50" stroke-width="1.5" fill="none" opacity="0.5"/>
   </svg>`;
 
-  console.log('[Ashfall] Chambers boss art registered:',
-    ['shambling_mound','ash_vanguard','tekton_forgeborn','ice_weaver','great_olm']
-    .filter(id => GAME_DATA.monsterArt[id]).length, '/ 5');
+  // console.log('[Ashfall] Chambers boss art registered:',
+  //   ['shambling_mound','ash_vanguard','tekton_forgeborn','ice_weaver','great_olm']
+  //   .filter(id => GAME_DATA.monsterArt[id]).length, '/ 5');
 })();

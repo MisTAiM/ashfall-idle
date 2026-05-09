@@ -269,4 +269,4 @@ UI.prototype._getCoaChestSvg = function(tier) {
   </svg>`;
 };
 
-console.log('[Ashfall] Chambers of the Ashen King UI loaded.');
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Chambers of the Ashen King UI loaded.');

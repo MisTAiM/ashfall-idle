@@ -376,4 +376,4 @@ for (const bossId of ['ashen_overlord','void_emperor','storm_reaver']) {
   }
 }
 
-console.log('[Ashfall] Clue Scroll system loaded:', Object.keys(GAME_DATA.clueScrolls).length, 'tiers');
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] Clue Scroll system loaded:', Object.keys(GAME_DATA.clueScrolls).length, 'tiers');

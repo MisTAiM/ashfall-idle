@@ -123,5 +123,5 @@ for (const ab of _abilities) {
   if (!GAME_DATA.abilities.find(a => a.id === ab.id)) GAME_DATA.abilities.push(ab);
 }
 
-console.log('[Ashfall] combat-data.js loaded. Abilities:', GAME_DATA.abilities.length,
+if(window._ASHFALL_DEBUG) console.log('[Ashfall] combat-data.js loaded. Abilities:', GAME_DATA.abilities.length,
   '| Multi-mob:', GAME_DATA.multiMobEncounters.length);
