@@ -227,6 +227,12 @@ class UI {
       this.showLootBag(d);
       if (!this._combatLog) this._combatLog = [];
       this._combatLog.push({ type:'kill', text:`${d.monster||d.monsterName||'Monster'} defeated!` });
+      // Flash notification for item drops
+      const notif = document.createElement('div');
+      notif.style.cssText = 'position:fixed;top:20px;right:20px;background:#2a6a2a;color:#c9873e;padding:12px 16px;border:1px solid #c9873e;border-radius:4px;font-size:12px;z-index:10000;animation:slideIn 0.3s ease-out;';
+      notif.textContent = '📦 Item Dropped!';
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 3000);
     });
     this.engine.on('petAction', (d) => this.showPetAction(d));
     this.engine.on('petChanged', () => { if (this.currentPage === 'combat') this.renderPage('combat'); if (this.currentPage === 'pets') this.renderPage('pets'); });
@@ -1468,7 +1474,7 @@ class UI {
       // Slayer task progress
       if (s.slayerTask && s.slayerTask.monster === c.monster) {
         const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
-        html += `<div class="slayer-combat-bar"><span>${icon('target',14)} Slayer: ${s.slayerTask.killed}/${s.slayerTask.amount}</span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" style="width:${pct}%"></div></div></div>`;
+        html += `<div class="slayer-combat-bar"><span>${icon('target',14)} Slayer: <span id="slayer-killed">${s.slayerTask.killed}</span>/<span id="slayer-amount">${s.slayerTask.amount}</span></span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" id="slayer-fill" style="width:${pct}%"></div></div></div>`;
       }
       html += _fcActive
         ? `<button class="btn btn-danger btn-flee" data-fc-action="flee">${icon('combat',16)} Flee (Lose All Progress)</button>`
@@ -2713,7 +2719,8 @@ class UI {
   // ── QUESTS PAGE ───────────────────────────────────────
   renderQuestsPage(el) {
     const s = this.engine.state;
-    const qp = s.questPoints || 0;
+    // Calculate QP dynamically from completed quests (never trust saved questPoints value)
+    const qp = GAME_DATA.quests.reduce((sum,q) => sum + ((s.quests.completed||[]).includes(q.id) ? (q.qp||0) : 0), 0);
     const totalQP = GAME_DATA.quests.reduce((sum,q)=>sum+(q.qp||0),0);
     const dailies = GAME_DATA.dailyQuests || [];
     const dState = s.dailyQuests || { active:[], completed:[], progress:{} };
@@ -3453,7 +3460,7 @@ class UI {
       html += `<div class="active-action-bar" style="margin:16px 0">
         <div class="aa-label">Task: Kill ${s.slayerTask.amount}x ${m?.name||s.slayerTask.monster} (${s.slayerTask.tier})</div>
         <div class="aa-progress"><div class="aa-fill" style="width:${pct.toFixed(0)}%"></div></div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:12px">${s.slayerTask.killed}/${s.slayerTask.amount}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px"><span id="slayer-page-killed">${s.slayerTask.killed}</span>/<span id="slayer-page-amount">${s.slayerTask.amount}</span></span>
         <button class="btn btn-xs btn-danger" onclick="game.skipSlayerTask()">Skip (30 SC)</button>
       </div>`;
     } else {
@@ -3759,6 +3766,8 @@ class UI {
     const pRank = s._prestigeRank || 0;
     const prestigeData = pRank > 0 ? GAME_DATA.prestige?.ranks?.[pRank - 1] : null;
     const qpTotal = GAME_DATA.quests?.reduce((a,q)=>a+(q.qp||0),0) || 0;
+    // Calculate current QP dynamically from completed quests
+    const currentQP = GAME_DATA.quests?.reduce((sum,q) => sum + ((s.quests?.completed||[]).includes(q.id) ? (q.qp||0) : 0), 0) || 0;
 
     // Build avatar URL from profile
     const seed = p.avatarSeed || displayName || 'Survivor';
@@ -3805,7 +3814,7 @@ class UI {
         <div class="char-kpi-row">
           <div class="char-kpi"><div class="char-kpi-val">${cl}</div><div class="char-kpi-lbl">Combat</div></div>
           <div class="char-kpi"><div class="char-kpi-val">${tl.toLocaleString()}</div><div class="char-kpi-lbl">Total Lv</div></div>
-          <div class="char-kpi"><div class="char-kpi-val">${s.questPoints||0}<span class="char-kpi-of">/${qpTotal}</span></div><div class="char-kpi-lbl">QP</div></div>
+          <div class="char-kpi"><div class="char-kpi-val">${currentQP}<span class="char-kpi-of">/${qpTotal}</span></div><div class="char-kpi-lbl">QP</div></div>
           <div class="char-kpi"><div class="char-kpi-val">${s.quests?.completed?.length||0}</div><div class="char-kpi-lbl">Quests</div></div>
           <div class="char-kpi"><div class="char-kpi-val">${this.fmt(s.stats?.monstersKilled||0)}</div><div class="char-kpi-lbl">Kills</div></div>
           <div class="char-kpi"><div class="char-kpi-val">${this.fmt(s.gold||0)}</div><div class="char-kpi-lbl">Gold</div></div>
@@ -6535,11 +6544,35 @@ class UI {
           }
           const killEl = document.getElementById('kill-count');
           if (killEl) killEl.textContent = s.stats.monstersKilled;
+          // Slayer task counter (combat page)
+          const slayerKilledEl = document.getElementById('slayer-killed');
+          if (slayerKilledEl && s.slayerTask) slayerKilledEl.textContent = s.slayerTask.killed;
+          const slayerFillEl = document.getElementById('slayer-fill');
+          if (slayerFillEl && s.slayerTask) {
+            const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
+            slayerFillEl.style.width = pct + '%';
+          }
+          // Slayer task counter (slayer page)
+          const slayerPageKilledEl = document.getElementById('slayer-page-killed');
+          if (slayerPageKilledEl && s.slayerTask) slayerPageKilledEl.textContent = s.slayerTask.killed;
           // Spec bar
           const specFill = document.getElementById('spec-fill');
           const specPct  = document.getElementById('spec-pct');
           if (specFill) specFill.style.width = (s.specEnergy||0)+'%';
           if (specPct)  specPct.textContent  = (s.specEnergy||0)+'%';
+          // Update spec button disabled state based on current energy
+          const specBtn = document.querySelector('.spec-btn');
+          if (specBtn) {
+            const weapon = GAME_DATA.items[s.equipment?.weapon];
+            const canUse = weapon?.specCost && (s.specEnergy||0) >= weapon.specCost;
+            if (canUse) {
+              specBtn.classList.remove('btn-disabled');
+              specBtn.disabled = false;
+            } else {
+              specBtn.classList.add('btn-disabled');
+              specBtn.disabled = true;
+            }
+          }
           // Status effects
           const playerFx = document.getElementById('player-status-live');
           if (playerFx) {
