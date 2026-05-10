@@ -199,6 +199,21 @@ class UI {
     this.engine.on('combatHit', (d) => {
       this.showHitSplat(d);
       if (this.engine.state.combat._multiMobMode) this._updateMultiMobUI();
+      // Log to activity system
+      if (typeof gameLogger !== 'undefined') {
+        if (d.who === 'player') {
+          gameLogger.logCombatAction('player', d.miss ? 'miss' : (d.ability ? 'ability' : 'hit'), d.dmg, this.engine.state.combat.monster, {
+            crit: d.crit,
+            ability: d.ability,
+            abilityName: d.source
+          });
+        } else {
+          gameLogger.logCombatAction('monster', d.dodge ? 'dodge' : (d.miss ? 'miss' : 'hit'), d.dmg, 'Player', {
+            dodge: d.dodge,
+            dot: d.dot
+          });
+        }
+      }
       // Combat log entry
       if (!this._combatLog) this._combatLog = [];
       const mon = this.engine.state.combat.monster;
@@ -242,7 +257,13 @@ class UI {
     this.engine.on('multiMobStart',   (d) => { if (this.currentPage === 'combat') this.renderPage('combat'); });
     this.engine.on('multiMobChanged', ()  => { if (this.currentPage === 'combat') this._updateMultiMobUI(); });
     this.engine.on('multiMobEnd',     ()  => { if (this.currentPage === 'combat') this.renderPage('combat'); });
-    this.engine.on('xpGain', (d) => this.showXpGain(d));
+    this.engine.on('xpGain', (d) => {
+      this.showXpGain(d);
+      // Log to activity system
+      if (typeof gameLogger !== 'undefined' && this.engine.state.activeSkill) {
+        gameLogger.logXpGain(this.engine.state.activeSkill, Math.floor(d.total || 0), d.source || 'combat');
+      }
+    });
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (['equipment','bank','combat'].includes(this.currentPage)) this.renderPage(this.currentPage); });
     this.engine.on('farmingChanged', () => { if (this.currentPage === 'farming') this.renderPage(this.currentPage); });
@@ -5178,56 +5199,147 @@ class UI {
 
   renderActivityPage(el) {
     const s = this.engine.state;
-    let html = this.header('Activity','scroll','Track your progress and recent actions.',null);
-
+    
+    // Get current filter and sorting preferences
+    const activeCategory = this._activityCategory || 'all';
+    const activeSkill = this._activitySkill || 'all';
+    const searchTerm = this._activitySearch || '';
+    
+    let html = this.header('Activity Log','scroll','Real-time tracking of all game events.',null);
+    
     // Session stats
     const sessionTime = Math.floor((Date.now() - (this.sessionStart || Date.now())) / 1000);
     const hours = Math.floor(sessionTime / 3600);
     const mins = Math.floor((sessionTime % 3600) / 60);
-    const secs = sessionTime % 60;
 
     html += `<div class="activity-summary">
-      <div class="as-row"><span>Session Time</span><span>${hours}h ${mins}m ${secs}s</span></div>
-      <div class="as-row"><span>Total Kills</span><span>${this.fmt(s.stats?.monstersKilled || 0)}</span></div>
-      <div class="as-row"><span>Total Gold</span><span>${this.fmt(s.stats?.goldEarned || 0)}</span></div>
-      <div class="as-row"><span>Quests Done</span><span>${s.quests?.completed?.length || 0}</span></div>
+      <div class="as-row"><span>Session Time</span><span>${hours}h ${mins}m</span></div>
+      <div class="as-row"><span>Total Events</span><span>${gameLogger.events.length}</span></div>
+      <div class="as-row"><span>Active Filters</span><span>${gameLogger.getActiveFilters().length}/7</span></div>
     </div>`;
 
-    // Skill activity breakdown
-    html += `<h2 class="section-title">Skill Progress</h2>`;
-    html += `<div class="activity-skills">`;
+    // Search bar
+    html += `<div class="activity-search-bar">
+      <input type="text" class="activity-search-input" id="activity-search" placeholder="Search events..." value="${this.escHtml(searchTerm)}" oninput="ui.setActivitySearch(this.value)">
+      ${searchTerm ? `<button class="btn btn-xs" onclick="ui.setActivitySearch('')">✕</button>` : ''}
+    </div>`;
+
+    // Category filters
+    html += `<div class="activity-filters">
+      <button class="activity-filter-btn ${activeCategory === 'all' ? 'active' : ''}" onclick="ui._activityCategory='all';ui.renderPage('activity')">All</button>`;
     
-    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
-    
-    for (const sId of skillOrder) {
-      const sk = s.skills[sId];
-      if (!sk) continue;
-      const skillDef = GAME_DATA.skills[sId];
-      const xpProg = this.engine.getXpProgress(sId);
-      
-      // Estimate current session XP gain (rough estimate based on level)
-      const sessionXpGain = Math.floor(Math.random() * sk.level * 100); // Placeholder
-      
-      html += `<div class="as-skill-row">
-        <div class="as-skill-name">${icon(skillDef?.icon || 'sparkle', 14)} ${skillDef?.name || sId}</div>
-        <div class="as-skill-level">${sk.level}</div>
-        <div class="as-skill-bar"><div class="as-skill-fill" style="width:${(xpProg*100).toFixed(1)}%"></div></div>
-        <div class="as-skill-xp">${this.fmt(sk.xp)}</div>
-      </div>`;
+    for (const cat of gameLogger.categories) {
+      const icon = gameLogger._getIcon(cat, {});
+      const isActive = gameLogger.filters.has(cat);
+      html += `<button class="activity-filter-btn ${activeCategory === cat ? 'active' : ''}" style="${isActive ? '' : 'opacity:0.5'}" title="${cat}" onclick="ui._activityCategory='${cat}';ui.renderPage('activity')">${icon}</button>`;
     }
     
     html += `</div>`;
 
-    // Recent achievements
-    html += `<h2 class="section-title">Recent Events</h2>`;
-    html += `<div class="activity-events">`;
+    // Get filtered events
+    const opts = {
+      limit: 100,
+      category: activeCategory === 'all' ? null : activeCategory,
+      skill: activeSkill === 'all' ? null : activeSkill,
+      search: searchTerm,
+    };
     
-    if (s.stats?.monstersKilled > 0) {
-      html += `<div class="ae-event"><span class="ae-icon">⚔</span><span>Killed ${this.fmt(s.stats.monstersKilled)} monsters</span></div>`;
+    const events = gameLogger.getEvents(opts);
+
+    // Events list
+    html += `<div class="activity-events-list" id="activity-events-live">`;
+    if (events.length === 0) {
+      html += `<div class="bank-empty">No events match your filters.</div>`;
+    } else {
+      for (const evt of events) {
+        const timeAgo = this._getTimeAgo(evt.timestamp);
+        const skillTag = evt.data.skill ? `<span class="ae-skill">${evt.data.skill}</span>` : '';
+        html += `<div class="activity-event-row ae-${evt.category}">
+          <span class="ae-icon">${evt.icon}</span>
+          <span class="ae-message">${evt.message}${skillTag}</span>
+          <span class="ae-time">${timeAgo}</span>
+        </div>`;
+      }
     }
-    if (s.stats?.slayerTasksCompleted > 0) {
-      html += `<div class="ae-event"><span class="ae-icon">🎯</span><span>Completed ${s.stats.slayerTasksCompleted} Slayer tasks</span></div>`;
+    html += `</div>`;
+
+    // Skill activity breakdown
+    const skillActivity = gameLogger.getAllSkillActivity();
+    if (Object.keys(skillActivity).length > 0) {
+      html += `<h2 class="section-title">Skill Activity This Session</h2>`;
+      html += `<div class="skill-activity-grid">`;
+      
+      for (const [skillId, stats] of Object.entries(skillActivity).sort((a,b) => b[1].xp - a[1].xp).slice(0, 12)) {
+        const skillDef = GAME_DATA.skills[skillId];
+        html += `<div class="sag-card">
+          <div class="sag-icon">${icon(skillDef?.icon || 'sparkle', 16)}</div>
+          <div class="sag-name">${skillDef?.name || skillId}</div>
+          <div class="sag-stats">
+            <div><span>${this.fmt(stats.xp)}</span> XP</div>
+            <div><span>${stats.actions}</span> actions</div>
+            ${stats.drops > 0 ? `<div><span>${stats.drops}</span> drops</div>` : ''}
+          </div>
+        </div>`;
+      }
+      html += `</div>`;
     }
+
+    el.innerHTML = html;
+    
+    // Set up real-time updates
+    if (gameLogger.on) {
+      gameLogger.on('eventLogged', () => {
+        if (this.currentPage === 'activity') {
+          this._updateActivityLog();
+        }
+      });
+    }
+  }
+
+  setActivitySearch(term) {
+    this._activitySearch = term;
+    this.renderPage('activity');
+  }
+
+  _updateActivityLog() {
+    const logEl = document.getElementById('activity-events-live');
+    if (!logEl) return;
+
+    const opts = {
+      limit: 100,
+      category: this._activityCategory === 'all' ? null : this._activityCategory,
+      search: this._activitySearch || '',
+    };
+
+    const events = gameLogger.getEvents(opts);
+    if (events.length === 0) {
+      logEl.innerHTML = `<div class="bank-empty">No events match your filters.</div>`;
+      return;
+    }
+
+    logEl.innerHTML = events.map(evt => {
+      const timeAgo = this._getTimeAgo(evt.timestamp);
+      const skillTag = evt.data.skill ? `<span class="ae-skill">${evt.data.skill}</span>` : '';
+      return `<div class="activity-event-row ae-${evt.category}">
+        <span class="ae-icon">${evt.icon}</span>
+        <span class="ae-message">${evt.message}${skillTag}</span>
+        <span class="ae-time">${timeAgo}</span>
+      </div>`;
+    }).join('');
+  }
+
+  _getTimeAgo(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (seconds < 60) return 'now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours/24)}d ago`;
+  }
     if (s._prestigeRank > 0) {
       html += `<div class="ae-event"><span class="ae-icon">⭐</span><span>Reached Prestige Rank ${s._prestigeRank}</span></div>`;
     }

@@ -24,10 +24,18 @@ class OnlineManager {
       return;
     }
     try {
-      firebase.initializeApp(FIREBASE_CONFIG);
-      this.auth = firebase.auth();
-      this.db = firebase.database();
-      this.firestore = firebase.firestore();
+      // Check if already initialized
+      if (firebase.apps && firebase.apps.length > 0) {
+        console.log('[Online] Firebase already initialized');
+        this.auth = firebase.auth();
+        this.db = firebase.database();
+        this.firestore = firebase.firestore();
+      } else {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        this.auth = firebase.auth();
+        this.db = firebase.database();
+        this.firestore = firebase.firestore();
+      }
       this.isOnline = true;
 
       this.auth.onAuthStateChanged(async (user) => {
@@ -156,18 +164,29 @@ class OnlineManager {
 
   async signInWithGoogle() {
     try {
+      if (!this.auth) {
+        this.emit('notification', { type:'danger', text:'Firebase not initialized. Please refresh the page.' });
+        return false;
+      }
+
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ 'hd': '' }); // Allow all Google accounts
       
       if (this.user && this.user.isAnonymous) {
         // Link anonymous account to Google
         try {
-          await this.user.linkWithPopup(provider);
+          const result = await this.user.linkWithPopup(provider);
+          this.user = result.user;
         } catch(e) {
           // If linking fails, sign out anon and do fresh sign-in instead
-          if (e.code === 'auth/popup-closed-by-user') throw e;
+          if (e.code === 'auth/popup-closed-by-user') {
+            this.emit('notification', { type:'warn', text:'Sign-in was cancelled.' });
+            return false;
+          }
+          console.warn('[Online] Linking failed, attempting fresh sign-in:', e.code);
           await this.auth.signOut();
-          await this.auth.signInWithPopup(provider);
+          const result = await this.auth.signInWithPopup(provider);
+          this.user = result.user;
         }
         this.displayName = this.user.displayName || this.user.email?.split('@')[0] || 'Survivor';
         localStorage.setItem('ashfall_displayName', this.displayName);
@@ -180,6 +199,27 @@ class OnlineManager {
             if (game && game.state) { this.saveToCloud(true); this.syncProfile(); }
           }, 60000);
         }
+        this.emit('notification', { type:'success', text:`Welcome, ${this.displayName}! Cloud sync enabled.` });
+        return true;
+      } else {
+        // Fresh sign-in (no anonymous account to link)
+        const result = await this.auth.signInWithPopup(provider);
+        this.user = result.user;
+        this.displayName = this.user.displayName || this.user.email?.split('@')[0] || 'Survivor';
+        localStorage.setItem('ashfall_displayName', this.displayName);
+        this.emit('notification', { type:'success', text:`Welcome back, ${this.displayName}!` });
+        return true;
+      }
+    } catch(e) {
+      let msg = e.message;
+      if (e.code === 'auth/popup-blocked') msg = 'Sign-in popup was blocked. Please allow popups and try again.';
+      else if (e.code === 'auth/popup-closed-by-user') msg = 'Sign-in was cancelled.';
+      else if (e.code === 'auth/account-exists-with-different-credential') msg = 'Email already in use with different provider.';
+      this.emit('notification', { type:'danger', text:msg });
+      console.error('[Online] Google sign-in error:', e);
+      return false;
+    }
+  }
         this.emit('authChanged', { user:this.user, displayName:this.displayName });
         this.emit('notification', { type:'success', text:`Linked to Google as ${this.displayName}! Cloud save active.` });
       } else {
