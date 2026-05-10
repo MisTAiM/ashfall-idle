@@ -18,6 +18,9 @@ class OnlineManager {
   }
 
   init() {
+    console.log('[Online] Initializing with FIREBASE_ENABLED:', typeof FIREBASE_ENABLED !== 'undefined' ? FIREBASE_ENABLED : 'undefined');
+    console.log('[Online] FIREBASE_CONFIG:', typeof FIREBASE_CONFIG !== 'undefined' ? FIREBASE_CONFIG.projectId : 'undefined');
+    
     if (!FIREBASE_ENABLED) {
       console.log('Firebase not configured. Online features disabled.');
       this.emit('status', { online:false, reason:'Firebase not configured. See js/firebase-config.js for setup instructions.' });
