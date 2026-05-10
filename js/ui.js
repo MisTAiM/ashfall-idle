@@ -5228,20 +5228,6 @@ class UI {
   setActivitySearch(term) {
     // TODO: implement search on re-integration
   }
-    if (s._prestigeRank > 0) {
-      html += `<div class="ae-event"><span class="ae-icon">⭐</span><span>Reached Prestige Rank ${s._prestigeRank}</span></div>`;
-    }
-    if ((s.quests?.completed?.length || 0) > 0) {
-      html += `<div class="ae-event"><span class="ae-icon">📜</span><span>Completed ${s.quests.completed.length} quests</span></div>`;
-    }
-    if (!s.stats?.monstersKilled && !s._prestigeRank) {
-      html += `<div class="ae-empty">Start playing to see activity!</div>`;
-    }
-    
-    html += `</div>`;
-
-    el.innerHTML = html;
-  }
 
   async cloudLoad() {
     if (typeof online === 'undefined' || !online.isOnline) return;
