@@ -5200,6 +5200,12 @@ class UI {
   renderActivityPage(el) {
     const s = this.engine.state;
     
+    // Check if logging system is available
+    if (typeof gameLogger === 'undefined') {
+      el.innerHTML = '<div class="page-empty">Loading activity system...</div>';
+      return;
+    }
+    
     // Get current filter and sorting preferences
     const activeCategory = this._activityCategory || 'all';
     const activeSkill = this._activitySkill || 'all';
@@ -5214,8 +5220,8 @@ class UI {
 
     html += `<div class="activity-summary">
       <div class="as-row"><span>Session Time</span><span>${hours}h ${mins}m</span></div>
-      <div class="as-row"><span>Total Events</span><span>${gameLogger.events.length}</span></div>
-      <div class="as-row"><span>Active Filters</span><span>${gameLogger.getActiveFilters().length}/7</span></div>
+      <div class="as-row"><span>Total Events</span><span>${gameLogger.events ? gameLogger.events.length : 0}</span></div>
+      <div class="as-row"><span>Active Filters</span><span>${gameLogger.getActiveFilters ? gameLogger.getActiveFilters().length : 0}/7</span></div>
     </div>`;
 
     // Search bar
@@ -5228,10 +5234,12 @@ class UI {
     html += `<div class="activity-filters">
       <button class="activity-filter-btn ${activeCategory === 'all' ? 'active' : ''}" onclick="ui._activityCategory='all';ui.renderPage('activity')">All</button>`;
     
-    for (const cat of gameLogger.categories) {
-      const icon = gameLogger._getIcon(cat, {});
-      const isActive = gameLogger.filters.has(cat);
-      html += `<button class="activity-filter-btn ${activeCategory === cat ? 'active' : ''}" style="${isActive ? '' : 'opacity:0.5'}" title="${cat}" onclick="ui._activityCategory='${cat}';ui.renderPage('activity')">${icon}</button>`;
+    if (gameLogger.categories) {
+      for (const cat of gameLogger.categories) {
+        const isActive = gameLogger.filters && gameLogger.filters.has(cat);
+        const icon = gameLogger._getIcon ? gameLogger._getIcon(cat, {}) : '•';
+        html += `<button class="activity-filter-btn ${activeCategory === cat ? 'active' : ''}" style="${isActive ? '' : 'opacity:0.5'}" title="${cat}" onclick="ui._activityCategory='${cat}';ui.renderPage('activity')">${icon}</button>`;
+      }
     }
     
     html += `</div>`;
@@ -5244,18 +5252,18 @@ class UI {
       search: searchTerm,
     };
     
-    const events = gameLogger.getEvents(opts);
+    const events = gameLogger.getEvents ? gameLogger.getEvents(opts) : [];
 
     // Events list
     html += `<div class="activity-events-list" id="activity-events-live">`;
     if (events.length === 0) {
-      html += `<div class="bank-empty">No events match your filters.</div>`;
+      html += `<div class="bank-empty">No events yet. Start playing to see activity!</div>`;
     } else {
       for (const evt of events) {
         const timeAgo = this._getTimeAgo(evt.timestamp);
-        const skillTag = evt.data.skill ? `<span class="ae-skill">${evt.data.skill}</span>` : '';
+        const skillTag = evt.data && evt.data.skill ? `<span class="ae-skill">${evt.data.skill}</span>` : '';
         html += `<div class="activity-event-row ae-${evt.category}">
-          <span class="ae-icon">${evt.icon}</span>
+          <span class="ae-icon">${evt.icon || '•'}</span>
           <span class="ae-message">${evt.message}${skillTag}</span>
           <span class="ae-time">${timeAgo}</span>
         </div>`;
@@ -5264,7 +5272,7 @@ class UI {
     html += `</div>`;
 
     // Skill activity breakdown
-    const skillActivity = gameLogger.getAllSkillActivity();
+    const skillActivity = gameLogger.getAllSkillActivity ? gameLogger.getAllSkillActivity() : {};
     if (Object.keys(skillActivity).length > 0) {
       html += `<h2 class="section-title">Skill Activity This Session</h2>`;
       html += `<div class="skill-activity-grid">`;
@@ -5287,7 +5295,7 @@ class UI {
     el.innerHTML = html;
     
     // Set up real-time updates
-    if (gameLogger.on) {
+    if (gameLogger && gameLogger.on) {
       gameLogger.on('eventLogged', () => {
         if (this.currentPage === 'activity') {
           this._updateActivityLog();
@@ -5303,7 +5311,7 @@ class UI {
 
   _updateActivityLog() {
     const logEl = document.getElementById('activity-events-live');
-    if (!logEl) return;
+    if (!logEl || typeof gameLogger === 'undefined') return;
 
     const opts = {
       limit: 100,
@@ -5311,17 +5319,17 @@ class UI {
       search: this._activitySearch || '',
     };
 
-    const events = gameLogger.getEvents(opts);
+    const events = gameLogger.getEvents ? gameLogger.getEvents(opts) : [];
     if (events.length === 0) {
-      logEl.innerHTML = `<div class="bank-empty">No events match your filters.</div>`;
+      logEl.innerHTML = `<div class="bank-empty">No events yet. Start playing!</div>`;
       return;
     }
 
     logEl.innerHTML = events.map(evt => {
       const timeAgo = this._getTimeAgo(evt.timestamp);
-      const skillTag = evt.data.skill ? `<span class="ae-skill">${evt.data.skill}</span>` : '';
+      const skillTag = evt.data && evt.data.skill ? `<span class="ae-skill">${evt.data.skill}</span>` : '';
       return `<div class="activity-event-row ae-${evt.category}">
-        <span class="ae-icon">${evt.icon}</span>
+        <span class="ae-icon">${evt.icon || '•'}</span>
         <span class="ae-message">${evt.message}${skillTag}</span>
         <span class="ae-time">${timeAgo}</span>
       </div>`;
@@ -7273,7 +7281,25 @@ class UI {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  window.ui = new UI(game);
-  game.init();
-  ui.init();
+  try {
+    console.log('[Init] Creating UI...');
+    window.ui = new UI(game);
+    console.log('[Init] Initializing game engine...');
+    game.init();
+    console.log('[Init] Initializing UI...');
+    ui.init();
+    console.log('[Init] Game ready!');
+  } catch(e) {
+    console.error('[Init] CRITICAL ERROR:', e);
+    console.error('[Init] Stack:', e.stack);
+    const main = document.getElementById('main-content');
+    if (main) {
+      main.innerHTML = `<div style="padding: 20px; color: #ff6b6b; font-family: monospace; white-space: pre-wrap;">
+ERROR LOADING GAME:
+${e.message}
+
+${e.stack}
+      </div>`;
+    }
+  }
 });

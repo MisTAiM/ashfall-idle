@@ -6,14 +6,16 @@
 class NavigationSearcher {
   constructor() {
     this.index = [];
-    this.buildIndex();
+    this.built = false;
   }
 
   buildIndex() {
+    if (this.built) return; // Only build once
+    this.built = true;
     this.index = [];
 
     // Skills
-    if (GAME_DATA.skills) {
+    if (typeof GAME_DATA !== 'undefined' && GAME_DATA.skills) {
       for (const [id, skill] of Object.entries(GAME_DATA.skills)) {
         this.index.push({
           id,
@@ -59,7 +61,7 @@ class NavigationSearcher {
     }
 
     // Items (popular ones, limit to keep search fast)
-    if (GAME_DATA.items) {
+    if (typeof GAME_DATA !== 'undefined' && GAME_DATA.items) {
       const popular = ['oak_logs', 'copper_ore', 'bread', 'iron_pickaxe', 'bronze_sword',
                        'gold_bar', 'diamond_amulet', 'rune_essence', 'air_rune', 'oak_plank'];
       for (const itemId of popular) {
@@ -77,7 +79,7 @@ class NavigationSearcher {
     }
 
     // NPCs (sample)
-    if (GAME_DATA.npcs) {
+    if (typeof GAME_DATA !== 'undefined' && GAME_DATA.npcs) {
       for (const [id, npc] of Object.entries(GAME_DATA.npcs).slice(0, 20)) {
         this.index.push({
           id,
@@ -91,6 +93,7 @@ class NavigationSearcher {
   }
 
   search(query) {
+    if (!this.built) this.buildIndex();
     if (!query || query.length < 1) return [];
 
     const term = query.toLowerCase();
