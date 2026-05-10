@@ -127,7 +127,12 @@ class OnlineManager {
       this.emit('notification', { type:'success', text:'Account created! Your progress is now saved to the cloud.' });
       return true;
     } catch(e) {
-      this.emit('notification', { type:'danger', text:e.message });
+      let msg = e.message;
+      if (e.code === 'auth/email-already-in-use') msg = 'Email already in use. Try signing in instead.';
+      else if (e.code === 'auth/weak-password') msg = 'Password too weak (min 6 characters).';
+      else if (e.code === 'auth/invalid-email') msg = 'Invalid email address.';
+      else if (e.code === 'auth/operation-not-allowed') msg = 'Email auth not enabled. Use Google Sign-In.';
+      this.emit('notification', { type:'danger', text:msg });
       return false;
     }
   }
@@ -139,7 +144,12 @@ class OnlineManager {
       this.emit('notification', { type:'success', text:'Signed in! Syncing cloud save...' });
       return true;
     } catch(e) {
-      this.emit('notification', { type:'danger', text:e.message });
+      let msg = e.message;
+      if (e.code === 'auth/user-not-found') msg = 'Email not found. Create an account first.';
+      else if (e.code === 'auth/wrong-password') msg = 'Wrong password.';
+      else if (e.code === 'auth/invalid-email') msg = 'Invalid email address.';
+      else if (e.code === 'auth/user-disabled') msg = 'Account has been disabled.';
+      this.emit('notification', { type:'danger', text:msg });
       return false;
     }
   }
@@ -147,9 +157,18 @@ class OnlineManager {
   async signInWithGoogle() {
     try {
       const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ 'hd': '' }); // Allow all Google accounts
+      
       if (this.user && this.user.isAnonymous) {
         // Link anonymous account to Google
-        await this.user.linkWithPopup(provider);
+        try {
+          await this.user.linkWithPopup(provider);
+        } catch(e) {
+          // If linking fails, sign out anon and do fresh sign-in instead
+          if (e.code === 'auth/popup-closed-by-user') throw e;
+          await this.auth.signOut();
+          await this.auth.signInWithPopup(provider);
+        }
         this.displayName = this.user.displayName || this.user.email?.split('@')[0] || 'Survivor';
         localStorage.setItem('ashfall_displayName', this.displayName);
         // Immediate cloud save + sync
@@ -177,10 +196,23 @@ class OnlineManager {
           await this.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
           this.emit('notification', { type:'success', text:'Signed in with existing Google account.' });
           return true;
-        } catch(e2) { this.emit('notification',{type:'danger',text:e2.message}); return false; }
+        } catch(e2) { 
+          console.error('Google fallback error:', e2);
+          this.emit('notification',{type:'danger',text:'Google Sign-in error: '+e2.message}); 
+          return false; 
+        }
       }
       if (e.code === 'auth/popup-closed-by-user') {
-        this.emit('notification', { type:'info', text:'Google sign-in cancelled.' });
+        this.emit('notification', { type:'info', text:'Google sign-in popup closed. Try again.' });
+        return false;
+      }
+      if (e.code === 'auth/operation-not-allowed') {
+        this.emit('notification', { type:'danger', text:'Google Sign-in not configured. Please enable it in Firebase Console.' });
+        console.error('ERROR: Enable Google Sign-In in Firebase Console > Authentication > Sign-in method');
+        return false;
+      }
+      if (e.code === 'auth/network-request-failed') {
+        this.emit('notification', { type:'danger', text:'Network error. Check your internet connection.' });
         return false;
       }
       console.error('Google sign-in error:', e);

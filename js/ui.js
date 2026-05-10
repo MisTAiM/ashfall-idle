@@ -55,6 +55,7 @@ const NAV = [
     {id:'abilities',    label:'Abilities',     icon:'banner'},
     {id:'prayer',       label:'Prayer',        icon:'sparkle'},
     {id:'slayer',       label:'Slayer',        icon:'target'},
+    {id:'slayer_bosses',label:'Slayer Bosses', icon:'skull'},
     {id:'wilderness',   label:'Wilderness',    icon:'combat'},
     {id:'world_bosses', label:'World Bosses',  icon:'worldboss'},
     {id:'dungeons',     label:'Dungeons',      icon:'dungeon'},
@@ -121,10 +122,10 @@ const NAV = [
   ]},
   { header:'System', icon:'⚙', items:[
     {id:'statistics',   label:'Statistics',   icon:'stats'},
+    {id:'activity',     label:'Activity',     icon:'scroll'},
     {id:'upgrades',     label:'Upgrades',     icon:'sparkle'},
     {id:'settings_page',label:'Settings',     icon:'settings'},
     {id:'wiki',         label:'Wiki',         icon:'book'},
-    {id:'slayer_bosses',label:'Slayer Bosses',icon:'skull'},
   ]},
 ];
 
@@ -433,6 +434,8 @@ class UI {
     else if (pageId === 'necromancy') this.renderNecromancyPage(main);
     else if (pageId === 'summoning') this.renderSummoningPage(main);
     else if (pageId === 'account') this.renderAccountPage(main);
+    else if (pageId === 'upgrades') this.renderUpgradesPage(main);
+    else if (pageId === 'activity') this.renderActivityPage(main);
     else if (pageId === 'character') this.renderCharacterPage(main);
     else if (pageId === 'prestige') this.renderPrestigePage(main);
     else if (pageId === 'guilds') this.renderGuildsPage(main);
@@ -5080,6 +5083,163 @@ class UI {
         <div style="display:flex;gap:8px"><input type="text" id="name-input" class="chat-input" placeholder="Display name" value="${online.displayName||''}"><button class="btn btn-sm" onclick="online.setDisplayName(document.getElementById('name-input').value)">Set Name</button></div>
       </div>`;
     }
+    el.innerHTML = html;
+  }
+
+  renderUpgradesPage(el) {
+    const s = this.engine.state;
+    const pRank = s._prestigeRank || 0;
+    const prestigeCfg = GAME_DATA.prestige;
+    const nextRank = pRank + 1;
+    const nextRankData = prestigeCfg?.ranks?.[pRank];
+    const can = this.engine.canPrestige();
+    const tl = this.engine.getTotalLevel();
+    const maxTl = Object.keys(s.skills).length * 99;
+
+    let html = this.header('Upgrades','sparkle','Character progression and permanent bonuses.',null);
+
+    // Prestige section
+    html += `<div class="prestige-quick-panel">
+      <div class="pqp-header">
+        <span>${pRank > 0 ? `Prestige Rank ${pRank}` : 'Prestige — Unlock Rank 1'}</span>
+        ${pRank > 0 && nextRankData ? `<span class="pqp-next">Next: ${nextRankData.name}</span>` : ''}
+      </div>
+      <div class="pqp-bar-row">
+        <div class="pqp-label">Total Level</div>
+        <div class="pqp-bar"><div class="pqp-fill" style="width:${(tl/maxTl*100).toFixed(1)}%"></div></div>
+        <div class="pqp-val">${tl} / ${maxTl}</div>
+      </div>`;
+
+    if (can.ok) {
+      html += `<div class="pqp-ready" style="margin-top:12px;padding:8px;background:rgba(42,106,42,0.3);border:1px solid #4a8a3e;border-radius:4px;color:#4a8a3e">
+        ✅ Ready to Prestige! Click below to unlock permanent bonuses.
+      </div>
+      <button class="btn prestige-btn" style="margin-top:12px;width:100%" onclick="ui.currentPage='prestige';ui.renderPage('prestige')">
+        ${nextRankData?.icon||'⭐'} Unlock ${nextRankData?.name || 'Next Rank'}
+      </button>`;
+    } else {
+      html += `<div class="pqp-locked" style="margin-top:12px;padding:8px;background:rgba(196,64,64,0.2);border:1px solid #c44040;border-radius:4px;color:#c44040;font-size:12px">
+        ${can.reason}
+      </div>`;
+    }
+
+    html += `</div>`;
+
+    // Permanent bonuses display
+    if (pRank > 0) {
+      const currentBonuses = [];
+      for (let i = 0; i < pRank; i++) {
+        const r = prestigeCfg.ranks[i];
+        if (r && r.bonuses) {
+          for (const [k,v] of Object.entries(r.bonuses)) {
+            currentBonuses.push({ type:k, value:v, rank:i+1 });
+          }
+        }
+      }
+
+      html += `<h2 class="section-title">Active Bonuses</h2>`;
+      html += `<div class="upgrades-bonuses-grid">`;
+      for (const b of currentBonuses) {
+        const labels = {
+          xpMult:'XP Multiplier',
+          goldMult:'Gold Multiplier',
+          dropMult:'Loot Multiplier',
+          dmgMult:'Damage Multiplier',
+          startLevel:'Starting Skill Level'
+        };
+        const label = labels[b.type] || b.type;
+        const display = typeof b.value === 'number' && b.value < 1 ? `+${(b.value*100).toFixed(0)}%` : `+${b.value}`;
+        html += `<div class="upgrade-bonus-card">
+          <div class="ubc-label">${label}</div>
+          <div class="ubc-value">${display}</div>
+          <div class="ubc-source">Rank ${b.rank}</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Upcoming ranks preview
+    html += `<h2 class="section-title">Prestige Ranks</h2>`;
+    html += `<div class="prestige-ranks-preview">`;
+    for (let i = 0; i < (prestigeCfg?.ranks?.length || 5); i++) {
+      const r = prestigeCfg.ranks[i];
+      const unlocked = pRank > i;
+      html += `<div class="prp-card ${unlocked?'prp-unlocked':''}">
+        <div class="prp-icon">${r.icon}</div>
+        <div class="prp-name">${r.name}</div>
+        <div class="prp-bonus">${Object.entries(r.bonuses).map(([k,v])=>`${k}: ${typeof v==='number'&&v<1?(v*100).toFixed(0)+'%':v}`).join(' | ')}</div>
+        ${unlocked?'<div class="prp-check">✓</div>':''}
+      </div>`;
+    }
+    html += `</div>`;
+
+    el.innerHTML = html;
+  }
+
+  renderActivityPage(el) {
+    const s = this.engine.state;
+    let html = this.header('Activity','scroll','Track your progress and recent actions.',null);
+
+    // Session stats
+    const sessionTime = Math.floor((Date.now() - (this.sessionStart || Date.now())) / 1000);
+    const hours = Math.floor(sessionTime / 3600);
+    const mins = Math.floor((sessionTime % 3600) / 60);
+    const secs = sessionTime % 60;
+
+    html += `<div class="activity-summary">
+      <div class="as-row"><span>Session Time</span><span>${hours}h ${mins}m ${secs}s</span></div>
+      <div class="as-row"><span>Total Kills</span><span>${this.fmt(s.stats?.monstersKilled || 0)}</span></div>
+      <div class="as-row"><span>Total Gold</span><span>${this.fmt(s.stats?.goldEarned || 0)}</span></div>
+      <div class="as-row"><span>Quests Done</span><span>${s.quests?.completed?.length || 0}</span></div>
+    </div>`;
+
+    // Skill activity breakdown
+    html += `<h2 class="section-title">Skill Progress</h2>`;
+    html += `<div class="activity-skills">`;
+    
+    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
+    
+    for (const sId of skillOrder) {
+      const sk = s.skills[sId];
+      if (!sk) continue;
+      const skillDef = GAME_DATA.skills[sId];
+      const xpProg = this.engine.getXpProgress(sId);
+      
+      // Estimate current session XP gain (rough estimate based on level)
+      const sessionXpGain = Math.floor(Math.random() * sk.level * 100); // Placeholder
+      
+      html += `<div class="as-skill-row">
+        <div class="as-skill-name">${icon(skillDef?.icon || 'sparkle', 14)} ${skillDef?.name || sId}</div>
+        <div class="as-skill-level">${sk.level}</div>
+        <div class="as-skill-bar"><div class="as-skill-fill" style="width:${(xpProg*100).toFixed(1)}%"></div></div>
+        <div class="as-skill-xp">${this.fmt(sk.xp)}</div>
+      </div>`;
+    }
+    
+    html += `</div>`;
+
+    // Recent achievements
+    html += `<h2 class="section-title">Recent Events</h2>`;
+    html += `<div class="activity-events">`;
+    
+    if (s.stats?.monstersKilled > 0) {
+      html += `<div class="ae-event"><span class="ae-icon">⚔</span><span>Killed ${this.fmt(s.stats.monstersKilled)} monsters</span></div>`;
+    }
+    if (s.stats?.slayerTasksCompleted > 0) {
+      html += `<div class="ae-event"><span class="ae-icon">🎯</span><span>Completed ${s.stats.slayerTasksCompleted} Slayer tasks</span></div>`;
+    }
+    if (s._prestigeRank > 0) {
+      html += `<div class="ae-event"><span class="ae-icon">⭐</span><span>Reached Prestige Rank ${s._prestigeRank}</span></div>`;
+    }
+    if ((s.quests?.completed?.length || 0) > 0) {
+      html += `<div class="ae-event"><span class="ae-icon">📜</span><span>Completed ${s.quests.completed.length} quests</span></div>`;
+    }
+    if (!s.stats?.monstersKilled && !s._prestigeRank) {
+      html += `<div class="ae-empty">Start playing to see activity!</div>`;
+    }
+    
+    html += `</div>`;
+
     el.innerHTML = html;
   }
 
