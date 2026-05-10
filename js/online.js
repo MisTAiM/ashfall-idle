@@ -223,43 +223,17 @@ class OnlineManager {
       return false;
     }
   }
-        this.emit('authChanged', { user:this.user, displayName:this.displayName });
-        this.emit('notification', { type:'success', text:`Linked to Google as ${this.displayName}! Cloud save active.` });
-      } else {
-        // Fresh Google sign-in
-        await this.auth.signInWithPopup(provider);
-        // onAuthStateChanged handles the rest
-        this.emit('notification', { type:'success', text:'Signed in with Google! Syncing...' });
-      }
+
+  async signUp(email, password) {
+    try {
+      await this.auth.createUserWithEmailAndPassword(email, password);
+      this.emit('notification', { type:'success', text:'Account created! Signing you in...' });
       return true;
     } catch(e) {
-      if (e.code === 'auth/credential-already-in-use') {
-        // Google account already linked to another user - sign in directly
-        try {
-          await this.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-          this.emit('notification', { type:'success', text:'Signed in with existing Google account.' });
-          return true;
-        } catch(e2) { 
-          console.error('Google fallback error:', e2);
-          this.emit('notification',{type:'danger',text:'Google Sign-in error: '+e2.message}); 
-          return false; 
-        }
-      }
-      if (e.code === 'auth/popup-closed-by-user') {
-        this.emit('notification', { type:'info', text:'Google sign-in popup closed. Try again.' });
-        return false;
-      }
-      if (e.code === 'auth/operation-not-allowed') {
-        this.emit('notification', { type:'danger', text:'Google Sign-in not configured. Please enable it in Firebase Console.' });
-        console.error('ERROR: Enable Google Sign-In in Firebase Console > Authentication > Sign-in method');
-        return false;
-      }
-      if (e.code === 'auth/network-request-failed') {
-        this.emit('notification', { type:'danger', text:'Network error. Check your internet connection.' });
-        return false;
-      }
-      console.error('Google sign-in error:', e);
-      this.emit('notification', { type:'danger', text:'Google sign-in failed: ' + e.message });
+      let msg = e.message;
+      if (e.code === 'auth/email-already-in-use') msg = 'This email is already registered.';
+      else if (e.code === 'auth/weak-password') msg = 'Password too weak. Use 6+ characters.';
+      this.emit('notification', { type:'danger', text:msg });
       return false;
     }
   }

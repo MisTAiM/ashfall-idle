@@ -8,7 +8,7 @@
 'use strict';
 
 const E = GameEngine.prototype;
-const U = GameUI.prototype;
+const U = UI.prototype;
 
 // ── ENGINE: Override acceptQuest for multi-stage ─────────
 const _origAccept = E.acceptQuest;
