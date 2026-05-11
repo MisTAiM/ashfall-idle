@@ -124,30 +124,18 @@ class AdminRoleSystem {
   }
 
   async init() {
-    // Check if user is admin using existing isAdmin() function
+    // Don't set role here - check dynamically in getCurrentUserInfo()
+    console.log('[AdminRoles] Initialized. Role will be checked dynamically.');
+  }
+
+  getRoleForUser() {
+    // Always check isAdmin() first (this is called every time we need the role)
     if (typeof isAdmin === 'function' && isAdmin()) {
-      // User is admin - set as OWNER (highest role)
-      this.currentUserRole = 'OWNER';
-      console.log('[AdminRoles] User is OWNER (admin detected)');
-    } else if (typeof online !== 'undefined' && online.user?.uid) {
-      // Otherwise load user's role from Firebase
-      const role = await this.getUserRole(online.user.uid);
-      this.currentUserRole = role || 'VIEWER';
-      console.log('[AdminRoles] User role:', this.currentUserRole);
+      return 'OWNER';
     }
     
-    // Listen for role changes in real-time (only for non-owners)
-    if (this.currentUserRole !== 'OWNER' && typeof online !== 'undefined' && online.db) {
-      online.db.ref(`/admin_roles/${online.user?.uid}`).on('value', snap => {
-        const role = snap.val();
-        if (role) {
-          this.currentUserRole = role;
-          if (typeof ui !== 'undefined') {
-            ui.toast({ type: 'info', text: `Role changed to ${this.roles[role]?.name || role}` });
-          }
-        }
-      });
-    }
+    // Otherwise return stored role or VIEWER
+    return this.currentUserRole || 'VIEWER';
   }
 
   async getUserRole(uid) {
@@ -183,12 +171,15 @@ class AdminRoleSystem {
   }
 
   hasPermission(action) {
+    // Always check if user is admin first
+    const userRole = this.getRoleForUser();
+    
     // OWNER and ADMIN always have full permission
-    if (this.currentUserRole === 'OWNER' || this.currentUserRole === 'ADMIN') {
+    if (userRole === 'OWNER' || userRole === 'ADMIN') {
       return true;
     }
 
-    const role = this.roles[this.currentUserRole];
+    const role = this.roles[userRole];
     if (!role) return false;
     
     // Check for wildcard permissions (all permissions)
@@ -276,9 +267,10 @@ class AdminRoleSystem {
 
   // Get current user info
   getCurrentUserInfo() {
-    const role = this.roles[this.currentUserRole];
+    const userRole = this.getRoleForUser();
+    const role = this.roles[userRole];
     return {
-      role: this.currentUserRole,
+      role: userRole,
       name: role?.name || 'Unknown',
       color: role?.color || '#aaa',
       icon: role?.icon || '?',
