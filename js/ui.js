@@ -912,6 +912,8 @@ class UI {
       if (sidebar) sidebar.classList.remove('open');
     }
   }
+
+  renderThievingPage(el) {
     const s = this.engine.state;
     const thievLv = s.skills.thieving?.level || 1;
     const maxHp   = this.engine.getMaxHp();
