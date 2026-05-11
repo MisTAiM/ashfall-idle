@@ -22,17 +22,18 @@ class AdminRoleManager {
     list.style.display = 'block';
 
     try {
-      // Get all users from Firebase
-      const snap = await online.db.ref('/users').once('value');
-      const users = snap.val() || {};
-      
-      // Filter by name
-      const matches = Object.entries(users)
-        .filter(([uid, user]) => {
-          const name = user?.name || '';
-          return name.toLowerCase().includes(query.toLowerCase());
-        })
-        .slice(0, 20); // Limit to 20 results
+      // Search Firestore /players collection
+      const db = firebase.firestore();
+      const snapshot = await db.collection('players')
+        .where('name', '>=', query)
+        .where('name', '<=', query + '\uf8ff')
+        .limit(20)
+        .get();
+
+      const matches = [];
+      snapshot.forEach(doc => {
+        matches.push([doc.id, doc.data()]);
+      });
 
       if (matches.length === 0) {
         list.innerHTML = '<div style="padding:8px; color:var(--text-dim)">No players found</div>';
@@ -41,7 +42,7 @@ class AdminRoleManager {
 
       list.innerHTML = matches.map(([uid, user]) => `
         <div style="padding:8px; border-bottom:1px solid rgba(201,135,62,0.1); cursor:pointer; hover:background:rgba(201,135,62,0.1)" onclick="adminRoleManager.selectPlayer('${uid}', '${this.escHtml(user.name || 'Unknown')}')">
-          <strong>${this.escHtml(user.name || 'Unknown')}</strong> <span style="color:var(--text-dim); font-size:10px">Lvl ${user.stats?.combatLevel || 1}</span>
+          <strong>${this.escHtml(user.name || 'Unknown')}</strong> <span style="color:var(--text-dim); font-size:10px">Lvl ${user.combatLevel || 1}</span>
         </div>
       `).join('');
     } catch (e) {
@@ -102,15 +103,18 @@ class AdminRoleManager {
     list.style.display = 'block';
 
     try {
-      const snap = await online.db.ref('/users').once('value');
-      const users = snap.val() || {};
-      
-      const matches = Object.entries(users)
-        .filter(([uid, user]) => {
-          const name = user?.name || '';
-          return name.toLowerCase().includes(query.toLowerCase());
-        })
-        .slice(0, 20);
+      // Search Firestore /players collection
+      const db = firebase.firestore();
+      const snapshot = await db.collection('players')
+        .where('name', '>=', query)
+        .where('name', '<=', query + '\uf8ff')
+        .limit(20)
+        .get();
+
+      const matches = [];
+      snapshot.forEach(doc => {
+        matches.push([doc.id, doc.data()]);
+      });
 
       if (matches.length === 0) {
         list.innerHTML = '<div style="padding:8px; color:var(--text-dim)">No players found</div>';
@@ -119,7 +123,7 @@ class AdminRoleManager {
 
       list.innerHTML = matches.map(([uid, user]) => `
         <div style="padding:8px; border-bottom:1px solid rgba(255,107,107,0.1); cursor:pointer" onclick="adminRoleManager.selectPlayerForRemove('${uid}', '${this.escHtml(user.name || 'Unknown')}')">
-          <strong>${this.escHtml(user.name || 'Unknown')}</strong> <span style="color:var(--text-dim); font-size:10px">Lvl ${user.stats?.combatLevel || 1}</span>
+          <strong>${this.escHtml(user.name || 'Unknown')}</strong> <span style="color:var(--text-dim); font-size:10px">Lvl ${user.combatLevel || 1}</span>
         </div>
       `).join('');
     } catch (e) {
