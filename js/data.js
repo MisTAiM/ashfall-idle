@@ -33,7 +33,6 @@ const GAME_DATA = {
     farming:{id:'farming',name:'Farming',type:'support',icon:'seedling',desc:'Grow crops passively.'},
     thieving:{id:'thieving',name:'Thieving',type:'support',icon:'mask',desc:'Pickpocket NPCs.'},
     trading:{id:'trading',name:'Trading',type:'support',icon:'scale',desc:'Reduces shop prices, boosts sell values.'},
-    leadership:{id:'leadership',name:'Leadership',type:'support',icon:'crown',desc:'Unlocks War Cry buffs.'},
     diplomacy:{id:'diplomacy',name:'Diplomacy',type:'support',icon:'scroll',desc:'Boosts reputation gain.'},
     prayer:{id:'prayer',name:'Prayer',type:'combat',icon:'sparkle',desc:'Bury bones for prayer points. Activate prayers for combat buffs.'},
     slayer:{id:'slayer',name:'Slayer',type:'combat',icon:'target',desc:'Complete assigned kill tasks for Slayer XP and Slayer Coins.'},

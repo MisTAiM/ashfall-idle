@@ -342,7 +342,7 @@ class UI {
     </div>
     <div class="level-tracker" id="level-tracker">`;
     // Compact skill level grid
-    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
+    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','diplomacy','summoning'];
     for (const sId of skillOrder) {
       const sk = s.skills[sId];
       if (!sk) continue;
@@ -5343,7 +5343,7 @@ class UI {
     html += `<h2 class="section-title">Skill Progress</h2>`;
     html += `<div class="activity-skills">`;
     
-    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
+    const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','diplomacy','summoning'];
     
     for (const sId of skillOrder) {
       const sk = s.skills[sId];
