@@ -328,7 +328,7 @@ class UI {
       <img src="logo.png" alt="Ashfall Idle" class="sidebar-logo-img">
     </div>
     <div class="global-search-bar">
-      <input type="text" id="global-search-input" class="gsi-input" placeholder="Search skills, items, monsters..." oninput="ui._handleSearch(this.value)">
+      <input type="text" id="global-search-input" class="gsi-input" placeholder="Search skills, items, monsters..." oninput="ui._handleSearch(this.value)" onkeydown="ui._handleSearchKeydown(event)">
       <div class="gsi-results" id="global-search-results" style="display:none"></div>
     </div>
     <div class="player-info">
@@ -376,6 +376,14 @@ class UI {
       }
       html += `</div></div>`;
     }
+    
+    // Add admin panel button for admin users
+    if (typeof gameOwnerPanel !== 'undefined' && gameOwnerPanel.canAccess()) {
+      html += `<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(201,135,62,0.2)">
+        <button onclick="gameOwnerPanel.toggle()" style="width: 100%; padding: 10px; background: rgba(201,135,62,0.2); border: 1px solid rgba(201,135,62,0.4); color: #c9873e; cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 12px; font-weight: bold; transition: all 0.2s" onmouseover="this.style.background='rgba(201,135,62,0.4)'" onmouseout="this.style.background='rgba(201,135,62,0.2)'">⚙ Admin Panel</button>
+      </div>`;
+    }
+    
     sb.innerHTML = html;
     sb.querySelectorAll('.nav-item').forEach(el => {
       el.addEventListener('click', () => {
@@ -851,12 +859,12 @@ class UI {
   }
 
   _handleSearch(query) {
-    if (!typeof smartSearch !== 'undefined') return;
+    if (typeof smartSearch === 'undefined') return;
     
     const resultsEl = document.getElementById('global-search-results');
     if (!resultsEl) return;
 
-    if (!query || query.length < 2) {
+    if (!query || query.length < 1) {
       resultsEl.style.display = 'none';
       return;
     }
@@ -869,7 +877,8 @@ class UI {
     }
 
     let html = '<div class="gsr-list">';
-    for (const result of results) {
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
       const typeColor = {
         skill: '#7dcc44',
         item: '#60c0e0',
@@ -879,7 +888,7 @@ class UI {
         npc: '#9d6fe8'
       }[result.type] || '#999';
 
-      html += `<div class="gsr-item" onclick="ui._selectSearchResult(this)">
+      html += `<div class="gsr-item" data-index="${i}" onclick="ui._selectSearchResult(${i})">
         <span class="gsr-icon" style="color:${typeColor}">${result.icon}</span>
         <div class="gsr-info">
           <div class="gsr-name">${this.escHtml(result.name)}</div>
@@ -891,25 +900,45 @@ class UI {
     
     resultsEl.innerHTML = html;
     resultsEl.style.display = 'block';
+    
+    // Store results for Enter key
+    this._lastSearchResults = results;
   }
 
-  _selectSearchResult(el) {
-    const query = document.getElementById('global-search-input').value;
-    const results = smartSearch.search(query);
-    const index = Array.from(el.parentElement.children).indexOf(el);
+  _selectSearchResult(index) {
+    const results = this._lastSearchResults || [];
     
     if (results[index]) {
       const result = results[index];
       smartSearch.addToHistory(result);
-      result.action();
+      
+      try {
+        result.action();
+      } catch(e) {
+        console.error('[Search] Action error:', e);
+      }
       
       // Clear search
       document.getElementById('global-search-input').value = '';
       document.getElementById('global-search-results').style.display = 'none';
+      this._lastSearchResults = [];
       
       // Close sidebar on mobile
       const sidebar = document.getElementById('sidebar');
       if (sidebar) sidebar.classList.remove('open');
+    }
+  }
+
+  _handleSearchKeydown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const results = this._lastSearchResults || [];
+      if (results.length > 0) {
+        this._selectSearchResult(0); // Select first result
+      }
+    } else if (e.key === 'Escape') {
+      document.getElementById('global-search-results').style.display = 'none';
+      document.getElementById('global-search-input').value = '';
     }
   }
 
