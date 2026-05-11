@@ -327,6 +327,10 @@ class UI {
     let html = `<div class="sidebar-header">
       <img src="logo.png" alt="Ashfall Idle" class="sidebar-logo-img">
     </div>
+    <div class="global-search-bar">
+      <input type="text" id="global-search-input" class="gsi-input" placeholder="Search skills, items, monsters..." oninput="ui._handleSearch(this.value)">
+      <div class="gsi-results" id="global-search-results" style="display:none"></div>
+    </div>
     <div class="player-info">
       <div class="pi-row"><img src="${_avUrl}" class="player-avatar-mini" alt=""><span style="font-family:Cinzel,serif;color:var(--accent)">${typeof online !== 'undefined' && online.displayName ? escHtml(online.displayName) : 'Survivor'}</span></div>
       <div class="pi-row"><span>Combat Lvl</span><span class="pi-val">${this.engine.getCombatLevel()}</span></div>
@@ -846,7 +850,68 @@ class UI {
     this.renderSidebar();
   }
 
-  renderThievingPage(el) {
+  _handleSearch(query) {
+    if (!typeof smartSearch !== 'undefined') return;
+    
+    const resultsEl = document.getElementById('global-search-results');
+    if (!resultsEl) return;
+
+    if (!query || query.length < 2) {
+      resultsEl.style.display = 'none';
+      return;
+    }
+
+    const results = smartSearch.search(query);
+    if (results.length === 0) {
+      resultsEl.innerHTML = '<div class="gsr-empty">No results found</div>';
+      resultsEl.style.display = 'block';
+      return;
+    }
+
+    let html = '<div class="gsr-list">';
+    for (const result of results) {
+      const typeColor = {
+        skill: '#7dcc44',
+        item: '#60c0e0',
+        monster: '#ff6b6b',
+        quest: '#d4a574',
+        page: '#c9873e',
+        npc: '#9d6fe8'
+      }[result.type] || '#999';
+
+      html += `<div class="gsr-item" onclick="ui._selectSearchResult(this)">
+        <span class="gsr-icon" style="color:${typeColor}">${result.icon}</span>
+        <div class="gsr-info">
+          <div class="gsr-name">${this.escHtml(result.name)}</div>
+          <div class="gsr-category">${result.category} • ${result.description}</div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+    
+    resultsEl.innerHTML = html;
+    resultsEl.style.display = 'block';
+  }
+
+  _selectSearchResult(el) {
+    const query = document.getElementById('global-search-input').value;
+    const results = smartSearch.search(query);
+    const index = Array.from(el.parentElement.children).indexOf(el);
+    
+    if (results[index]) {
+      const result = results[index];
+      smartSearch.addToHistory(result);
+      result.action();
+      
+      // Clear search
+      document.getElementById('global-search-input').value = '';
+      document.getElementById('global-search-results').style.display = 'none';
+      
+      // Close sidebar on mobile
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) sidebar.classList.remove('open');
+    }
+  }
     const s = this.engine.state;
     const thievLv = s.skills.thieving?.level || 1;
     const maxHp   = this.engine.getMaxHp();

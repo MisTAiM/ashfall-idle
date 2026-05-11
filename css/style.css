@@ -8041,3 +8041,116 @@ body.perf-mode .hit-splat { display:none !important; }
   font-weight: bold;
 }
 
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL SMART SEARCH BAR
+   ═══════════════════════════════════════════════════════════ */
+
+.global-search-bar {
+  position: relative;
+  margin: 12px 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(201, 135, 62, 0.15);
+}
+
+.gsi-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(201, 135, 62, 0.3);
+  color: var(--text);
+  border-radius: 4px;
+  font-family: 'Crimson Text', serif;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.gsi-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--amber);
+  box-shadow: 0 0 8px rgba(201, 135, 62, 0.2);
+}
+
+.gsi-input::placeholder {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.gsi-results {
+  position: absolute;
+  top: 100%;
+  left: 10px;
+  right: 10px;
+  margin-top: 4px;
+  background: rgba(10, 11, 15, 0.95);
+  border: 1px solid rgba(201, 135, 62, 0.3);
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.gsr-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.gsr-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid rgba(201, 135, 62, 0.1);
+}
+
+.gsr-item:hover {
+  background: rgba(201, 135, 62, 0.15);
+}
+
+.gsr-item:last-child {
+  border-bottom: none;
+}
+
+.gsr-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.gsr-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gsr-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gsr-category {
+  font-family: 'Crimson Text', serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gsr-empty {
+  padding: 16px 12px;
+  text-align: center;
+  color: var(--text-dim);
+  font-family: 'Crimson Text', serif;
+  font-size: 12px;
+}
+
