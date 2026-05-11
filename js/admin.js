@@ -1278,6 +1278,26 @@ function applyAdminPanel() {
             <div style="font-size:18px; font-weight:bold; color:${currentRole.color}; margin:8px 0">${currentRole.icon} ${currentRole.name}</div>
             <div style="font-size:11px; color:var(--text-dim)">${currentRole.description}</div>
           </div>
+
+          <h4 style="color:#c9873e; margin-top:15px">Assign Role to Player</h4>
+          <div style="background:rgba(0,0,0,0.2); padding:12px; border-radius:6px">
+            <div style="display:grid; grid-template-columns:1fr 150px; gap:10px; margin-bottom:10px">
+              <input type="text" id="admin-assign-uid" class="bank-search-input" placeholder="Player UID or email" style="width:100%">
+              <select id="admin-assign-role" class="bank-search-input" style="width:100%">
+                <option value="">Select Role...</option>
+                ${Object.entries(adminRoles.roles).map(([key, role]) => `<option value="${key}">${role.icon} ${role.name}</option>`).join('')}
+              </select>
+            </div>
+            <button class="btn btn-sm" onclick="if(typeof adminRoles!=='undefined'){const uid=document.getElementById('admin-assign-uid').value;const role=document.getElementById('admin-assign-role').value;if(!uid||!role){alert('Enter UID and select role');return;}adminRoles.setUserRole(uid,role).then(()=>{ui.toast({type:'success',text:'Role assigned!'});document.getElementById('admin-assign-uid').value='';document.getElementById('admin-assign-role').value='';ui.renderPage('admin');});}">✓ Assign Role</button>
+          </div>
+
+          <h4 style="color:#c9873e; margin-top:15px">Remove Player Role</h4>
+          <div style="background:rgba(255,107,107,0.1); padding:12px; border-radius:6px">
+            <div style="display:flex; gap:10px; margin-bottom:10px">
+              <input type="text" id="admin-remove-uid" class="bank-search-input" placeholder="Player UID" style="flex:1">
+              <button class="btn btn-sm btn-danger" onclick="if(typeof adminRoles!=='undefined'){const uid=document.getElementById('admin-remove-uid').value;if(!uid){alert('Enter UID');return;}if(confirm('Remove admin role from '+uid+'?')){adminRoles.setUserRole(uid,'VIEWER').then(()=>{ui.toast({type:'success',text:'Role removed - set to VIEWER'});document.getElementById('admin-remove-uid').value='';ui.renderPage('admin');});}}">🗑 Remove Role</button>
+            </div>
+          </div>
         </div>`;
       }
 
