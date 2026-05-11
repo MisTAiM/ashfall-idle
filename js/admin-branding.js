@@ -67,10 +67,25 @@ class BrandingEditor {
       style.textContent = this.config.customCSS;
     }
 
-    // Update sidebar logo if exists
-    const logoDiv = document.querySelector('.sidebar-logo-area');
-    if (logoDiv && this.config.logo) {
-      logoDiv.innerHTML = `<img src="${this.config.logo}" style="max-width:160px; max-height:80px; object-fit: contain;">`;
+    // Update logo in header/sidebar areas
+    if (this.config.logo) {
+      // Try sidebar logo
+      const logoDiv = document.querySelector('.sidebar-logo-area');
+      if (logoDiv) {
+        logoDiv.innerHTML = `<img src="${this.config.logo}" style="max-width:160px; max-height:80px; object-fit: contain;">`;
+      }
+      
+      // Try header logo
+      const headerLogo = document.querySelector('.header-logo, .logo, #logo');
+      if (headerLogo) {
+        headerLogo.innerHTML = `<img src="${this.config.logo}" style="max-width:160px; max-height:80px; object-fit: contain;">`;
+      }
+      
+      // Also update any img elements with id="game-logo"
+      const gameLogoImg = document.querySelector('#game-logo');
+      if (gameLogoImg) {
+        gameLogoImg.src = this.config.logo;
+      }
     }
   }
 
