@@ -180,6 +180,16 @@ function applyAdminPanel() {
 
       // Load current announcement async
       html += `<script>setTimeout(async()=>{const anns=await online.getAnnouncements?.();const el=document.getElementById('adm-announce-status');if(!el)return;if(anns?.length){const a=anns[0];el.innerHTML='<strong>'+a.title+'</strong> — '+a.body;}else{el.textContent='No active announcements.';}},300);<\/script>`;
+
+      // Game Analyzer
+      if (typeof gameAnalyzer !== 'undefined') {
+        html += gameAnalyzer.renderAnalysisReport();
+      }
+
+      // Edit History
+      if (typeof undoRedo !== 'undefined') {
+        html += undoRedo.renderHistoryPanel();
+      }
     }
 
     // ── PLAYERS ──────────────────────────────────────────
@@ -442,7 +452,12 @@ function applyAdminPanel() {
         const hasImg = !!editItem._customImage;
         html += `<div class="adm-section">
           <h3>Edit Item — <span style="color:${GAME_DATA.rarities?.[editItem.rarity]?.color||'var(--accent)'}">${editItem.name}</span></h3>
-          <button class="btn btn-xs" onclick="ui._admItemEdit=null;ui.renderPage('admin')" style="margin-bottom:10px">← Back to Items</button>
+          <div style="display:flex; gap:8px; margin-bottom:10px">
+            <button class="btn btn-xs" onclick="ui._admItemEdit=null;ui.renderPage('admin')">← Back to Items</button>
+            <button class="btn btn-xs" onclick="if(typeof enhancedItemTools!=='undefined'){enhancedItemTools.duplicateItem('${editId}')}">📋 Duplicate</button>
+          </div>
+
+          ${typeof enhancedItemTools !== 'undefined' ? enhancedItemTools.renderItemPreview(editId) : ''}
 
           <div class="adm-item-edit-layout">
             <div class="adm-item-preview-col">
@@ -558,7 +573,13 @@ function applyAdminPanel() {
         const hasSvg    = GAME_DATA.monsterArt?.[mId] && !hasCustom;
         html += `<div class="adm-section">
           <h3>Edit Monster — <span style="color:var(--accent)">${editMon.name}</span> <small style="color:var(--text-dim)">${mId}</small></h3>
-          <button class="btn btn-xs" onclick="ui._admMonEdit=null;ui.renderPage('admin')" style="margin-bottom:10px">← Back</button>
+          <div style="display:flex; gap:8px; margin-bottom:10px">
+            <button class="btn btn-xs" onclick="ui._admMonEdit=null;ui.renderPage('admin')">← Back</button>
+            <button class="btn btn-xs" onclick="if(typeof enhancedMonsterTools!=='undefined'){enhancedMonsterTools.duplicateMonster('${mId}')}">📋 Duplicate</button>
+          </div>
+
+          ${typeof enhancedMonsterTools !== 'undefined' ? enhancedMonsterTools.renderSVGEditor(mId) : ''}
+
           <div class="adm-item-edit-layout">
             <div class="adm-item-preview-col">
               <div class="adm-item-preview-box adm-mon-preview-large">${GAME_DATA.monsterArt?.[mId]||'<div class="adm-mon-no-art-lg">?</div>'}</div>
@@ -723,6 +744,22 @@ function applyAdminPanel() {
 
     // ── SETTINGS ─────────────────────────────────────────
     if (tab === 'settings') {
+      // Branding Editor
+      if (typeof brandingEditor !== 'undefined') {
+        html += brandingEditor.renderUI();
+      }
+
+      // Backup/Restore
+      if (typeof dataManager !== 'undefined') {
+        html += dataManager.renderBackupUI();
+      }
+
+      // Keyboard Shortcuts
+      if (typeof adminTools !== 'undefined') {
+        html += adminTools.renderKeyboardShortcuts();
+      }
+
+      // Original Feature Flags section
       html+=`<div class="adm-section"><h3>Feature Flags <small style="color:var(--text-dim)">(stored in Firebase RTDB, live for all players)</small></h3>
         <div id="adm-settings-area"><div class="adm-stat">Loading…</div></div>
         <div class="adm-section" style="margin-top:10px"><h4>Set Custom Flag</h4>
@@ -771,6 +808,11 @@ function applyAdminPanel() {
 
     // ── LOGS ─────────────────────────────────────────────
     if (tab === 'logs') {
+      // Activity Feed
+      if (typeof adminActivityFeed !== 'undefined') {
+        html += adminActivityFeed.renderActivityFeed();
+      }
+
       html+=`<div class="adm-section"><h3>Admin Action Log</h3>
         <button class="btn btn-sm" onclick="ui._admLoadLogs()" style="margin-bottom:8px">🔄 Load Logs</button>
         <div id="adm-logs-area">`;
