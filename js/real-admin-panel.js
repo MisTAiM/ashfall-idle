@@ -29,46 +29,57 @@ class RealAdminPanel {
   init() {
     if (!this.canAccess()) return;
     
-    // Add admin button to sidebar
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        if (typeof ui !== 'undefined') {
-          const origRenderSidebar = ui.renderSidebar.bind(ui);
-          ui.renderSidebar = () => {
-            origRenderSidebar();
-            this.addAdminButton();
-          };
-        }
-      }, 100);
-    });
+    // Hook into sidebar rendering after UI is ready
+    const checkUI = setInterval(() => {
+      if (typeof ui !== 'undefined' && typeof ui.renderSidebar === 'function') {
+        clearInterval(checkUI);
+        
+        const origRender = ui.renderSidebar.bind(ui);
+        ui.renderSidebar = function() {
+          origRender();
+          setTimeout(() => realAdminPanel.addAdminButton(), 50);
+        };
+        
+        // Initial render
+        setTimeout(() => realAdminPanel.addAdminButton(), 100);
+      }
+    }, 100);
   }
 
   addAdminButton() {
     const sidebar = document.getElementById('sidebar');
-    if (!sidebar || sidebar.querySelector('.admin-button')) return;
+    if (!sidebar) return;
     
-    const btn = document.createElement('button');
-    btn.className = 'admin-button';
-    btn.innerHTML = '⚙ Admin Panel';
-    btn.style.cssText = `
-      width: 90%;
-      margin: 15px auto;
+    let btn = document.querySelector('.admin-panel-btn');
+    if (btn) btn.remove();
+    
+    const btn_new = document.createElement('button');
+    btn_new.className = 'admin-panel-btn';
+    btn_new.innerHTML = '⚙ Admin Panel';
+    btn_new.style.cssText = `
+      width: calc(100% - 20px);
+      margin: 15px 10px;
       padding: 12px;
-      background: rgba(201, 135, 62, 0.2);
+      background: linear-gradient(135deg, rgba(201, 135, 62, 0.3), rgba(201, 135, 62, 0.15));
       border: 2px solid #c9873e;
       color: #c9873e;
       border-radius: 4px;
       cursor: pointer;
       font-family: 'Cinzel', serif;
       font-weight: bold;
+      font-size: 13px;
       display: block;
       transition: all 0.2s;
     `;
-    btn.onmouseover = () => btn.style.background = 'rgba(201, 135, 62, 0.4)';
-    btn.onmouseout = () => btn.style.background = 'rgba(201, 135, 62, 0.2)';
-    btn.onclick = () => this.toggle();
+    btn_new.onmouseover = () => btn_new.style.background = 'linear-gradient(135deg, rgba(201, 135, 62, 0.5), rgba(201, 135, 62, 0.3))';
+    btn_new.onmouseout = () => btn_new.style.background = 'linear-gradient(135deg, rgba(201, 135, 62, 0.3), rgba(201, 135, 62, 0.15))';
+    btn_new.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      realAdminPanel.toggle();
+    };
     
-    sidebar.appendChild(btn);
+    sidebar.appendChild(btn_new);
   }
 
   render() {
@@ -507,6 +518,26 @@ class RealAdminPanel {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
+  }
+
+  setPrestige() {
+    const level = parseInt(document.getElementById('prestige-level')?.value || 0);
+    if (typeof game !== 'undefined' && level >= 0) {
+      game.state._prestigeRank = level;
+      if (typeof ui !== 'undefined') ui.renderPage(ui.currentPage);
+      alert(`✓ Prestige set to level ${level}`);
+    }
+  }
+
+  completeQuest() {
+    const questIndex = parseInt(document.getElementById('quest-select')?.value || 0);
+    if (typeof game !== 'undefined' && GAME_DATA.quests && GAME_DATA.quests[questIndex]) {
+      const quest = GAME_DATA.quests[questIndex];
+      game.state.quests.completed.push(quest.id);
+      game.state.stats.questsCompleted = (game.state.stats.questsCompleted || 0) + 1;
+      if (typeof ui !== 'undefined') ui.renderPage(ui.currentPage);
+      alert(`✓ Completed ${quest.name}`);
+    }
   }
 
   setTab(tab) {

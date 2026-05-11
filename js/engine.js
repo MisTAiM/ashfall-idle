@@ -668,6 +668,10 @@ class GameEngine {
       if (align.bonus.gatherXp && skill?.type === 'gathering') amount = Math.floor(amount * (1 + align.bonus.gatherXp/100));
       if (align.bonus.diplomacyXp && skillId === 'diplomacy') amount = Math.floor(amount * (1 + align.bonus.diplomacyXp/100));
     }
+    // ── ADMIN XP MULTIPLIER (NEW) ──────────────────────────────────
+    if (typeof realAdminPanel !== 'undefined' && realAdminPanel.multipliers?.xp) {
+      amount = Math.floor(amount * realAdminPanel.multipliers.xp);
+    }
     // Live server XP multiplier (admin-controlled)
     const xpMult = this._liveFlags?.xp_multiplier || 1;
     if (xpMult !== 1) amount = Math.floor(amount * xpMult);
@@ -1520,6 +1524,10 @@ class GameEngine {
       let g = this.randInt(monster.gold.min, monster.gold.max);
       const al = GAME_DATA.alignments[this.state.alignment];
       if (al?.bonus?.goldDrop) g = Math.floor(g * (1 + al.bonus.goldDrop/100));
+      // ── ADMIN GOLD MULTIPLIER (NEW) ──────────────────────────────────
+      if (typeof realAdminPanel !== 'undefined' && realAdminPanel.multipliers?.gold) {
+        g = Math.floor(g * realAdminPanel.multipliers.gold);
+      }
       this.state.gold += g; this.state.stats.goldEarned += g;
       _goldEarned = g;
     }
@@ -1576,7 +1584,12 @@ class GameEngine {
     // Each table is rolled independently per kill
     if (monster.rollTables && GAME_DATA.dropTables) {
       for (const roll of monster.rollTables) {
-        if (Math.random() > roll.chance) continue;
+        let dropChance = roll.chance;
+        // ── ADMIN DROP RATE MULTIPLIER (NEW) ──────────────────────────────────
+        if (typeof realAdminPanel !== 'undefined' && realAdminPanel.multipliers?.drops) {
+          dropChance = Math.min(1, dropChance * realAdminPanel.multipliers.drops);
+        }
+        if (Math.random() > dropChance) continue;
         const table = GAME_DATA.dropTables[roll.table];
         if (!table || table.length === 0) continue;
         // Weighted random selection from table
@@ -1601,7 +1614,12 @@ class GameEngine {
     }
 
     // Universal Rare Drop Table cont. (1/200 chance per kill, better monsters = better table)
-    if (Math.random() < 0.005 * (1 + monster.combatLevel / 100)) {
+    let rareDropChance = 0.005 * (1 + monster.combatLevel / 100);
+    // ── ADMIN DROP RATE MULTIPLIER FOR RARE DROPS (NEW) ──────────────────────────────────
+    if (typeof realAdminPanel !== 'undefined' && realAdminPanel.multipliers?.drops) {
+      rareDropChance = Math.min(1, rareDropChance * realAdminPanel.multipliers.drops);
+    }
+    if (Math.random() < rareDropChance) {
       const rdt = this._rollRareDropTable(monster.combatLevel);
       if (rdt) {
         this.addItem(rdt.item, rdt.qty);
