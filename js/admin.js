@@ -106,13 +106,13 @@ function applyAdminPanel() {
       { id:'tools',      label:'Tools',       icon:'🛠' },
     ];
 
-    let html = `<div class="admin-panel">
+    let html = `<div style="display:flex; min-height:100vh">
+      ${adminNav?.renderSidebar() || '<div>Loading...</div>'}
+      <div class="admin-content-wrapper" style="flex:1">
+      <div class="admin-panel">
       <div class="admin-header-bar">
         <div class="ahb-title">⚙ Ashfall Admin <span class="ahb-ver">v${ADMIN_VERSION}</span></div>
         <div class="ahb-sub">${online?.displayName||'Admin'} • ${new Date().toLocaleTimeString()}</div>
-      </div>
-      <div class="admin-tabs">
-        ${TABS.map(t=>`<button class="admin-tab ${tab===t.id?'active':''}" onclick="ui._admTab='${t.id}';ui.renderPage('admin')">${t.icon} ${t.label}</button>`).join('')}
       </div>
       <div class="admin-body">`;
 
@@ -723,6 +723,8 @@ function applyAdminPanel() {
 
     // ── SETTINGS ─────────────────────────────────────────
     if (tab === 'settings') {
+      // Add branding editor
+      html += typeof brandingEditor !== 'undefined' ? brandingEditor.renderUI() : '';
       html+=`<div class="adm-section"><h3>Feature Flags <small style="color:var(--text-dim)">(stored in Firebase RTDB, live for all players)</small></h3>
         <div id="adm-settings-area"><div class="adm-stat">Loading…</div></div>
         <div class="adm-section" style="margin-top:10px"><h4>Set Custom Flag</h4>
@@ -1251,7 +1253,7 @@ function applyAdminPanel() {
       </div>`;
     }
 
-    html += '</div></div>';
+    html += '</div></div></div></div>'; // close admin-body, admin-panel, admin-content-wrapper, flex
     el.innerHTML = html;
   };
 
