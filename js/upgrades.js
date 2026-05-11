@@ -27,8 +27,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // 1. COMBAT LOG — DISABLED (consolidated into main combat page)
   // ══════════════════════════════════════════════════════════
   // The unified combat log is now on the main combat page in ui.js
-  // This system remains here for reference but is not rendered.
-
+  // All combat log code below is disabled to avoid conflicts
+  /*
   function logEntry(type, text, color) {
     const now = new Date();
     const ts = String(now.getHours()).padStart(2, '0') + ':' +
@@ -124,6 +124,7 @@ window.addEventListener('DOMContentLoaded', () => {
     combatLog.length = 0;
     logEntry('system', 'Combat started.', '#c9873e');
   });
+  */
 
   // ══════════════════════════════════════════════════════════
   // 2. XP/HR & DPS TRACKER
