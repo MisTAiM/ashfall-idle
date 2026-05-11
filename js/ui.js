@@ -199,8 +199,27 @@ class UI {
     this.engine.on('combatHit', (d) => {
       this.showHitSplat(d);
       if (this.engine.state.combat._multiMobMode) this._updateMultiMobUI();
-      // NEW: Log to activity system (TODO: fix on next iteration)
-      // if (typeof gameLogger !== 'undefined') { ... }
+      
+      // Log to activity system
+      try {
+        if (typeof gameLogger !== 'undefined') {
+          if (d.who === 'player') {
+            gameLogger.logCombatAction('player', d.miss ? 'miss' : (d.ability ? 'ability' : 'hit'), d.dmg, this.engine.state.combat.monster, {
+              crit: d.crit,
+              ability: d.ability,
+              abilityName: d.source
+            });
+          } else {
+            gameLogger.logCombatAction('monster', d.dodge ? 'dodge' : (d.miss ? 'miss' : 'hit'), d.dmg, 'Player', {
+              dodge: d.dodge,
+              dot: d.dot
+            });
+          }
+        }
+      } catch(e) {
+        console.warn('[Combat Logging] Error:', e.message);
+      }
+      
       // Combat log entry
       if (!this._combatLog) this._combatLog = [];
       const mon = this.engine.state.combat.monster;
@@ -246,8 +265,14 @@ class UI {
     this.engine.on('multiMobEnd',     ()  => { if (this.currentPage === 'combat') this.renderPage('combat'); });
     this.engine.on('xpGain', (d) => {
       this.showXpGain(d);
-      // NEW: Log to activity system (TODO: fix on next iteration)
-      // if (typeof gameLogger !== 'undefined' && this.engine.state.activeSkill) { ... }
+      // Log to activity system
+      try {
+        if (typeof gameLogger !== 'undefined' && this.engine.state.activeSkill) {
+          gameLogger.logXpGain(this.engine.state.activeSkill, Math.floor(d.total || 0), d.source || 'activity');
+        }
+      } catch(e) {
+        console.warn('[XP Logging] Error:', e.message);
+      }
     });
     this.engine.on('randomEvent', (d) => this.showRandomEvent(d));
     this.engine.on('equipmentChanged', () => { if (['equipment','bank','combat'].includes(this.currentPage)) this.renderPage(this.currentPage); });
@@ -5185,8 +5210,11 @@ class UI {
   renderActivityPage(el) {
     const s = this.engine.state;
     
-    let html = this.header('Activity Log','scroll','Track your progress and recent actions.',null);
-
+    // Check if logging system is available
+    const hasLogger = typeof gameLogger !== 'undefined' && gameLogger.events;
+    
+    let html = this.header('Activity Log','scroll','Real-time tracking of all game events.',null);
+    
     // Session stats
     const sessionTime = Math.floor((Date.now() - (this.sessionStart || Date.now())) / 1000);
     const hours = Math.floor(sessionTime / 3600);
@@ -5194,13 +5222,33 @@ class UI {
 
     html += `<div class="activity-summary">
       <div class="as-row"><span>Session Time</span><span>${hours}h ${mins}m</span></div>
+      <div class="as-row"><span>Total Events</span><span>${hasLogger ? gameLogger.events.length : '?'}</span></div>
       <div class="as-row"><span>Total Kills</span><span>${this.fmt(s.stats?.monstersKilled || 0)}</span></div>
       <div class="as-row"><span>Total Gold</span><span>${this.fmt(s.stats?.goldEarned || 0)}</span></div>
-      <div class="as-row"><span>Quests Done</span><span>${s.quests?.completed?.length || 0}</span></div>
     </div>`;
 
+    // Recent events from logger (if available)
+    if (hasLogger && gameLogger.events.length > 0) {
+      const recentEvents = gameLogger.getEvents({ limit: 20 });
+      
+      html += `<h2 class="section-title">Recent Events</h2>`;
+      html += `<div class="activity-events-list" id="activity-events-live">`;
+      
+      for (const evt of recentEvents) {
+        const timeAgo = this._getTimeAgo(evt.timestamp);
+        const skillTag = evt.data && evt.data.skill ? `<span class="ae-skill">${evt.data.skill}</span>` : '';
+        html += `<div class="activity-event-row ae-${evt.category}">
+          <span class="ae-icon">${evt.icon || '•'}</span>
+          <span class="ae-message">${evt.message}${skillTag}</span>
+          <span class="ae-time">${timeAgo}</span>
+        </div>`;
+      }
+      
+      html += `</div>`;
+    }
+
     // Skill activity breakdown
-    html += `<h2 class="section-title">Top Skills This Session</h2>`;
+    html += `<h2 class="section-title">Skill Progress</h2>`;
     html += `<div class="activity-skills">`;
     
     const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','leadership','diplomacy','summoning'];
@@ -5222,11 +5270,54 @@ class UI {
     html += `</div>`;
 
     el.innerHTML = html;
+    
+    // Set up real-time updates if logger available
+    if (hasLogger && gameLogger.on) {
+      gameLogger.on('eventLogged', () => {
+        if (this.currentPage === 'activity') {
+          this._updateActivityLog();
+        }
+      });
+    }
   }
 
-  // Activity log update removed (will be re-implemented with proper integration)
   setActivitySearch(term) {
-    // TODO: implement search on re-integration
+    this._activitySearch = term;
+    this.renderPage('activity');
+  }
+
+  _updateActivityLog() {
+    const logEl = document.getElementById('activity-events-live');
+    if (!logEl || typeof gameLogger === 'undefined') return;
+
+    const events = gameLogger.getEvents({ limit: 20 });
+    if (events.length === 0) {
+      logEl.innerHTML = `<div class="bank-empty">No events yet. Start playing!</div>`;
+      return;
+    }
+
+    logEl.innerHTML = events.map(evt => {
+      const timeAgo = this._getTimeAgo(evt.timestamp);
+      const skillTag = evt.data && evt.data.skill ? `<span class="ae-skill">${evt.data.skill}</span>` : '';
+      return `<div class="activity-event-row ae-${evt.category}">
+        <span class="ae-icon">${evt.icon || '•'}</span>
+        <span class="ae-message">${evt.message}${skillTag}</span>
+        <span class="ae-time">${timeAgo}</span>
+      </div>`;
+    }).join('');
+  }
+
+  _getTimeAgo(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (seconds < 60) return 'now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours/24)}d ago`;
   }
 
   async cloudLoad() {
