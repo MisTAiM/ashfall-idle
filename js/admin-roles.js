@@ -34,9 +34,12 @@ class AdminRoleSystem {
         icon: '🎮',
         description: 'Balance, content, quests, items, monsters',
         permissions: [
-          'edit:item', 'create:item', 'edit:monster', 'create:monster',
-          'edit:quest', 'create:quest', 'edit:recipe', 'create:recipe',
-          'edit:economy', 'view:logs', 'edit:settings'
+          'edit:item', 'create:item', 'view:item',
+          'edit:monster', 'create:monster', 'view:monster',
+          'edit:quest', 'create:quest', 'view:quest',
+          'edit:recipe', 'create:recipe', 'view:recipe',
+          'edit:economy', 'view:economy',
+          'edit:settings', 'view:logs'
         ]
       },
       COMMUNITY_MANAGER: {
@@ -45,8 +48,9 @@ class AdminRoleSystem {
         icon: '📢',
         description: 'Announcements, broadcasts, events',
         permissions: [
-          'broadcast:message', 'edit:announcements', 'view:players',
-          'view:logs', 'view:items', 'view:monsters'
+          'broadcast:message', 'edit:announcements',
+          'view:players', 'view:logs',
+          'view:item', 'view:monster'
         ]
       },
       MODERATOR: {
@@ -56,8 +60,9 @@ class AdminRoleSystem {
         description: 'Player management, economy, safety',
         permissions: [
           'view:players', 'edit:players', 'delete:players',
-          'view:economy', 'edit:economy', 'view:logs',
-          'broadcast:message', 'view:items', 'view:monsters'
+          'view:economy', 'edit:economy',
+          'broadcast:message', 'view:logs',
+          'view:item', 'view:monster'
         ]
       },
       CONTENT_CREATOR: {
@@ -70,7 +75,7 @@ class AdminRoleSystem {
           'create:monster', 'edit:monster', 'view:monster',
           'create:recipe', 'edit:recipe', 'view:recipe',
           'create:quest', 'edit:quest', 'view:quest',
-          'view:images', 'upload:image'
+          'view:image', 'upload:image'
         ]
       },
       ART_LEAD: {
@@ -80,8 +85,7 @@ class AdminRoleSystem {
         description: 'All image and SVG management, art direction',
         permissions: [
           'upload:image', 'edit:image', 'delete:image',
-          'upload:svg', 'edit:svg', 'edit:item_image', 'edit:monster_image',
-          'view:items', 'view:monsters'
+          'view:image', 'view:item', 'view:monster'
         ]
       },
       ARTIST: {
@@ -91,8 +95,7 @@ class AdminRoleSystem {
         description: 'Upload and edit images, SVGs',
         permissions: [
           'upload:image', 'edit:image',
-          'upload:svg', 'edit:svg',
-          'view:items', 'view:monsters'
+          'view:image', 'view:item', 'view:monster'
         ]
       },
       TESTER: {
@@ -101,8 +104,8 @@ class AdminRoleSystem {
         icon: '🧪',
         description: 'Test content, report bugs, view data',
         permissions: [
-          'view:items', 'view:monsters', 'view:quests',
-          'view:recipes', 'view:logs', 'view:economy'
+          'view:item', 'view:monster', 'view:quest',
+          'view:recipe', 'view:logs', 'view:economy', 'view:players'
         ]
       },
       VIEWER: {
@@ -111,8 +114,8 @@ class AdminRoleSystem {
         icon: '👁',
         description: 'Read-only access to all data',
         permissions: [
-          'view:players', 'view:items', 'view:monsters',
-          'view:quests', 'view:recipes', 'view:logs', 'view:economy'
+          'view:players', 'view:item', 'view:monster',
+          'view:quest', 'view:recipe', 'view:logs', 'view:economy'
         ]
       }
     };
@@ -244,23 +247,41 @@ class AdminRoleSystem {
   }
 
   canAccess(tab) {
+    // Owner/Admin bypass all tab checks
+    const userRole = this.getRoleForUser();
+    if (userRole === 'OWNER' || userRole === 'ADMIN') return true;
+
     const tabPermissions = {
-      'dashboard': ['view:*'],
-      'players': ['view:players', 'edit:players'],
-      'items': ['view:item', 'edit:item', 'create:item'],
-      'monsters': ['view:monster', 'edit:monster', 'create:monster'],
-      'create': ['create:item', 'create:monster', 'create:recipe', 'create:quest'],
-      'images': ['upload:image', 'view:images'],
-      'economy': ['view:economy', 'edit:economy'],
-      'shop_mgr': ['edit:shop'],
-      'logs': ['view:logs'],
-      'broadcast': ['broadcast:message'],
-      'settings': ['edit:settings'],
-      'recipes': ['view:recipe', 'edit:recipe', 'create:recipe'],
-      'quests': ['view:quest', 'edit:quest', 'create:quest']
+      'dashboard':   ['view:item', 'view:monster', 'view:players', 'view:economy', 'view:logs'],
+      'players':     ['view:players'],
+      'online':      ['view:players'],
+      'guilds_adm':  ['view:players'],
+      'economy':     ['view:economy'],
+      'items':       ['view:item'],
+      'monsters':    ['view:monster'],
+      'create':      ['create:item', 'create:monster', 'create:recipe', 'create:quest'],
+      'shop_mgr':    ['edit:item', 'edit:economy'],
+      'recipes':     ['view:recipe'],
+      'npcs':        ['view:quest'],
+      'skills':      ['edit:item'],
+      'theatre':     ['edit:monster'],
+      'abilities':   ['edit:item'],
+      'quests':      ['view:quest'],
+      'worldboss':   ['edit:monster'],
+      'combat':      ['edit:monster'],
+      'economy':     ['view:economy'],
+      'gold':        ['edit:economy'],
+      'leaderboard': ['view:players'],
+      'content':     ['broadcast:message', 'edit:announcements'],
+      'settings':    ['edit:settings'],
+      'logs':        ['view:logs'],
+      'images':      ['upload:image', 'view:image'],
+      'state':       ['edit:*'],
+      'tools':       ['view:logs'],
     };
 
-    const required = tabPermissions[tab] || ['*'];
+    const required = tabPermissions[tab];
+    if (!required) return false; // unknown tab — deny
     return required.some(perm => this.hasPermission(perm));
   }
 

@@ -89,7 +89,7 @@ function applyAdminPanel() {
     const s = game.state;
     const tab = this._admTab || 'dashboard';
 
-    const TABS = [
+    const ALL_TABS = [
       { id:'dashboard',  label:'Dashboard',   icon:'⚡' },
       { id:'players',    label:'Players',     icon:'👤' },
       { id:'online',     label:'Online',      icon:'🟢' },
@@ -115,6 +115,14 @@ function applyAdminPanel() {
       { id:'state',      label:'State',       icon:'🔍' },
       { id:'tools',      label:'Tools',       icon:'🛠' },
     ];
+    // Filter tabs by role permissions
+    const TABS = (typeof adminRoles !== 'undefined')
+      ? ALL_TABS.filter(t => adminRoles.canAccess(t.id))
+      : ALL_TABS;
+    // If current tab was filtered out, reset to dashboard
+    if (tab !== 'dashboard' && !TABS.find(t => t.id === tab)) {
+      this._admTab = 'dashboard';
+    }
 
     let html = `<div class="admin-panel">
       <div class="admin-header-bar">
@@ -162,7 +170,7 @@ function applyAdminPanel() {
     }
 
     // ── PLAYERS ──────────────────────────────────────────
-    if (tab === 'players') {
+    if (tab === 'players' && (typeof adminRoles==='undefined'||adminRoles.canAccess('players'))) {
       html += `<div class="adm-section"><h3>Player Management</h3>
         <div class="adm-row-flex" style="margin-bottom:8px">
           <button class="btn btn-sm" onclick="ui._admLoadPlayers()">🔄 Load Players</button>
@@ -393,7 +401,7 @@ function applyAdminPanel() {
     }
 
     // ── ECONOMY OVERVIEW ─────────────────────────────────
-    if (tab === 'economy') {
+    if (tab === 'economy' && (typeof adminRoles==='undefined'||adminRoles.canAccess('economy'))) {
       html += `<div class="adm-section"><h3>Economy Overview</h3>
         <button class="btn btn-sm" onclick="ui._admLoadEconomy()" style="margin-bottom:8px">🔄 Scan Economy</button>
         <div id="adm-economy-data"><div class="adm-stat">Click Scan to analyze.</div></div>
@@ -656,7 +664,7 @@ function applyAdminPanel() {
     }
 
     // ── GOLD ──────────────────────────────────────────────
-    if (tab === 'gold') {
+    if (tab === 'gold' && (typeof adminRoles==='undefined'||adminRoles.canAccess('gold'))) {
       html+=`<div class="adm-section"><h3>Gold — <span style="color:var(--accent)">${this.fmt(s.gold)}</span></h3>
         <div class="adm-btn-grid" style="margin-bottom:12px">
           ${[1000,10000,100000,1000000].map(v=>`<button class="btn btn-sm" onclick="game.state.gold+=${v};ui.toast({type:'success',text:'+${this.fmt(v)} gold'});ui.renderPage('admin')">+${this.fmt(v)}</button>`).join('')}
@@ -784,7 +792,7 @@ function applyAdminPanel() {
     }
 
     // ── LOGS ─────────────────────────────────────────────
-    if (tab === 'logs') {
+    if (tab === 'logs' && (typeof adminRoles==='undefined'||adminRoles.canAccess('logs'))) {
       // Activity Feed
       if (typeof adminActivityFeed !== 'undefined') {
         html += adminActivityFeed.renderActivityFeed();
@@ -1098,7 +1106,7 @@ function applyAdminPanel() {
     }
 
     // ── STATE ─────────────────────────────────────────────
-    if (tab === 'state') {
+    if (tab === 'state' && (typeof adminRoles==='undefined'||adminRoles.canAccess('state'))) {
       html+=`<div class="adm-section"><h3>Inspect / Edit State</h3>
         <div class="adm-row-flex">
           <input type="text" id="adm-state-path" class="bank-search-input" placeholder="Path e.g. skills.attack or combat.playerHp" value="${this._admStatePath||''}" style="flex:1">
