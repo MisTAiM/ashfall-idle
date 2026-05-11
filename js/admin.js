@@ -1907,4 +1907,38 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if(l
 (function(){let c=0;const iv=setInterval(function(){if(++c>30){clearInterval(iv);return;}if(_checkAdmin()&&typeof ui!=='undefined'){const sb=document.getElementById('sidebar');if(sb&&!sb.querySelector('[data-page="admin"]'))ui.renderSidebar();clearInterval(iv);}},1000);})();
 window.openAdmin=function(){if(_checkAdmin()){ui.currentPage='admin';ui.renderSidebar();ui.renderPage('admin');}else console.warn('[Admin] Access denied.');};
 
+// ── MIGRATE: push all RTDB admin_roles into Firestore /players/{uid}.adminRole
+// Runs once on owner login so existing role assignments work without reassignment
+async function _migrateRolesToFirestore() {
+  if (!online?.db || !online?.firestore) return;
+  if (!(typeof isAdmin === 'function' && isAdmin())) return; // owner only
+  try {
+    const snap = await online.db.ref('/admin_roles').once('value');
+    const roles = snap.val();
+    if (!roles) return;
+    let migrated = 0;
+    const batch = online.firestore.batch();
+    for (const [uid, role] of Object.entries(roles)) {
+      if (role && role !== 'VIEWER') {
+        const ref = online.firestore.collection('players').doc(uid);
+        batch.set(ref, { adminRole: role }, { merge: true });
+        migrated++;
+      }
+    }
+    if (migrated > 0) {
+      await batch.commit();
+      console.log(`[Admin] Migrated ${migrated} roles to Firestore.`);
+    }
+  } catch(e) {
+    console.warn('[Admin] Role migration failed:', e);
+  }
+}
+(function waitAndMigrate(){
+  if(typeof online!=='undefined'&&online.db&&online.firestore&&typeof isAdmin==='function'&&isAdmin()){
+    _migrateRolesToFirestore();
+  } else if(typeof online==='undefined'||!online.db){
+    setTimeout(waitAndMigrate,2000);
+  }
+})();
+
 })();
