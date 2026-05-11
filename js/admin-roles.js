@@ -124,8 +124,36 @@ class AdminRoleSystem {
   }
 
   async init() {
-    // Don't set role here - check dynamically in getCurrentUserInfo()
-    console.log('[AdminRoles] Initialized. Role will be checked dynamically.');
+    // Load current user role from RTDB and cache it
+    await this.refreshCurrentUserRole();
+  }
+
+  async refreshCurrentUserRole() {
+    if (!online?.db || !online?.user?.uid) {
+      // Retry until auth is ready
+      setTimeout(() => this.refreshCurrentUserRole(), 500);
+      return;
+    }
+    try {
+      const uid = online.user.uid;
+      // Owner always gets OWNER role
+      if (typeof isAdmin === 'function' && isAdmin()) {
+        this.currentUserRole = 'OWNER';
+      } else {
+        const snap = await online.db.ref(`/admin_roles/${uid}`).once('value');
+        const role = snap.val();
+        this.currentUserRole = role || 'VIEWER';
+      }
+      console.log(`[AdminRoles] Role loaded: ${this.currentUserRole}`);
+      // If user has any admin role, show the admin panel in sidebar
+      const adminRoles = ['OWNER','ADMIN','LEAD_DEV','GAME_DESIGNER','COMMUNITY_MANAGER',
+                          'MODERATOR','CONTENT_CREATOR','ART_LEAD','ARTIST','TESTER'];
+      if (adminRoles.includes(this.currentUserRole) && typeof ui !== 'undefined') {
+        ui.renderSidebar();
+      }
+    } catch(e) {
+      console.error('[AdminRoles] Role load failed:', e);
+    }
   }
 
   getRoleForUser() {

@@ -6,7 +6,17 @@
 
 const ADMIN_VERSION = '4.0';
 
-function _checkAdmin() { return typeof isAdmin === 'function' ? isAdmin() : false; }
+function _checkAdmin() {
+  // Owner/hardcoded admin
+  if (typeof isAdmin === 'function' && isAdmin()) return true;
+  // RTDB role-based access — any non-viewer role gets admin panel
+  if (typeof adminRoles !== 'undefined' && adminRoles.currentUserRole) {
+    const accessRoles = ['OWNER','ADMIN','LEAD_DEV','GAME_DESIGNER','COMMUNITY_MANAGER',
+                         'MODERATOR','CONTENT_CREATOR','ART_LEAD','ARTIST','TESTER'];
+    return accessRoles.includes(adminRoles.currentUserRole);
+  }
+  return false;
+}
 
 // ── CUSTOM IMAGE LOADERS ─────────────────────────────────
 async function loadCustomMonsterImages() {

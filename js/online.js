@@ -52,6 +52,10 @@ class OnlineManager {
               ui.renderSidebar();
             }
           }
+          // Load RTDB role for role-based admin access
+          if (typeof adminRoles !== 'undefined') {
+            adminRoles.refreshCurrentUserRole();
+          }
           this.displayName = user.displayName || localStorage.getItem('ashfall_displayName') || ('Survivor_' + user.uid.substring(0, 6));
           this.loadProfile();
           // Auto cloud sync for non-anonymous users
