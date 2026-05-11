@@ -574,6 +574,9 @@ class GameEngine {
       this.state.stats.itemsCrafted++;
       this.trackQuestProgress('craft', { item:action.output.item, qty:action.output.qty });
     } else if (skillId === 'thieving') {
+      if (this._thievingInProgress) return;
+      this._thievingInProgress = true;
+      try {
       const thievLv   = this.state.skills.thieving.level;
       const mastReduce = this.getMasteryLevel(skillId, action.id) * 0.003;
       const stunRoll   = Math.random();
@@ -637,6 +640,7 @@ class GameEngine {
       }
       this.trackQuestProgress('thieve', { target:action.id, qty:1 });
       this.emit('thievingSuccess', { action, gold, hp: this.state.thievingHp || this.getMaxHp() });
+      } finally { this._thievingInProgress = false; }
     }
     this.addXp(skillId, action.xp);
     // ── SMITHING HEAT BONUS ──────────────────────────────────

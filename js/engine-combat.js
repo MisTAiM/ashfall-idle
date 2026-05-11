@@ -172,6 +172,90 @@
       this.emit('combatHit',{who:'player',dmg,crit:false,source:'ability'});
       this.emit('notification',{type:'success',text:`${ab.name}: ${dmg} damage + dodge ${fx.dodges||1} attack(s)!`});
       this.emit('abilityUsed',{ability:ab, source:'damage'});
+
+    } else if (fx.type === 'cleave') {
+      // Cleave — multi-hit melee swings
+      if (!monster) return;
+      const sL = this.state.skills.strength?.level || 1;
+      const sB = this.getStatTotal('strengthBonus');
+      const baseMax = Math.max(1, Math.floor((1 + sL/10) * (1 + sB/80) * 4 * (fx.mult||0.7)));
+      let totalDmg = 0;
+      for (let i = 0; i < (fx.hits||3); i++) {
+        const dmg = this.randInt(Math.floor(baseMax*0.2), baseMax);
+        c.monsterHp -= dmg;
+        totalDmg += dmg;
+        this.emit('combatHit',{who:'player',dmg,crit:false,source:'ability'});
+      }
+      this.emit('notification',{type:'success',text:`${ab.name}: ${fx.hits||3} swings for ${totalDmg} total damage!`});
+      this.emit('abilityUsed',{ability:ab, source:'damage'});
+
+    } else if (fx.type === 'blood_sacrifice') {
+      // Blood Pact — sacrifice HP for massive damage
+      if (!monster) return;
+      const maxHp = this.getMaxHp();
+      const hpCost = Math.floor(maxHp * (fx.hpCost||0.20));
+      if (c.playerHp <= hpCost) { this.emit('notification',{type:'warn',text:`Not enough HP to use ${ab.name}!`}); c.abilityCooldowns[id] = 0; return; }
+      c.playerHp -= hpCost;
+      const sL = this.state.skills.strength?.level || 1;
+      const sB = this.getStatTotal('strengthBonus');
+      const maxHit = Math.max(1, Math.floor((1 + sL/10) * (1 + sB/80) * 4 * (fx.mult||4)));
+      const dmg = this.randInt(Math.floor(maxHit*0.5), maxHit);
+      c.monsterHp -= dmg;
+      this.emit('combatHit',{who:'player',dmg,crit:true,source:'ability'});
+      this.emit('notification',{type:'achievement',text:`${ab.name}: Sacrificed ${hpCost} HP for ${dmg} damage!`});
+      this.emit('abilityUsed',{ability:ab, source:'damage'});
+
+    } else if (fx.type === 'mark_of_death') {
+      // Mark of Death — buff all damage for duration
+      c.activeBuffs.push({ stat:'damageMult', value:1+(fx.dmgBonus||30)/100, remaining:fx.duration||20, _maxDuration:fx.duration||20, type:'time' });
+      this.emit('notification',{type:'success',text:`${ab.name}: +${fx.dmgBonus||30}% damage for ${fx.duration||20}s!`});
+      this.emit('abilityUsed',{ability:ab, source:'buff'});
+
+    } else if (fx.type === 'expose') {
+      // Expose Weakness — attack bonus buff
+      c.activeBuffs.push({ stat:'attackBonus', value:fx.bonus||30, remaining:fx.duration||30, _maxDuration:fx.duration||30, type:'time' });
+      this.emit('notification',{type:'success',text:`${ab.name}: +${fx.bonus||30} Attack for ${fx.duration||30}s!`});
+      this.emit('abilityUsed',{ability:ab, source:'buff'});
+
+    } else if (fx.type === 'barrage') {
+      // Barrage — many ranged hits
+      if (!monster) return;
+      const rL = this.state.skills.ranged?.level || 1;
+      const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
+      const baseMax = Math.max(1, Math.floor((1 + rL/10) * (1 + rB/80) * 4 * (fx.mult||0.65)));
+      let totalDmg = 0;
+      for (let i = 0; i < (fx.hits||5); i++) {
+        const dmg = this.randInt(Math.floor(baseMax*0.15), baseMax);
+        c.monsterHp -= dmg;
+        totalDmg += dmg;
+        this.consumeAmmo();
+      }
+      this.emit('combatHit',{who:'player',dmg:totalDmg,crit:false,source:'ability'});
+      this.emit('notification',{type:'success',text:`${ab.name}: ${fx.hits||5} arrows for ${totalDmg} total damage!`});
+      this.emit('abilityUsed',{ability:ab, source:'damage'});
+
+    } else if (fx.type === 'void_rupture') {
+      // Void Rupture — high magic damage, partially ignores evasion
+      if (!monster) return;
+      const mB = this.getStatTotal('magicBonus');
+      const mL = this.state.skills.magic?.level || 1;
+      const maxHit = Math.max(1, Math.floor((mL * 0.7 + mB * 0.6) * (fx.mult||2.0)));
+      const dmg = this.randInt(Math.floor(maxHit*0.5), maxHit);
+      c.monsterHp -= dmg;
+      this.emit('combatHit',{who:'player',dmg,crit:true,source:'ability'});
+      this.emit('notification',{type:'achievement',text:`${ab.name}: ${dmg} void damage!`});
+      this.emit('abilityUsed',{ability:ab, source:'damage'});
+
+    } else if (fx.type === 'prayer_surge') {
+      // Prayer Surge — restore PP and boost Str+Def
+      const ppRestored = Math.min(fx.ppRestore||40, (this.state.maxPp||99) - (this.state.prayerPoints||0));
+      this.state.prayerPoints = Math.min(this.state.maxPp||99, (this.state.prayerPoints||0) + (fx.ppRestore||40));
+      if (fx.statBoost) {
+        c.activeBuffs.push({ stat:'strengthBonus', value:fx.statBoost||8, remaining:fx.duration||20, _maxDuration:fx.duration||20, type:'time' });
+        c.activeBuffs.push({ stat:'defenceBonus',  value:fx.statBoost||8, remaining:fx.duration||20, _maxDuration:fx.duration||20, type:'time' });
+      }
+      this.emit('notification',{type:'success',text:`${ab.name}: Restored ${ppRestored} Prayer Points + Str/Def boost!`});
+      this.emit('abilityUsed',{ability:ab, source:'buff'});
     }
 
     // Set cooldown and award tactics XP

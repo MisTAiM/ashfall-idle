@@ -25,8 +25,8 @@ class AdminRoleManager {
       // Search Firestore /players collection
       const db = firebase.firestore();
       const snapshot = await db.collection('players')
-        .where('name', '>=', query)
-        .where('name', '<=', query + '\uf8ff')
+        .where('displayName', '>=', query)
+        .where('displayName', '<=', query + '\uf8ff')
         .limit(20)
         .get();
 
@@ -41,8 +41,8 @@ class AdminRoleManager {
       }
 
       list.innerHTML = matches.map(([uid, user]) => `
-        <div style="padding:8px; border-bottom:1px solid rgba(201,135,62,0.1); cursor:pointer; hover:background:rgba(201,135,62,0.1)" onclick="adminRoleManager.selectPlayer('${uid}', '${this.escHtml(user.name || 'Unknown')}')">
-          <strong>${this.escHtml(user.name || 'Unknown')}</strong> <span style="color:var(--text-dim); font-size:10px">Lvl ${user.combatLevel || 1}</span>
+        <div style="padding:8px; border-bottom:1px solid rgba(201,135,62,0.1); cursor:pointer; hover:background:rgba(201,135,62,0.1)" onclick="adminRoleManager.selectPlayer('${uid}', '${this.escHtml(user.displayName || 'Unknown')}')">
+          <strong>${this.escHtml(user.displayName || 'Unknown')}</strong> <span style="color:var(--text-dim); font-size:10px">Cb Lv ${user.combatLevel || 1}</span>
         </div>
       `).join('');
     } catch (e) {
@@ -106,8 +106,8 @@ class AdminRoleManager {
       // Search Firestore /players collection
       const db = firebase.firestore();
       const snapshot = await db.collection('players')
-        .where('name', '>=', query)
-        .where('name', '<=', query + '\uf8ff')
+        .where('displayName', '>=', query)
+        .where('displayName', '<=', query + '\uf8ff')
         .limit(20)
         .get();
 
@@ -122,8 +122,8 @@ class AdminRoleManager {
       }
 
       list.innerHTML = matches.map(([uid, user]) => `
-        <div style="padding:8px; border-bottom:1px solid rgba(255,107,107,0.1); cursor:pointer" onclick="adminRoleManager.selectPlayerForRemove('${uid}', '${this.escHtml(user.name || 'Unknown')}')">
-          <strong>${this.escHtml(user.name || 'Unknown')}</strong> <span style="color:var(--text-dim); font-size:10px">Lvl ${user.combatLevel || 1}</span>
+        <div style="padding:8px; border-bottom:1px solid rgba(255,107,107,0.1); cursor:pointer" onclick="adminRoleManager.selectPlayerForRemove('${uid}', '${this.escHtml(user.displayName || 'Unknown')}')">
+          <strong>${this.escHtml(user.displayName || 'Unknown')}</strong> <span style="color:var(--text-dim); font-size:10px">Cb Lv ${user.combatLevel || 1}</span>
         </div>
       `).join('');
     } catch (e) {

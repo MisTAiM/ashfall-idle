@@ -230,6 +230,7 @@ E._trackAllQuests = function(type, data) {
     const p = prog[qId] || [];
     if (_trackObjectives(q.objectives, p, type, data, this.state)) {
       prog[qId] = p;
+      this.emit('questsChanged');
     }
     if ((q.objectives||[]).every((_, i) => (p[i]||0) >= q.objectives[i].qty)) {
       this._completeDailyQuest(qId);
