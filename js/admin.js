@@ -109,7 +109,12 @@ function applyAdminPanel() {
     let html = `<div class="admin-panel">
       <div class="admin-header-bar">
         <div class="ahb-title">⚙ Ashfall Admin <span class="ahb-ver">v${ADMIN_VERSION}</span></div>
-        <div class="ahb-sub">${online?.displayName||'Admin'} • ${new Date().toLocaleTimeString()}</div>
+        <div class="ahb-sub">
+          ${online?.displayName||'Admin'} • ${new Date().toLocaleTimeString()}
+          ${typeof adminRoles !== 'undefined' ? `<span style="margin-left:20px; padding:4px 8px; background:${adminRoles.getCurrentUserInfo().color}33; border:1px solid ${adminRoles.getCurrentUserInfo().color}; border-radius:4px; font-size:11px; color:${adminRoles.getCurrentUserInfo().color}">
+            ${adminRoles.getCurrentUserInfo().icon} ${adminRoles.getCurrentUserInfo().name}
+          </span>` : ''}
+        </div>
       </div>
       <div class="admin-tabs">
         ${TABS.map(t=>`<button class="admin-tab ${tab===t.id?'active':''}" onclick="ui._admTab='${t.id}';ui.renderPage('admin')">${t.icon} ${t.label}</button>`).join('')}
@@ -459,6 +464,10 @@ function applyAdminPanel() {
 
           ${typeof enhancedItemTools !== 'undefined' ? enhancedItemTools.renderItemPreview(editId) : ''}
 
+          ${typeof adminTools !== 'undefined' ? adminTools.renderNotesUI(editId) : ''}
+
+          ${typeof contentAnalyzer !== 'undefined' ? contentAnalyzer.renderDependencyAnalysis('item', editId) : ''}
+
           <div class="adm-item-edit-layout">
             <div class="adm-item-preview-col">
               <div class="adm-item-preview-box">
@@ -579,6 +588,10 @@ function applyAdminPanel() {
           </div>
 
           ${typeof enhancedMonsterTools !== 'undefined' ? enhancedMonsterTools.renderSVGEditor(mId) : ''}
+
+          ${typeof adminTools !== 'undefined' ? adminTools.renderDifficultyWidget(mId) : ''}
+
+          ${typeof contentAnalyzer !== 'undefined' ? contentAnalyzer.renderDependencyAnalysis('monster', mId) : ''}
 
           <div class="adm-item-edit-layout">
             <div class="adm-item-preview-col">
@@ -811,6 +824,11 @@ function applyAdminPanel() {
       // Activity Feed
       if (typeof adminActivityFeed !== 'undefined') {
         html += adminActivityFeed.renderActivityFeed();
+      }
+
+      // Changelog
+      if (typeof changelog !== 'undefined') {
+        html += changelog.renderChangelog();
       }
 
       html+=`<div class="adm-section"><h3>Admin Action Log</h3>
@@ -1250,6 +1268,35 @@ function applyAdminPanel() {
     }
 
     if (tab === 'tools') {
+      // Role Management
+      if (typeof adminRoles !== 'undefined') {
+        const currentRole = adminRoles.getCurrentUserInfo();
+        html += `<div class="adm-section">
+          <h3>👤 Role Management</h3>
+          <div style="background:rgba(201,135,62,0.1); padding:12px; border-radius:6px; margin-bottom:12px">
+            <div style="font-size:12px">Your Current Role:</div>
+            <div style="font-size:18px; font-weight:bold; color:${currentRole.color}; margin:8px 0">${currentRole.icon} ${currentRole.name}</div>
+            <div style="font-size:11px; color:var(--text-dim)">${currentRole.description}</div>
+          </div>
+        </div>`;
+      }
+
+      // Bulk Operations
+      if (typeof bulkOps !== 'undefined') {
+        html += bulkOps.renderBulkPanel();
+      }
+
+      // Media Gallery
+      if (typeof mediaManager !== 'undefined') {
+        html += mediaManager.renderGallery();
+      }
+
+      // Dashboard Customizer
+      if (typeof dashboardCustomizer !== 'undefined') {
+        html += dashboardCustomizer.renderWidgetCustomizer();
+      }
+
+      // Original testing tools
       html+=`<div class="adm-section"><h3>Testing Tools</h3><div class="adm-btn-grid">
         <button class="btn btn-sm" onclick="game.startFightCave()">Start Fight Cave</button>
         <button class="btn btn-sm" onclick="if(game.state.fightCave){game.state.fightCave.currentWave=62;game.state.fightCave.betweenWaves=true;game.state.fightCave.betweenWaveTimer=1;}">Skip to Jad</button>
