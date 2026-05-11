@@ -378,9 +378,9 @@ class UI {
     }
     
     // Add admin panel button for admin users
-    if (typeof gameOwnerPanel !== 'undefined' && gameOwnerPanel.canAccess()) {
+    if (typeof realAdminPanel !== 'undefined' && realAdminPanel.canAccess()) {
       html += `<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(201,135,62,0.2)">
-        <button onclick="gameOwnerPanel.toggle()" style="width: 100%; padding: 10px; background: rgba(201,135,62,0.2); border: 1px solid rgba(201,135,62,0.4); color: #c9873e; cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 12px; font-weight: bold; transition: all 0.2s" onmouseover="this.style.background='rgba(201,135,62,0.4)'" onmouseout="this.style.background='rgba(201,135,62,0.2)'">⚙ Admin Panel</button>
+        <button onclick="realAdminPanel.toggle()" style="width: 90%; margin: 0 auto; display: block; padding: 12px; background: rgba(201,135,62,0.2); border: 2px solid #c9873e; color: #c9873e; cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 12px; font-weight: bold; transition: all 0.2s" onmouseover="this.style.background='rgba(201,135,62,0.4)'" onmouseout="this.style.background='rgba(201,135,62,0.2)'">⚙ ADMIN PANEL</button>
       </div>`;
     }
     

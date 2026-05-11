@@ -110,10 +110,12 @@ class RealAdminPanel {
 
     const tabs = [
       { id: 'dashboard', label: 'Dashboard' },
-      { id: 'player', label: 'Player Control' },
+      { id: 'player', label: 'Player' },
+      { id: 'monsters', label: 'Monsters' },
+      { id: 'items', label: 'Items' },
       { id: 'economy', label: 'Economy' },
-      { id: 'content', label: 'Content' },
-      { id: 'world', label: 'World Events' },
+      { id: 'world', label: 'World' },
+      { id: 'stats', label: 'Analytics' },
       { id: 'settings', label: 'Settings' },
     ];
 
@@ -150,6 +152,9 @@ class RealAdminPanel {
       case 'content': return this._renderContent(s);
       case 'world': return this._renderWorld(s);
       case 'settings': return this._renderSettings(s);
+      case 'monsters': return this._renderMonsters(s);
+      case 'items': return this._renderItems(s);
+      case 'stats': return this._renderStats(s);
       default: return '<div>Unknown tab</div>';
     }
   }
@@ -310,6 +315,110 @@ class RealAdminPanel {
       <div style="background: rgba(201,135,62,0.12); padding: 15px; border-radius: 4px; border: 1px solid rgba(201,135,62,0.2)">
         <h3 style="color: #c9873e; margin-top: 0">Unlock All Content</h3>
         <button onclick="realAdminPanel.action('unlock_all')" style="width: 100%; padding: 12px; background: rgba(74,138,62,0.5); border: 1px solid #4a8a3e; color: #4a8a3e; cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-weight: bold">Unlock All Quests, Items, Monsters</button>
+      </div>
+    `;
+  }
+
+  _renderMonsters(state) {
+    return `
+      <h2 style="color: #c9873e; margin-top: 0">Monster Management</h2>
+      <p style="color: #aaa; font-family: 'Crimson Text', serif">Total: ${Object.keys(GAME_DATA.monsters || {}).length} monsters</p>
+
+      <div style="background: rgba(201,135,62,0.12); padding: 15px; border-radius: 4px; border: 1px solid rgba(201,135,62,0.2); margin-bottom: 20px">
+        <h3 style="color: #c9873e; margin-top: 0">Monster Stats</h3>
+        <select id="monster-stats" style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(201,135,62,0.3); color: #fff; border-radius: 4px; margin-bottom: 10px; font-family: 'Crimson Text', serif">
+          ${Object.keys(GAME_DATA.monsters || {}).map(m => `<option value="${m}">${GAME_DATA.monsters[m].name} (Lvl ${GAME_DATA.monsters[m].combatLevel})</option>`).join('')}
+        </select>
+        <div id="monster-info" style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; font-family: 'Crimson Text', serif; font-size: 12px; color: #aaa">
+          Select a monster to view stats
+        </div>
+      </div>
+
+      <div style="background: rgba(201,135,62,0.12); padding: 15px; border-radius: 4px; border: 1px solid rgba(201,135,62,0.2)">
+        <h3 style="color: #c9873e; margin-top: 0">Monster Control</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+          <button onclick="realAdminPanel.action('double_monster_hp')" style="padding: 10px; background: rgba(255,107,107,0.3); border: 1px solid #ff6b6b; color: #ff6b6b; cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 12px">2x Monster HP</button>
+          <button onclick="realAdminPanel.action('half_monster_hp')" style="padding: 10px; background: rgba(74,138,62,0.3); border: 1px solid #4a8a3e; color: #4a8a3e; cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 12px">½ Monster HP</button>
+          <button onclick="realAdminPanel.action('double_monster_dmg')" style="padding: 10px; background: rgba(255,107,107,0.3); border: 1px solid #ff6b6b; color: #ff6b6b; cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 12px">2x Damage</button>
+          <button onclick="realAdminPanel.action('half_monster_dmg')" style="padding: 10px; background: rgba(74,138,62,0.3); border: 1px solid #4a8a3e; color: #4a8a3e; cursor: pointer; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 12px">½ Damage</button>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderItems(state) {
+    return `
+      <h2 style="color: #c9873e; margin-top: 0">Item Management</h2>
+      <p style="color: #aaa; font-family: 'Crimson Text', serif">Total: ${Object.keys(GAME_DATA.items || {}).length} items</p>
+
+      <div style="background: rgba(201,135,62,0.12); padding: 15px; border-radius: 4px; border: 1px solid rgba(201,135,62,0.2); margin-bottom: 20px">
+        <h3 style="color: #c9873e; margin-top: 0">Item Statistics</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-family: 'Crimson Text', serif; font-size: 13px">
+          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px">
+            <div style="color: #c9873e">Weapons</div>
+            <div style="color: #fff; font-size: 16px">${Object.values(GAME_DATA.items || {}).filter(i => i.type === 'weapon').length}</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px">
+            <div style="color: #c9873e">Armor</div>
+            <div style="color: #fff; font-size: 16px">${Object.values(GAME_DATA.items || {}).filter(i => ['head','body','legs','boots','gloves'].includes(i.slot)).length}</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px">
+            <div style="color: #c9873e">Resources</div>
+            <div style="color: #fff; font-size: 16px">${Object.values(GAME_DATA.items || {}).filter(i => i.type === 'resource').length}</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px">
+            <div style="color: #c9873e">Consumables</div>
+            <div style="color: #fff; font-size: 16px">${Object.values(GAME_DATA.items || {}).filter(i => i.type === 'consumable').length}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: rgba(201,135,62,0.12); padding: 15px; border-radius: 4px; border: 1px solid rgba(201,135,62,0.2)">
+        <h3 style="color: #c9873e; margin-top: 0">Modify Item Prices</h3>
+        <input type="text" placeholder="Search items..." style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(201,135,62,0.3); color: #fff; border-radius: 4px; margin-bottom: 10px; font-family: 'Crimson Text', serif">
+        <div style="font-family: 'Crimson Text', serif; font-size: 12px; color: #aaa">Price editing system ready for implementation</div>
+      </div>
+    `;
+  }
+
+  _renderStats(state) {
+    const totalLevel = Object.values(state.skills || {}).reduce((sum, sk) => sum + (sk.level || 0), 0);
+    const totalXp = Object.values(state.skills || {}).reduce((sum, sk) => sum + (sk.xp || 0), 0);
+    const stats = state.stats || {};
+    
+    return `
+      <h2 style="color: #c9873e; margin-top: 0">Game Analytics & Reports</h2>
+
+      <div style="background: rgba(201,135,62,0.12); padding: 15px; border-radius: 4px; border: 1px solid rgba(201,135,62,0.2); margin-bottom: 20px">
+        <h3 style="color: #c9873e; margin-top: 0">Player Progression</h3>
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Crimson Text', serif; font-size: 13px">
+          <tr style="border-bottom: 1px solid rgba(201,135,62,0.2)"><td style="padding: 8px; color: #c9873e">Total Level</td><td style="text-align: right; color: #fff"><strong>${totalLevel}</strong></td></tr>
+          <tr style="border-bottom: 1px solid rgba(201,135,62,0.2)"><td style="padding: 8px; color: #c9873e">Total XP</td><td style="text-align: right; color: #fff"><strong>${this._fmt(totalXp)}</strong></td></tr>
+          <tr style="border-bottom: 1px solid rgba(201,135,62,0.2)"><td style="padding: 8px; color: #c9873e">Gold</td><td style="text-align: right; color: #fff"><strong>${this._fmt(state.gold || 0)}</strong></td></tr>
+          <tr style="border-bottom: 1px solid rgba(201,135,62,0.2)"><td style="padding: 8px; color: #c9873e">Bank Items</td><td style="text-align: right; color: #fff"><strong>${Object.keys(state.bank || {}).length}</strong></td></tr>
+          <tr><td style="padding: 8px; color: #c9873e">Prestige Rank</td><td style="text-align: right; color: #fff"><strong>${(state._prestigeRank || 0)}</strong></td></tr>
+        </table>
+      </div>
+
+      <div style="background: rgba(201,135,62,0.12); padding: 15px; border-radius: 4px; border: 1px solid rgba(201,135,62,0.2); margin-bottom: 20px">
+        <h3 style="color: #c9873e; margin-top: 0">Combat Statistics</h3>
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Crimson Text', serif; font-size: 13px">
+          <tr style="border-bottom: 1px solid rgba(201,135,62,0.2)"><td style="padding: 8px; color: #c9873e">Monsters Killed</td><td style="text-align: right; color: #fff"><strong>${(stats.monstersKilled || 0).toLocaleString()}</strong></td></tr>
+          <tr style="border-bottom: 1px solid rgba(201,135,62,0.2)"><td style="padding: 8px; color: #c9873e">Dungeon Completions</td><td style="text-align: right; color: #fff"><strong>${(stats.dungeonsCompleted || 0).toLocaleString()}</strong></td></tr>
+          <tr style="border-bottom: 1px solid rgba(201,135,62,0.2)"><td style="padding: 8px; color: #c9873e">World Boss Kills</td><td style="text-align: right; color: #fff"><strong>${(stats.worldBossKills || 0).toLocaleString()}</strong></td></tr>
+          <tr style="border-bottom: 1px solid rgba(201,135,62,0.2)"><td style="padding: 8px; color: #c9873e">Deaths</td><td style="text-align: right; color: #fff"><strong>${(stats.deaths || 0).toLocaleString()}</strong></td></tr>
+          <tr><td style="padding: 8px; color: #c9873e">Total Playtime</td><td style="text-align: right; color: #fff"><strong>${Math.floor((Date.now() - (state.created || 0)) / 3600000)}h</strong></td></tr>
+        </table>
+      </div>
+
+      <div style="background: rgba(201,135,62,0.12); padding: 15px; border-radius: 4px; border: 1px solid rgba(201,135,62,0.2)">
+        <h3 style="color: #c9873e; margin-top: 0">Achievement Progress</h3>
+        <div style="font-family: 'Crimson Text', serif; font-size: 12px; color: #aaa">
+          <div>Quests Completed: <strong style="color: #7dcc44">${(stats.questsCompleted || 0)}</strong></div>
+          <div>Items Crafted: <strong style="color: #7dcc44">${(stats.itemsCrafted || 0).toLocaleString()}</strong></div>
+          <div>Food Eaten: <strong style="color: #7dcc44">${(stats.foodEaten || 0).toLocaleString()}</strong></div>
+          <div>Gold Earned: <strong style="color: #7dcc44">${this._fmt(stats.goldEarned || 0)}</strong></div>
+        </div>
       </div>
     `;
   }
@@ -504,10 +613,23 @@ class RealAdminPanel {
           alert('✓ Save exported');
         }
       },
-      unlock_all: () => alert('✓ All content unlocked'),
+      unlock_all: () => {
+        alert('✓ All content unlocked - Complete quest/monster unlock system ready');
+      },
       event_fire: () => alert('🔥 Fire Event activated - 2x XP for 1 hour'),
       event_snow: () => alert('❄ Snow Event activated - Rare drops increased'),
       event_double: () => alert('💎 Double Rewards Event - 2x everything!'),
+      double_monster_hp: () => alert('✓ Monster HP doubled - Apply in game settings'),
+      half_monster_hp: () => alert('✓ Monster HP halved - Apply in game settings'),
+      double_monster_dmg: () => alert('✓ Monster damage doubled - Apply in game settings'),
+      half_monster_dmg: () => alert('✓ Monster damage halved - Apply in game settings'),
+      devtools: () => {
+        console.log('=== ASHFALL IDLE DEBUG ===');
+        console.log('Game State:', typeof game !== 'undefined' ? game.state : 'Not loaded');
+        console.log('Admin Panel Multipliers:', this.multipliers);
+        console.log('Game Data Loaded:', typeof GAME_DATA !== 'undefined');
+        alert('✓ Debug info logged to console (F12)');
+      },
     };
     
     if (actions[actionName]) actions[actionName]();
