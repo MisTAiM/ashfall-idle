@@ -136,64 +136,18 @@ function applyAdminPanel() {
         <div class="adm-kpi"><div class="adm-kpi-val">${s.quests?.completed?.length||0}</div><div class="adm-kpi-lbl">Quests</div></div>
         <div class="adm-kpi"><div class="adm-kpi-val">${playTimeH}h</div><div class="adm-kpi-lbl">Play Time</div></div>
         <div class="adm-kpi"><div class="adm-kpi-val">${s.stats?.fightCaveCompletions||0}</div><div class="adm-kpi-lbl">FC Clears</div></div>
-      </div>
-
-      <div class="adm-dash-row">
-        <div class="adm-section adm-dash-half">
-          <h3>Quick Actions</h3>
-          <div class="adm-btn-grid">
-            <button class="btn btn-sm" onclick="ui._admMaxAll()">Max All Skills</button>
-            <button class="btn btn-sm" onclick="game.state.gold+=1000000;ui.toast({type:'success',text:'+1M gold'});ui.renderPage('admin')">+1M Gold</button>
-            <button class="btn btn-sm" onclick="ui._admFullHeal()">Full Heal</button>
-            <button class="btn btn-sm" onclick="game.state.prayerPoints=99;ui.renderPage('admin')">Fill Prayer</button>
-            <button class="btn btn-sm" onclick="ui._admGiveAllItems()">Give All Items</button>
-            <button class="btn btn-sm" onclick="ui._admCompleteQuests()">Complete All Quests</button>
-            <button class="btn btn-sm" onclick="game.state.specEnergy=100;ui.renderPage('admin')">Fill Spec</button>
-            <button class="btn btn-sm" onclick="game.saveGame();ui.toast({type:'success',text:'Saved'})">Force Save</button>
-          </div>
-        </div>
-        <div class="adm-section adm-dash-half">
-          <h3>Broadcast Message</h3>
-          <div class="adm-col-flex">
-            <select id="adm-bc-type" class="bank-search-input" style="width:120px">
-              <option value="info">Info</option><option value="success">Success</option><option value="warn">Warning</option><option value="danger">Danger</option>
-            </select>
-            <input type="text" id="adm-broadcast" class="bank-search-input" placeholder="System message for global chat..." style="flex:1">
-            <button class="btn btn-sm" onclick="ui._admBroadcast()">Send</button>
-          </div>
-          <h3 style="margin-top:12px">Active Announcement</h3>
-          <div id="adm-announce-status" style="font-size:12px;color:var(--text-dim)">Loading…</div>
-          <div class="adm-btn-grid" style="margin-top:6px">
-            <button class="btn btn-xs" onclick="ui._admTab='content';ui.renderPage('admin')">Manage Announcements →</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="adm-section">
-        <h3>Data Summary</h3>
-        <div class="adm-grid">
-          <div class="adm-stat">Items in GAME_DATA: <strong>${Object.keys(GAME_DATA.items).length}</strong></div>
-          <div class="adm-stat">Monsters: <strong>${Object.keys(GAME_DATA.monsters||{}).length}</strong></div>
-          <div class="adm-stat">Spells (all books): <strong>${(GAME_DATA.spells||[]).length + (GAME_DATA.pyromancySpells||[]).length + (GAME_DATA.cryomancySpells||[]).length + (GAME_DATA.bloodMagicSpells||[]).length + (GAME_DATA.voidMagicSpells||[]).length + (GAME_DATA.necromancySpells||[]).length}</strong></div>
-          <div class="adm-stat">Quests: <strong>${GAME_DATA.quests?.length||0}</strong></div>
-          <div class="adm-stat">Crafting Recipes: <strong>${Object.values(GAME_DATA.recipes||{}).reduce((a,v)=>a+(Array.isArray(v)?v.length:0),0)}</strong></div>
-          <div class="adm-stat">Combat Areas: <strong>${GAME_DATA.combatAreas?.length||0}</strong></div>
-          <div class="adm-stat">Skills: <strong>${Object.keys(s.skills).length}</strong></div>
-          <div class="adm-stat">Active Spellbook: <strong>${s.activeSpellbook||'standard'}</strong></div>
-        </div>
       </div>`;
 
-      // Load current announcement async
-      html += `<script>setTimeout(async()=>{const anns=await online.getAnnouncements?.();const el=document.getElementById('adm-announce-status');if(!el)return;if(anns?.length){const a=anns[0];el.innerHTML='<strong>'+a.title+'</strong> — '+a.body;}else{el.textContent='No active announcements.';}},300);<\/script>`;
-
-      // Game Analyzer
-      if (typeof gameAnalyzer !== 'undefined') {
-        html += gameAnalyzer.renderAnalysisReport();
-      }
-
-      // Edit History
-      if (typeof undoRedo !== 'undefined') {
-        html += undoRedo.renderHistoryPanel();
+      // Render all widgets that are enabled
+      if (typeof dashWidgets !== 'undefined') {
+        if (dashboardCustomizer?.widgets?.quick_stats?.enabled) html += dashWidgets.renderQuickStats();
+        if (dashboardCustomizer?.widgets?.recent_edits?.enabled) html += dashWidgets.renderRecentEdits();
+        if (dashboardCustomizer?.widgets?.game_health?.enabled) html += dashWidgets.renderGameHealth();
+        if (dashboardCustomizer?.widgets?.quick_actions?.enabled) html += dashWidgets.renderQuickActions();
+        if (dashboardCustomizer?.widgets?.item_warnings?.enabled) html += dashWidgets.renderItemWarnings();
+        if (dashboardCustomizer?.widgets?.monster_warnings?.enabled) html += dashWidgets.renderMonsterWarnings();
+        if (dashboardCustomizer?.widgets?.economy_stats?.enabled) html += dashWidgets.renderEconomyStats();
+        if (dashboardCustomizer?.widgets?.content_summary?.enabled) html += dashWidgets.renderContentSummary();
       }
     }
 
