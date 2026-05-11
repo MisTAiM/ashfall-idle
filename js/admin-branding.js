@@ -13,17 +13,23 @@ class BrandingEditor {
       secondaryColor: '#ff6b6b',
       customCSS: ''
     };
-    this.init();
+    this._loaded = false;
+    this._initWithRetry();
+  }
+
+  _initWithRetry(attempt = 0) {
+    if (online?.db) { this.init(); return; }
+    if (attempt < 20) setTimeout(() => this._initWithRetry(attempt + 1), 500);
   }
 
   async init() {
-    if (!online?.db) return;
-    
+    if (this._loaded || !online?.db) return;
     try {
       const snap = await online.db.ref('/config/branding').once('value');
       const data = snap.val();
       if (data) {
         this.config = { ...this.config, ...data };
+        this._loaded = true;
         this.apply();
       }
     } catch (e) {
@@ -67,25 +73,44 @@ class BrandingEditor {
       style.textContent = this.config.customCSS;
     }
 
-    // Update logo in header/sidebar areas
+    // Update logo — all possible locations
     if (this.config.logo) {
-      // Try sidebar logo
-      const logoDiv = document.querySelector('.sidebar-logo-area');
-      if (logoDiv) {
-        logoDiv.innerHTML = `<img src="${this.config.logo}" style="max-width:160px; max-height:80px; object-fit: contain;">`;
+      const logoStyle = 'max-width:160px; max-height:80px; object-fit:contain;';
+
+      // Landing page logo
+      const landingLogo = document.getElementById('landing-logo');
+      if (landingLogo) {
+        landingLogo.src = this.config.logo;
+        landingLogo.style.display = '';
+        const wm = document.getElementById('af-wordmark');
+        if (wm) wm.style.display = 'none';
       }
-      
-      // Try header logo
-      const headerLogo = document.querySelector('.header-logo, .logo, #logo');
+
+      // Sidebar brand area (in-game)
+      const sidebarBrand = document.querySelector('.sidebar-brand, .sidebar-logo, .sidebar-logo-area, .brand-logo');
+      if (sidebarBrand) {
+        if (sidebarBrand.tagName === 'IMG') sidebarBrand.src = this.config.logo;
+        else sidebarBrand.innerHTML = `<img src="${this.config.logo}" style="${logoStyle}">`;
+      }
+
+      // Any header logo container
+      const headerLogo = document.querySelector('.header-logo, .logo, #logo, #game-logo');
       if (headerLogo) {
-        headerLogo.innerHTML = `<img src="${this.config.logo}" style="max-width:160px; max-height:80px; object-fit: contain;">`;
+        if (headerLogo.tagName === 'IMG') headerLogo.src = this.config.logo;
+        else headerLogo.innerHTML = `<img src="${this.config.logo}" style="${logoStyle}">`;
       }
-      
-      // Also update any img elements with id="game-logo"
-      const gameLogoImg = document.querySelector('#game-logo');
-      if (gameLogoImg) {
-        gameLogoImg.src = this.config.logo;
+    }
+
+    // Update favicon
+    if (this.config.favicon) {
+      let link = document.getElementById('dynamic-favicon') || document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        link.id = 'dynamic-favicon';
+        document.head.appendChild(link);
       }
+      link.href = this.config.favicon;
     }
   }
 

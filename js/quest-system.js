@@ -836,19 +836,10 @@ function _runQuestMigration(engine) {
   engine.emit('questsChanged');
 }
 
-// Ensure dialogue event binding + run migration after engine init
+// Run one-time migration after engine init
 setTimeout(() => {
-  if (typeof ui !== 'undefined' && ui.engine) {
-    ui.engine.on('questDialogue', (data) => {
-      if (!document.getElementById('quest-dialogue-overlay')) {
-        ui.showQuestDialogue(data);
-      }
-    });
-    // Run one-time migration
-    _runQuestMigration(ui.engine);
-  } else if (typeof game !== 'undefined') {
-    _runQuestMigration(game);
-  }
+  const eng = (typeof ui !== 'undefined' && ui.engine) ? ui.engine : (typeof game !== 'undefined' ? game : null);
+  if (eng) _runQuestMigration(eng);
 }, 800);
 
 console.log('[Ashfall] quest-system.js v3.1 loaded. Multi-stage quest engine active.');

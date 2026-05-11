@@ -4,12 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ashfall Idle — Dark Fantasy Idle RPG</title>
-  <meta name="description" content="A dark fantasy idle RPG. Train 28 skills, master 6 spellbooks, battle 59 monsters, forge legendary weapons and conquer the Ashfall.">
+  <meta name="description" content="Ashfall Idle — A deep dark fantasy idle RPG. Train 28+ skills, master 6 spellbooks, battle 100+ monsters, run dungeons, craft legendary gear, join guilds, and conquer the Ashfall. Free to play. Cloud saves. No ads.">
   <meta property="og:title" content="Ashfall Idle — Dark Fantasy Idle RPG">
-  <meta property="og:description" content="The world is buried in ash. Forge your legend from the ruins.">
+  <meta property="og:description" content="The world is buried in ash. Train skills, slay monsters, forge legend. A full-featured idle RPG with 28 skills, 100+ monsters, quests, guilds, PvP, and more. Free to play.">
   <meta property="og:image" content="logo.png">
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔</text></svg>">
+  <meta property="og:url" content="https://ashfall-idle.vercel.app">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Ashfall Idle — Dark Fantasy Idle RPG">
+  <meta name="twitter:description" content="Train 28+ skills, slay 100+ monsters, forge legendary gear. Free to play dark fantasy idle RPG.">
+  <meta name="twitter:image" content="logo.png">
+  <link rel="icon" id="dynamic-favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
@@ -292,7 +297,7 @@
     <div class="af-content">
       <!-- Logo / Wordmark -->
       <div class="af-logo-wrap">
-        <img src="logo.png" alt="Ashfall Idle" class="af-logo"
+        <img src="logo.png" alt="Ashfall Idle" class="af-logo" id="landing-logo"
              onerror="this.style.display='none';document.getElementById('af-wordmark').style.display='block'">
         <div class="af-wordmark" id="af-wordmark" style="display:none">
           ASH<span>FALL</span><br><span style="font-size:0.5em;letter-spacing:12px;color:#4a3a2a">IDLE</span>
@@ -315,10 +320,10 @@
 
       <div class="af-stats">
         <div class="af-stat"><span class="af-stat-n">28</span><span class="af-stat-l">Skills</span></div>
-        <div class="af-stat"><span class="af-stat-n">600+</span><span class="af-stat-l">Items</span></div>
-        <div class="af-stat"><span class="af-stat-n">59</span><span class="af-stat-l">Monsters</span></div>
-        <div class="af-stat"><span class="af-stat-n">14</span><span class="af-stat-l">Dungeons</span></div>
-        <div class="af-stat"><span class="af-stat-n">20</span><span class="af-stat-l">Pets</span></div>
+        <div class="af-stat"><span class="af-stat-n">800+</span><span class="af-stat-l">Items</span></div>
+        <div class="af-stat"><span class="af-stat-n">100+</span><span class="af-stat-l">Monsters</span></div>
+        <div class="af-stat"><span class="af-stat-n">20+</span><span class="af-stat-l">Dungeons</span></div>
+        <div class="af-stat"><span class="af-stat-n">25+</span><span class="af-stat-l">Pets</span></div>
       </div>
 
       <div class="af-pills">
@@ -326,11 +331,15 @@
         <span class="af-pill">Combat Pets</span>
         <span class="af-pill">Multi-Mob Encounters</span>
         <span class="af-pill">Fight Cave</span>
+        <span class="af-pill">Theatre of Ash</span>
+        <span class="af-pill">Barrows</span>
         <span class="af-pill">Guild System</span>
         <span class="af-pill">PvP Arena</span>
         <span class="af-pill">Bazaar</span>
         <span class="af-pill">World Bosses</span>
         <span class="af-pill">Special Attacks</span>
+        <span class="af-pill">Clue Scrolls</span>
+        <span class="af-pill">Prestige System</span>
         <span class="af-pill">Cloud Saves</span>
       </div>
 
@@ -338,7 +347,7 @@
         <span class="af-badge">Free to Play</span>
         <span class="af-badge">Cross-Device</span>
         <span class="af-badge">No Ads</span>
-        <span class="af-version">v9.4</span>
+        <span class="af-version">v9.5</span>
       </div>
     </div>
   </div>
