@@ -7,60 +7,102 @@ class AdminRoleSystem {
   constructor() {
     this.currentUserRole = 'VIEWER';
     this.roles = {
+      OWNER: {
+        name: 'Owner',
+        color: '#ffff00',
+        icon: '👑',
+        description: 'Derick - Full unlimited access',
+        permissions: ['*']
+      },
       ADMIN: {
         name: 'Admin',
         color: '#ff4444',
-        icon: '👑',
-        description: 'Full access to everything',
-        permissions: ['*'] // * = all
+        icon: '⚔',
+        description: 'Full access to all features',
+        permissions: ['*']
       },
-      MOD: {
+      LEAD_DEV: {
+        name: 'Lead Developer',
+        color: '#ff6b9d',
+        icon: '🔧',
+        description: 'Code, systems, infrastructure',
+        permissions: ['edit:*', 'create:*', 'delete:*', 'upload:*', 'manage:roles']
+      },
+      GAME_DESIGNER: {
+        name: 'Game Designer',
+        color: '#6bcf7f',
+        icon: '🎮',
+        description: 'Balance, content, quests, items, monsters',
+        permissions: [
+          'edit:item', 'create:item', 'edit:monster', 'create:monster',
+          'edit:quest', 'create:quest', 'edit:recipe', 'create:recipe',
+          'edit:economy', 'view:logs', 'edit:settings'
+        ]
+      },
+      COMMUNITY_MANAGER: {
+        name: 'Community Manager',
+        color: '#4da6ff',
+        icon: '📢',
+        description: 'Announcements, broadcasts, events',
+        permissions: [
+          'broadcast:message', 'edit:announcements', 'view:players',
+          'view:logs', 'view:items', 'view:monsters'
+        ]
+      },
+      MODERATOR: {
         name: 'Moderator',
         color: '#ff8800',
         icon: '⚔',
-        description: 'Player management, economy, logs, broadcasts',
+        description: 'Player management, economy, safety',
         permissions: [
           'view:players', 'edit:players', 'delete:players',
-          'view:economy', 'edit:economy',
-          'view:logs', 'broadcast:message',
-          'view:items', 'view:monsters'
+          'view:economy', 'edit:economy', 'view:logs',
+          'broadcast:message', 'view:items', 'view:monsters'
         ]
       },
       CONTENT_CREATOR: {
         name: 'Content Creator',
         color: '#44ff44',
-        icon: '🎨',
-        description: 'Create and edit items, monsters, recipes, quests',
+        icon: '📚',
+        description: 'Create items, monsters, recipes, quests',
         permissions: [
           'create:item', 'edit:item', 'view:item',
           'create:monster', 'edit:monster', 'view:monster',
           'create:recipe', 'edit:recipe', 'view:recipe',
           'create:quest', 'edit:quest', 'view:quest',
-          'view:images'
+          'view:images', 'upload:image'
         ]
       },
-      ART_CREATOR: {
-        name: 'Art Creator',
+      ART_LEAD: {
+        name: 'Art Lead',
         color: '#ff44ff',
-        icon: '🎭',
-        description: 'Upload and edit images, SVGs for items and monsters',
+        icon: '🎨',
+        description: 'All image and SVG management, art direction',
         permissions: [
           'upload:image', 'edit:image', 'delete:image',
-          'upload:svg', 'edit:svg',
-          'view:items', 'view:monsters',
-          'edit:item_image', 'edit:monster_image',
-          'view:images'
+          'upload:svg', 'edit:svg', 'edit:item_image', 'edit:monster_image',
+          'view:items', 'view:monsters'
         ]
       },
-      ECONOMY_MANAGER: {
-        name: 'Economy Manager',
-        color: '#ffff44',
-        icon: '💰',
-        description: 'Adjust prices, multipliers, shop management',
+      ARTIST: {
+        name: 'Artist',
+        color: '#ff99ff',
+        icon: '🖌',
+        description: 'Upload and edit images, SVGs',
         permissions: [
-          'view:economy', 'edit:economy',
-          'edit:shop', 'view:items',
-          'view:gold', 'edit:prices'
+          'upload:image', 'edit:image',
+          'upload:svg', 'edit:svg',
+          'view:items', 'view:monsters'
+        ]
+      },
+      TESTER: {
+        name: 'QA Tester',
+        color: '#ffcc00',
+        icon: '🧪',
+        description: 'Test content, report bugs, view data',
+        permissions: [
+          'view:items', 'view:monsters', 'view:quests',
+          'view:recipes', 'view:logs', 'view:economy'
         ]
       },
       VIEWER: {
@@ -70,8 +112,7 @@ class AdminRoleSystem {
         description: 'Read-only access to all data',
         permissions: [
           'view:players', 'view:items', 'view:monsters',
-          'view:quests', 'view:recipes', 'view:logs',
-          'view:economy', 'view:images'
+          'view:quests', 'view:recipes', 'view:logs', 'view:economy'
         ]
       }
     };
@@ -83,14 +124,20 @@ class AdminRoleSystem {
   }
 
   async init() {
-    // Load user's role from Firebase
-    if (typeof online !== 'undefined' && online.user?.uid) {
+    // Check if user is admin using existing isAdmin() function
+    if (typeof isAdmin === 'function' && isAdmin()) {
+      // User is admin - set as OWNER (highest role)
+      this.currentUserRole = 'OWNER';
+      console.log('[AdminRoles] User is OWNER (admin detected)');
+    } else if (typeof online !== 'undefined' && online.user?.uid) {
+      // Otherwise load user's role from Firebase
       const role = await this.getUserRole(online.user.uid);
       this.currentUserRole = role || 'VIEWER';
+      console.log('[AdminRoles] User role:', this.currentUserRole);
     }
     
-    // Listen for role changes in real-time
-    if (typeof online !== 'undefined' && online.db) {
+    // Listen for role changes in real-time (only for non-owners)
+    if (this.currentUserRole !== 'OWNER' && typeof online !== 'undefined' && online.db) {
       online.db.ref(`/admin_roles/${online.user?.uid}`).on('value', snap => {
         const role = snap.val();
         if (role) {
@@ -136,16 +183,21 @@ class AdminRoleSystem {
   }
 
   hasPermission(action) {
+    // OWNER and ADMIN always have full permission
+    if (this.currentUserRole === 'OWNER' || this.currentUserRole === 'ADMIN') {
+      return true;
+    }
+
     const role = this.roles[this.currentUserRole];
     if (!role) return false;
     
-    // Admin has all permissions
+    // Check for wildcard permissions (all permissions)
     if (role.permissions.includes('*')) return true;
     
     // Check exact permission
     if (role.permissions.includes(action)) return true;
     
-    // Check wildcard (e.g., 'view:*' allows 'view:items')
+    // Check wildcard category (e.g., 'view:*' allows 'view:items')
     const [category] = action.split(':');
     if (role.permissions.includes(`${category}:*`)) return true;
     
