@@ -1237,7 +1237,7 @@ function applyAdminPanel() {
           <div style="background:rgba(0,0,0,0.2); padding:12px; border-radius:6px">
             <div style="margin-bottom:10px">
               <label style="display:block; font-size:12px; color:var(--text-dim); margin-bottom:4px">Player Name</label>
-              <input type="text" id="admin-player-search" class="bank-search-input" placeholder="Search player by name..." style="width:100%; margin-bottom:8px" oninput="ui._adminSearchPlayers(this.value)">
+              <input type="text" id="admin-player-search" class="bank-search-input" placeholder="Search player by name..." style="width:100%; margin-bottom:8px" oninput="adminRoleManager.searchPlayers(this.value)">
               <div id="admin-player-list" style="background:rgba(0,0,0,0.3); border-radius:4px; max-height:120px; overflow-y:auto; display:none"></div>
               <div id="admin-player-selected" style="padding:8px; background:rgba(201,135,62,0.1); border-radius:4px; margin-top:8px; display:none; font-size:12px">
                 Selected: <strong id="admin-selected-name"></strong>
@@ -1252,154 +1252,22 @@ function applyAdminPanel() {
               </select>
             </div>
 
-            <button class="btn btn-sm" onclick="ui._adminAssignRole()">✓ Assign Role</button>
+            <button class="btn btn-sm" onclick="adminRoleManager.assignRole()">✓ Assign Role</button>
           </div>
 
           <h4 style="color:#c9873e; margin-top:15px">Remove Player Role</h4>
           <div style="background:rgba(255,107,107,0.1); padding:12px; border-radius:6px">
             <div style="margin-bottom:10px">
               <label style="display:block; font-size:12px; color:var(--text-dim); margin-bottom:4px">Player Name</label>
-              <input type="text" id="admin-remove-player-search" class="bank-search-input" placeholder="Search player to remove..." style="width:100%; margin-bottom:8px" oninput="ui._adminSearchPlayersRemove(this.value)">
+              <input type="text" id="admin-remove-player-search" class="bank-search-input" placeholder="Search player to remove..." style="width:100%; margin-bottom:8px" oninput="adminRoleManager.searchPlayersForRemove(this.value)">
               <div id="admin-remove-player-list" style="background:rgba(0,0,0,0.3); border-radius:4px; max-height:120px; overflow-y:auto; display:none"></div>
               <div id="admin-remove-selected" style="padding:8px; background:rgba(255,107,107,0.15); border-radius:4px; margin-top:8px; display:none; font-size:12px">
                 Selected: <strong id="admin-remove-name"></strong>
               </div>
             </div>
-            <button class="btn btn-sm btn-danger" onclick="ui._adminRemoveRole()">🗑 Remove Role (Reset to VIEWER)</button>
+            <button class="btn btn-sm btn-danger" onclick="adminRoleManager.removeRole()">🗑 Remove Role (Reset to VIEWER)</button>
           </div>
-        </div>
-
-        <script>
-        window._adminPlayerCache = {};
-        window._adminSelectedPlayer = null;
-        window._adminSelectedRemovePlayer = null;
-
-        ui._adminSearchPlayers = async function(query) {
-          if (!query || query.length < 2) {
-            document.getElementById('admin-player-list').style.display = 'none';
-            return;
-          }
-          const list = document.getElementById('admin-player-list');
-          list.innerHTML = '<div style="padding:8px; color:var(--text-dim)">Searching...</div>';
-          list.style.display = 'block';
-
-          try {
-            const snap = await (online?.db?.ref('/users')?.orderByChild('name')?.limitToFirst(20)?.once('value'));
-            const users = snap?.val() || {};
-            const matches = Object.entries(users).filter(([uid, user]) => 
-              user?.name?.toLowerCase?.()?.includes?.(query.toLowerCase())
-            );
-
-            if (matches.length === 0) {
-              list.innerHTML = '<div style="padding:8px; color:var(--text-dim)">No players found</div>';
-              return;
-            }
-
-            list.innerHTML = matches.map(([uid, user]) => \`
-              <div style="padding:8px; border-bottom:1px solid rgba(201,135,62,0.1); cursor:pointer; hover:background:rgba(201,135,62,0.1)" onclick="ui._selectPlayer('\${uid}', '\${user.name}')">
-                <strong>\${user.name}</strong> <span style="color:var(--text-dim); font-size:10px">Lvl \${user.stats?.combatLevel || 1}</span>
-              </div>
-            \`).join('');
-          } catch (e) {
-            list.innerHTML = '<div style="padding:8px; color:#ff6b6b">Error loading players</div>';
-          }
-        };
-
-        ui._selectPlayer = function(uid, name) {
-          window._adminSelectedPlayer = uid;
-          document.getElementById('admin-player-search').value = name;
-          document.getElementById('admin-player-list').style.display = 'none';
-          document.getElementById('admin-selected-name').textContent = name;
-          document.getElementById('admin-player-selected').style.display = 'block';
-        };
-
-        ui._adminSearchPlayersRemove = async function(query) {
-          if (!query || query.length < 2) {
-            document.getElementById('admin-remove-player-list').style.display = 'none';
-            return;
-          }
-          const list = document.getElementById('admin-remove-player-list');
-          list.innerHTML = '<div style="padding:8px; color:var(--text-dim)">Searching...</div>';
-          list.style.display = 'block';
-
-          try {
-            const snap = await (online?.db?.ref('/users')?.orderByChild('name')?.limitToFirst(20)?.once('value'));
-            const users = snap?.val() || {};
-            const matches = Object.entries(users).filter(([uid, user]) => 
-              user?.name?.toLowerCase?.()?.includes?.(query.toLowerCase())
-            );
-
-            if (matches.length === 0) {
-              list.innerHTML = '<div style="padding:8px; color:var(--text-dim)">No players found</div>';
-              return;
-            }
-
-            list.innerHTML = matches.map(([uid, user]) => \`
-              <div style="padding:8px; border-bottom:1px solid rgba(255,107,107,0.1); cursor:pointer" onclick="ui._selectPlayerRemove('\${uid}', '\${user.name}')">
-                <strong>\${user.name}</strong> <span style="color:var(--text-dim); font-size:10px">Lvl \${user.stats?.combatLevel || 1}</span>
-              </div>
-            \`).join('');
-          } catch (e) {
-            list.innerHTML = '<div style="padding:8px; color:#ff6b6b">Error loading players</div>';
-          }
-        };
-
-        ui._selectPlayerRemove = function(uid, name) {
-          window._adminSelectedRemovePlayer = uid;
-          document.getElementById('admin-remove-player-search').value = name;
-          document.getElementById('admin-remove-player-list').style.display = 'none';
-          document.getElementById('admin-remove-name').textContent = name;
-          document.getElementById('admin-remove-selected').style.display = 'block';
-        };
-
-        ui._adminAssignRole = async function() {
-          const uid = window._adminSelectedPlayer;
-          const role = document.getElementById('admin-assign-role').value;
-          const name = document.getElementById('admin-selected-name').textContent;
-
-          if (!uid || !role) {
-            ui.toast({type:'danger', text:'Select a player and role'});
-            return;
-          }
-
-          if (!confirm(\`Assign \${role} to \${name}?\`)) return;
-
-          try {
-            await adminRoles.setUserRole(uid, role);
-            ui.toast({type:'success', text: role + ' assigned to ' + name});
-            document.getElementById('admin-assign-role').value = '';
-            document.getElementById('admin-player-search').value = '';
-            document.getElementById('admin-player-selected').style.display = 'none';
-            window._adminSelectedPlayer = null;
-            ui.renderPage('admin');
-          } catch (e) {
-            ui.toast({type:'danger', text: 'Failed: ' + e.message});
-          }
-        };
-
-        ui._adminRemoveRole = async function() {
-          const uid = window._adminSelectedRemovePlayer;
-          const name = document.getElementById('admin-remove-name').textContent;
-
-          if (!uid) {
-            ui.toast({type:'danger', text:'Select a player'});
-            return;
-          }
-
-          if (!confirm(\`Reset \${name} to VIEWER?\`)) return;
-
-          try {
-            await adminRoles.setUserRole(uid, 'VIEWER');
-            ui.toast({type:'success', text: name + ' role removed'});
-            document.getElementById('admin-remove-player-search').value = '';
-            document.getElementById('admin-remove-selected').style.display = 'none';
-            window._adminSelectedRemovePlayer = null;
-            ui.renderPage('admin');
-          } catch (e) {
-            ui.toast({type:'danger', text: 'Failed: ' + e.message});
-          }
-        };
-        </script>`;
+        </div>`;
       }
 
       // Bulk Operations
