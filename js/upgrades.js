@@ -24,11 +24,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const ui = window.ui;
 
   // ══════════════════════════════════════════════════════════
-  // 1. COMBAT LOG
+  // 1. COMBAT LOG — DISABLED (consolidated into main combat page)
   // ══════════════════════════════════════════════════════════
-  const MAX_LOG = 80;
-  const combatLog = [];
-  let combatLogCollapsed = false;
+  // The unified combat log is now on the main combat page in ui.js
+  // This system remains here for reference but is not rendered.
 
   function logEntry(type, text, color) {
     const now = new Date();
@@ -344,13 +343,13 @@ window.addEventListener('DOMContentLoaded', () => {
     var tDiv = document.createElement('div');
     tDiv.innerHTML = _buildTrackerHTML();
     if (tDiv.firstElementChild) container.appendChild(tDiv.firstElementChild);
-    // Combat log
-    var lDiv = document.createElement('div');
-    lDiv.innerHTML = _buildCombatLogHTML();
-    if (lDiv.firstElementChild) container.appendChild(lDiv.firstElementChild);
+    // Combat log — DISABLED (using unified log from main combat page instead)
+    // var lDiv = document.createElement('div');
+    // lDiv.innerHTML = _buildCombatLogHTML();
+    // if (lDiv.firstElementChild) container.appendChild(lDiv.firstElementChild);
     // Auto-scroll
-    var logBody = document.getElementById('combat-log-entries');
-    if (logBody) logBody.scrollTop = logBody.scrollHeight;
+    // var logBody = document.getElementById('combat-log-entries');
+    // if (logBody) logBody.scrollTop = logBody.scrollHeight;
   };
 
   // ══════════════════════════════════════════════════════════

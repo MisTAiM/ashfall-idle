@@ -1726,13 +1726,15 @@ class UI {
       <div class="combat-log-header" onclick="ui._showCombatLog=!ui._showCombatLog;const l=document.getElementById('combat-log-body');if(l)l.style.display=ui._showCombatLog?'block':'none'">
         <span>📋 Combat Log</span>
         <span class="combat-log-toggle">${showLog ? '▲' : '▼'}</span>
+        <button class="clog-clear-btn" onclick="event.stopPropagation();ui._combatLog=[];ui.renderPage('combat')" style="margin-left:auto;padding:4px 8px;background:#c9873e;border:none;color:#000;cursor:pointer;border-radius:3px;font-size:11px">Clear</button>
       </div>
       <div id="combat-log-body" style="display:${showLog?'block':'none'}">
         <div class="combat-log-entries" id="combat-log-entries">
-          ${(this._combatLog||[]).slice(-20).reverse().map(entry => {
+          ${(this._combatLog||[]).slice(-30).reverse().map(entry => {
             const cls = entry.type === 'hit' ? 'cl-hit' : entry.type === 'taken' ? 'cl-taken' : entry.type === 'miss' ? 'cl-miss' : entry.type === 'kill' ? 'cl-kill' : entry.type === 'cannon' ? 'cl-cannon' : 'cl-dot';
             const icon_ = entry.type === 'hit' ? '⚔' : entry.type === 'taken' ? '💥' : entry.type === 'miss' ? '○' : entry.type === 'kill' ? '💀' : entry.type === 'cannon' ? '🔴' : '⬡';
-            return `<div class="cl-entry ${cls}">${icon_} ${entry.text}</div>`;
+            const ts = entry.time ? new Date(entry.time).toLocaleTimeString('en-US', {hour12:false}) : '';
+            return `<div class="cl-entry ${cls}" title="${ts}">${icon_} ${entry.text}</div>`;
           }).join('') || '<div class="cl-entry cl-miss">No combat yet.</div>'}
         </div>
       </div>
