@@ -140,9 +140,21 @@ class AdminRoleSystem {
       if (typeof isAdmin === 'function' && isAdmin()) {
         this.currentUserRole = 'OWNER';
       } else {
-        const snap = await online.db.ref(`/admin_roles/${uid}`).once('value');
-        const role = snap.val();
-        this.currentUserRole = role || 'VIEWER';
+        // Read from Firestore /players/{uid} — publicly readable, no permission issue
+        let role = 'VIEWER';
+        try {
+          if (online.firestore) {
+            const doc = await online.firestore.collection('players').doc(uid).get();
+            if (doc.exists && doc.data().adminRole) role = doc.data().adminRole;
+          }
+        } catch(e2) {
+          // Fallback to RTDB (only works if user is already OWNER/ADMIN)
+          try {
+            const snap = await online.db.ref(`/admin_roles/${uid}`).once('value');
+            if (snap.val()) role = snap.val();
+          } catch(e3) {}
+        }
+        this.currentUserRole = role;
       }
       console.log(`[AdminRoles] Role loaded: ${this.currentUserRole}`);
       // If user has any admin role, show the admin panel in sidebar
@@ -189,7 +201,15 @@ class AdminRoleSystem {
     }
 
     try {
+      // Write to RTDB (admin reference)
       await online.db.ref(`/admin_roles/${uid}`).set(role);
+      // Write to Firestore /players/{uid} — user can read this themselves
+      if (online.firestore) {
+        await online.firestore.collection('players').doc(uid).set(
+          { adminRole: role === 'VIEWER' ? null : role },
+          { merge: true }
+        );
+      }
       this.logAudit('ROLE_CHANGE', { uid, newRole: role });
       return true;
     } catch (e) {
