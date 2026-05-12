@@ -407,6 +407,10 @@ GameEngine.prototype.castSpell = function(spellId, targetId) {
 
     const magicLevel = this.state.skills.magic.level;
     
+    console.log('[Magic] Casting ' + spellId);
+    console.log('[Magic]   Level required: ' + spell.levelRequired + ', Have: ' + magicLevel);
+    console.log('[Magic]   Mana cost: ' + spell.manaCost + ', Have: ' + (this.state.combat.mana?.current || 0));
+    
     // Check requirements
     if (magicLevel < spell.levelRequired) {
       throw new Error(`Need Magic ${spell.levelRequired} (have ${magicLevel})`);
@@ -426,12 +430,15 @@ GameEngine.prototype.castSpell = function(spellId, targetId) {
     }
 
     // Consume mana
+    const manaBefore = this.state.combat.mana.current;
     this.state.combat.mana.current -= spell.manaCost;
+    console.log('[Magic]   Mana CONSUMED: ' + manaBefore + ' -> ' + this.state.combat.mana.current);
 
     // Consume runes
     for (const [runeId, count] of Object.entries(spell.runes)) {
       const runeItem = `rune_${runeId}`;
       this.state.inventory[runeItem].count -= count;
+      console.log('[Magic]   Rune consumed: ' + runeId + ' (' + count + ')');
       if (this.state.inventory[runeItem].count <= 0) {
         delete this.state.inventory[runeItem];
       }
@@ -439,6 +446,7 @@ GameEngine.prototype.castSpell = function(spellId, targetId) {
 
     // Gain XP
     this.addXP('magic', spell.xpGain);
+    console.log('[Magic]   XP gained: ' + spell.xpGain);
 
     this.emit('spellCast', { 
       spell: spellId,

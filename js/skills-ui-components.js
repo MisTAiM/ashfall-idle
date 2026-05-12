@@ -35,11 +35,15 @@ class ManaBarComponent {
   update(engine) {
     if (engine && engine.state.combat.mana) {
       const pct = engine.getManaPercent();
+      const current = engine.state.combat.mana.current;
+      const max = engine.state.combat.mana.max;
+      console.log('[ManaBar] Update: ', current + '/' + max + ' = ' + pct + '%');
       this.render(pct);
     }
   }
 
   startAutoUpdate(engine, intervalMs = 100) {
+    console.log('[ManaBar] Starting auto-update every ' + intervalMs + 'ms');
     if (this.updateInterval) clearInterval(this.updateInterval);
     this.updateInterval = setInterval(() => this.update(engine), intervalMs);
   }
