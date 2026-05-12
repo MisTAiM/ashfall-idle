@@ -76,7 +76,11 @@ class BrandingEditor {
     // Update logo — all possible locations
     if (this.config.logo) {
       const logoStyle = 'max-width:160px; max-height:80px; object-fit:contain;';
-      const cachebusted = this.config.logo.includes('?') ? this.config.logo : `${this.config.logo}?v=${Date.now()}`;
+      // Don't cache bust data URLs — they're memory-resident and don't support query params
+      const isDataUrl = this.config.logo.startsWith('data:');
+      const cachebusted = isDataUrl 
+        ? this.config.logo 
+        : (this.config.logo.includes('?') ? this.config.logo : `${this.config.logo}?v=${Date.now()}`);
 
       // Landing page logo
       const landingLogo = document.getElementById('landing-logo');
