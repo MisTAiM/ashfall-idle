@@ -1288,6 +1288,11 @@ class UI {
     html += '<div class="active-buffs-bar" id="active-buffs">';
     if (c.activeBuffs.length > 0) {
       for (const buff of c.activeBuffs) {
+        // Ensure _maxDuration is always set (prevents flashing on initial render)
+        if (!buff._maxDuration) {
+          buff._maxDuration = buff.remaining;
+        }
+        
         const isTime = buff.type === 'time';
         const isHits = buff.type === 'hits';
         let label = '', icon = '', color = '';
@@ -1303,12 +1308,14 @@ class UI {
         else if (buff.stat === 'vengeance')      { label = `Vengeance ×${buff.value}`; icon = '🔁'; color = '#c44040'; }
         else if (buff.stat === 'onKillHeal')     { label = `Heal ${buff.value}% on kill`; icon = '💉'; color = '#4abe6c'; }
         else if (buff.stat === 'runeRecovery')   { label = `Rune Save ${Math.round(buff.value*100)}%`; icon = '♦'; color = '#8a5ec4'; }
+        else if (buff.stat === 'lifeRestore')    { label = `Life Restore +${Math.round(buff.value*100)}%`; icon = '❤'; color = '#e24040'; }
+        else if (buff.stat === 'evasionBonus')   { label = `+${buff.value} Evasion`; icon = '💨'; color = '#7ec444'; }
         else { label = (buff.stat||'Buff').replace(/([A-Z])/g,' $1').replace('Bonus','').trim() + ' +' + buff.value; icon = '✦'; color = '#c9873e'; }
 
         const durText = isTime ? `${Math.ceil(buff.remaining)}s` : isHits ? `${buff.remaining} hit${buff.remaining!==1?'s':''}` : '';
         const pct = isTime && buff._maxDuration ? Math.max(0, (buff.remaining / buff._maxDuration) * 100) : 100;
 
-        html += `<div class="buff-chip-v2" style="border-color:${color}20;background:${color}10" title="${label} — ${durText} remaining">
+        html += `<div class="buff-chip-v2" style="border-color:${color}20;background:${color}10" title="${label} — ${durText} remaining" data-buff="${buff.stat}">
           <span class="buff-chip-icon" style="color:${color}">${icon}</span>
           <div class="buff-chip-body">
             <span class="buff-chip-label" style="color:${color}">${label}</span>
