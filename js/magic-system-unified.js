@@ -117,10 +117,10 @@ const SPELL_RECIPES = {
     name: 'Spark',
     school: 'combat',
     levelRequired: 1,
-    manaCost: 10,
-    runes: { mind: 1, fire: 1 },
+    manaCost: 8,
+    runes: { mind: 1 },
     xpGain: 15,
-    damage: [1, 4], // 1d4 damage
+    damage: [3, 8],
     effect: 'Small burst of fire'
   },
 
@@ -129,10 +129,10 @@ const SPELL_RECIPES = {
     name: 'Fireball',
     school: 'combat',
     levelRequired: 20,
-    manaCost: 20,
-    runes: { mind: 1, air: 1, fire: 2 },
+    manaCost: 16,
+    runes: { mind: 1, fire: 2 },
     xpGain: 40,
-    damage: [2, 8], // 2d8 damage
+    damage: [5, 15],
     effect: 'Medium AoE fire attack',
     areaOfEffect: 3
   },
@@ -142,10 +142,10 @@ const SPELL_RECIPES = {
     name: 'Ice Bolt',
     school: 'combat',
     levelRequired: 25,
-    manaCost: 18,
+    manaCost: 15,
     runes: { mind: 1, water: 2 },
     xpGain: 35,
-    damage: [2, 6],
+    damage: [4, 12],
     effect: 'Freezes target for 3 seconds',
     stun: 3000
   },
@@ -155,10 +155,10 @@ const SPELL_RECIPES = {
     name: 'Meteor Strike',
     school: 'combat',
     levelRequired: 60,
-    manaCost: 40,
-    runes: { mind: 2, fire: 2, chaos: 1 },
+    manaCost: 35,
+    runes: { mind: 1, fire: 2, chaos: 1 },
     xpGain: 80,
-    damage: [4, 12],
+    damage: [8, 20],
     effect: 'Massive fire impact',
     areaOfEffect: 5
   },
