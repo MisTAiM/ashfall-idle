@@ -9,6 +9,7 @@ class RuneSpellbookComponent {
     this.engine = engine;
     this.selectedSchool = 'combat';
     this.craftingMode = false;
+    console.log('[RuneSpellbook] Constructor - engine:', !!engine, 'engine.state:', !!engine?.state, 'inventory:', !!engine?.state?.inventory);
   }
 
   render() {
@@ -185,13 +186,30 @@ class RuneSpellbookComponent {
   }
 
   getRuneCount(runeId) {
-    const item = this.engine.state.inventory[`rune_${runeId}`];
-    return item?.count || 0;
+    try {
+      if (!this.engine || !this.engine.state || !this.engine.state.inventory) {
+        console.warn('[RuneSpellbook] No inventory access');
+        return 0;
+      }
+      const item = this.engine.state.inventory[`rune_${runeId}`];
+      return item?.count || 0;
+    } catch (e) {
+      console.error('[RuneSpellbook] Error getting rune count:', e);
+      return 0;
+    }
   }
 
   getMaterialCount(matId) {
-    const item = this.engine.state.inventory[matId];
-    return item?.count || 0;
+    try {
+      if (!this.engine || !this.engine.state || !this.engine.state.inventory) {
+        return 0;
+      }
+      const item = this.engine.state.inventory[matId];
+      return item?.count || 0;
+    } catch (e) {
+      console.error('[RuneSpellbook] Error getting material count:', e);
+      return 0;
+    }
   }
 
   toggleMode(isCrafting) {

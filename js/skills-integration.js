@@ -17,13 +17,30 @@ GameEngine.prototype.initManaSystem = function() {
 };
 
 GameEngine.prototype.tickMana = function(dt) {
-  if (!this.state.combat.mana) return;
+  if (!this.state.combat || !this.state.combat.mana) return;
   
   const mana = this.state.combat.mana;
-  mana.current = Math.min(
-    mana.max,
-    mana.current + (mana.regenRate * dt / 1000)
-  );
+  
+  // Safety checks
+  if (typeof mana.current !== 'number' || isNaN(mana.current)) {
+    console.warn('[Mana] Current was NaN, resetting to max');
+    mana.current = mana.max;
+  }
+  if (typeof mana.max !== 'number' || mana.max <= 0) {
+    console.warn('[Mana] Max was invalid, resetting to 100');
+    mana.max = 100;
+  }
+  if (typeof mana.regenRate !== 'number' || isNaN(mana.regenRate)) {
+    console.warn('[Mana] RegenRate was invalid, resetting to 1');
+    mana.regenRate = 1;
+  }
+  
+  // Regen calculation
+  const regenAmount = (mana.regenRate * dt / 1000);
+  const newCurrent = mana.current + regenAmount;
+  
+  // Clamp to max
+  mana.current = Math.min(mana.max, Math.max(0, newCurrent));
 };
 
 GameEngine.prototype.getManaPercent = function() {
