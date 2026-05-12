@@ -89,7 +89,7 @@ class OnlineManager {
                 this.saveToCloud(true);
                 this.syncProfile();
               }
-            }, 60000);
+            }, 300000); // 5 min — syncProfile has its own throttle
           }
           // Set wilderness presence
           this._updatePresence();
@@ -136,7 +136,7 @@ class OnlineManager {
       if (!this._autoSaveInterval) {
         this._autoSaveInterval = setInterval(() => {
           if (game && game.state) { this.saveToCloud(true); this.syncProfile(); }
-        }, 60000);
+        }, 300000);
       }
       this.emit('authChanged', { user:this.user, displayName });
       this.emit('notification', { type:'success', text:'Account created! Your progress is now saved to the cloud.' });
@@ -204,7 +204,7 @@ class OnlineManager {
         if (!this._autoSaveInterval) {
           this._autoSaveInterval = setInterval(() => {
             if (game && game.state) { this.saveToCloud(true); this.syncProfile(); }
-          }, 60000);
+          }, 300000);
         }
         this.emit('notification', { type:'success', text:`Welcome, ${this.displayName}! Cloud sync enabled.` });
         return true;
@@ -551,17 +551,21 @@ class OnlineManager {
   // ── CLOUD SAVES ────────────────────────────────────────
   async saveToCloud(silent) {
     if (!this.isOnline || !this.user || !game || this.user.isAnonymous) return;
+    // Throttle silent auto-saves to once per 5 minutes
+    const now = Date.now();
+    if (silent && this._lastCloudSave && (now - this._lastCloudSave) < 300000) return;
+    this._lastCloudSave = now;
     try {
       const save = JSON.parse(JSON.stringify(game.state));
-      save._cloudSaveTime = Date.now();
-      save.lastSave = Date.now();
+      save._cloudSaveTime = now;
+      save.lastSave = now;
       await this.firestore.collection('saves').doc(this.user.uid).set({
         save,
         uid: this.user.uid,
         displayName: this.displayName,
         lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
       });
-      // Also update player profile
+      // Also update player profile (has its own throttle)
       this.syncProfile();
       if (!silent) this.emit('notification', { type:'success', text:'Saved to cloud.' });
     } catch(e) {
@@ -632,6 +636,10 @@ class OnlineManager {
   async syncProfile() {
     if (!this.isOnline || !this.user || !game) return;
     if (this.user.isAnonymous) return;
+    // Throttle to once per 5 minutes to avoid Firestore quota exhaustion
+    const now = Date.now();
+    if (this._lastProfileSync && (now - this._lastProfileSync) < 300000) return;
+    this._lastProfileSync = now;
     return this.syncProfileFull();
   }
 

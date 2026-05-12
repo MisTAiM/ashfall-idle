@@ -41,8 +41,7 @@ class GameEngine {
     this.startTick();
     this.autoSaveInterval = setInterval(() => {
       this.save();
-      // Sync stats to leaderboard every auto-save
-      if (typeof online !== 'undefined' && online.isOnline) online.syncProfile();
+      // syncProfile handled by online.js interval (throttled to 5min)
     }, 30000);
     this.emit('init', this.state);
     this.emit('notification', { type:'info', text:'Welcome to Ashfall.' });
