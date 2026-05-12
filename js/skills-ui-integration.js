@@ -29,24 +29,6 @@ UI.prototype.renderCombatPage = function(el) {
     manaBar.startAutoUpdate(this.engine, 100);
   }
 
-  // Add spell school selector after XP panel (for magic only)
-  if (this.engine.state.combat.combatStyle === 'magic') {
-    const xpPanel = el.querySelector('.combat-xp-panel');
-    if (xpPanel) {
-      const spellContainer = document.createElement('div');
-      spellContainer.id = 'spell-school-selector';
-      spellContainer.style.marginTop = '12px';
-      xpPanel.parentNode.insertBefore(spellContainer, xpPanel.nextSibling);
-
-      // Initialize spell selector
-      uiSpells.engine = this.engine;
-      uiSpells.selector = new SpellSchoolSelector('spell-school-selector', this.engine, (schoolId) => {
-        console.log('[UI] Selected school:', schoolId);
-      });
-      uiSpells.selector.render();
-    }
-  }
-
   // Add weapon display and ammo counter
   const combatPage = el.querySelector('.combat-page');
   if (combatPage) {

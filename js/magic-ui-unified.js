@@ -228,21 +228,44 @@ class RuneSpellbookComponent {
 }
 
 // ── INTEGRATION WITH COMBAT PAGE ───────────────────────────────
+// REPLACES the old spell selector - uses new RuneSpellbookComponent
 const originalRenderCombatPageMagic = UI.prototype.renderCombatPage;
 UI.prototype.renderCombatPage = function(el) {
-  originalRenderCombatPageMagic.call(this, el);
+  console.log('[Magic] Combat page rendering - combat style:', this.engine.state.combat.combatStyle);
+  
+  // Call original (includes mana bar + weapon/ammo display)
+  if (originalRenderCombatPageMagic) {
+    originalRenderCombatPageMagic.call(this, el);
+  }
 
-  // Add rune spellbook for magic combat
+  // Add rune spellbook ONLY for magic combat
   if (this.engine.state.combat.combatStyle === 'magic') {
+    console.log('[Magic] Adding RuneSpellbookComponent...');
     const xpPanel = el.querySelector('.combat-xp-panel');
     if (xpPanel) {
+      // Check if already added
+      if (document.getElementById('rune-spellbook')) {
+        console.log('[Magic] Spellbook already exists, skipping');
+        return;
+      }
+
       const spellbookContainer = document.createElement('div');
       spellbookContainer.id = 'rune-spellbook';
+      spellbookContainer.style.marginTop = '12px';
       xpPanel.parentNode.insertBefore(spellbookContainer, xpPanel.nextSibling);
 
-      window.runeSpellbook = new RuneSpellbookComponent('rune-spellbook', this.engine);
-      window.runeSpellbook.render();
+      try {
+        window.runeSpellbook = new RuneSpellbookComponent('rune-spellbook', this.engine);
+        window.runeSpellbook.render();
+        console.log('[Magic] ✓ RuneSpellbookComponent rendered successfully');
+      } catch (e) {
+        console.error('[Magic] ✗ Failed to render spellbook:', e);
+      }
+    } else {
+      console.warn('[Magic] Could not find XP panel for spellbook');
     }
+  } else {
+    console.log('[Magic] Not magic combat - spellbook skipped');
   }
 };
 
