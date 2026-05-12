@@ -27,8 +27,11 @@ GameEngine.prototype.tickMana = function(dt) {
 };
 
 GameEngine.prototype.getManaPercent = function() {
-  if (!this.state.combat.mana) return 100;
-  return (this.state.combat.mana.current / this.state.combat.mana.max) * 100;
+  if (!this.state.combat || !this.state.combat.mana) return 100;
+  const mana = this.state.combat.mana;
+  if (!mana.max || mana.max === 0) return 100;
+  const percent = (mana.current / mana.max) * 100;
+  return isNaN(percent) ? 100 : Math.min(100, Math.max(0, percent));
 };
 
 GameEngine.prototype.canCastSpell = function(spellId, schoolId) {
