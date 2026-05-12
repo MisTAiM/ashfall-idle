@@ -15,6 +15,7 @@ class OnlineManager {
     this.listeners = {};
     this.isOnline = false;
     this.pvpRating = 1000;
+    this._quotaExhausted = false;
   }
 
   init() {
@@ -551,6 +552,10 @@ class OnlineManager {
   // ── CLOUD SAVES ────────────────────────────────────────
   async saveToCloud(silent) {
     if (!this.isOnline || !this.user || !game || this.user.isAnonymous) return;
+    if (this._quotaExhausted) {
+      if (!silent) this.emit('notification', { type:'warn', text:'Cloud save unavailable — quota limit reached. Progress saved locally.' });
+      return;
+    }
     // Throttle silent auto-saves to once per 5 minutes
     const now = Date.now();
     if (silent && this._lastCloudSave && (now - this._lastCloudSave) < 300000) return;
@@ -569,6 +574,13 @@ class OnlineManager {
       this.syncProfile();
       if (!silent) this.emit('notification', { type:'success', text:'Saved to cloud.' });
     } catch(e) {
+      if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
+        this._quotaExhausted = true;
+        this._lastCloudSave = now + 3600000; // back off 1 hour
+        console.warn('[Online] Firestore quota exceeded — cloud saves disabled for this session.');
+        this.emit('notification', { type:'warn', text:'Daily cloud save limit reached. Progress is still saved locally. Try again tomorrow.' });
+        return;
+      }
       if (!silent) this.emit('notification', { type:'danger', text:'Cloud save failed: ' + e.message });
     }
   }
@@ -636,6 +648,7 @@ class OnlineManager {
   async syncProfile() {
     if (!this.isOnline || !this.user || !game) return;
     if (this.user.isAnonymous) return;
+    if (this._quotaExhausted) return;
     // Throttle to once per 5 minutes to avoid Firestore quota exhaustion
     const now = Date.now();
     if (this._lastProfileSync && (now - this._lastProfileSync) < 300000) return;
@@ -690,7 +703,14 @@ class OnlineManager {
         avatarUrl,
         lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
-    } catch(e) { console.error('Sync profile error:', e); }
+    } catch(e) {
+      if (e.code === 'resource-exhausted' || (e.message && e.message.includes('Quota exceeded'))) {
+        this._quotaExhausted = true;
+        console.warn('[Online] Firestore quota exceeded in syncProfile.');
+      } else {
+        console.error('Sync profile error:', e);
+      }
+    }
   }
 
   async getLeaderboard(sortField, limit) {
