@@ -76,29 +76,51 @@ class BrandingEditor {
     // Update logo — all possible locations
     if (this.config.logo) {
       const logoStyle = 'max-width:160px; max-height:80px; object-fit:contain;';
+      const cachebusted = this.config.logo.includes('?') ? this.config.logo : `${this.config.logo}?v=${Date.now()}`;
 
       // Landing page logo
       const landingLogo = document.getElementById('landing-logo');
       if (landingLogo) {
-        landingLogo.src = this.config.logo;
-        landingLogo.style.display = '';
-        const wm = document.getElementById('af-wordmark');
-        if (wm) wm.style.display = 'none';
+        // Force refresh by temporarily removing src
+        landingLogo.src = '';
+        setTimeout(() => {
+          landingLogo.src = cachebusted;
+          landingLogo.style.display = '';
+          const wm = document.getElementById('af-wordmark');
+          if (wm) wm.style.display = 'none';
+        }, 10);
       }
 
       // Sidebar brand area (in-game)
       const sidebarBrand = document.querySelector('.sidebar-brand, .sidebar-logo, .sidebar-logo-area, .brand-logo');
       if (sidebarBrand) {
-        if (sidebarBrand.tagName === 'IMG') sidebarBrand.src = this.config.logo;
-        else sidebarBrand.innerHTML = `<img src="${this.config.logo}" style="${logoStyle}">`;
+        if (sidebarBrand.tagName === 'IMG') {
+          sidebarBrand.src = '';
+          setTimeout(() => { sidebarBrand.src = cachebusted; }, 10);
+        } else {
+          sidebarBrand.innerHTML = `<img src="${cachebusted}" style="${logoStyle}">`;
+        }
       }
 
       // Any header logo container
       const headerLogo = document.querySelector('.header-logo, .logo, #logo, #game-logo');
       if (headerLogo) {
-        if (headerLogo.tagName === 'IMG') headerLogo.src = this.config.logo;
-        else headerLogo.innerHTML = `<img src="${this.config.logo}" style="${logoStyle}">`;
+        if (headerLogo.tagName === 'IMG') {
+          headerLogo.src = '';
+          setTimeout(() => { headerLogo.src = cachebusted; }, 10);
+        } else {
+          headerLogo.innerHTML = `<img src="${cachebusted}" style="${logoStyle}">`;
+        }
       }
+
+      // Update nav logo if it exists (text or image)
+      const navLogos = document.querySelectorAll('.nav-logo, .navbar-brand img, .header-brand img, [data-logo]');
+      navLogos.forEach(logo => {
+        if (logo.tagName === 'IMG') {
+          logo.src = '';
+          setTimeout(() => { logo.src = cachebusted; }, 10);
+        }
+      });
     }
 
     // Update favicon
