@@ -242,9 +242,10 @@ GameEngine.prototype.cookMeal = function(itemId, skillLevel) {
 };
 
 GameEngine.prototype.tickFoodDegradation = function() {
-  if (!COOKING_IMPROVEMENTS.foodDegradation) return;
-  
-  const timePerStage = COOKING_IMPROVEMENTS.degradationTimeMinutes * 60 * 1000;
+  try {
+    if (typeof COOKING_IMPROVEMENTS === 'undefined' || !COOKING_IMPROVEMENTS.foodDegradation) return;
+    
+    const timePerStage = COOKING_IMPROVEMENTS.degradationTimeMinutes * 60 * 1000;
   const now = Date.now();
   
   for (const [itemId, item] of Object.entries(this.state.inventory)) {
@@ -260,6 +261,9 @@ GameEngine.prototype.tickFoodDegradation = function() {
         this.emit('foodDegraded', { item: itemId, stage });
       }
     }
+  }
+  } catch (e) {
+    // Silently fail if COOKING_IMPROVEMENTS not ready
   }
 };
 

@@ -316,6 +316,12 @@ UI.prototype.renderSpellbookPage = function(el) {
 // ── HOOK INTO SKILL PAGES ──────────────────────────────────────
 const originalRenderSkillPage = UI.prototype.renderSkillPage;
 UI.prototype.renderSkillPage = function(el, skillId) {
+  // Guard: ensure originalRenderSkillPage exists
+  if (!originalRenderSkillPage || typeof originalRenderSkillPage !== 'function') {
+    console.warn('[UI] renderSkillPage: original method not found');
+    return;
+  }
+  
   // For farming skill, show farm UI
   if (skillId === 'farming') {
     this.renderFarmingPage(el);
@@ -329,7 +335,11 @@ UI.prototype.renderSkillPage = function(el, skillId) {
   }
 
   // Otherwise use original
-  originalRenderSkillPage.call(this, el, skillId);
+  try {
+    originalRenderSkillPage.call(this, el, skillId);
+  } catch (e) {
+    console.error('[UI] renderSkillPage error:', e);
+  }
 };
 
 // ── CSS ADDITIONS ──────────────────────────────────────────────
