@@ -195,7 +195,7 @@ class WeaponDisplayComponent {
     if (!this.container || !engine) return;
 
     const weaponTypeId = engine.state.combat.weaponType;
-    const weaponType = WEAPON_TYPES[weaponTypeId];
+    const weaponType = SKILL_WEAPON_TYPES[weaponTypeId];
     if (!weaponType) return;
 
     const stats = {
@@ -247,7 +247,7 @@ class AmmoCounterComponent {
     if (!this.container || !engine) return;
 
     const weaponTypeId = engine.state.combat.weaponType;
-    const weaponType = WEAPON_TYPES[weaponTypeId];
+    const weaponType = SKILL_WEAPON_TYPES[weaponTypeId];
     
     if (!weaponType || !weaponType.ammoType) {
       this.container.innerHTML = '';

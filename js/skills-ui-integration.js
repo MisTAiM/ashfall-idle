@@ -110,7 +110,7 @@ UI.prototype.renderEquipmentPage = function(el) {
     const updateWeaponInfo = () => {
       const infoDiv = document.getElementById('weapon-bonus-info');
       if (infoDiv && this.engine.state.combat.weaponType) {
-        const weaponType = WEAPON_TYPES[this.engine.state.combat.weaponType];
+        const weaponType = SKILL_WEAPON_TYPES[this.engine.state.combat.weaponType];
         if (weaponType) {
           let text = `<strong>${weaponType.name}</strong><br/>`;
           if (weaponType.damage && weaponType.damage !== 1.0) {
@@ -315,7 +315,7 @@ UI.prototype.renderSpellbookPage = function(el) {
 
 // ── HOOK INTO SKILL PAGES ──────────────────────────────────────
 const originalRenderSkillPage = UI.prototype.renderSkillPage;
-UI.prototype.renderSkillPage = function(el, skillId) {
+UI.prototype.renderSkillPage = function(el, skillId, skill) {
   // Guard: ensure originalRenderSkillPage exists
   if (!originalRenderSkillPage || typeof originalRenderSkillPage !== 'function') {
     console.warn('[UI] renderSkillPage: original method not found');
@@ -336,7 +336,7 @@ UI.prototype.renderSkillPage = function(el, skillId) {
 
   // Otherwise use original
   try {
-    originalRenderSkillPage.call(this, el, skillId);
+    originalRenderSkillPage.call(this, el, skillId, skill);
   } catch (e) {
     console.error('[UI] renderSkillPage error:', e);
   }

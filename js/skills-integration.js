@@ -113,7 +113,7 @@ GameEngine.prototype._calculateSpellDamage = function(spell, magicLevel) {
 
 // ── WEAPON SYSTEM INTEGRATION ──────────────────────────────────
 GameEngine.prototype.setWeaponType = function(weaponTypeId) {
-  const weaponType = WEAPON_TYPES[weaponTypeId];
+  const weaponType = SKILL_WEAPON_TYPES[weaponTypeId];
   if (!weaponType) {
     errorHandler.handleError(new AshfallError(
       'INVALID_WEAPON_TYPE',
@@ -130,7 +130,7 @@ GameEngine.prototype.setWeaponType = function(weaponTypeId) {
 };
 
 GameEngine.prototype.getWeaponBonus = function(stat) {
-  const weaponType = WEAPON_TYPES[this.state.combat.weaponType];
+  const weaponType = SKILL_WEAPON_TYPES[this.state.combat.weaponType];
   if (!weaponType) return 1.0;
   
   const bonuses = {
@@ -169,7 +169,7 @@ GameEngine.prototype.consumeAmmo = function(ammoTypeId, count = 1) {
 };
 
 GameEngine.prototype.checkAmmoRequirement = function(weaponTypeId) {
-  const weaponType = WEAPON_TYPES[weaponTypeId];
+  const weaponType = SKILL_WEAPON_TYPES[weaponTypeId];
   if (!weaponType || !weaponType.ammoType) return true; // Not a ranged weapon
   
   const ammoCount = this.getAmmoCount(weaponType.ammoType);

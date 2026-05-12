@@ -77,7 +77,7 @@ if (!GAME_DATA.spellSchools) GAME_DATA.spellSchools = MANA_SYSTEM.spellSchools;
 
 // ── WEAPON TYPE SYSTEM ─────────────────────────────────────────
 // Different weapon types give different bonuses/mechanics
-const WEAPON_TYPES = {
+const SKILL_WEAPON_TYPES = {
   // Melee weapons
   sword: { id: 'sword', name: 'Sword', damage: 1.0, speed: 1.0, accuracy: 1.0 },
   scimitar: { id: 'scimitar', name: 'Scimitar', damage: 0.95, speed: 1.1, accuracy: 1.05, bleed: 0.1 },
@@ -355,7 +355,7 @@ if (window._ASHFALL_DEBUG) {
   console.log('[Ashfall] Skill System Overhaul v2.0 loaded');
   console.log('  Mana system enabled: ' + MANA_SYSTEM.enabled);
   console.log('  Spell schools: ' + Object.keys(MANA_SYSTEM.spellSchools).length);
-  console.log('  Weapon types: ' + Object.keys(WEAPON_TYPES).length);
+  console.log('  Weapon types: ' + Object.keys(SKILL_WEAPON_TYPES).length);
   console.log('  Ammo types: ' + Object.keys(AMMO_TYPES).length);
   console.log('  Quality tiers: ' + Object.keys(QUALITY_TIERS).length);
   console.log('  Cooking combos: ' + COOKING_IMPROVEMENTS.mealCombos.length);
@@ -366,7 +366,7 @@ if (window._ASHFALL_DEBUG) {
 // ── EXPORT FOR USE ────────────────────────────────────────────
 window.SKILL_SYSTEMS = {
   MANA_SYSTEM,
-  WEAPON_TYPES,
+  SKILL_WEAPON_TYPES,
   AMMO_TYPES,
   QUALITY_TIERS,
   COOKING_IMPROVEMENTS,
