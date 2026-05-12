@@ -7,12 +7,17 @@
 // ── PATCH COMBAT PAGE RENDERING ────────────────────────────────
 const originalRenderCombatPage = UI.prototype.renderCombatPage;
 UI.prototype.renderCombatPage = function(el) {
+  console.log('[SkillUI] renderCombatPage patched called');
+  
   // Call original rendering first
-  originalRenderCombatPage.call(this, el);
+  if (originalRenderCombatPage) {
+    originalRenderCombatPage.call(this, el);
+  }
 
   // Add mana bar after combat controls
   const controlsEl = el.querySelector('.combat-controls');
   if (controlsEl && this.engine.state.combat.mana) {
+    console.log('[SkillUI] Adding mana bar');
     const manaContainer = document.createElement('div');
     manaContainer.id = 'combat-mana-bar';
     manaContainer.style.marginTop = '12px';

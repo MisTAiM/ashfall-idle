@@ -395,6 +395,16 @@ GameEngine.prototype.summonFamiliar = function(familiarId, summoningLevel) {
 // Hook into main engine tick
 const originalEngineTick = GameEngine.prototype.tick;
 GameEngine.prototype.tick = function(now, prevNow) {
+  // Initialize mana on first tick if not done
+  if (!this.state.combat.mana) {
+    this.state.combat.mana = {
+      current: 100,
+      max: 100,
+      regenRate: 1,
+      lastRegenTime: Date.now()
+    };
+  }
+  
   const result = originalEngineTick.call(this, now, prevNow);
   
   // New systems tick

@@ -3806,7 +3806,7 @@ class GameEngine {
     this.state.gold = 0;
     this.state.questPoints = 0;
     this.state.quests = { completed:[], active:[], progress:{} };
-    this.state.combat = { active:false, area:null, monster:null, combatStyle:'melee', xpMode:'controlled', autoEat:true };
+    this.state.combat = { active:false, area:null, monster:null, combatStyle:'melee', xpMode:'controlled', autoEat:true, mana:{current:100,max:100,regenRate:1,lastRegenTime:Date.now()}, weaponType:'sword', familiar:null };
     this.state.actionProgress = 0;
     this.state.activeSkill = null;
     this.state.activeAction = null;
