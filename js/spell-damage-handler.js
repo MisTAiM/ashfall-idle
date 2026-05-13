@@ -14,25 +14,30 @@
     return minDmg;
   }
 
-  // Initialize spell damage listener when engine is ready
-  window.addEventListener('DOMContentLoaded', function initSpellDamageListener() {
-    // Wait for engine to be created (small delay)
-    setTimeout(() => {
-      if (!window.engine) {
-        console.warn('[Spell Damage] Engine not ready, retrying...');
-        initSpellDamageListener();
+  // Initialize spell damage listener — poll for engine (game) with hard cap
+  let _spellDmgRetries = 0;
+  const MAX_RETRIES = 50; // 5 seconds max
+  function initSpellDamageListener() {
+    // Engine is exposed as 'game' (const game = new GameEngine() in engine.js)
+    const eng = window.game;
+    if (!eng) {
+      if (++_spellDmgRetries > MAX_RETRIES) {
+        console.warn('[Spell Damage] Engine never became ready — giving up.');
         return;
       }
+      setTimeout(initSpellDamageListener, 100);
+      return;
+    }
 
-      console.log('[Spell Damage] Handler initialized - listening for spellCast events');
+    console.log('[Spell Damage] Handler initialized - listening for spellCast events');
 
-      // Listen for spell cast events
-      engine.on('spellCast', function handleSpellCast(event) {
+    // Listen for spell cast events
+    eng.on('spellCast', function handleSpellCast(event) {
         try {
           console.log('[Spell Damage] Spell cast event received:', event.spell);
 
           // Get current enemy being fought
-          const currentEnemy = engine.state.currentEnemy;
+          const currentEnemy = eng.state.currentEnemy;
           if (!currentEnemy) {
             console.log('[Spell Damage] No current enemy - spell has no effect');
             return;
@@ -61,7 +66,7 @@
             console.log('[Spell Damage] Enemy HP after:', currentEnemy.hp);
 
             // Emit damage event for UI updates
-            engine.emit('damageDealt', {
+            eng.emit('damageDealt', {
               source: 'spell',
               spellId: spellId,
               damage: actualDamage,
@@ -71,7 +76,7 @@
             // Check if enemy died
             if (currentEnemy.hp <= 0) {
               console.log('[Spell Damage] Enemy defeated by spell!');
-              engine.emit('enemyDefeated', {
+              eng.emit('enemyDefeated', {
                 enemy: currentEnemy,
                 killedBy: 'spell',
                 spell: spellId
@@ -82,15 +87,15 @@
           // ━━━ HEALING SPELLS ━━━
           if (spell.heals) {
             const healingRolled = rollDamage(spell.heals);
-            const playerMaxHp = engine.state.stats.hitpoints?.current || engine.state.stats.hitpoints || 100;
-            const playerCurrentHp = engine.state.hp || playerMaxHp;
+            const playerMaxHp = eng.state.stats.hitpoints?.current || eng.state.stats.hitpoints || 100;
+            const playerCurrentHp = eng.state.hp || playerMaxHp;
 
             const actualHealing = Math.min(healingRolled, playerMaxHp - playerCurrentHp);
             console.log('[Spell Damage] ' + spell.name + ' healed for ' + actualHealing + ' HP');
 
-            engine.state.hp = (playerCurrentHp || 0) + actualHealing;
+            eng.state.hp = (playerCurrentHp || 0) + actualHealing;
 
-            engine.emit('playerHealed', {
+            eng.emit('playerHealed', {
               spellId: spellId,
               healing: actualHealing
             });
@@ -102,9 +107,9 @@
 
             // Create buff
             const buffId = 'spell_' + spellId + '_' + Date.now();
-            if (!engine.state.buffs) engine.state.buffs = [];
+            if (!eng.state.buffs) eng.state.buffs = [];
 
-            engine.state.buffs.push({
+            eng.state.buffs.push({
               id: buffId,
               spell: spellId,
               name: spell.name,
@@ -115,7 +120,7 @@
               startTime: Date.now()
             });
 
-            engine.emit('buffApplied', {
+            eng.emit('buffApplied', {
               spell: spellId,
               buffStat: spell.buffStat
             });
@@ -127,7 +132,7 @@
             currentEnemy.stunned = true;
             currentEnemy.stunEnd = Date.now() + spell.stun;
 
-            engine.emit('enemyStunned', {
+            eng.emit('enemyStunned', {
               enemy: currentEnemy.id,
               duration: spell.stun
             });
@@ -138,8 +143,8 @@
         }
       });
 
-    }, 100);
-  });
+  }
+  setTimeout(initSpellDamageListener, 200);
 
   console.log('[Spell Damage Handler] Script loaded');
 
