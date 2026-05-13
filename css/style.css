@@ -8154,3 +8154,19 @@ body.perf-mode .hit-splat { display:none !important; }
   font-size: 12px;
 }
 
+
+/* ── MANA BAR ─────────────────────────────────────────────── */
+.ca-mana-container { margin:4px 0 6px; }
+.ca-mana-bar { height:12px; background:var(--bg-deep); border-radius:6px; overflow:hidden; border:1px solid rgba(74,126,196,0.3); position:relative; }
+.ca-mana-fill { height:100%; border-radius:5px; background:linear-gradient(90deg,#2a5a9e,#4a8adc); transition:width 0.2s ease-out; box-shadow:0 0 6px rgba(74,126,196,0.4); }
+.ca-mana-text { font-family:'JetBrains Mono',monospace; font-size:10px; color:#4a7ec4; text-align:center; margin-top:2px; opacity:0.85; }
+
+/* ── ABILITY MANA INDICATOR ───────────────────────────────── */
+.ab-mana-cost { font-size:9px; color:#4a7ec4; font-family:'JetBrains Mono',monospace; margin-top:2px; opacity:0.8; }
+.ab-no-mana { opacity:0.5; }
+.ab-no-mana .ab-timer { color:#c44040 !important; }
+
+/* ── ABILITY BAR POLISH ───────────────────────────────────── */
+.ab-slot-v2 { position:relative; overflow:hidden; transition:transform 0.1s,box-shadow 0.1s; }
+.ab-slot-v2:hover:not(.ab-cd):not(.ab-no-mana) { transform:translateY(-2px); box-shadow:0 4px 12px rgba(201,135,62,0.3); }
+.ab-slot-v2:active:not(.ab-cd) { transform:scale(0.96); }

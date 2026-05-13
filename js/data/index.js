@@ -3067,3 +3067,195 @@ console.log('  Weapon specials:', Object.keys(GAME_DATA.weaponSpecials).length);
 console.log('  Ore bag upgrades:', _oreBagUpgrades.length);
 console.log('  Combat formulas:', Object.keys(GAME_DATA.combatFormulas).length);
 console.log('  Total items:', Object.keys(GAME_DATA.items).length);
+
+// ================================================================
+// CONTENT EXPANSION v10.0 — New Areas, Monsters, Items, Recipes
+// ================================================================
+
+// ── NEW HIGH-LEVEL COMBAT AREAS ──────────────────────────────
+GAME_DATA.combatAreas.push(
+  {id:'void_wastes',      name:'Void Wastes',        levelReq:80, desc:'Fractured terrain seeping void energy. The air itself drains your will.',   monsters:['void_titan','void_walker','abyssal_horror']},
+  {id:'infernal_planes',  name:'Infernal Planes',    levelReq:90, desc:'The lower realm. Demon lords command vast armies of void-touched soldiers.', monsters:['demon_lord','void_titan','abyssal_horror']},
+  {id:'ashen_pinnacle',   name:'Ashen Pinnacle',     levelReq:95, desc:'The highest peak in the Ashfall. Elder constructs guard ancient secrets.',   monsters:['elder_ash_golem','ash_titan','ashfall_titan']},
+  {id:'the_void_core',    name:'The Void Core',      levelReq:100, desc:'The heart of the void rift. Reality no longer applies here.',               monsters:['void_emperor_spawn','elder_ash_golem','void_titan']},
+  {id:'frost_peaks',      name:'Frost Peaks',        levelReq:55, desc:'Frozen mountaintops. Wraiths and drakes claim the high passes.',            monsters:['frost_wraith','frost_drake','frost_spirit']},
+  {id:'bloodfang_depths', name:'Bloodfang Depths',   levelReq:45, desc:'Underground lairs of the Bloodfang. Wolves and razorbacks run in packs.',   monsters:['bloodfang_alpha','razorback','bloodfang_wolf']},
+);
+
+// ── NEW MONSTERS ─────────────────────────────────────────────
+Object.assign(GAME_DATA.monsters, {
+  void_titan: {
+    id:'void_titan', name:'Void Titan', hp:5000, maxHit:180, attackSpeed:2.8,
+    combatLevel:130, style:'magic', evasion:{melee:70,ranged:65,magic:80},
+    xp:12000, gold:{min:500,max:2000}, alignment:'CE',
+    drops:[
+      {item:'void_bones',qty:3,chance:1.0},
+      {item:'death_rune',qty:20,chance:0.40},
+      {item:'void_crystal',qty:1,chance:0.05},
+      {item:'void_helmet',qty:1,chance:0.008},
+      {item:'void_staff',qty:1,chance:0.006},
+    ],
+    desc:'A titan forged from pure void energy. Its gaze deals magic damage.',
+    slayerReq:80,
+  },
+  demon_lord: {
+    id:'demon_lord', name:'Demon Lord', hp:8000, maxHit:220, attackSpeed:3.0,
+    combatLevel:160, style:'melee', evasion:{melee:80,ranged:75,magic:50},
+    xp:20000, gold:{min:1000,max:5000}, alignment:'CE',
+    drops:[
+      {item:'dragon_bones',qty:5,chance:1.0},
+      {item:'wrath_rune',qty:5,chance:0.30},
+      {item:'infernal_bar',qty:2,chance:0.15},
+      {item:'demon_lord_horn',qty:1,chance:0.05},
+      {item:'infernal_blade',qty:1,chance:0.005},
+    ],
+    desc:'A supreme commander of the infernal armies. Resists most magic.',
+    slayerReq:85,
+  },
+  elder_ash_golem: {
+    id:'elder_ash_golem', name:'Elder Ash Golem', hp:6000, maxHit:195, attackSpeed:3.5,
+    combatLevel:145, style:'melee', evasion:{melee:85,ranged:80,magic:40},
+    xp:15000, gold:{min:800,max:3000}, alignment:'CE',
+    drops:[
+      {item:'ash_bones',qty:4,chance:1.0},
+      {item:'obsidian_ore',qty:5,chance:0.50},
+      {item:'ashsteel_ore',qty:3,chance:0.25},
+      {item:'elder_core',qty:1,chance:0.08},
+      {item:'ashsteel_platebody',qty:1,chance:0.004},
+    ],
+    desc:'Ancient golem animated by centuries of ash. Nearly impervious to physical damage.',
+    slayerReq:82,
+  },
+  ash_titan: {
+    id:'ash_titan', name:'Ash Titan', hp:10000, maxHit:260, attackSpeed:4.0,
+    combatLevel:175, style:'melee', evasion:{melee:90,ranged:85,magic:60},
+    xp:25000, gold:{min:2000,max:8000}, alignment:'CE',
+    drops:[
+      {item:'ash_bones',qty:6,chance:1.0},
+      {item:'ashsteel_bar',qty:3,chance:0.30},
+      {item:'titan_shard',qty:1,chance:0.10},
+      {item:'ashsteel_helm',qty:1,chance:0.003},
+      {item:'ashfall_titan',qty:1,chance:0.001},
+    ],
+    desc:'The apex predator of the Ashfall. Older than the Ashfall itself.',
+    slayerReq:90,
+  },
+  void_emperor_spawn: {
+    id:'void_emperor_spawn', name:"Void Emperor's Spawn", hp:7000, maxHit:240, attackSpeed:2.5,
+    combatLevel:150, style:'magic', evasion:{melee:75,ranged:70,magic:90},
+    xp:18000, gold:{min:1500,max:6000}, alignment:'CE',
+    drops:[
+      {item:'void_bones',qty:5,chance:1.0},
+      {item:'wrath_rune',qty:8,chance:0.35},
+      {item:'void_crystal',qty:2,chance:0.10},
+      {item:'void_robe_top',qty:1,chance:0.006},
+      {item:'void_robe_bottoms',qty:1,chance:0.006},
+    ],
+    desc:"A fragment of the Void Emperor's consciousness given terrible form.",
+    slayerReq:88,
+  },
+  bloodfang_alpha: {
+    id:'bloodfang_alpha', name:'Bloodfang Alpha', hp:1800, maxHit:95, attackSpeed:2.0,
+    combatLevel:65, style:'melee', evasion:{melee:45,ranged:50,magic:35},
+    xp:3500, gold:{min:100,max:400}, alignment:'CE',
+    drops:[
+      {item:'wolf_bones',qty:2,chance:1.0},
+      {item:'dragon_hide',qty:1,chance:0.15},
+      {item:'bloodfang_fang',qty:1,chance:0.20},
+    ],
+    desc:'The pack leader. Far stronger than ordinary Bloodfang wolves.',
+  },
+  razorback: {
+    id:'razorback', name:'Razorback', hp:1400, maxHit:80, attackSpeed:1.8,
+    combatLevel:55, style:'melee', evasion:{melee:40,ranged:45,magic:30},
+    xp:2800, gold:{min:80,max:300}, alignment:'CE',
+    drops:[
+      {item:'big_bones',qty:1,chance:1.0},
+      {item:'hard_leather',qty:2,chance:0.40},
+      {item:'razor_spine',qty:1,chance:0.15},
+    ],
+    desc:'A boar-like creature with razor-sharp bone spines along its back.',
+  },
+});
+
+// ── NEW ITEMS ─────────────────────────────────────────────────
+(function() {
+  const add = (id, data) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = Object.assign({id}, data); };
+
+  // Void equipment
+  add('void_helmet',      {name:'Void Helmet',      type:'armor',slot:'head',  stats:{attackBonus:8,strengthBonus:8,defenceBonus:25,rangedBonus:8,magicBonus:8},  levelReq:{defence:42,attack:42,strength:42,ranged:42,magic:42},sellPrice:0,    sprite:'helm-void',   desc:'Void Knight helmet. +10% damage vs style weakness.'});
+  add('void_robe_top',    {name:'Void Robe Top',    type:'armor',slot:'body',  stats:{attackBonus:6,strengthBonus:6,defenceBonus:45,rangedBonus:6,magicBonus:6},  levelReq:{defence:42,attack:42,strength:42,ranged:42,magic:42},sellPrice:0,    sprite:'robe-void',   desc:'Void Knight robe. +10% damage vs style weakness.'});
+  add('void_robe_bottoms',{name:'Void Robe Bottoms',type:'armor',slot:'legs',  stats:{attackBonus:4,strengthBonus:4,defenceBonus:35,rangedBonus:4,magicBonus:4},  levelReq:{defence:42,attack:42,strength:42,ranged:42,magic:42},sellPrice:0,    sprite:'robe-void',   desc:'Void Knight robe bottom. +10% damage vs style weakness.'});
+
+  // Infernal equipment
+  add('infernal_bar',     {name:'Infernal Bar',     type:'resource',subtype:'bar',sellPrice:2500,sprite:'bar-red',  desc:'Metal forged in the infernal planes. Extremely dense.'});
+  add('infernal_blade',   {name:'Infernal Blade',   type:'weapon', slot:'weapon',style:'melee',attackSpeed:2.6,stats:{attackBonus:145,strengthBonus:145},levelReq:{attack:75},sellPrice:0,sprite:'sword-red',desc:'A sword of infernal origin. Burns on contact.'});
+  add('infernal_helm',    {name:'Infernal Helm',    type:'armor',slot:'head',   stats:{attackBonus:5,strengthBonus:10,defenceBonus:55,damageReduction:4},levelReq:{defence:75},sellPrice:0,sprite:'helm-red',  desc:'Forged from demon-steel in the lower planes.'});
+  add('infernal_platebody',{name:'Infernal Platebody',type:'armor',slot:'body', stats:{attackBonus:10,strengthBonus:18,defenceBonus:110,damageReduction:8},levelReq:{defence:75},sellPrice:0,sprite:'plate-red', desc:'The most protective melee armor in the Ashfall.'});
+  add('infernal_platelegs',{name:'Infernal Platelegs',type:'armor',slot:'legs', stats:{attackBonus:8,strengthBonus:14,defenceBonus:85,damageReduction:6}, levelReq:{defence:75},sellPrice:0,sprite:'legs-red',  desc:'Lower body infernal protection.'});
+
+  // Ashsteel equipment
+  add('ashsteel_bar',     {name:'Ashsteel Bar',     type:'resource',subtype:'bar',sellPrice:1800,sprite:'bar-orange',desc:'A bar of ashsteel alloy. Only the best smiths can work it.'});
+  add('ashsteel_helm',    {name:'Ashsteel Helm',    type:'armor',slot:'head',   stats:{attackBonus:4,strengthBonus:8,defenceBonus:50,damageReduction:3}, levelReq:{defence:70,smithing:70},sellPrice:0,sprite:'helm-orange',desc:'A helmet of ashsteel. Resistant to volcanic conditions.'});
+  add('ashsteel_platebody',{name:'Ashsteel Platebody',type:'armor',slot:'body', stats:{attackBonus:8,strengthBonus:15,defenceBonus:100,damageReduction:7},levelReq:{defence:70,smithing:70},sellPrice:0,sprite:'plate-orange',desc:'The pinnacle of smithed armor.'});
+  add('ashsteel_platelegs',{name:'Ashsteel Platelegs',type:'armor',slot:'legs', stats:{attackBonus:6,strengthBonus:11,defenceBonus:78,damageReduction:5}, levelReq:{defence:70,smithing:70},sellPrice:0,sprite:'legs-orange',desc:'Ashsteel leg protection.'});
+  add('ashsteel_sword',   {name:'Ashsteel Sword',   type:'weapon', slot:'weapon',style:'melee',attackSpeed:2.4,stats:{attackBonus:130,strengthBonus:128},levelReq:{attack:70,smithing:70},sellPrice:0,sprite:'sword-orange',desc:'A sword of ashsteel. Holds an edge unlike any other metal.'});
+
+  // Crafting materials
+  add('void_crystal',     {name:'Void Crystal',     type:'resource',subtype:'misc', sellPrice:800, sprite:'gem-purple',desc:'Crystallized void energy. Used in void equipment crafting.'});
+  add('demon_lord_horn',  {name:'Demon Lord Horn',  type:'resource',subtype:'misc', sellPrice:1200,sprite:'misc-bone', desc:'The horn of a Demon Lord. Still radiates heat.'});
+  add('elder_core',       {name:'Elder Core',       type:'resource',subtype:'misc', sellPrice:1000,sprite:'misc-core', desc:'The core of an Elder Ash Golem. Pulses with ancient energy.'});
+  add('titan_shard',      {name:'Titan Shard',      type:'resource',subtype:'misc', sellPrice:1500,sprite:'gem-orange',desc:'A shard of an Ash Titan. Impossibly dense.'});
+  add('bloodfang_fang',   {name:'Bloodfang Fang',   type:'resource',subtype:'misc', sellPrice:300,  sprite:'misc-bone', desc:'A fang from a Bloodfang Alpha. Sharp enough to scratch obsidian.'});
+  add('razor_spine',      {name:'Razor Spine',      type:'resource',subtype:'misc', sellPrice:250,  sprite:'misc-bone', desc:'A razor-sharp spine from a Razorback.'});
+  add('wolf_bones',       {name:'Wolf Bones',       type:'resource',subtype:'misc', sellPrice:50,   sprite:'misc-bone', desc:'Bones from a Bloodfang wolf.'});
+
+  // Potions
+  add('overload_potion',  {name:'Overload Potion',  type:'potion', buff:{stat:'all',value:6,duration:300},sellPrice:800,sprite:'potion-red',  desc:'+6 to all combat stats for 5 minutes. Hurts to drink.'});
+  add('void_potion',      {name:'Void Potion',      type:'potion', buff:{stat:'magicBonus',value:20,duration:180},sellPrice:400,sprite:'potion-purple',desc:'+20 Magic bonus for 3 minutes.'});
+  add('berserker_brew',   {name:'Berserker Brew',   type:'potion', buff:{stat:'strengthBonus',value:25,duration:120},sellPrice:350,sprite:'potion-orange',desc:'+25 Strength for 2 minutes. Reduces defence.'});
+  add('ranging_potion',   {name:'Ranging Potion',   type:'potion', buff:{stat:'rangedBonus',value:15,duration:180},sellPrice:300,sprite:'potion-green',desc:'+15 Ranged bonus for 3 minutes.'});
+
+  // Runes (for magic combat)
+  add('wrath_rune',       {name:'Wrath Rune',       type:'rune',   stackable:true,sellPrice:35,sprite:'rune-gold',  desc:'The most powerful elemental rune. Required for elite spells.'});
+  add('blood_rune',       {name:'Blood Rune',       type:'rune',   stackable:true,sellPrice:20,sprite:'rune-red',   desc:'Used in blood magic spells.'});
+  add('ash_rune',         {name:'Ash Rune',         type:'rune',   stackable:true,sellPrice:15,sprite:'rune-grey',  desc:'Unique to the Ashfall. Channels volcanic energy.'});
+})();
+
+// ── NEW RECIPES ───────────────────────────────────────────────
+// Ashsteel smithing
+if (GAME_DATA.recipes?.smithing) {
+  GAME_DATA.recipes.smithing.push(
+    {id:'smith_ashsteel_helm',   name:'Ashsteel Helm',     level:70,xp:350,time:12.0,input:[{item:'ashsteel_bar',qty:2}],               output:{item:'ashsteel_helm',qty:1},    category:'Ashsteel'},
+    {id:'smith_ashsteel_body',   name:'Ashsteel Platebody',level:73,xp:500,time:16.0,input:[{item:'ashsteel_bar',qty:5}],               output:{item:'ashsteel_platebody',qty:1},category:'Ashsteel'},
+    {id:'smith_ashsteel_legs',   name:'Ashsteel Platelegs',level:71,xp:420,time:14.0,input:[{item:'ashsteel_bar',qty:4}],               output:{item:'ashsteel_platelegs',qty:1},category:'Ashsteel'},
+    {id:'smith_ashsteel_sword',  name:'Ashsteel Sword',    level:72,xp:450,time:15.0,input:[{item:'ashsteel_bar',qty:3}],               output:{item:'ashsteel_sword',qty:1},   category:'Ashsteel'},
+    {id:'smith_infernal_helm',   name:'Infernal Helm',     level:78,xp:600,time:18.0,input:[{item:'infernal_bar',qty:2},{item:'ashsteel_bar',qty:2}],output:{item:'infernal_helm',qty:1},    category:'Infernal'},
+    {id:'smith_infernal_body',   name:'Infernal Platebody',level:80,xp:900,time:25.0,input:[{item:'infernal_bar',qty:5},{item:'ashsteel_bar',qty:3}],output:{item:'infernal_platebody',qty:1},category:'Infernal'},
+    {id:'smith_infernal_legs',   name:'Infernal Platelegs',level:79,xp:750,time:22.0,input:[{item:'infernal_bar',qty:4},{item:'ashsteel_bar',qty:2}],output:{item:'infernal_platelegs',qty:1},category:'Infernal'},
+    {id:'smith_infernal_blade',  name:'Infernal Blade',    level:82,xp:1200,time:30.0,input:[{item:'infernal_bar',qty:3},{item:'void_crystal',qty:1}],output:{item:'infernal_blade',qty:1},  category:'Infernal'},
+  );
+}
+
+// Overload and elite potion brewing
+if (GAME_DATA.recipes?.alchemy) {
+  GAME_DATA.recipes.alchemy.push(
+    {id:'brew_overload',    name:'Overload Potion',level:80,xp:800, time:8.0,  input:[{item:'torstol',qty:2},{item:'ashblossom',qty:2},{item:'voidbloom',qty:2}],output:{item:'overload_potion',qty:1}},
+    {id:'brew_void_potion', name:'Void Potion',    level:65,xp:400, time:6.0,  input:[{item:'voidbloom',qty:3},{item:'moonpetal',qty:2}],                        output:{item:'void_potion',qty:1}},
+    {id:'brew_berserker',   name:'Berserker Brew', level:55,xp:350, time:5.0,  input:[{item:'bloodroot',qty:3},{item:'silverleaf',qty:2}],                       output:{item:'berserker_brew',qty:1}},
+    {id:'brew_ranging',     name:'Ranging Potion', level:45,xp:280, time:4.5,  input:[{item:'moonpetal',qty:2},{item:'silverleaf',qty:2}],                       output:{item:'ranging_potion',qty:1}},
+  );
+}
+
+// ── MONSTER ART (use existing SVGs for new monsters) ─────────
+Object.assign(GAME_DATA.monsterArt || {}, {
+  void_titan:         GAME_DATA.monsterArt?.void_walker   || '',
+  demon_lord:         GAME_DATA.monsterArt?.demon         || '',
+  elder_ash_golem:    GAME_DATA.monsterArt?.ash_golem     || '',
+  ash_titan:          GAME_DATA.monsterArt?.ashfall_titan || '',
+  void_emperor_spawn: GAME_DATA.monsterArt?.void_walker   || '',
+  bloodfang_alpha:    GAME_DATA.monsterArt?.bloodfang_wolf|| '',
+  razorback:          GAME_DATA.monsterArt?.troll         || '',
+});
+
+console.log('[Ashfall] Content Expansion v10.0 loaded — new areas, monsters, items, recipes.');

@@ -2510,6 +2510,14 @@ class GameEngine {
     if (this.state.skills.tactics.level < (ab.tacticsReq || 1)) {
       this.emit('notification', { type:'warn', text:`Requires Tactics level ${ab.tacticsReq}.` }); return;
     }
+    // ── MANA CHECK ───────────────────────────────────────
+    const _manaCost = ab.manaCost || 0;
+    if (_manaCost > 0) {
+      if (!c.mana || c.mana.current < _manaCost) {
+        this.emit('notification', { type:'warn', text:`${ab.name} requires ${_manaCost} mana (${Math.floor(c.mana?.current||0)} available).` });
+        return; // don't set cooldown if no mana
+      }
+    }
     c.abilityCooldowns[abilityId] = ab.cooldown;
     const eff = ab.effect;
     let totalDmg = 0;
@@ -2709,6 +2717,29 @@ class GameEngine {
         if (eff.directDmg) totalDmg += eff.directDmg + Math.floor(this.state.skills.magic.level * 0.5);
         if (eff.heal)      c.playerHp = Math.min(this.getMaxHp(), c.playerHp + Math.floor(this.getMaxHp() * eff.heal));
         break;
+    }
+
+    // ── MANA CONSUME + SPECIAL: mana_burst ─────────────────
+    if (_manaCost > 0 && c.mana) {
+      // mana_burst: damage based on all current mana before consuming
+      if (eff.type === 'mana_burst') {
+        const manaSpent = c.mana.current;
+        totalDmg = Math.floor(manaSpent * (eff.dmgPerMana || 0.8));
+        noteSuffix = ` (spent ${Math.floor(manaSpent)} mana)`;
+        c.mana.current = 0;
+      } else {
+        c.mana.current = Math.max(0, c.mana.current - _manaCost);
+      }
+    }
+
+    // ── MAGIC ABILITY DAMAGE CALCULATION ────────────────
+    // Handle spell_burst type (arcane_burst) and direct magic mult
+    if (eff.type === 'spell_burst' || eff.directMagicMult) {
+      const mL = this.state.skills.magic?.level || 1;
+      const mB = this.getStatTotal('magicBonus');
+      const mh = Math.max(5, Math.floor(0.5 + mL * (mB + 64) / 640));
+      totalDmg = Math.floor(this.randInt(Math.floor(mh*0.6), mh) * (eff.mult || eff.directMagicMult || 1.5));
+      if (eff.ignoreDefence) noteSuffix += ' (piercing)';
     }
 
     // Apply total damage

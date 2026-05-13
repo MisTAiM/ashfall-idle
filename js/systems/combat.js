@@ -1133,12 +1133,20 @@ GameEngine.prototype.initManaSystem = function() {
 GameEngine.prototype.tickMana = function(dtRaw) {
   if (!this.state.combat || !this.state.combat.mana) return;
 
-  // Guard dt — NaN/invalid dt must not re-poison mana after we fix current below
   const dt = (typeof dtRaw === 'number' && isFinite(dtRaw) && dtRaw > 0) ? dtRaw : 0;
-
   const mana = this.state.combat.mana;
 
-  // Safety clamps — only log once per session to avoid console spam
+  // Scale max mana and regen with Magic level
+  const magicLv = this.state.skills?.magic?.level || 1;
+  const magicBonus = this.getStatTotal ? (this.getStatTotal('magicBonus') || 0) : 0;
+  const scaledMax = Math.floor(100 + magicLv * 1.3 + magicBonus * 0.5);
+  const scaledRegen = Math.max(1, 1 + magicLv * 0.02 + magicBonus * 0.005);
+
+  // Update max/regen dynamically (soft-update so it grows as you level)
+  if (Math.abs(mana.max - scaledMax) > 1) mana.max = scaledMax;
+  mana.regenRate = scaledRegen;
+
+  // Safety clamps
   if (typeof mana.max !== 'number' || mana.max <= 0 || isNaN(mana.max)) mana.max = 100;
   if (typeof mana.regenRate !== 'number' || isNaN(mana.regenRate)) mana.regenRate = 1;
   if (typeof mana.current !== 'number' || isNaN(mana.current)) mana.current = mana.max;

@@ -1410,6 +1410,10 @@ class UI {
             <div class="ca-hp-bar"><div class="ca-hp-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
             <div class="ca-hp-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))} / ${max}</div>
           </div>
+          <div class="ca-mana-container">
+            <div class="ca-mana-bar"><div class="ca-mana-fill" id="mana-bar"></div></div>
+            <div class="ca-mana-text" id="mana-text">-- mana</div>
+          </div>
           <div class="splat-area" id="player-splats"></div>
           <div class="player-status-effects" id="player-status-live"></div>
         </div>
@@ -6866,6 +6870,14 @@ class UI {
           // Prayer points
           const ppEl = document.getElementById('pp-live');
           if (ppEl) ppEl.textContent = s.prayerPoints;
+          // Mana live update
+          const mBarEl = document.getElementById('mana-bar');
+          const mTxtEl = document.getElementById('mana-text');
+          if (mBarEl && s.combat.mana) {
+            const mp = Math.min(100, (s.combat.mana.current / (s.combat.mana.max || 100)) * 100);
+            mBarEl.style.width = mp.toFixed(1) + '%';
+            if (mTxtEl) mTxtEl.textContent = Math.floor(s.combat.mana.current) + ' / ' + s.combat.mana.max + ' mana';
+          }
           // Food bag quantities
           for (let i = 0; i < (s.foodBag||[]).length; i++) {
             const el = document.getElementById('fb-qty-' + i);
