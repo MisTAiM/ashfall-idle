@@ -1104,31 +1104,8 @@ class UI {
     xpSkills.hitpoints = 33; // always
 
     let html = `<div class="combat-page cv3-page"><div class="cv3-main">`;
-    // ── XP TRACKER with highlighted active skills ──
-    const _xpPanelOpen = !c.active; // collapsed during active combat by default
-    html += `<div class="combat-xp-panel" id="combat-xp-panel">
-      <div class="cxp-toggle-header" onclick="const b=document.getElementById('cxp-body');const ch=this.querySelector('.cxp-toggle-chevron');if(b){const open=b.style.display!=='none';b.style.display=open?'none':'block';ch.textContent=open?'›':'⌄';}">
-        <span class="cxp-toggle-title">Combat Stats</span>
-        <span class="cxp-toggle-chevron">${_xpPanelOpen?'⌄':'›'}</span>
-      </div>
-      <div class="cxp-body" id="cxp-body" style="display:${_xpPanelOpen?'block':'none'}">`;
+    // ── XP TRACKER: only shown when NOT in combat (see area select else block) ──
     const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','tactics'];
-    for (const _sId of _cSkills) {
-      const _sk = s.skills[_sId]; if (!_sk) continue;
-      const _p = this.engine.getXpProgress(_sId);
-      const _name = GAME_DATA.skills[_sId]?.name || _sId;
-      const isGaining = xpSkills[_sId] > 0;
-      const pct = xpSkills[_sId] || 0;
-      html += `<div class="cxp-row ${isGaining?'cxp-active':''}" title="${_name}: Level ${_sk.level} | ${this.fmt(_sk.xp)} XP${isGaining?' | Getting '+pct+'% XP':''}">
-        <span class="cxp-icon">${icon(GAME_DATA.skills[_sId]?.icon||'sparkle',14)}</span>
-        <span class="cxp-name">${_name}</span>
-        <span class="cxp-level" id="cxp-lv-${_sId}">${_sk.level}</span>
-        <div class="cxp-bar"><div class="cxp-fill ${isGaining?'cxp-fill-active':''}" id="cxp-fill-${_sId}" style="width:${(_p*100).toFixed(1)}%"></div></div>
-        <span class="cxp-xp" id="cxp-xp-${_sId}">${this.fmt(_sk.xp)}</span>
-        <span class="cxp-pct">${isGaining?pct+'%':''}</span>
-      </div>`;
-    }
-    html += '</div></div>'; // close cxp-body + combat-xp-panel
 
     // ── CONTROLS ROW ──
     html += '<div class="combat-controls">';
@@ -1808,6 +1785,24 @@ class UI {
 
     } else {
       // ── AREA SELECT ──
+      // Show combat stats XP panel here (not during combat)
+      html += '<div class="combat-xp-panel" id="combat-xp-panel" style="display:block">';
+      for (const _sId of _cSkills) {
+        const _sk = s.skills[_sId]; if (!_sk) continue;
+        const _p = this.engine.getXpProgress(_sId);
+        const _name = GAME_DATA.skills[_sId]?.name || _sId;
+        const isGaining = xpSkills[_sId] > 0;
+        const pct = xpSkills[_sId] || 0;
+        html += `<div class="cxp-row ${isGaining?'cxp-active':''}" title="${_name}: Level ${_sk.level} | ${this.fmt(_sk.xp)} XP">
+          <span class="cxp-icon">${icon(GAME_DATA.skills[_sId]?.icon||'sparkle',14)}</span>
+          <span class="cxp-name">${_name}</span>
+          <span class="cxp-level" id="cxp-lv-${_sId}">${_sk.level}</span>
+          <div class="cxp-bar"><div class="cxp-fill ${isGaining?'cxp-fill-active':''}" id="cxp-fill-${_sId}" style="width:${(_p*100).toFixed(1)}%"></div></div>
+          <span class="cxp-xp" id="cxp-xp-${_sId}">${this.fmt(_sk.xp)}</span>
+          <span class="cxp-pct">${isGaining?pct+'%':''}</span>
+        </div>`;
+      }
+      html += '</div>';
       html += '<h2 class="section-title">Combat Areas</h2><div class="area-grid">';
       for (const area of GAME_DATA.combatAreas) {
         const locked = this.engine.getCombatLevel() < area.levelReq;

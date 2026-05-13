@@ -8542,3 +8542,174 @@ body.perf-mode .hit-splat { display:none !important; }
 
 /* ── SECTION LABELS (combat loadout) ─────────────────────────── */
 .combat-loadout .cs-header { font-family:'Cinzel',serif; font-size:10px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:5px; }
+
+/* ════════════════════════════════════════════════════════════
+   COMBAT PAGE LAYOUT — OVERRIDE MAIN-CONTENT MAX-WIDTH
+   The sidebar needs full viewport width, not 900px cap.
+   ════════════════════════════════════════════════════════════ */
+
+/* When combat page is active, expand beyond the 900px cap */
+.cv3-page {
+  /* Override display properties from old combat-xp-panel conflicts */
+  display: grid !important;
+  grid-template-columns: 1fr 310px !important;
+  gap: 14px !important;
+  align-items: start !important;
+  /* Break out of 900px cap */
+  width: calc(100% + 0px);
+  max-width: none;
+}
+
+/* cv3-main fills its grid column */
+.cv3-main {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Override old combat-xp-panel grid from conflicting CSS rules */
+.cv3-main .combat-xp-panel {
+  display: block !important;
+}
+
+/* Arena must fill full cv3-main width */
+.arena-v3 {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Arena main grid — flexible columns that don't squeeze */
+.arena-main {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  min-height: 180px;
+  gap: 0;
+}
+
+/* Player + Monster sides need relative for splats */
+.arena-player { position: relative; overflow: visible !important; min-width: 0; }
+.arena-monster { position: relative; overflow: visible !important; min-width: 0; }
+
+/* ── IMPROVED CONTROLS ROW ───────────────────────────────── */
+.combat-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 8px;
+}
+
+.cc-group { display: flex; align-items: center; gap: 4px; }
+.cc-label { 
+  font-family: 'Cinzel', serif; 
+  font-size: 10px; 
+  color: var(--text-dim); 
+  text-transform: uppercase; 
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.cc-btn {
+  padding: 5px 10px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cc-btn:hover { border-color: #c9873e; color: #c9873e; }
+.cc-btn-active { 
+  background: rgba(201,135,62,0.15) !important; 
+  border-color: #c9873e !important; 
+  color: #c9873e !important; 
+}
+
+/* ── MANA BAR SECTION ─────────────────────────────────────── */
+.mana-section {
+  background: rgba(74,126,196,0.06);
+  border: 1px solid rgba(74,126,196,0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mana-section-label { 
+  font-size: 11px; 
+  color: #4a7ec4; 
+  font-family: 'Cinzel', serif;
+  white-space: nowrap;
+}
+.mana-section-bar { 
+  flex: 1; 
+  height: 14px; 
+  background: var(--bg-deep); 
+  border-radius: 7px; 
+  overflow: hidden; 
+  border: 1px solid rgba(74,126,196,0.2);
+}
+.mana-section-fill { 
+  height: 100%; 
+  background: linear-gradient(90deg, #1a4a8e, #4a8adc);
+  border-radius: 6px;
+  transition: width 0.2s ease-out;
+  box-shadow: 0 0 8px rgba(74,126,196,0.3);
+}
+.mana-section-text { 
+  font-family: 'JetBrains Mono', monospace; 
+  font-size: 11px; 
+  color: #4a7ec4;
+  white-space: nowrap;
+}
+.mana-section-pct { 
+  font-family: 'JetBrains Mono', monospace; 
+  font-size: 11px; 
+  color: #4a7ec4;
+  font-weight: 600;
+}
+
+/* ── COMPACT COMBAT SECTION HEADERS ─────────────────────── */
+.cv3-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 0 0 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 8px;
+}
+
+/* ── SIDEBAR IMPROVEMENTS ─────────────────────────────────── */
+.cv3-sidebar {
+  position: sticky;
+  top: 8px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── AREA SELECT — cleaner when not in combat ─────────────── */
+.area-select-wrap { padding-bottom: 40px; }
+.section-title { 
+  font-family: 'Cinzel', serif; 
+  font-size: 13px; 
+  color: var(--text-dim); 
+  letter-spacing: 1px;
+  margin: 16px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}

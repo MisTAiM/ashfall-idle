@@ -802,62 +802,19 @@ window.getPotionQualityBadge = getPotionQualityBadge;
 // Hook into existing UI rendering
 // ================================================================
 
-// ── PATCH COMBAT PAGE RENDERING ────────────────────────────────
+// ── COMBAT PAGE RENDERING PATCH ─────────────────────────────────
+// Mana bar, weapon display, ammo counter now handled by Arena V3 and Gear Strip V3.
+// This override is kept for familiar display only.
 const originalRenderCombatPage = UI.prototype.renderCombatPage;
 UI.prototype.renderCombatPage = function(el) {
-  console.log('[SkillUI] renderCombatPage patched called');
-  
   // Call original rendering first
   if (originalRenderCombatPage) {
     originalRenderCombatPage.call(this, el);
   }
+  // Mana bar is now inside the Arena V3 player column — no injection needed.
+  // Weapon/ammo are in the Gear Strip V3 — no injection needed.
 
-  // Add mana bar after combat controls
-  const controlsEl = el.querySelector('.combat-controls');
-  if (controlsEl && this.engine.state.combat.mana) {
-    console.log('[SkillUI] Adding mana bar');
-    const manaContainer = document.createElement('div');
-    manaContainer.id = 'combat-mana-bar';
-    manaContainer.style.marginTop = '12px';
-    controlsEl.parentNode.insertBefore(manaContainer, controlsEl.nextSibling);
-
-    // Initialize and render mana bar
-    const manaBar = new ManaBarComponent('combat-mana-bar');
-    manaBar.render(this.engine.getManaPercent());
-    manaBar.startAutoUpdate(this.engine, 100);
-  }
-
-  // Add weapon display and ammo counter
-  const combatPage = el.querySelector('.combat-page');
-  if (combatPage) {
-    const infoRow = document.createElement('div');
-    infoRow.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;';
-
-    // Weapon display
-    const weaponDiv = document.createElement('div');
-    weaponDiv.id = 'weapon-display';
-    infoRow.appendChild(weaponDiv);
-
-    // Ammo counter
-    const ammoDiv = document.createElement('div');
-    ammoDiv.id = 'ammo-counter';
-    infoRow.appendChild(ammoDiv);
-
-    combatPage.appendChild(infoRow);
-
-    // Render components
-    const weaponDisplay = new WeaponDisplayComponent('weapon-display');
-    weaponDisplay.render(this.engine);
-
-    const ammoCounter = new AmmoCounterComponent('ammo-counter');
-    ammoCounter.render(this.engine);
-
-    // Update on weapon change
-    this.engine.on('weaponChanged', () => {
-      weaponDisplay.render(this.engine);
-      ammoCounter.render(this.engine);
-    });
-  }
+  // Weapon/ammo display handled by Gear Strip V3.
 
   // Add familiar display if summoned
   const familiar = this.engine.state.combat.familiar;
