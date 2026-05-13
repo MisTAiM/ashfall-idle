@@ -8713,3 +8713,148 @@ body.perf-mode .hit-splat { display:none !important; }
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border);
 }
+
+/* ════════════════════════════════════════════════════════════
+   FLUID COMBAT LAYOUT — Container Queries + clamp()
+   Every panel is self-contained. No fixed widths. Scales to any
+   resolution by querying its own container, not the viewport.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Step 1: Break free of 900px cap when combat page active ── */
+#main-content:has(.cv3-page) {
+  max-width: none !important;
+  padding: 12px 16px 60px !important;
+  width: 100% !important;
+}
+
+/* ── Step 2: Fluid two-column grid ───────────────────────────── */
+.cv3-page {
+  display: grid !important;
+  grid-template-columns: 1fr clamp(220px, 22vw, 320px) !important;
+  gap: clamp(8px, 1.2vw, 16px) !important;
+  align-items: start !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* ── Step 3: Every panel is a container ─────────────────────── */
+/* Panels query their own width via cqi units — no viewport needed */
+.cv3-main { container-type: inline-size; container-name: main-col; min-width: 0; }
+.cv3-sidebar { container-type: inline-size; container-name: sidebar; }
+
+.arena-v3,
+.ability-bar-v3,
+.prayer-v3,
+.rune-pouch-section,
+.gear-strip-v3,
+.combat-loadout,
+.combat-section,
+.cv3s-card {
+  container-type: inline-size;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Step 4: Arena scales with its container (not viewport) ──── */
+.arena-main {
+  display: grid;
+  /* Player col = 28% of arena container, min 120px */
+  grid-template-columns:
+    clamp(120px, 28cqi, 240px)
+    1fr
+    clamp(120px, 28cqi, 240px);
+  min-height: clamp(140px, 25cqi, 220px);
+}
+
+/* ── Step 5: Fluid text inside the arena ─────────────────────── */
+@container main-col (min-width: 1px) {
+  .arena-pname    { font-size: clamp(11px, 1.8cqi, 15px); }
+  .arena-vs       { font-size: clamp(18px, 5cqi, 32px); }
+  .arena-mon-name { font-size: clamp(11px, 1.8cqi, 15px); }
+  .atb-name       { font-size: clamp(11px, 1.6cqi, 15px); }
+  .atb-hp-track   { height: clamp(10px, 2cqi, 18px); }
+  .arena-bar-track { height: clamp(8px, 1.5cqi, 14px); }
+}
+
+/* ── Step 6: Ability bar wraps gracefully ────────────────────── */
+.ab3-specials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px, 1cqi, 8px);
+}
+
+.ab3-btn {
+  min-width: clamp(70px, 18cqi, 110px);
+  flex: 1 1 clamp(70px, 18cqi, 110px);
+  padding: clamp(6px, 1.5cqi, 12px);
+}
+
+.ab3-icon { font-size: clamp(16px, 3.5cqi, 24px); }
+.ab3-name { font-size: clamp(9px, 1.4cqi, 12px); }
+
+/* ── Step 7: Prayer grid adapts to container width ───────────── */
+.pv3-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(72px, 18cqi, 100px), 1fr));
+  gap: clamp(4px, 1cqi, 8px);
+}
+
+/* ── Step 8: Gear strip adapts ───────────────────────────────── */
+.gs3-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px, 1cqi, 8px);
+}
+
+.gs3-slot {
+  min-width: clamp(52px, 12cqi, 70px);
+  flex: 1 1 clamp(52px, 12cqi, 70px);
+}
+
+/* ── Step 9: Loadout 3-col adjusts ──────────────────────────── */
+.combat-loadout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 28cqi, 200px), 1fr));
+  gap: clamp(6px, 1.5cqi, 12px);
+}
+
+/* ── Step 10: Sidebar panels fluid ───────────────────────────── */
+@container sidebar (min-width: 1px) {
+  .cv3s-title      { font-size: clamp(9px, 3cqi, 12px); }
+  .cv3s-dt-label   { font-size: clamp(9px, 3cqi, 12px); }
+  .cv3s-dt-val     { font-size: clamp(9px, 3cqi, 12px); }
+  .cv3s-ss-val     { font-size: clamp(12px, 4cqi, 16px); }
+  .cv3s-kills-badge { font-size: clamp(9px, 3cqi, 12px); }
+  .cv3s-li-name    { font-size: clamp(11px, 3.5cqi, 14px); }
+}
+
+/* ── Step 11: Rune pouch fluid ───────────────────────────────── */
+.rune-pouch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px, 1cqi, 8px);
+}
+
+.rp3-rune {
+  min-width: clamp(40px, 10cqi, 55px);
+  flex: 1 1 clamp(40px, 10cqi, 55px);
+}
+
+/* ── Step 12: Arena top bar fluid ───────────────────────────── */
+.arena-top-bar {
+  gap: clamp(6px, 1.5cqi, 12px);
+  padding: clamp(6px, 1.5cqi, 10px) clamp(10px, 2cqi, 16px);
+}
+
+/* ── Responsive: narrow main col collapses arena grid ────────── */
+@container main-col (max-width: 480px) {
+  .arena-main {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+  .arena-center { grid-column: 1 / -1; order: 3; }
+}
+
+/* ── XP Mode toggle buttons fluid ───────────────────────────── */
+.cv3s-xpmode { flex-wrap: wrap; }
+.cv3s-mode-btn { flex: 1 1 auto; min-width: clamp(50px, 15cqi, 80px); }

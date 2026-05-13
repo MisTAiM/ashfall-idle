@@ -1087,6 +1087,13 @@ class UI {
     try {
     const s = this.engine.state, c = s.combat;
     if (!c) { el.innerHTML = '<div class="bank-empty">Combat state error. Try refreshing.</div>'; return; }
+
+    // ── READ SAVED LAYOUT CONFIG ──────────────────────────────────
+    let _layout = null;
+    try { const _raw = localStorage.getItem('ashfall_combat_layout'); if (_raw) _layout = JSON.parse(_raw); } catch(e) {}
+    const _mainOrder  = _layout?.main || ['arena','abilities','prayers','runes','supplies','gear','combat_log'];
+    const _sideOrder  = _layout?.side || ['xp_mode','session_loot','dmg_tracker','session_stats','area_info'];
+    const _panelOn = (id) => _mainOrder.includes(id) || _sideOrder.includes(id);
     const xpMode = c.xpMode || 'controlled';
     const combatStyle = c.combatStyle || 'melee';
     // Determine which skills get XP based on style + mode
@@ -1314,7 +1321,7 @@ class UI {
       </div>`;
 
       // ── ABILITY BAR V3 ────────────────────────────────────────
-      {
+      if (_panelOn('abilities')) {
         const _equipped = s.equippedAbilities.filter(Boolean).map(aid=>GAME_DATA.abilities.find(a=>a.id===aid)).filter(Boolean);
         const _ultimate = _equipped.length>0 ? _equipped.reduce((a,b)=>(b.cooldown>a.cooldown?b:a)) : null;
         const _specials = s.equippedAbilities.map((aid,i)=>{
@@ -1870,7 +1877,7 @@ class UI {
     </div>`;
 
 
-    // ── RIGHT SIDEBAR ──────────────────────────────────────────────
+    // ── RIGHT SIDEBAR — renders panels in _sideOrder sequence ───────
     const _sideXpMode = c.xpMode || 'controlled';
     const _sideStyle = c.combatStyle || 'melee';
     const _sd2 = c._sessionDmg || {};
