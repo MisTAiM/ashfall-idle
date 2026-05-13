@@ -696,6 +696,8 @@ class GameEngine {
     if (this.state.skills[skillId].level > before) {
       this.emit('notification', { type:'levelup', text:`${GAME_DATA.skills[skillId].name} leveled up to ${this.state.skills[skillId].level}!` });
       this.emit('levelup', { skill:skillId, level:this.state.skills[skillId].level });
+      // Track skill_level quest objectives whenever any skill levels up
+      this.trackQuestProgress('skill_level', { skill:skillId, level:this.state.skills[skillId].level });
     }
   }
 
@@ -1638,10 +1640,6 @@ class GameEngine {
     this.rollPetDrop(mId);
     if (style === 'magic') this.state.stats.magicKills = (this.state.stats.magicKills || 0) + 1;
     this.trackQuestProgress('magic_kills', { qty: style === 'magic' ? 1 : 0 });
-    // Skill level quest checks
-    for (const sId of Object.keys(GAME_DATA.skills)) {
-      this.trackQuestProgress('skill_level', { skill:sId, level:this.state.skills[sId]?.level||1 });
-    }
 
     if (isWB) {
       const boss = (GAME_DATA.worldBosses||[]).find(b => b.id === mId);

@@ -28,8 +28,8 @@ E.acceptQuest = function(questId) {
     this.emit('notification',{type:'warn',text:`Requires ${q.qpRequired} Quest Points (you have ${playerQP}).`}); return;
   }
 
-  // Prereqs
-  const prereqs = q.prereqs || [];
+  // Prereqs — support both q.prereqs[] array AND legacy q.prereq string
+  const prereqs = q.prereqs || (q.prereq ? [q.prereq] : []);
   for (const pre of prereqs) {
     if (!this.state.quests.completed.includes(pre)) {
       const preQ = GAME_DATA.quests.find(x=>x.id===pre);
@@ -46,23 +46,25 @@ E.acceptQuest = function(questId) {
     }
   }
 
-  // Multi-stage: find first non-dialogue stage or process dialogue immediately
+  // Multi-stage or legacy flat quest init
   this.state.quests.active.push(questId);
-
-  // Initialize stage tracking
   if (!this.state.quests.stages) this.state.quests.stages = {};
-  
+
   if (q.stages && q.stages.length > 0) {
-    // Find first objectives stage
+    // Multi-stage quest
     const firstStage = q.stages[0];
     this.state.quests.stages[questId] = { currentStageId: firstStage.id, stageHistory: [] };
-    
-    // Process initial dialogue stage(s) — auto-advance through dialogue to first objectives
     this._processQuestStage(questId);
   } else {
-    // Legacy flat quest — init all progress to 0. Tracking will fill on next tick.
-    this.state.quests.progress[questId] = (q.objectives||[]).map(() => 0);
+    // Legacy flat quest — auto-populate; skill_level checks current level on accept
     if (!this.state.quests._readyToComplete) this.state.quests._readyToComplete = {};
+    const _st = this.state;
+    this.state.quests.progress[questId] = (q.objectives||[]).map(obj => {
+      if (obj.type === 'skill_level') {
+        return (_st.skills[obj.skill]?.level||1) >= obj.level ? (obj.qty||1) : 0;
+      }
+      return 0;
+    });
   }
 
   this.emit('notification',{type:'success',text:`Quest accepted: ${q.name}`});
@@ -91,7 +93,7 @@ E._processQuestStage = function(questId) {
   } else if (stage.type === 'objectives') {
     // Initialize progress for this stage's objectives
     this.state.quests.progress[questId] = (stage.objectives||[]).map((obj, i) => {
-      if (obj.type === 'skill_level') return (this.state.skills[obj.skill]?.level||1) >= obj.level ? obj.qty : 0;
+      if (obj.type === 'skill_level') return (this.state.skills[obj.skill]?.level||1) >= obj.level ? (obj.qty||1) : 0;
       return 0;
     });
   }
@@ -158,7 +160,7 @@ function _matchObj(obj, type, data, state) {
     case 'dungeon_any':  return type==='dungeon' ? 1 : 0;
     case 'slayer_tasks': return type==='slayer_tasks' ? -(state.stats.slayerTasksCompleted||0) : 0; // negative = absolute set
     case 'slayer_kills': return type==='kill' && state.combat?.onSlayerTask ? data.qty : 0;
-    case 'skill_level':  return type==='skill_level' && obj.skill===data.skill ? -((state.skills[obj.skill]?.level||1)>=obj.level?obj.qty:0) : 0;
+    case 'skill_level':  return type==='skill_level' && obj.skill===data.skill ? -((state.skills[obj.skill]?.level||1)>=obj.level?(obj.qty||1):0) : 0;
     case 'gold':         return -(Math.min(obj.qty, state.gold));
     case 'pets':         return -(Math.min(obj.qty, (state.pets||[]).length));
     case 'magic_kills':  return type==='magic_kills' ? (data.qty||0) : 0;
@@ -211,14 +213,9 @@ E._trackAllQuests = function(type, data) {
       if (_trackObjectives(q.objectives, p, type, data, this.state)) {
         this.state.quests.progress[qId] = p;
       }
-      // Flag as ready — do NOT auto-complete. Player must click "Turn In".
-      if (q.objectives.every((_, i) => (p[i]||0) >= q.objectives[i].qty)) {
-        if (!this.state.quests._readyToComplete) this.state.quests._readyToComplete = {};
-        if (!this.state.quests._readyToComplete[qId]) {
-          this.state.quests._readyToComplete[qId] = true;
-          this.emit('notification',{type:'success',text:`Quest ready to turn in: ${q.name}`});
-          this.emit('questsChanged');
-        }
+      // Auto-complete when all objectives done. Emit notification.
+      if (q.objectives.every((_, i) => (p[i]||0) >= (q.objectives[i].qty||1))) {
+        this.completeQuest(qId);
       }
     }
   }
@@ -519,7 +516,7 @@ U.renderQuestsPage = function(el) {
   // Available
   const available = allQuests.filter(q => {
     if (s.quests.completed.includes(q.id)||s.quests.active.includes(q.id)) return false;
-    const prereqs=q.prereqs||[];
+    const prereqs=q.prereqs||(q.prereq?[q.prereq]:[]);
     if (!prereqs.every(p=>s.quests.completed.includes(p))) return false;
     return true;
   });
@@ -549,7 +546,7 @@ U.renderQuestsPage = function(el) {
     html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Locked (${locked.length})</span></div><div class="locked-quest-grid">`;
     for (const q of locked) {
       const diffConf = GAME_DATA.questDifficulties[q.difficulty]||{};
-      const prereqs=q.prereqs||[];
+      const prereqs=q.prereqs||(q.prereq?[q.prereq]:[]);
       const missing=prereqs.filter(p=>!s.quests.completed.includes(p)).map(p=>GAME_DATA.quests.find(x=>x.id===p)?.name||p);
       const needsQP = (q.qpRequired||0) > (s.questPoints||0);
       html += `<div class="locked-quest-card">

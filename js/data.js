@@ -865,13 +865,13 @@ GAME_DATA.quests.push(
   {id:'grey_1',npc:'greybeard',name:'The Way of Prayer',desc:'Bury 20 bones at the monastery.',objectives:[{type:'bury_bones',qty:20}],rewards:{gold:100,xp:{prayer:200}},prereq:null},
   {id:'grey_2',npc:'greybeard',name:'Stronger Faith',desc:'Bury 10 big bones.',objectives:[{type:'bury_big_bones',qty:10}],rewards:{gold:300,xp:{prayer:500}},prereq:'grey_1'},
   {id:'grey_3',npc:'greybeard',name:'Dragon Devotion',desc:'Bury 5 dragon bones.',objectives:[{type:'bury_dragon_bones',qty:5}],rewards:{gold:1000,xp:{prayer:2000}},prereq:'grey_2'},
-  {id:'grey_4',npc:'greybeard',name:'Piety of Ash',desc:'Reach Prayer level 43.',objectives:[{type:'skill_level',skill:'prayer',level:43}],rewards:{gold:2000,xp:{prayer:5000}},prereq:'grey_3'},
+  {id:'grey_4',npc:'greybeard',name:'Piety of Ash',desc:'Reach Prayer level 43.',objectives:[{type:'skill_level',skill:'prayer',level:43,qty:1}],rewards:{gold:2000,xp:{prayer:5000}},prereq:'grey_3'},
 
   // Vex quest chain — Slayer introduction
   {id:'vex_1',npc:'vex',name:'First Assignment',desc:'Complete 3 slayer tasks.',objectives:[{type:'slayer_tasks',qty:3}],rewards:{gold:200,xp:{slayer:300}},prereq:null},
   {id:'vex_2',npc:'vex',name:'Proving Your Worth',desc:'Complete 10 slayer tasks.',objectives:[{type:'slayer_tasks',qty:10}],rewards:{gold:800,xp:{slayer:1000}},prereq:'vex_1'},
   {id:'vex_3',npc:'vex',name:'Slayer of Beasts',desc:'Kill 100 monsters on slayer tasks.',objectives:[{type:'slayer_kills',qty:100}],rewards:{gold:1500,xp:{slayer:2500}},prereq:'vex_2'},
-  {id:'vex_4',npc:'vex',name:'Master Slayer',desc:'Reach Slayer level 50.',objectives:[{type:'skill_level',skill:'slayer',level:50}],rewards:{gold:5000,xp:{slayer:5000},items:[{item:'slayer_helm',qty:1}]},prereq:'vex_3'},
+  {id:'vex_4',npc:'vex',name:'Master Slayer',desc:'Reach Slayer level 50.',objectives:[{type:'skill_level',skill:'slayer',level:50,qty:1}],rewards:{gold:5000,xp:{slayer:5000},items:[{item:'slayer_helm',qty:1}]},prereq:'vex_3'},
 
   // Lyra quest chain — Cryomancy
   {id:'lyra_1',npc:'lyra',name:'Ice Affinity',desc:'Kill 15 Frost Spirits.',objectives:[{type:'kill',monster:'frost_spirit',qty:15}],rewards:{gold:400,xp:{magic:600},rep:{veiled_circle:300}},prereq:null,faction:'veiled_circle'},
@@ -901,7 +901,7 @@ GAME_DATA.quests.push(
   {id:'dorn_1',npc:'dorn',name:'Bulk Iron',desc:'Smith 30 iron bars.',objectives:[{type:'craft',item:'iron_bar',qty:30}],rewards:{gold:300,xp:{smithing:400},rep:{ashen_guild:200}},prereq:null,faction:'ashen_guild'},
   {id:'dorn_2',npc:'dorn',name:'Steel Mastery',desc:'Smith 20 steel swords.',objectives:[{type:'craft',item:'steel_sword',qty:20}],rewards:{gold:800,xp:{smithing:1200},rep:{ashen_guild:400}},prereq:'dorn_1'},
   {id:'dorn_3',npc:'dorn',name:'Mithril Challenge',desc:'Smith 10 mithril platebodies.',objectives:[{type:'craft',item:'mithril_plate',qty:10}],rewards:{gold:2000,xp:{smithing:3000},rep:{ashen_guild:700}},prereq:'dorn_2'},
-  {id:'dorn_4',npc:'dorn',name:'The Ashsteel Secret',desc:'Reach Smithing level 70 and smith 5 obsidian bars.',objectives:[{type:'skill_level',skill:'smithing',level:70},{type:'craft',item:'obsidian_bar',qty:5}],rewards:{gold:5000,xp:{smithing:5000},rep:{ashen_guild:1500}},prereq:'dorn_3'},
+  {id:'dorn_4',npc:'dorn',name:'The Ashsteel Secret',desc:'Reach Smithing level 70 and smith 5 obsidian bars.',objectives:[{type:'skill_level',skill:'smithing',level:70,qty:1},{type:'craft',item:'obsidian_bar',qty:5}],rewards:{gold:5000,xp:{smithing:5000},rep:{ashen_guild:1500}},prereq:'dorn_3'},
 );
 
 // ── MORE ACHIEVEMENTS ────────────────────────────────────

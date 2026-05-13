@@ -2694,8 +2694,8 @@ class UI {
       : (GAME_DATA.npcs || []);
     html += '<div class="actions-grid">';
     for (const npc of npcs) {
-      // Quests linked by npcId field on quest (new schema) OR questGiver on NPC
-      const npcQuests = GAME_DATA.quests.filter(q => q.npcId === npc.id || (npc.questGiver||[]).includes(q.id));
+      // Quests linked by npcId (new schema), npc (legacy schema), OR questGiver on NPC
+      const npcQuests = GAME_DATA.quests.filter(q => q.npcId === npc.id || q.npc === npc.id || (npc.questGiver||[]).includes(q.id));
       const available = npcQuests.filter(q => {
         if (s.quests.completed.includes(q.id)||s.quests.active.includes(q.id)) return false;
         const prereqs = q.prereqs||(q.prereq?[q.prereq]:[]);
