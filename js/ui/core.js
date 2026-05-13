@@ -1828,11 +1828,6 @@ class UI {
       </div>
     </div>
 
-    <div class="eq-bonus-panel" id="eq-bonus-panel">
-      <div class="eq-bonus-title">Equipment Bonuses</div>
-      <div class="eq-bonus-grid" id="eq-bonus-grid">${this._renderEqBonuses(s)}</div>
-    </div>
-
     <div class="xp-rate-panel" id="xp-rate-panel">
       <div class="xp-rate-title">XP Rates <span class="xp-rate-time" id="session-time">—</span></div>
       <div class="xp-rate-grid" id="xp-rate-grid">${this._renderXpRates(s,c)}</div>
@@ -7038,9 +7033,6 @@ class UI {
               _xbEl.innerHTML = _xHtml || '<div class="xr-empty">No XP yet</div>';
             }
           }
-          // Equipment bonuses live update
-          const _eqEl = document.getElementById('eq-bonus-grid');
-          if (_eqEl) _eqEl.innerHTML = this._renderEqBonuses(s);
           if (_total > 0 && s.combat._sessionStartTime) {
             const elapsed = (Date.now() - s.combat._sessionStartTime) / 1000;
             _set('sd-dps', (_total / elapsed).toFixed(1));
