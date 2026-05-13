@@ -633,10 +633,11 @@ function applyAdminPanel() {
 
     // ── SKILLS ────────────────────────────────────────────
     if (tab === 'skills') {
+      const canManageDangerous = typeof adminRoles !== 'undefined' && adminRoles.hasPermission('manage:dangerous');
       html+=`<div class="adm-section"><h3>Skills</h3>
         <div class="adm-btn-grid" style="margin-bottom:10px">
-          <button class="btn btn-sm" onclick="ui._admMaxAll()">Max All (99)</button>
-          <button class="btn btn-sm btn-danger" onclick="if(confirm('Reset ALL skills to 1?')){for(const sk of Object.keys(game.state.skills)){game.state.skills[sk].level=1;game.state.skills[sk].xp=0;}ui.toast({type:'success',text:'Reset'});ui.renderPage('admin')}">Reset All to 1</button>
+          ${canManageDangerous ? `<button class="btn btn-sm" onclick="ui._admMaxAll()">⚠️ Max All (99)</button>` : `<button class="btn btn-sm" disabled style="opacity:0.5;cursor:not-allowed" title="Requires manage:dangerous permission">⚠️ Max All (99)</button>`}
+          ${canManageDangerous ? `<button class="btn btn-sm btn-danger" onclick="if(confirm('Reset ALL skills to 1?')){for(const sk of Object.keys(game.state.skills)){game.state.skills[sk].level=1;game.state.skills[sk].xp=0;}ui.toast({type:'success',text:'Reset'});ui.renderPage('admin')}">Reset All to 1</button>` : `<button class="btn btn-sm btn-danger" disabled style="opacity:0.5;cursor:not-allowed" title="Requires manage:dangerous permission">Reset All to 1</button>`}
         </div>
         <div class="adm-skill-grid">`;
       for (const [id,sk] of Object.entries(s.skills)) {
@@ -846,10 +847,11 @@ function applyAdminPanel() {
 
     // ── QUESTS ────────────────────────────────────────────
     if (tab === 'quests') {
+      const canManageDangerous = typeof adminRoles !== 'undefined' && adminRoles.hasPermission('manage:dangerous');
       html+=`<div class="adm-section"><h3>Quests</h3>
         <div class="adm-btn-grid" style="margin-bottom:8px">
-          <button class="btn btn-sm" onclick="ui._admCompleteQuests()">Complete All</button>
-          <button class="btn btn-sm btn-danger" onclick="if(confirm('Reset all?')){game.state.quests={completed:[],active:[]};ui.renderPage('admin')}">Reset All</button>
+          ${canManageDangerous ? `<button class="btn btn-sm" onclick="ui._admCompleteQuests()">⚠️ Complete All</button>` : `<button class="btn btn-sm" disabled style="opacity:0.5;cursor:not-allowed" title="Requires manage:dangerous permission">⚠️ Complete All</button>`}
+          ${canManageDangerous ? `<button class="btn btn-sm btn-danger" onclick="if(confirm('Reset all?')){game.state.quests={completed:[],active:[]};ui.renderPage('admin')}">Reset All</button>` : `<button class="btn btn-sm btn-danger" disabled style="opacity:0.5;cursor:not-allowed" title="Requires manage:dangerous permission">Reset All</button>`}
         </div>`;
       if (GAME_DATA.quests) for (const q of GAME_DATA.quests) {
         const done=s.quests?.completed?.includes(q.id),active=s.quests?.active?.find(a=>a.id===q.id);
@@ -1142,7 +1144,7 @@ function applyAdminPanel() {
         <button class="btn btn-sm" onclick="game.leaveTheatre();ui.renderPage('admin')">Force Leave</button>
         <button class="btn btn-sm" onclick="if(game.state.theatre?.active&&game.state.theatre.room<6){game._clearTheatreRoom(game.state.theatre.room);ui.renderPage('admin')}">Skip Room</button>
         <button class="btn btn-sm" onclick="game.state.theatre={active:false};s.stats.theatreCompletions=0;s.stats.theatreBestTier=undefined;ui.renderPage('admin')">Reset Theatre Stats</button>
-        <button class="btn btn-sm" onclick="['veriax_scythe','bloodfire_staff','ashen_rapier','judicator_helm','judicator_plate','judicator_legs','hollow_ward','void_tear','veriax_eye'].forEach(id=>game.addItem(id,1));ui.toast({type:'success',text:'All Theatre items given'})">Give All Unique Items</button>
+        ${(typeof adminRoles !== 'undefined' && adminRoles.hasPermission('manage:dangerous')) ? `<button class="btn btn-sm" onclick="['veriax_scythe','bloodfire_staff','ashen_rapier','judicator_helm','judicator_plate','judicator_legs','hollow_ward','void_tear','veriax_eye'].forEach(id=>game.addItem(id,1));ui.toast({type:'success',text:'All Theatre items given'})">⚠️ Give All Unique Items</button>` : `<button class="btn btn-sm" disabled style="opacity:0.5;cursor:not-allowed" title="Requires manage:dangerous permission">⚠️ Give All Unique Items</button>`}
       </div></div>
       <div class="adm-section"><h3>Boss Editor</h3>`;
       for (const [bossId, boss] of Object.entries(typeof TOA_BOSSES!=='undefined'?TOA_BOSSES:{})) {

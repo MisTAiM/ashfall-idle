@@ -26,7 +26,7 @@ class AdminRoleSystem {
         color: '#ff6b9d',
         icon: '🔧',
         description: 'Code, systems, infrastructure',
-        permissions: ['edit:*', 'create:*', 'delete:*', 'upload:*', 'manage:roles']
+        permissions: ['edit:*', 'create:*', 'delete:*', 'upload:*', 'manage:roles', 'manage:dangerous']
       },
       GAME_DESIGNER: {
         name: 'Game Designer',
