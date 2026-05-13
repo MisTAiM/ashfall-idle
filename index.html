@@ -417,75 +417,98 @@
     }
   </script>
 
-  <script src="js/data.js"></script>
-  <script src="js/items-expand.js"></script>
-  <script src="js/items-combat.js"></script>
-  <script src="js/items-world.js"></script>
-  <script src="js/items-mega.js"></script>
-  <script src="js/items-new.js"></script>
-  <script src="js/combat-data.js"></script>
+  <!-- ═══ LAYER 1: SERVICES (loads first) ═══ -->
+  <script src="js/services/firebase.js"></script>
+  <script src="js/services/debug.js"></script>
 
-  <script src="js/quests-data.js"></script>
-  <script src="js/npcs-data.js"></script>
-  <script src="js/sprites.js"></script>
-  <script src="js/sprites-skills.js"></script>
-  <script src="js/sprites-art.js"></script>
-  <script src="js/systems.js"></script>
-  <script src="js/engine.js"></script>
-  <script src="js/engine-combat.js"></script>
-  <script src="js/skills-overhaul.js"></script>
-  <script src="js/skills-integration.js"></script>
-  <script src="js/magic-system-unified.js"></script>
-  <script src="js/theatre-of-ash.js"></script>
-  <script src="js/chambers-of-ash.js"></script>
-  <script src="js/firebase-config.js"></script>
-  <script src="js/error-handler.js"></script>
-  <script src="js/debug-system.js"></script>
-  <script src="js/logging-system.js"></script>
-  <script src="js/navigation-search.js"></script>
-  <script src="js/smart-search.js"></script>
-  <script src="js/online.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/skills-ui-components.js"></script>
-  <script src="js/skills-ui-integration.js"></script>
-  <script src="js/magic-ui-unified.js"></script>
-  <script src="js/spell-damage-handler.js"></script>
-  <script src="js/quest-system.js"></script>
-  <script src="js/dungeons-expanded.js"></script>
-  <script src="js/fight-cave.js"></script>
-  <script src="js/fight-cave-ui.js"></script>
-  <script src="js/theatre-of-ash-ui.js"></script>
-  <script src="js/chambers-of-ash-ui.js"></script>
-  <script src="js/raids-content-expansion.js"></script>
-  <script src="js/content-expansion.js"></script>
-  <script src="js/mega-content.js"></script>
-  <script src="js/segment2-content.js"></script>
-  <script src="js/segment3-content.js"></script>
-  <script src="js/segment4-content.js"></script>
-  <script src="js/clue-scrolls.js"></script>
-  <script src="js/multiplayer-combat.js"></script>
-  <script src="js/admin.js"></script>
-  <script src="js/admin-roles.js"></script>
-  <script src="js/admin-role-manager.js"></script>
-  <script src="js/admin-branding.js"></script>
-  <script src="js/admin-nav-manager.js"></script>
-  <script src="js/admin-item-tools.js"></script>
-  <script src="js/admin-monster-tools.js"></script>
-  <script src="js/admin-media-manager.js"></script>
-  <script src="js/admin-undo-redo.js"></script>
-  <script src="js/admin-search.js"></script>
-  <script src="js/admin-analyzer.js"></script>
-  <script src="js/admin-bulk-ops.js"></script>
-  <script src="js/admin-activity-feed.js"></script>
-  <script src="js/admin-dashboard.js"></script>
-  <script src="js/admin-dashboard-widgets.js"></script>
-  <script src="js/admin-backup.js"></script>
-  <script src="js/admin-tools.js"></script>
-  <script src="js/admin-content-analyzer.js"></script>
+  <!-- ═══ LAYER 2: DATA (pure definitions, no logic) ═══ -->
+  <script src="js/data/index.js"></script>
+  <script src="js/data/items.js"></script>
+  <script src="js/data/combat.js"></script>
+  <script src="js/data/npcs.js"></script>
+  <script src="js/data/quests.js"></script>
+  <!-- Future data files: uncomment when system is built
+  <script src="js/data/housing.js"></script>
+  <script src="js/data/cosmetics.js"></script>
+  <script src="js/data/events.js"></script>
+  <script src="js/data/minigames.js"></script>
+  -->
+
+  <!-- ═══ LAYER 2B: CONTENT DROPS (additive, no engine changes) ═══ -->
+  <script src="js/content/segment-content.js"></script>
+  <!-- Future content: uncomment when ready
+  <script src="js/content/world-tier-2.js"></script>
+  <script src="js/content/quest-chapter-2.js"></script>
+  <script src="js/content/seasonal-winter.js"></script>
+  <script src="js/content/boss-rotations.js"></script>
+  -->
+
+  <!-- ═══ LAYER 3: CORE ═══ -->
+  <script src="js/core/state.js"></script>
+  <script src="js/core/engine.js"></script>
+  <script src="js/core/save.js"></script>
+  <!-- Future modes: uncomment to activate
+  <script src="js/modes/ironman.js"></script>
+  <script src="js/modes/hardcore.js"></script>
+  <script src="js/modes/seasonal.js"></script>
+  -->
+
+  <!-- ═══ LAYER 4: SYSTEMS (game logic, no rendering) ═══ -->
+  <script src="js/systems/skills.js"></script>
+  <script src="js/systems/combat.js"></script>
+  <script src="js/systems/quests.js"></script>
+  <script src="js/systems/dungeons.js"></script>
+  <script src="js/systems/endgame.js"></script>
+  <script src="js/systems/social.js"></script>
+  <!-- Future systems: uncomment when built
+  <script src="js/systems/slayer.js"></script>
+  <script src="js/systems/wilderness.js"></script>
+  <script src="js/systems/prestige.js"></script>
+  <script src="js/systems/mastery.js"></script>
+  <script src="js/systems/achievements.js"></script>
+  <script src="js/systems/guilds.js"></script>
+  <script src="js/systems/housing.js"></script>
+  <script src="js/systems/trading.js"></script>
+  <script src="js/systems/events.js"></script>
+  <script src="js/systems/clans.js"></script>
+  <script src="js/systems/minigames.js"></script>
+  -->
+
+  <!-- ═══ LAYER 5: ART ═══ -->
+  <script src="js/art/sprites.js"></script>
+  <script src="js/art/music.js"></script>
+
+  <!-- ═══ LAYER 6: UI (rendering only) ═══ -->
+  <script src="js/ui/core.js"></script>
+  <script src="js/ui/skills.js"></script>
+  <script src="js/ui/quests.js"></script>
+  <script src="js/ui/endgame.js"></script>
+  <script src="js/ui/magic.js"></script>
+  <script src="js/ui/character.js"></script>
+  <script src="js/ui/social.js"></script>
+  <script src="js/ui/upgrades.js"></script>
+  <!-- Future UI: uncomment when split from ui/core.js
+  <script src="js/ui/hud.js"></script>
+  <script src="js/ui/combat.js"></script>
+  <script src="js/ui/inventory.js"></script>
+  <script src="js/ui/shop.js"></script>
+  <script src="js/ui/map.js"></script>
+  <script src="js/ui/housing.js"></script>
+  <script src="js/ui/trading.js"></script>
+  <script src="js/ui/guilds.js"></script>
+  <script src="js/ui/events.js"></script>
+  <script src="js/ui/cosmetics.js"></script>
+  <script src="js/ui/clans.js"></script>
+  <script src="js/ui/minigames.js"></script>
+  <script src="js/ui/leaderboards.js"></script>
+  <script src="js/ui/mastery.js"></script>
+  <script src="js/ui/wilderness.js"></script>
+  -->
+
+  <!-- ═══ LAYER 7: SERVICES (online + admin) ═══ -->
+  <script src="js/services/online.js"></script>
   <link rel="stylesheet" href="css/admin-v2.css">
-  <script src="js/codex.js"></script>
-  <script src="js/upgrades.js"></script>
-  <script src="js/music-player.js"></script>
+  <script src="js/services/admin.js"></script>
   <script>
     // Global error boundary — prevent silent crashes
     window.addEventListener('error', function(e) {
