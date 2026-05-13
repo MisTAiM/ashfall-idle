@@ -1663,7 +1663,7 @@ class OnlineManager {
   }
 
   // ── UNTRADEABLE ITEMS ──────────────────────────────────
-  static UNTRADEABLE = ['fire_cape','barrows_gloves','void_crystal','ava_accumulator','mage_cape'];
+  static UNTRADEABLE = ['ember_cape','crypts_gloves','void_crystal','ava_accumulator','mage_cape'];
 
   isUntradeable(itemId) {
     return OnlineManager.UNTRADEABLE.includes(itemId);

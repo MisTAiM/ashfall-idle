@@ -219,7 +219,7 @@ Object.assign(GAME_DATA.monsterArt, {
 GAME_DATA.collectionLog = {
   'God Wars': ['bandos_chestplate','bandos_tassets','bandos_boots','bandos_godsword','armadyl_helmet','armadyl_chestplate','armadyl_chainskirt','armadyl_godsword','saradomin_sword','saradomin_godsword','armadyl_crossbow','staff_of_the_dead','zamorak_godsword'],
   'Wilderness': ['dragon_pickaxe','tyrannical_ring','ring_of_the_gods','treasonous_ring'],
-  'Barrows': ['dharok_head','dharok_body','dharok_legs','dharok_weapon','ahrim_head','ahrim_body','ahrim_legs','ahrim_weapon','karil_head','karil_body','karil_legs','karil_weapon','guthan_head','guthan_body','guthan_legs','guthan_weapon','torag_head','torag_body','torag_legs','torag_weapon','verac_head','verac_body','verac_legs','verac_weapon'],
+  'Ashen Crypts': ['maldrak_head','maldrak_body','maldrak_legs','maldrak_weapon','serath_head','serath_body','serath_legs','serath_weapon','veyra_head','veyra_body','veyra_legs','veyra_weapon','grothak_head','grothak_body','grothak_legs','grothak_weapon','thorne_head','thorne_body','thorne_legs','thorne_weapon','aluric_head','aluric_body','aluric_legs','aluric_weapon'],
   'Chambers': ['twisted_bow','elder_maul','kodai_wand','dragon_claws','dinhs_bulwark','ancestral_hat','ancestral_robe_top','ancestral_robe_bottom','olmlet'],
   'Theatre': ['veriax_scythe','bloodfire_staff','ashen_rapier','judicator_helm','judicator_plate','judicator_legs','hollow_ward','veriax_eye'],
   'Nightmare': ['nightmare_staff','inquisitors_helm','inquisitors_plate','inquisitors_legs','eldritch_orb','harmonised_orb','volatile_orb','lil_nightmare'],

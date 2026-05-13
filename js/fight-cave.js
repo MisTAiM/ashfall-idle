@@ -1,6 +1,6 @@
 // ============================================================
 // ASHFALL IDLE — THE FIGHT CAVE (TzHaar Fight Cave Adaptation)
-// 63 waves. No shortcuts. Earn the Fire Cape.
+// 63 waves. No shortcuts. Earn the Ember Cape.
 // ============================================================
 
 // ── FIGHT CAVE MONSTERS ────────────────────────────────────
@@ -104,8 +104,8 @@ GAME_DATA.fightCave = {
   name: 'The Fight Cave',
   levelReq: 45,
   prayerReq: 43,
-  desc: 'A volcanic arena of 63 waves. Death resets all progress. Only those who conquer TzTok-Jad earn the Fire Cape.',
-  reward: 'fire_cape',
+  desc: 'A volcanic arena of 63 waves. Death resets all progress. Only those who conquer TzTok-Jad earn the Ember Cape.',
+  reward: 'ember_cape',
   totalWaves: 63,
   // Kill priority guide (authentic RS order)
   killPriority: ['cinder_bat', 'obsidian_ranger', 'volcanic_mage', 'molten_brute', 'magma_blob', 'magma_blob_small'],
@@ -189,17 +189,17 @@ GAME_DATA.pets.push({
 GAME_DATA.achievements.push(
   {id:'fc_enter',   name:'The Caves Await',      desc:'Enter the Fight Cave.',                         check:(g) => (g.stats.fightCaveAttempts||0) >= 1},
   {id:'fc_fail',    name:'Learning Experience',   desc:'Die in the Fight Cave.',                        check:(g) => (g.stats.fightCaveDeaths||0) >= 1},
-  {id:'fc_complete',name:'Fire Cape',             desc:'Complete the Fight Cave and earn the Fire Cape.',check:(g) => (g.stats.fightCaveCompletions||0) >= 1},
+  {id:'fc_complete',name:'Ember Cape',             desc:'Complete the Fight Cave and earn the Ember Cape.',check:(g) => (g.stats.fightCaveCompletions||0) >= 1},
   {id:'fc_jad_10',  name:'Jad Hunter',            desc:'Complete the Fight Cave 10 times.',             check:(g) => (g.stats.fightCaveCompletions||0) >= 10}
 );
 
 
 // ── REMOVE FIRE CAPE FROM PHOENIX DROPS ────────────────────
-// The Fire Cape should ONLY come from the Fight Cave
+// The Ember Cape should ONLY come from the Fight Cave
 (function() {
   const phoenix = GAME_DATA.monsters.phoenix;
   if (phoenix && phoenix.drops) {
-    phoenix.drops = phoenix.drops.filter(d => d.item !== 'fire_cape');
+    phoenix.drops = phoenix.drops.filter(d => d.item !== 'ember_cape');
   }
 })();
 
@@ -308,7 +308,7 @@ const FightCaveMixin = {
     this.state.combat.area = null;
     this.state.combat.dungeon = null;
 
-    this.emit('notification', {type:'info', text:'The Fight Cave begins. 63 waves stand between you and the Fire Cape.'});
+    this.emit('notification', {type:'info', text:'The Fight Cave begins. 63 waves stand between you and the Ember Cape.'});
     this.emit('notification', {type:'info', text:`Wave 1/${GAME_DATA.fightCave.totalWaves}: ${m.name}!`});
     this.emit('fightCaveStart');
     this.emit('combatStart', { fightCave: true, wave: 1 });
@@ -420,9 +420,9 @@ const FightCaveMixin = {
     this.state.stats.fightCaveCompletions++;
     this.state.stats.jadKills = (this.state.stats.jadKills || 0) + 1;
 
-    // Award Fire Cape
-    this.addItem('fire_cape', 1);
-    this.emit('notification', {type:'achievement', text:'FIGHT CAVE COMPLETE! You earned the Fire Cape!'});
+    // Award Ember Cape
+    this.addItem('ember_cape', 1);
+    this.emit('notification', {type:'achievement', text:'FIGHT CAVE COMPLETE! You earned the Ember Cape!'});
 
     // Roll for TzRek-Jad pet
     this.rollPetDrop('tztok_jad');
@@ -1113,8 +1113,8 @@ Object.assign(GAME_DATA.monsterArt, {
   yt_hurkot: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="40" rx="14" ry="12" fill="#7a6050"/><circle cx="32" cy="26" r="10" fill="#8a7060"/><circle cx="28" cy="24" r="2.5" fill="#40c040"/><circle cx="36" cy="24" r="2.5" fill="#40c040"/><circle cx="28" cy="24" r="1.2" fill="#80ff80"/><circle cx="36" cy="24" r="1.2" fill="#80ff80"/><path d="M30 30 Q32 32 34 30" stroke="#4a3020" stroke-width="1.5" fill="none"/><rect x="16" y="30" width="8" height="14" rx="3" fill="#7a6050"/><rect x="40" y="30" width="8" height="14" rx="3" fill="#7a6050"/><circle cx="18" cy="40" r="3" fill="#40c040" opacity="0.5"/><circle cx="46" cy="40" r="3" fill="#40c040" opacity="0.5"/><rect x="24" y="50" width="5" height="8" rx="2" fill="#6a5040"/><rect x="35" y="50" width="5" height="8" rx="2" fill="#6a5040"/></svg>`,
 });
 
-// Fire Cape animated sprite reference for equipment display
-GAME_DATA.monsterArt.fire_cape_item = `<svg viewBox="0 0 64 64"><defs><linearGradient id="fcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff4020"/><stop offset="50%" stop-color="#ff8030"/><stop offset="100%" stop-color="#ffcc40"/></linearGradient></defs><path d="M18 8 L46 8 L50 52 L32 60 L14 52Z" fill="url(#fcg)" stroke="#8a2010" stroke-width="1.5"/><path d="M32 8 L32 60" stroke="#ffcc40" stroke-width="1" opacity="0.5"/><path d="M22 20 Q28 24 26 32 Q24 36 28 40" stroke="#ffee80" stroke-width="1.5" fill="none" opacity="0.6"/><path d="M38 16 Q42 22 38 28 Q36 34 40 38" stroke="#ffee80" stroke-width="1.5" fill="none" opacity="0.6"/><ellipse cx="32" cy="12" rx="4" ry="2" fill="#ffcc40" opacity="0.4"/></svg>`;
+// Ember Cape animated sprite reference for equipment display
+GAME_DATA.monsterArt.ember_cape_item = `<svg viewBox="0 0 64 64"><defs><linearGradient id="fcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff4020"/><stop offset="50%" stop-color="#ff8030"/><stop offset="100%" stop-color="#ffcc40"/></linearGradient></defs><path d="M18 8 L46 8 L50 52 L32 60 L14 52Z" fill="url(#fcg)" stroke="#8a2010" stroke-width="1.5"/><path d="M32 8 L32 60" stroke="#ffcc40" stroke-width="1" opacity="0.5"/><path d="M22 20 Q28 24 26 32 Q24 36 28 40" stroke="#ffee80" stroke-width="1.5" fill="none" opacity="0.6"/><path d="M38 16 Q42 22 38 28 Q36 34 40 38" stroke="#ffee80" stroke-width="1.5" fill="none" opacity="0.6"/><ellipse cx="32" cy="12" rx="4" ry="2" fill="#ffcc40" opacity="0.4"/></svg>`;
 
 
 // ── GLOBAL CHAT ANNOUNCEMENTS ──────────────────────────────
@@ -1189,7 +1189,7 @@ function patchFightCaveBroadcasts() {
     const name = fcGetPlayerName();
     const completions = this.state.stats.fightCaveCompletions || 1;
     const deaths = this.state.stats.fightCaveDeaths || 0;
-    let msg = `${name} has conquered the Fight Cave and earned the Fire Cape! (Clear #${completions} | ${minutes}min`;
+    let msg = `${name} has conquered the Fight Cave and earned the Ember Cape! (Clear #${completions} | ${minutes}min`;
     if (deaths > 0) msg += ` | ${deaths} death${deaths > 1 ? 's' : ''} total`;
     msg += ')';
     fcBroadcast(msg);
@@ -1202,7 +1202,7 @@ function patchFightCaveBroadcasts() {
     const wave = (fc.currentWave || 0) + 1;
     origFlee.call(this);
     const name = fcGetPlayerName();
-    fcBroadcast(`${name} surrendered the Fight Cave on wave ${wave}. The Fire Cape remains unclaimed.`);
+    fcBroadcast(`${name} surrendered the Fight Cave on wave ${wave}. The Ember Cape remains unclaimed.`);
   };
 
   console.log('[Ashfall] Fight Cave broadcasts enabled.');

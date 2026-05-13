@@ -24,7 +24,7 @@ function applyFightCaveUI() {
     const combatLv = this.engine.getCombatLevel();
     const prayerLv = s.skills.prayer?.level || 1;
     const meetsReqs = combatLv >= GAME_DATA.fightCave.levelReq && prayerLv >= GAME_DATA.fightCave.prayerReq;
-    const fireCape = GAME_DATA.items.fire_cape;
+    const fireCape = GAME_DATA.items.ember_cape;
 
     let html = `<div class="fight-cave-page">`;
     html += `<div class="fc-header">
@@ -40,7 +40,7 @@ function applyFightCaveUI() {
     </div>`;
 
     html += `<div class="fc-reward-card">
-      <h2 class="section-title">Reward: Fire Cape</h2>
+      <h2 class="section-title">Reward: Ember Cape</h2>
       <div class="fc-reward-stats">Atk: +${fireCape?.stats?.attackBonus || 8} | Str: +${fireCape?.stats?.strengthBonus || 8} | Def: +${fireCape?.stats?.defenceBonus || 14} | DR: +${fireCape?.stats?.damageReduction || 5}%</div>
       <p class="fc-reward-desc">Best-in-slot melee cape. Untradeable. Earned, never given.</p>
     </div>`;

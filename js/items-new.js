@@ -78,11 +78,11 @@ _item('tumeken_shadow', {
   desc:'The most powerful magic weapon. All runes free. Spec: 250% ignoring all defence. 50% spec.'
 });
 _item('dharoks_greataxe', {
-  name:"Dharok's Greataxe", type:'weapon', slot:'weapon', style:'melee',
+  name:"Maldrak's Greataxe", type:'weapon', slot:'weapon', style:'melee',
   attackSpeed:3.4, stats:{attackBonus:103, strengthBonus:138}, levelReq:{attack:70, strength:70},
   rarity:'legendary', sellPrice:60000,
-  passiveEffect:{ type:'dharok', desc:"Deals more damage the lower your HP. At 1HP: triple max hit." },
-  desc:"Dharok's Greataxe. Passive: the lower your HP, the higher your max hit."
+  passiveEffect:{ type:'maldrak', desc:"Deals more damage the lower your HP. At 1HP: triple max hit." },
+  desc:"Maldrak's Greataxe. Passive: the lower your HP, the higher your max hit."
 });
 
 // Add to shop

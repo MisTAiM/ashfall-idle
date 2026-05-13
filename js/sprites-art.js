@@ -1326,7 +1326,7 @@ console.log('[Ashfall] Total pet art entries:', Object.keys(GAME_DATA.petArt).le
 
   // Capes — silhouette + motif
   S['obsidian_cape'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M10 4 L22 4 L26 28 L6 28Z" fill="#2a2a3a" stroke="#4a4a5a" stroke-width="1"/><line x1="16" y1="4" x2="16" y2="28" stroke="#4a4a5a" stroke-width="1" opacity="0.5"/><path d="M10 14 Q16 18 22 14" fill="none" stroke="#7a8294" stroke-width="1" opacity="0.4"/></svg>`;
-  S['fire_cape']     = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M10 4 L22 4 L26 28 L6 28Z" fill="#d63a1a" stroke="#1a1a1f" stroke-width="1"/><path d="M12 28 Q11 22 14 18 Q12 24 16 20 Q14 26 18 22 Q16 27 20 24 Q18 28 21 28" fill="#ff8040" opacity="0.5"/><line x1="16" y1="4" x2="16" y2="28" stroke="#ff6020" stroke-width="1" opacity="0.4"/></svg>`;
+  S['ember_cape']     = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M10 4 L22 4 L26 28 L6 28Z" fill="#d63a1a" stroke="#1a1a1f" stroke-width="1"/><path d="M12 28 Q11 22 14 18 Q12 24 16 20 Q14 26 18 22 Q16 27 20 24 Q18 28 21 28" fill="#ff8040" opacity="0.5"/><line x1="16" y1="4" x2="16" y2="28" stroke="#ff6020" stroke-width="1" opacity="0.4"/></svg>`;
   S['infernal_cape'] = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M10 4 L22 4 L26 28 L6 28Z" fill="#1a0a00" stroke="#d63a1a" stroke-width="1.5"/><path d="M10 24 Q9 18 12 14 Q10 20 14 16 Q12 22 17 17 Q15 23 20 18 Q18 24 22 22 Q20 27 22 28" fill="#d63a1a" opacity="0.6"/><line x1="16" y1="4" x2="16" y2="28" stroke="#d63a1a" stroke-width="1.5" opacity="0.5"/><path d="M13 8 Q16 4 19 8" fill="#ff6020" opacity="0.4"/></svg>`;
 
   // ── ASSIGN ALL ──────────────────────────────────────────────────
@@ -1357,7 +1357,7 @@ console.log('[Ashfall] Total pet art entries:', Object.keys(GAME_DATA.petArt).le
     amulet_of_strength:'amulet', amulet_of_fury:'amulet',
     amulet_of_torture:'amulet', occult_necklace:'amulet', necklace_of_anguish:'amulet',
     ring_of_wealth:'ring', berserker_ring:'ring', archers_ring:'ring', seers_ring:'ring',
-    team_cape:'cape', obsidian_cape:'cape', fire_cape:'cape', infernal_cape:'cape',
+    team_cape:'cape', obsidian_cape:'cape', ember_cape:'cape', infernal_cape:'cape',
   };
   for (const [itemId, sprite] of Object.entries(spriteTypes)) {
     if (GAME_DATA.items[itemId] && !GAME_DATA.items[itemId].sprite) {

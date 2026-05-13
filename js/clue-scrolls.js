@@ -128,7 +128,7 @@ GAME_DATA.clueScrolls = {
       { id:'el_kill_ash_ovrl', type:'kill',   monster:'ashen_overlord', qty:1,   desc:'The Ashen Overlord must fall. Prove your worth.' },
       { id:'el_gather_elder',  type:'gather', item:'elder_log',         qty:150, desc:'Elder trees grow where the ash fell first. Bring 150 Elder Logs.' },
       { id:'el_gather_ashore', type:'gather', item:'ashsteel_ore',      qty:30,  desc:'Only the deep ash veins yield this ore. Mine 30 Ashsteel Ore.' },
-      { id:'el_craft_cannon',  type:'craft',  item:'dwarf_cannon',      qty:1,   desc:'The dwarven engineer left a challenge. Assemble a Dwarf Cannon.' },
+      { id:'el_craft_cannon',  type:'craft',  item:'ashforge_cannon',      qty:1,   desc:'The dwarven engineer left a challenge. Assemble a Ashforge Cannon.' },
       { id:'el_skill_all_50',  type:'total_level', level:1000,               desc:'Mastery over all skills. Reach total level 1000.' },
       { id:'el_skill_slayer70',type:'skill',  skill:'slayer',           level:70, desc:'The Master taskmasters only work with the best. Reach Slayer 70.' },
       { id:'el_craft_ashsteel',type:'craft',  item:'ashsteel_sword',    qty:1,   desc:'The Ashfall demands a blade of its own metal. Forge an Ashsteel Sword.' },
@@ -145,7 +145,7 @@ GAME_DATA.clueScrolls = {
       { item:'elder_shortbow',     qty:1,      weight:5 },
       { item:'ashfire_arrows',     qty:100,    weight:5 },
       { item:'ring_of_wealth',     qty:1,      weight:5 },
-      { item:'dwarf_cannon',       qty:1,      weight:2 },  // ultra-rare
+      { item:'ashforge_cannon',       qty:1,      weight:2 },  // ultra-rare
       { item:'elder_longbow',      qty:1,      weight:7 },
     ],
   },

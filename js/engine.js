@@ -109,9 +109,35 @@ class GameEngine {
   migrateSave(saveData) {
     if (saveData) { this.state = saveData; }
     const s = this.state; if (!s) return s;
+
+    // ── STATE VALIDATION: enforce types on load, kill NaN/null at the source ──
+    // Skills
     for (const id of Object.keys(GAME_DATA.skills)) {
       if (!s.skills[id]) s.skills[id] = { level:1, xp:0 };
+      if (typeof s.skills[id].level !== 'number' || isNaN(s.skills[id].level) || s.skills[id].level < 1) s.skills[id].level = 1;
+      if (typeof s.skills[id].xp !== 'number' || isNaN(s.skills[id].xp) || s.skills[id].xp < 0) s.skills[id].xp = 0;
     }
+    // Gold
+    if (typeof s.gold !== 'number' || isNaN(s.gold) || s.gold < 0) s.gold = 0;
+    // HP
+    if (typeof s.hp !== 'number' || isNaN(s.hp) || s.hp <= 0) s.hp = this.getMaxHp ? this.getMaxHp() : 10;
+    // Mana
+    if (s.combat && s.combat.mana) {
+      if (typeof s.combat.mana.current !== 'number' || isNaN(s.combat.mana.current)) s.combat.mana.current = s.combat.mana.max || 100;
+      if (typeof s.combat.mana.max !== 'number' || isNaN(s.combat.mana.max) || s.combat.mana.max <= 0) s.combat.mana.max = 100;
+      if (typeof s.combat.mana.regenRate !== 'number' || isNaN(s.combat.mana.regenRate)) s.combat.mana.regenRate = 1;
+    }
+    // Quest arrays
+    if (!s.quests) s.quests = { active:[], completed:[], progress:{} };
+    if (!Array.isArray(s.quests.active)) s.quests.active = [];
+    if (!Array.isArray(s.quests.completed)) s.quests.completed = [];
+    if (!s.quests.progress || typeof s.quests.progress !== 'object') s.quests.progress = {};
+    // Stats
+    if (!s.stats) s.stats = {};
+    if (typeof s.stats.totalXpGained !== 'number' || isNaN(s.stats.totalXpGained)) s.stats.totalXpGained = 0;
+    if (typeof s.stats.monstersKilled !== 'number' || isNaN(s.stats.monstersKilled)) s.stats.monstersKilled = 0;
+    if (typeof s.stats.goldEarned !== 'number' || isNaN(s.stats.goldEarned)) s.stats.goldEarned = 0;
+    // ── END STATE VALIDATION ──
     if (!s.alignment) s.alignment = 'true_neutral';
     // alignmentPoints: migrate old {good,evil,lawful,chaotic} to new {moral,order}
     if (!s.alignmentPoints) s.alignmentPoints = { moral:0, order:0 };
@@ -203,10 +229,10 @@ class GameEngine {
     if (s.party.readyCheck === undefined) s.party.readyCheck = false;
     if (s.party.allReady === undefined) s.party.allReady = false;
     if (s.party.raidStarted === undefined) s.party.raidStarted = false;
-    // Barrows
-    if (!s.barrows) s.barrows = { active:false };
-    if (s.barrows.active) s.barrows = { active:false };
-    if (!s.stats.barrowsCompletions) s.stats.barrowsCompletions = 0;
+    // Ashen Crypts
+    if (!s.ashen_crypts) s.ashen_crypts = { active:false };
+    if (s.ashen_crypts.active) s.ashen_crypts = { active:false };
+    if (!s.stats.ashen_cryptsCompletions) s.stats.ashen_cryptsCompletions = 0;
     // Gauntlet
     if (!s.gauntlet) s.gauntlet = { active:false };
     if (s.gauntlet.active) s.gauntlet = { active:false };
@@ -2225,7 +2251,7 @@ class GameEngine {
 
   // ── DWARF CANNON SYSTEM ─────────────────────────────────────────
   hasCannon() {
-    return !!(this.state.bank['dwarf_cannon'] > 0 || this.state.equipment?.cannon === 'dwarf_cannon');
+    return !!(this.state.bank['ashforge_cannon'] > 0 || this.state.equipment?.cannon === 'ashforge_cannon');
   }
 
   isCannonQuestComplete() {
@@ -2238,7 +2264,7 @@ class GameEngine {
       return;
     }
     if (!this.hasCannon()) {
-      this.emit('notification', { type:'warn', text:'You need a Dwarf Cannon. Smith one from 4 cannon parts (Smithing 42).' });
+      this.emit('notification', { type:'warn', text:'You need a Ashforge Cannon. Smith one from 4 cannon parts (Smithing 42).' });
       return;
     }
     if (!this.state.combat.active) {
@@ -2918,9 +2944,9 @@ class GameEngine {
       // Validate ammo/weapon compatibility
       const weapon = this.getEquippedItem('weapon');
       if (item.ammoType === 'cannonball') {
-        // Cannonballs: only valid if player has a dwarf_cannon
-        const hasCannon = (this.state.bank['dwarf_cannon'] > 0);
-        if (!hasCannon) { this.emit('notification', { type:'warn', text:'You need a Dwarf Cannon to use cannonballs.' }); return; }
+        // Cannonballs: only valid if player has a ashforge_cannon
+        const hasCannon = (this.state.bank['ashforge_cannon'] > 0);
+        if (!hasCannon) { this.emit('notification', { type:'warn', text:'You need a Ashforge Cannon to use cannonballs.' }); return; }
       } else if (item.ammoType === 'arrow' && weapon && weapon.ammoType && weapon.ammoType !== 'arrow') {
         this.emit('notification', { type:'warn', text:`${item.name} requires a bow, not a crossbow.` }); return;
       }

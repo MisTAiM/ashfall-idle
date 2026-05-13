@@ -57,7 +57,7 @@ function spriteFor(spriteId) {
       // Cannon parts
       if (variant === 'gear') return `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="8" fill="#9da4b4" stroke="#4a5060" stroke-width="1.5"/><circle cx="16" cy="16" r="4" fill="#3a3e4a"/><path d="M16 4 L17.5 8 L14.5 8 Z M28 16 L24 17.5 L24 14.5 Z M16 28 L14.5 24 L17.5 24 Z M4 16 L8 14.5 L8 17.5 Z M23 9 L21 12.5 L18.5 11 Z M23 23 L19.5 21 L21 18.5 Z M9 23 L11 19.5 L13.5 21 Z M9 9 L12.5 11 L11 13.5 Z" fill="#9da4b4" stroke="#4a5060" stroke-width="0.5"/></svg>`;
       if (variant === 'cannon') return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <!-- Assembled Dwarf Cannon icon -->
+        <!-- Assembled Ashforge Cannon icon -->
         <rect x="4" y="20" width="24" height="6" rx="2" fill="#5a5a6e" stroke="#2a2a3a" stroke-width="1"/>
         <rect x="6" y="22" width="20" height="2" fill="#7a7a8e" opacity="0.5"/>
         <!-- Wheels -->

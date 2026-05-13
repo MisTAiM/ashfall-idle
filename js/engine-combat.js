@@ -293,26 +293,26 @@
     return Math.max(0.4, speed);
   };
 
-  // ── PLAYERATTACK — consume hits-based buffs + Dharok passive ────
+  // ── PLAYERATTACK — consume hits-based buffs + Maldrak passive ────
   const _origPlayerAttack = proto.playerAttack;
   proto.playerAttack = function(monster) {
-    // Dharok's passive: the lower your HP, the harder you hit
+    // Maldrak's passive: the lower your HP, the harder you hit
     const weapon = this.getEquippedItem('weapon');
-    if (weapon?.passiveEffect?.type === 'dharok') {
+    if (weapon?.passiveEffect?.type === 'maldrak') {
       const maxHp = this.getMaxHp();
       const curHp = this.state.combat.playerHp || maxHp;
       const missingPct = Math.max(0, (maxHp - curHp) / maxHp);
       const dharokMult = 1 + missingPct * 2; // up to ×3 at 1HP
       if (dharokMult > 1.01) {
         this.state.combat.activeBuffs.push({
-          stat:'damageMult', value:dharokMult, remaining:1, type:'hits', _dharok:true, _maxDuration:1
+          stat:'damageMult', value:dharokMult, remaining:1, type:'hits', _maldrak:true, _maxDuration:1
         });
       }
     }
 
     _origPlayerAttack.call(this, monster);
 
-    // Consume type:'hits' buffs (Power Strike, Dharok oneshot buff)
+    // Consume type:'hits' buffs (Power Strike, Maldrak oneshot buff)
     for (let i = this.state.combat.activeBuffs.length - 1; i >= 0; i--) {
       const b = this.state.combat.activeBuffs[i];
       if (b.type === 'hits') {
@@ -454,8 +454,8 @@
 
   // ── DHAROK'S PASSIVE ────────────────────────────────────────────
   // The _origPlayerAttack wrapper above handles hit-based buff consumption.
-  // Dharok passive: we inject before the attack by modifying activeBuffs.
+  // Maldrak passive: we inject before the attack by modifying activeBuffs.
   // This is handled by checking the weapon in the hits-consuming wrapper above.
 
-  console.log('[Ashfall] engine-combat.js v2 — abilities, buffs, specs, Dharok all patched.');
+  console.log('[Ashfall] engine-combat.js v2 — abilities, buffs, specs, Maldrak all patched.');
 })();

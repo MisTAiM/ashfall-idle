@@ -62,7 +62,7 @@ const NAV = [
     {id:'fight_cave',   label:'Fight Cave',    icon:'combat'},
     {id:'theatre',      label:'Theatre of Ash',icon:'combat'},
     {id:'chambers',     label:'Chambers',      icon:'dungeon'},
-    {id:'barrows',      label:'Barrows',       icon:'skull'},
+    {id:'ashen_crypts', label:'Ashen Crypts',       icon:'skull'},
   ]},
   { header:'Magic', icon:'🔮', items:[
     {id:'spellbooks',   label:'Spellbooks',   icon:'wand'},
@@ -441,7 +441,7 @@ class UI {
     else if (pageId === 'fight_cave') this.renderFightCavePage(main);
     else if (pageId === 'theatre')    this.renderTheatreOfAshPage(main);
     else if (pageId === 'chambers')   this.renderChambersOfAshPage(main);
-    else if (pageId === 'barrows')    this.renderBarrowsPage(main);
+    else if (pageId === 'ashen_crypts') this.renderAshenCryptsPage(main);
     else if (pageId === 'gauntlet')   this.renderGauntletPage(main);
     else if (pageId === 'inferno')    this.renderInfernoPage(main);
     else if (pageId === 'slayer_bosses') this.renderSlayerBossesPage(main);
@@ -1670,7 +1670,7 @@ class UI {
       </div>`;
 
       // ── DWARF CANNON PANEL ─────────────────────────────────────
-      const hasCannon = (s.bank?.['dwarf_cannon'] > 0);
+      const hasCannon = (s.bank?.['ashforge_cannon'] > 0);
       const cannonQuest = s.quests?.completed?.includes('artillerists_calling');
       const cannonActive = c.cannon?.active || false;
       const cballs = s.bank?.['cannonball'] || 0;
@@ -1681,7 +1681,7 @@ class UI {
         html += `<div class="cannon-panel ${cannonActive ? 'cannon-active' : ''}">
           <div class="cannon-panel-header">
             <span class="cannon-icon">${window.spriteFor ? spriteFor('misc-cannon') : '🔴'}</span>
-            <span class="cannon-title">Dwarf Cannon</span>
+            <span class="cannon-title">Ashforge Cannon</span>
             <span class="cannon-balls">${cballs.toLocaleString()} balls</span>
           </div>
           <div class="cannon-status">${hasCannon ? (cannonActive ? '⟳ FIRING — multi-target splash' : 'Packed up') : 'No cannon in bank'}</div>
@@ -1694,7 +1694,7 @@ class UI {
         // Hint toward cannon quest
         const questActive = s.quests?.active?.includes('artillerists_calling');
         if (!questActive) {
-          html += `<div class="cannon-hint">Quest unlocks: <b>Artillerist's Calling</b> — multi-target Dwarf Cannon</div>`;
+          html += `<div class="cannon-hint">Quest unlocks: <b>Artillerist's Calling</b> — multi-target Ashforge Cannon</div>`;
         }
       }
 

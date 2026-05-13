@@ -754,89 +754,19 @@ if (GAME_DATA.npcs && !GAME_DATA.npcs.cook_henrick) {
   };
 }
 
-// ── ONE-TIME MIGRATION: QP recalc + missing reward items ─
-// Runs after engine is fully initialized. Self-marks so it only runs once per version.
-const MIGRATION_KEY = '_questMigration_v3_2';
-
-function _runQuestMigration(engine) {
-  const s = engine.state;
-  if (!s || !s.quests) return;
-  if (s[MIGRATION_KEY]) return;
-
-  console.log('[Ashfall] Running quest migration v3.2...');
-  let qpBefore = s.questPoints || 0;
-  let itemsGranted = [];
-
-  if (!s.quests.stages) s.quests.stages = {};
-  if (!s.quests.progress) s.quests.progress = {};
-  if (!s.quests._readyToComplete) s.quests._readyToComplete = {};
-
-  // 1. Clean orphaned completed quest IDs (quests that no longer exist in GAME_DATA)
-  const orphaned = (s.quests.completed || []).filter(id => !GAME_DATA.quests.find(q => q.id === id));
-  if (orphaned.length > 0) {
-    console.log(`[Ashfall] Removing ${orphaned.length} orphaned completed quest IDs:`, orphaned);
-    s.quests.completed = s.quests.completed.filter(id => GAME_DATA.quests.find(q => q.id === id));
-  }
-
-  // 2. Recalculate QP from all VALID completed quests
-  let correctQP = 0;
-  for (const qId of (s.quests.completed || [])) {
-    const q = GAME_DATA.quests.find(x => x.id === qId);
-    if (q && q.qp) correctQP += q.qp;
-  }
-  s.questPoints = correctQP;
-
-  // 3. Grant missing reward items from completed quests
-  for (const qId of (s.quests.completed || [])) {
-    const q = GAME_DATA.quests.find(x => x.id === qId);
-    if (!q || !q.rewards || !q.rewards.items) continue;
-    for (const ri of q.rewards.items) {
-      const itemId = ri.id || ri.item;
-      const qty = ri.qty || 1;
-      if (!itemId) continue;
-      if ((s.bank[itemId] || 0) === 0) {
-        engine.addItem(itemId, qty);
-        itemsGranted.push({ name: GAME_DATA.items[itemId]?.name || itemId, qty });
-      }
-    }
-  }
-
-  // 4. Migrate active multi-stage quests missing stage state
-  for (const qId of (s.quests.active || [])) {
-    const q = GAME_DATA.quests.find(x => x.id === qId);
-    if (q && q.stages && q.stages.length > 0 && !s.quests.stages[qId]) {
-      const firstObjStage = q.stages.find(st => st.type === 'objectives') || q.stages[0];
-      s.quests.stages[qId] = { currentStageId: firstObjStage.id, stageHistory: [] };
-    }
-  }
-
-  // 5. Clean orphaned active quest IDs
-  s.quests.active = (s.quests.active || []).filter(id => GAME_DATA.quests.find(q => q.id === id));
-
-  s[MIGRATION_KEY] = Date.now();
-
-  if (correctQP !== qpBefore || orphaned.length > 0) {
-    engine.emit('notification', {
-      type: 'achievement',
-      text: `Quest Points recalculated: ${correctQP} QP (${s.quests.completed.length} quests)`
-    });
-  }
-  if (itemsGranted.length > 0) {
-    const names = itemsGranted.map(i => `${i.name}${i.qty > 1 ? ' x' + i.qty : ''}`);
-    engine.emit('notification', {
-      type: 'achievement',
-      text: `Retroactive quest rewards: ${names.join(', ')}`
-    });
-  }
-
-  console.log(`[Ashfall] Migration v3.2 complete. QP: ${qpBefore} → ${correctQP}. Orphans removed: ${orphaned.length}. Items granted: ${itemsGranted.length}`);
-  engine.emit('questsChanged');
-}
-
-// Run one-time migration after engine init
+// ── STARTUP: Clean orphaned quest IDs + sync QP after load ─
 setTimeout(() => {
   const eng = (typeof ui !== 'undefined' && ui.engine) ? ui.engine : (typeof game !== 'undefined' ? game : null);
-  if (eng) _runQuestMigration(eng);
+  if (!eng || !eng.state) return;
+  const s = eng.state;
+  // Remove quest IDs that no longer exist in GAME_DATA (handles renamed content)
+  s.quests.completed = (s.quests.completed||[]).filter(id => GAME_DATA.quests.find(q=>q.id===id));
+  s.quests.active    = (s.quests.active||[]).filter(id => GAME_DATA.quests.find(q=>q.id===id));
+  // Recalculate QP from completed quests — always live, never trust stale save value
+  let qp = 0;
+  for (const qId of s.quests.completed) { const q = GAME_DATA.quests.find(x=>x.id===qId); if (q?.qp) qp += q.qp; }
+  s.questPoints = qp;
+  eng.emit('questsChanged');
 }, 800);
 
 console.log('[Ashfall] quest-system.js v3.1 loaded. Multi-stage quest engine active.');

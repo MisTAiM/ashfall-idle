@@ -33,10 +33,10 @@ GAME_DATA.prestige = {
 
   // Kept items on prestige (these don't get wiped)
   keepItems: [
-    'dwarf_cannon','graceful_hood','graceful_top','graceful_legs',
-    'graceful_gloves','graceful_boots','graceful_cape','fire_cape',
+    'ashforge_cannon','graceful_hood','graceful_top','graceful_legs',
+    'graceful_gloves','graceful_boots','graceful_cape','ember_cape',
     'berserker_ring','archers_ring','seers_ring','fury_amulet',
-    'occult_necklace','barrows_gloves','ava_accumulator','slayer_helm',
+    'occult_necklace','crypts_gloves','ava_accumulator','slayer_helm',
   ],
 };
 

@@ -69,26 +69,26 @@ const GAME_DATA = {
   ],
 
   quests: [
-    {id:'pete_1',npc:'old_pete',name:'A Helping Hand',desc:'Bring 10 oak logs for the fireplace.',objectives:[{type:'gather',item:'oak_log',qty:10}],rewards:{gold:50,xp:{woodcutting:100}},prereq:null},
-    {id:'pete_2',npc:'old_pete',name:'Rat Trouble',desc:'Kill 5 giant rats.',objectives:[{type:'kill',monster:'rat',qty:5}],rewards:{gold:100,xp:{attack:150,strength:150}},prereq:'pete_1'},
-    {id:'pete_3',npc:'old_pete',name:'A Warm Meal',desc:'Cook 10 shrimp for the children.',objectives:[{type:'craft',item:'shrimp',qty:10}],rewards:{gold:75,xp:{cooking:200}},prereq:'pete_2'},
-    {id:'pete_4',npc:'old_pete',name:'Goblin Menace',desc:'Slay 10 goblins.',objectives:[{type:'kill',monster:'goblin',qty:10}],rewards:{gold:200,xp:{attack:300,strength:300}},prereq:'pete_3'},
-    {id:'elara_1',npc:'elara',name:'The First Test',desc:'Slay 20 skeletons.',objectives:[{type:'kill',monster:'skeleton',qty:20}],rewards:{gold:300,xp:{attack:500,strength:500,defence:500},rep:{silver_order:300}},prereq:null,faction:'silver_order'},
-    {id:'elara_2',npc:'elara',name:'Banditry Must End',desc:'Kill 10 bandits.',objectives:[{type:'kill',monster:'bandit',qty:10}],rewards:{gold:500,xp:{attack:750,strength:750},rep:{silver_order:400}},prereq:'elara_1'},
-    {id:'elara_3',npc:'elara',name:'Trolls of Ironpeak',desc:'Hunt 5 trolls.',objectives:[{type:'kill',monster:'troll',qty:5}],rewards:{gold:1000,xp:{attack:1500,strength:1500,defence:800},rep:{silver_order:600}},prereq:'elara_2'},
-    {id:'elara_4',npc:'elara',name:'Dragonslayer',desc:'Slay a Dragon.',objectives:[{type:'kill',monster:'dragon',qty:1}],rewards:{gold:5000,xp:{attack:5000,strength:5000,defence:3000},rep:{silver_order:2000},items:[{item:'silver_champion_sword',qty:1}]},prereq:'elara_3'},
-    {id:'garrick_1',npc:'garrick',name:'Bulk Order: Iron',desc:'Deliver 50 iron ore.',objectives:[{type:'gather',item:'iron_ore',qty:50}],rewards:{gold:500,xp:{mining:300},rep:{ashen_guild:200}},prereq:null,faction:'ashen_guild'},
-    {id:'garrick_2',npc:'garrick',name:'Finished Goods',desc:'Smith 20 steel bars.',objectives:[{type:'craft',item:'steel_bar',qty:20}],rewards:{gold:1000,xp:{smithing:500},rep:{ashen_guild:300}},prereq:'garrick_1'},
-    {id:'garrick_3',npc:'garrick',name:'Exotic Imports',desc:'Source 10 rubies.',objectives:[{type:'gather',item:'ruby',qty:10}],rewards:{gold:2000,xp:{mining:800},rep:{ashen_guild:500}},prereq:'garrick_2'},
-    {id:'garrick_4',npc:'garrick',name:'Merchant Prince',desc:'Accumulate 100,000 gold.',objectives:[{type:'gold',qty:100000}],rewards:{gold:10000,xp:{trading:5000},rep:{ashen_guild:1500}},prereq:'garrick_3'},
-    {id:'krolgar_1',npc:'krolgar',name:'Crush the Weak',desc:'Kill 20 chickens.',objectives:[{type:'kill',monster:'chicken',qty:20}],rewards:{gold:100,xp:{strength:300},rep:{bloodfang_clan:200}},prereq:null,faction:'bloodfang_clan'},
-    {id:'krolgar_2',npc:'krolgar',name:'Rob the Nobles',desc:'Pickpocket 10 nobles.',objectives:[{type:'thieve',target:'pickpocket_noble',qty:10}],rewards:{gold:500,xp:{thieving:500},rep:{bloodfang_clan:400}},prereq:'krolgar_1'},
-    {id:'krolgar_3',npc:'krolgar',name:'The Ogre Hunt',desc:'Slay 3 ogres.',objectives:[{type:'kill',monster:'ogre',qty:3}],rewards:{gold:1500,xp:{strength:2000},rep:{bloodfang_clan:800}},prereq:'krolgar_2'},
-    {id:'krolgar_4',npc:'krolgar',name:'Blood and Fire',desc:'Slay a demon.',objectives:[{type:'kill',monster:'demon',qty:1}],rewards:{gold:3000,xp:{strength:3500,attack:1000},rep:{bloodfang_clan:1500},items:[{item:'bloodfang_cleaver',qty:1}]},prereq:'krolgar_3'},
-    {id:'ilyana_1',npc:'ilyana',name:'Essence Gathering',desc:'Bring 100 rune essence.',objectives:[{type:'gather',item:'rune_essence',qty:100}],rewards:{gold:200,xp:{magic:500},rep:{veiled_circle:300}},prereq:null,faction:'veiled_circle'},
-    {id:'ilyana_2',npc:'ilyana',name:'Forbidden Herbs',desc:'Procure 20 voidblooms.',objectives:[{type:'gather',item:'voidbloom',qty:20}],rewards:{gold:800,xp:{foraging:1000,magic:500},rep:{veiled_circle:500}},prereq:'ilyana_1'},
-    {id:'ilyana_3',npc:'ilyana',name:'Dark Magic Study',desc:'Bring 30 death runes.',objectives:[{type:'gather',item:'death_rune',qty:30}],rewards:{gold:1500,xp:{magic:2000},rep:{veiled_circle:800}},prereq:'ilyana_2'},
-    {id:'ilyana_4',npc:'ilyana',name:'Void Pact',desc:'Slay a Void Walker.',objectives:[{type:'kill',monster:'void_walker',qty:1}],rewards:{gold:5000,xp:{magic:5000},rep:{veiled_circle:2000},items:[{item:'voidseer_staff',qty:1}]},prereq:'ilyana_3'},
+    {id:'pete_1',npcId:'old_pete',name:'A Helping Hand',desc:'Bring 10 oak logs for the fireplace.',objectives:[{type:'gather',item:'oak_log',qty:10,qp:1,difficulty:'novice',length:'short',series:'Village Tales',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:50,xp:{woodcutting:100}},prereqs:[]},
+    {id:'pete_2',npcId:'old_pete',name:'Rat Trouble',desc:'Kill 5 giant rats.',objectives:[{type:'kill',monster:'rat',qty:5,qp:1,difficulty:'novice',length:'short',series:'Village Tales',combatLevel:3,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:100,xp:{attack:150,strength:150}},prereqs:['pete_1']},
+    {id:'pete_3',npcId:'old_pete',name:'A Warm Meal',desc:'Cook 10 shrimp for the children.',objectives:[{type:'craft',item:'shrimp',qty:10,qp:1,difficulty:'novice',length:'short',series:'Village Tales',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:75,xp:{cooking:200}},prereqs:['pete_2']},
+    {id:'pete_4',npcId:'old_pete',name:'Goblin Menace',desc:'Slay 10 goblins.',objectives:[{type:'kill',monster:'goblin',qty:10,qp:2,difficulty:'novice',length:'short',series:'Village Tales',combatLevel:5,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:200,xp:{attack:300,strength:300}},prereqs:['pete_3']},
+    {id:'elara_1',npcId:'elara',name:'The First Test',desc:'Slay 20 skeletons.',objectives:[{type:'kill',monster:'skeleton',qty:20,qp:1,difficulty:'novice',length:'short',series:'Silver Order',combatLevel:10,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:300,xp:{attack:500,strength:500,defence:500},rep:{silver_order:300}},prereqs:[],faction:'silver_order'},
+    {id:'elara_2',npcId:'elara',name:'Banditry Must End',desc:'Kill 10 bandits.',objectives:[{type:'kill',monster:'bandit',qty:10,qp:2,difficulty:'novice',length:'short',series:'Silver Order',combatLevel:15,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:500,xp:{attack:750,strength:750},rep:{silver_order:400}},prereqs:['elara_1']},
+    {id:'elara_3',npcId:'elara',name:'Trolls of Ironpeak',desc:'Hunt 5 trolls.',objectives:[{type:'kill',monster:'troll',qty:5,qp:2,difficulty:'intermediate',length:'medium',series:'Silver Order',combatLevel:28,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1000,xp:{attack:1500,strength:1500,defence:800},rep:{silver_order:600}},prereqs:['elara_2']},
+    {id:'elara_4',npcId:'elara',name:'Dragonslayer',desc:'Slay a Dragon.',objectives:[{type:'kill',monster:'dragon',qty:1,qp:3,difficulty:'intermediate',length:'long',series:'Silver Order',combatLevel:75,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:5000,xp:{attack:5000,strength:5000,defence:3000},rep:{silver_order:2000},items:[{item:'silver_champion_sword',qty:1}]},prereqs:['elara_3']},
+    {id:'garrick_1',npcId:'garrick',name:'Bulk Order: Iron',desc:'Deliver 50 iron ore.',objectives:[{type:'gather',item:'iron_ore',qty:50,qp:1,difficulty:'novice',length:'short',series:'Merchant Guild',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:500,xp:{mining:300},rep:{ashen_guild:200}},prereqs:[],faction:'ashen_guild'},
+    {id:'garrick_2',npcId:'garrick',name:'Finished Goods',desc:'Smith 20 steel bars.',objectives:[{type:'craft',item:'steel_bar',qty:20,qp:1,difficulty:'novice',length:'short',series:'Merchant Guild',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1000,xp:{smithing:500},rep:{ashen_guild:300}},prereqs:['garrick_1']},
+    {id:'garrick_3',npcId:'garrick',name:'Exotic Imports',desc:'Source 10 rubies.',objectives:[{type:'gather',item:'ruby',qty:10,qp:2,difficulty:'intermediate',length:'medium',series:'Merchant Guild',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:2000,xp:{mining:800},rep:{ashen_guild:500}},prereqs:['garrick_2']},
+    {id:'garrick_4',npcId:'garrick',name:'Merchant Prince',desc:'Accumulate 100,000 gold.',objectives:[{type:'gold',qty:100000,qp:3,difficulty:'intermediate',length:'long',series:'Merchant Guild',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:10000,xp:{trading:5000},rep:{ashen_guild:1500}},prereqs:['garrick_3']},
+    {id:'krolgar_1',npcId:'krolgar',name:'Crush the Weak',desc:'Kill 20 chickens.',objectives:[{type:'kill',monster:'chicken',qty:20,qp:1,difficulty:'novice',length:'short',series:'Bloodfang Trials',combatLevel:1,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:100,xp:{strength:300},rep:{bloodfang_clan:200}},prereqs:[],faction:'bloodfang_clan'},
+    {id:'krolgar_2',npcId:'krolgar',name:'Rob the Nobles',desc:'Pickpocket 10 nobles.',objectives:[{type:'thieve',target:'pickpocket_noble',qty:10,qp:1,difficulty:'novice',length:'short',series:'Bloodfang Trials',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:500,xp:{thieving:500},rep:{bloodfang_clan:400}},prereqs:['krolgar_1']},
+    {id:'krolgar_3',npcId:'krolgar',name:'The Ogre Hunt',desc:'Slay 3 ogres.',objectives:[{type:'kill',monster:'ogre',qty:3,qp:2,difficulty:'intermediate',length:'medium',series:'Bloodfang Trials',combatLevel:40,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1500,xp:{strength:2000},rep:{bloodfang_clan:800}},prereqs:['krolgar_2']},
+    {id:'krolgar_4',npcId:'krolgar',name:'Blood and Fire',desc:'Slay a demon.',objectives:[{type:'kill',monster:'demon',qty:1,qp:3,difficulty:'intermediate',length:'medium',series:'Bloodfang Trials',combatLevel:60,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:3000,xp:{strength:3500,attack:1000},rep:{bloodfang_clan:1500},items:[{item:'bloodfang_cleaver',qty:1}]},prereqs:['krolgar_3']},
+    {id:'ilyana_1',npcId:'ilyana',name:'Essence Gathering',desc:'Bring 100 rune essence.',objectives:[{type:'gather',item:'rune_essence',qty:100,qp:1,difficulty:'novice',length:'short',series:'Veiled Circle',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:200,xp:{magic:500},rep:{veiled_circle:300}},prereqs:[],faction:'veiled_circle'},
+    {id:'ilyana_2',npcId:'ilyana',name:'Forbidden Herbs',desc:'Procure 20 voidblooms.',objectives:[{type:'gather',item:'voidbloom',qty:20,qp:1,difficulty:'novice',length:'short',series:'Veiled Circle',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:800,xp:{foraging:1000,magic:500},rep:{veiled_circle:500}},prereqs:['ilyana_1']},
+    {id:'ilyana_3',npcId:'ilyana',name:'Dark Magic Study',desc:'Bring 30 death runes.',objectives:[{type:'gather',item:'death_rune',qty:30,qp:2,difficulty:'intermediate',length:'short',series:'Veiled Circle',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1500,xp:{magic:2000},rep:{veiled_circle:800}},prereqs:['ilyana_2']},
+    {id:'ilyana_4',npcId:'ilyana',name:'Void Pact',desc:'Slay a Void Walker.',objectives:[{type:'kill',monster:'void_walker',qty:1,qp:3,difficulty:'intermediate',length:'medium',series:'Veiled Circle',combatLevel:85,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:5000,xp:{magic:5000},rep:{veiled_circle:2000},items:[{item:'voidseer_staff',qty:1}]},prereqs:['ilyana_3']},
   ],
 
   items: (() => {
@@ -862,46 +862,46 @@ GAME_DATA.npcs.push(
 // ── MORE QUESTS ──────────────────────────────────────────
 GAME_DATA.quests.push(
   // Greybeard quest chain — Prayer introduction
-  {id:'grey_1',npc:'greybeard',name:'The Way of Prayer',desc:'Bury 20 bones at the monastery.',objectives:[{type:'bury_bones',qty:20}],rewards:{gold:100,xp:{prayer:200}},prereq:null},
-  {id:'grey_2',npc:'greybeard',name:'Stronger Faith',desc:'Bury 10 big bones.',objectives:[{type:'bury_big_bones',qty:10}],rewards:{gold:300,xp:{prayer:500}},prereq:'grey_1'},
-  {id:'grey_3',npc:'greybeard',name:'Dragon Devotion',desc:'Bury 5 dragon bones.',objectives:[{type:'bury_dragon_bones',qty:5}],rewards:{gold:1000,xp:{prayer:2000}},prereq:'grey_2'},
-  {id:'grey_4',npc:'greybeard',name:'Piety of Ash',desc:'Reach Prayer level 43.',objectives:[{type:'skill_level',skill:'prayer',level:43,qty:1}],rewards:{gold:2000,xp:{prayer:5000}},prereq:'grey_3'},
+  {id:'grey_1',npcId:'greybeard',name:'The Way of Prayer',desc:'Bury 20 bones at the monastery.',objectives:[{type:'bury_bones',qty:20,qp:1,difficulty:'novice',length:'short',series:'Path of Prayer',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:100,xp:{prayer:200}},prereqs:[]},
+  {id:'grey_2',npcId:'greybeard',name:'Stronger Faith',desc:'Bury 10 big bones.',objectives:[{type:'bury_big_bones',qty:10,qp:1,difficulty:'novice',length:'short',series:'Path of Prayer',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:300,xp:{prayer:500}},prereqs:['grey_1']},
+  {id:'grey_3',npcId:'greybeard',name:'Dragon Devotion',desc:'Bury 5 dragon bones.',objectives:[{type:'bury_dragon_bones',qty:5,qp:2,difficulty:'intermediate',length:'medium',series:'Path of Prayer',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1000,xp:{prayer:2000}},prereqs:['grey_2']},
+  {id:'grey_4',npcId:'greybeard',name:'Piety of Ash',desc:'Reach Prayer level 43.',objectives:[{type:'skill_level',skill:'prayer',level:43,qty:1,qp:3,difficulty:'intermediate',length:'medium',series:'Path of Prayer',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:2000,xp:{prayer:5000}},prereqs:['grey_3']},
 
   // Vex quest chain — Slayer introduction
-  {id:'vex_1',npc:'vex',name:'First Assignment',desc:'Complete 3 slayer tasks.',objectives:[{type:'slayer_tasks',qty:3}],rewards:{gold:200,xp:{slayer:300}},prereq:null},
-  {id:'vex_2',npc:'vex',name:'Proving Your Worth',desc:'Complete 10 slayer tasks.',objectives:[{type:'slayer_tasks',qty:10}],rewards:{gold:800,xp:{slayer:1000}},prereq:'vex_1'},
-  {id:'vex_3',npc:'vex',name:'Slayer of Beasts',desc:'Kill 100 monsters on slayer tasks.',objectives:[{type:'slayer_kills',qty:100}],rewards:{gold:1500,xp:{slayer:2500}},prereq:'vex_2'},
-  {id:'vex_4',npc:'vex',name:'Master Slayer',desc:'Reach Slayer level 50.',objectives:[{type:'skill_level',skill:'slayer',level:50,qty:1}],rewards:{gold:5000,xp:{slayer:5000},items:[{item:'slayer_helm',qty:1}]},prereq:'vex_3'},
+  {id:'vex_1',npcId:'vex',name:'First Assignment',desc:'Complete 3 slayer tasks.',objectives:[{type:'slayer_tasks',qty:3,qp:1,difficulty:'novice',length:'short',series:'Slayer Ranks',combatLevel:10,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:200,xp:{slayer:300}},prereqs:[]},
+  {id:'vex_2',npcId:'vex',name:'Proving Your Worth',desc:'Complete 10 slayer tasks.',objectives:[{type:'slayer_tasks',qty:10,qp:2,difficulty:'intermediate',length:'medium',series:'Slayer Ranks',combatLevel:15,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:800,xp:{slayer:1000}},prereqs:['vex_1']},
+  {id:'vex_3',npcId:'vex',name:'Slayer of Beasts',desc:'Kill 100 monsters on slayer tasks.',objectives:[{type:'slayer_kills',qty:100,qp:2,difficulty:'intermediate',length:'long',series:'Slayer Ranks',combatLevel:25,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1500,xp:{slayer:2500}},prereqs:['vex_2']},
+  {id:'vex_4',npcId:'vex',name:'Master Slayer',desc:'Reach Slayer level 50.',objectives:[{type:'skill_level',skill:'slayer',level:50,qty:1,qp:3,difficulty:'experienced',length:'long',series:'Slayer Ranks',combatLevel:40,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:5000,xp:{slayer:5000},items:[{item:'slayer_helm',qty:1}]},prereqs:['vex_3']},
 
   // Lyra quest chain — Cryomancy
-  {id:'lyra_1',npc:'lyra',name:'Ice Affinity',desc:'Kill 15 Frost Spirits.',objectives:[{type:'kill',monster:'frost_spirit',qty:15}],rewards:{gold:400,xp:{magic:600},rep:{veiled_circle:300}},prereq:null,faction:'veiled_circle'},
-  {id:'lyra_2',npc:'lyra',name:'Frozen Knowledge',desc:'Collect 50 water runes.',objectives:[{type:'gather',item:'water_rune',qty:50}],rewards:{gold:800,xp:{magic:1200},rep:{veiled_circle:500}},prereq:'lyra_1'},
-  {id:'lyra_3',npc:'lyra',name:'Wraith Hunter',desc:'Kill 5 Frost Wraiths.',objectives:[{type:'kill',monster:'frost_wraith',qty:5}],rewards:{gold:1500,xp:{magic:2500},rep:{veiled_circle:800}},prereq:'lyra_2'},
-  {id:'lyra_4',npc:'lyra',name:'Drake Slayer',desc:'Kill a Frost Drake.',objectives:[{type:'kill',monster:'frost_drake',qty:1}],rewards:{gold:3000,xp:{magic:5000},rep:{veiled_circle:1500}},prereq:'lyra_3'},
+  {id:'lyra_1',npcId:'lyra',name:'Ice Affinity',desc:'Kill 15 Frost Spirits.',objectives:[{type:'kill',monster:'frost_spirit',qty:15,qp:1,difficulty:'intermediate',length:'short',series:'Frost Studies',combatLevel:20,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:400,xp:{magic:600},rep:{veiled_circle:300}},prereqs:[],faction:'veiled_circle'},
+  {id:'lyra_2',npcId:'lyra',name:'Frozen Knowledge',desc:'Collect 50 water runes.',objectives:[{type:'gather',item:'water_rune',qty:50,qp:1,difficulty:'intermediate',length:'short',series:'Frost Studies',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:800,xp:{magic:1200},rep:{veiled_circle:500}},prereqs:['lyra_1']},
+  {id:'lyra_3',npcId:'lyra',name:'Wraith Hunter',desc:'Kill 5 Frost Wraiths.',objectives:[{type:'kill',monster:'frost_wraith',qty:5,qp:2,difficulty:'experienced',length:'medium',series:'Frost Studies',combatLevel:35,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1500,xp:{magic:2500},rep:{veiled_circle:800}},prereqs:['lyra_2']},
+  {id:'lyra_4',npcId:'lyra',name:'Drake Slayer',desc:'Kill a Frost Drake.',objectives:[{type:'kill',monster:'frost_drake',qty:1,qp:3,difficulty:'experienced',length:'medium',series:'Frost Studies',combatLevel:55,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:3000,xp:{magic:5000},rep:{veiled_circle:1500}},prereqs:['lyra_3']},
 
   // Tormund quest chain — Ashborn creatures
-  {id:'tor_1',npc:'tormund',name:'Ash Samples',desc:'Kill 20 Ashlings.',objectives:[{type:'kill',monster:'ashling',qty:20}],rewards:{gold:300,xp:{attack:400,magic:400}},prereq:null},
-  {id:'tor_2',npc:'tormund',name:'Ember Study',desc:'Kill 10 Ember Wraiths.',objectives:[{type:'kill',monster:'ember_wraith',qty:10}],rewards:{gold:600,xp:{magic:800}},prereq:'tor_1'},
-  {id:'tor_3',npc:'tormund',name:'Golem Core',desc:'Kill 3 Ash Golems.',objectives:[{type:'kill',monster:'ash_golem',qty:3}],rewards:{gold:1200,xp:{strength:1500,defence:1000}},prereq:'tor_2'},
-  {id:'tor_4',npc:'tormund',name:'Ashborn Codex',desc:'Complete the Ashen Depths dungeon.',objectives:[{type:'dungeon',dungeon:'ashen_depths',qty:1}],rewards:{gold:2500,xp:{attack:3000,magic:3000}},prereq:'tor_3'},
+  {id:'tor_1',npcId:'tormund',name:'Ash Samples',desc:'Kill 20 Ashlings.',objectives:[{type:'kill',monster:'ashling',qty:20,qp:1,difficulty:'intermediate',length:'short',series:'Ashborn Research',combatLevel:15,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:300,xp:{attack:400,magic:400}},prereqs:[]},
+  {id:'tor_2',npcId:'tormund',name:'Ember Study',desc:'Kill 10 Ember Wraiths.',objectives:[{type:'kill',monster:'ember_wraith',qty:10,qp:1,difficulty:'intermediate',length:'short',series:'Ashborn Research',combatLevel:25,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:600,xp:{magic:800}},prereqs:['tor_1']},
+  {id:'tor_3',npcId:'tormund',name:'Golem Core',desc:'Kill 3 Ash Golems.',objectives:[{type:'kill',monster:'ash_golem',qty:3,qp:2,difficulty:'experienced',length:'medium',series:'Ashborn Research',combatLevel:40,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1200,xp:{strength:1500,defence:1000}},prereqs:['tor_2']},
+  {id:'tor_4',npcId:'tormund',name:'Ashborn Codex',desc:'Complete the Ashen Depths dungeon.',objectives:[{type:'dungeon',dungeon:'ashen_depths',qty:1,qp:3,difficulty:'experienced',length:'long',series:'Ashborn Research',combatLevel:50,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:2500,xp:{attack:3000,magic:3000}},prereqs:['tor_3']},
 
   // Elena quest chain — Hollow creatures
-  {id:'elena_1',npc:'elena',name:'Hollow Patrol',desc:'Kill 20 Hollow Soldiers.',objectives:[{type:'kill',monster:'hollow_soldier',qty:20}],rewards:{gold:400,xp:{attack:500,defence:500},rep:{silver_order:300}},prereq:null,faction:'silver_order'},
-  {id:'elena_2',npc:'elena',name:'Knight Fall',desc:'Kill 10 Hollow Knights.',objectives:[{type:'kill',monster:'hollow_knight',qty:10}],rewards:{gold:1000,xp:{attack:1200,defence:800},rep:{silver_order:500}},prereq:'elena_1'},
-  {id:'elena_3',npc:'elena',name:'Lord of Hollows',desc:'Kill 3 Hollow Lords.',objectives:[{type:'kill',monster:'hollow_lord',qty:3}],rewards:{gold:2500,xp:{attack:3000,defence:2000},rep:{silver_order:1000}},prereq:'elena_2'},
-  {id:'elena_4',npc:'elena',name:'Citadel Siege',desc:'Complete the Hollow Citadel dungeon.',objectives:[{type:'dungeon',dungeon:'hollow_citadel',qty:1}],rewards:{gold:5000,xp:{attack:5000,strength:3000,defence:3000},rep:{silver_order:2000}},prereq:'elena_3'},
+  {id:'elena_1',npcId:'elena',name:'Hollow Patrol',desc:'Kill 20 Hollow Soldiers.',objectives:[{type:'kill',monster:'hollow_soldier',qty:20,qp:1,difficulty:'intermediate',length:'short',series:'Hollow Campaign',combatLevel:20,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:400,xp:{attack:500,defence:500},rep:{silver_order:300}},prereqs:[],faction:'silver_order'},
+  {id:'elena_2',npcId:'elena',name:'Knight Fall',desc:'Kill 10 Hollow Knights.',objectives:[{type:'kill',monster:'hollow_knight',qty:10,qp:2,difficulty:'intermediate',length:'medium',series:'Hollow Campaign',combatLevel:30,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:1000,xp:{attack:1200,defence:800},rep:{silver_order:500}},prereqs:['elena_1']},
+  {id:'elena_3',npcId:'elena',name:'Lord of Hollows',desc:'Kill 3 Hollow Lords.',objectives:[{type:'kill',monster:'hollow_lord',qty:3,qp:2,difficulty:'experienced',length:'medium',series:'Hollow Campaign',combatLevel:50,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:2500,xp:{attack:3000,defence:2000},rep:{silver_order:1000}},prereqs:['elena_2']},
+  {id:'elena_4',npcId:'elena',name:'Citadel Siege',desc:'Complete the Hollow Citadel dungeon.',objectives:[{type:'dungeon',dungeon:'hollow_citadel',qty:1,qp:3,difficulty:'experienced',length:'long',series:'Hollow Campaign',combatLevel:60,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:5000,xp:{attack:5000,strength:3000,defence:3000},rep:{silver_order:2000}},prereqs:['elena_3']},
 
   // Morrigan quest chain — Blood Magic
-  {id:'morr_1',npc:'morrigan',name:'Blood Harvest',desc:'Collect 30 death runes.',objectives:[{type:'gather',item:'death_rune',qty:30}],rewards:{gold:500,xp:{magic:800}},prereq:null},
-  {id:'morr_2',npc:'morrigan',name:'Crimson Practice',desc:'Kill 20 creatures using magic.',objectives:[{type:'magic_kills',qty:20}],rewards:{gold:800,xp:{magic:1500}},prereq:'morr_1'},
-  {id:'morr_3',npc:'morrigan',name:'Blood Pact Ritual',desc:'Collect 50 chaos runes and 30 death runes.',objectives:[{type:'gather',item:'chaos_rune',qty:50},{type:'gather',item:'death_rune',qty:30}],rewards:{gold:2000,xp:{magic:3000}},prereq:'morr_2'},
-  {id:'morr_4',npc:'morrigan',name:'The Crimson Tide',desc:'Kill a Demon using blood magic.',objectives:[{type:'kill',monster:'demon',qty:1}],rewards:{gold:4000,xp:{magic:5000}},prereq:'morr_3'},
+  {id:'morr_1',npcId:'morrigan',name:'Blood Harvest',desc:'Collect 30 death runes.',objectives:[{type:'gather',item:'death_rune',qty:30,qp:1,difficulty:'intermediate',length:'short',series:'Blood Rituals',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:500,xp:{magic:800}},prereqs:[]},
+  {id:'morr_2',npcId:'morrigan',name:'Crimson Practice',desc:'Kill 20 creatures using magic.',objectives:[{type:'magic_kills',qty:20,qp:1,difficulty:'intermediate',length:'medium',series:'Blood Rituals',combatLevel:20,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:800,xp:{magic:1500}},prereqs:['morr_1']},
+  {id:'morr_3',npcId:'morrigan',name:'Blood Pact Ritual',desc:'Collect 50 chaos runes and 30 death runes.',objectives:[{type:'gather',item:'chaos_rune',qty:50,qp:2,difficulty:'experienced',length:'medium',series:'Blood Rituals',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]},{type:'gather',item:'death_rune',qty:30}],rewards:{gold:2000,xp:{magic:3000}},prereqs:['morr_2']},
+  {id:'morr_4',npcId:'morrigan',name:'The Crimson Tide',desc:'Kill a Demon using blood magic.',objectives:[{type:'kill',monster:'demon',qty:1,qp:3,difficulty:'experienced',length:'medium',series:'Blood Rituals',combatLevel:60,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:4000,xp:{magic:5000}},prereqs:['morr_3']},
 
   // Dorn quest chain — Smithing mastery
-  {id:'dorn_1',npc:'dorn',name:'Bulk Iron',desc:'Smith 30 iron bars.',objectives:[{type:'craft',item:'iron_bar',qty:30}],rewards:{gold:300,xp:{smithing:400},rep:{ashen_guild:200}},prereq:null,faction:'ashen_guild'},
-  {id:'dorn_2',npc:'dorn',name:'Steel Mastery',desc:'Smith 20 steel swords.',objectives:[{type:'craft',item:'steel_sword',qty:20}],rewards:{gold:800,xp:{smithing:1200},rep:{ashen_guild:400}},prereq:'dorn_1'},
-  {id:'dorn_3',npc:'dorn',name:'Mithril Challenge',desc:'Smith 10 mithril platebodies.',objectives:[{type:'craft',item:'mithril_plate',qty:10}],rewards:{gold:2000,xp:{smithing:3000},rep:{ashen_guild:700}},prereq:'dorn_2'},
-  {id:'dorn_4',npc:'dorn',name:'The Ashsteel Secret',desc:'Reach Smithing level 70 and smith 5 obsidian bars.',objectives:[{type:'skill_level',skill:'smithing',level:70,qty:1},{type:'craft',item:'obsidian_bar',qty:5}],rewards:{gold:5000,xp:{smithing:5000},rep:{ashen_guild:1500}},prereq:'dorn_3'},
+  {id:'dorn_1',npcId:'dorn',name:'Bulk Iron',desc:'Smith 30 iron bars.',objectives:[{type:'craft',item:'iron_bar',qty:30,qp:1,difficulty:'intermediate',length:'short',series:'Forge Mastery',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:300,xp:{smithing:400},rep:{ashen_guild:200}},prereqs:[],faction:'ashen_guild'},
+  {id:'dorn_2',npcId:'dorn',name:'Steel Mastery',desc:'Smith 20 steel swords.',objectives:[{type:'craft',item:'steel_sword',qty:20,qp:1,difficulty:'intermediate',length:'medium',series:'Forge Mastery',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:800,xp:{smithing:1200},rep:{ashen_guild:400}},prereqs:['dorn_1']},
+  {id:'dorn_3',npcId:'dorn',name:'Mithril Challenge',desc:'Smith 10 mithril platebodies.',objectives:[{type:'craft',item:'mithril_plate',qty:10,qp:2,difficulty:'experienced',length:'medium',series:'Forge Mastery',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]}],rewards:{gold:2000,xp:{smithing:3000},rep:{ashen_guild:700}},prereqs:['dorn_2']},
+  {id:'dorn_4',npcId:'dorn',name:'The Ashsteel Secret',desc:'Reach Smithing level 70 and smith 5 obsidian bars.',objectives:[{type:'skill_level',skill:'smithing',level:70,qty:1,qp:3,difficulty:'experienced',length:'long',series:'Forge Mastery',combatLevel:0,qpRequired:0,levelReqs:{},stages:[],questDrops:[]},{type:'craft',item:'obsidian_bar',qty:5}],rewards:{gold:5000,xp:{smithing:5000},rep:{ashen_guild:1500}},prereqs:['dorn_3']},
 );
 
 // ── MORE ACHIEVEMENTS ────────────────────────────────────
@@ -1066,7 +1066,7 @@ GAME_DATA.items.cannon_base    = {id:'cannon_base',    name:'Cannon Base',    ty
 GAME_DATA.items.cannon_stand   = {id:'cannon_stand',   name:'Cannon Stand',   type:'resource',subtype:'cannon_part',sellPrice:500, sprite:'misc-gear',    desc:'The rotating stand assembly. One of four parts needed.'};
 GAME_DATA.items.cannon_barrels = {id:'cannon_barrels', name:'Cannon Barrels', type:'resource',subtype:'cannon_part',sellPrice:500, sprite:'misc-gear',    desc:'The multi-barrel assembly. One of four parts needed.'};
 GAME_DATA.items.cannon_furnace = {id:'cannon_furnace', name:'Cannon Furnace', type:'resource',subtype:'cannon_part',sellPrice:500, sprite:'misc-gear',    desc:'The mithril-lined furnace. One of four parts needed.'};
-GAME_DATA.items.dwarf_cannon   = {id:'dwarf_cannon',   name:'Dwarf Cannon',   type:'special', slot:'cannon',       sellPrice:5000,sprite:'misc-cannon',   desc:'A powerful dwarf multi-cannon. Place in combat to fire cannonballs at multiple targets. Requires Artillerist\'s Calling quest.',questReq:'artillerists_calling',unique:true,isCannonItem:true};
+GAME_DATA.items.ashforge_cannon   = {id:'ashforge_cannon',   name:'Ashforge Cannon',   type:'special', slot:'cannon',       sellPrice:5000,sprite:'misc-cannon',   desc:'A powerful ashforge multi-cannon. Place in combat to fire cannonballs at multiple targets. Requires Artillerist\'s Calling quest.',questReq:'artillerists_calling',unique:true,isCannonItem:true};
 GAME_DATA.items.cannonball     = {id:'cannonball',     name:'Cannonball',     type:'ammo',    slot:'ammo',subtype:'cannonball',ammoType:'cannonball',stackable:true,rangedBonus:0,sellPrice:25,sprite:'misc-ball',desc:'Iron cannonball for the dwarf cannon.'};
 
 // New fish + food tiers
@@ -1185,7 +1185,7 @@ GAME_DATA.recipes.smithing.push(
   {id:'smith_cannon_stand',   name:'Cannon Stand',      level:37,xp:400,time:8.0, input:[{item:'steel_bar',qty:6}],  output:{item:'cannon_stand',qty:1}, category:'Cannon', desc:'Rotating stand assembly.'},
   {id:'smith_cannon_barrels', name:'Cannon Barrels',    level:40,xp:600,time:10.0,input:[{item:'steel_bar',qty:10}], output:{item:'cannon_barrels',qty:1},category:'Cannon', desc:'Quad-barrel firing mechanism.'},
   {id:'smith_cannon_furnace', name:'Cannon Furnace',    level:40,xp:600,time:10.0,input:[{item:'steel_bar',qty:4},{item:'mithril_bar',qty:2}],output:{item:'cannon_furnace',qty:1},category:'Cannon', desc:'Mithril-lined furnace chamber.'},
-  {id:'smith_dwarf_cannon',   name:'Dwarf Cannon',      level:42,xp:2000,time:15.0,input:[{item:'cannon_base',qty:1},{item:'cannon_stand',qty:1},{item:'cannon_barrels',qty:1},{item:'cannon_furnace',qty:1}],output:{item:'dwarf_cannon',qty:1},category:'Cannon',desc:'Assemble the four cannon parts into a complete dwarf cannon.'},
+  {id:'smith_ashforge_cannon',   name:'Ashforge Cannon',      level:42,xp:2000,time:15.0,input:[{item:'cannon_base',qty:1},{item:'cannon_stand',qty:1},{item:'cannon_barrels',qty:1},{item:'cannon_furnace',qty:1}],output:{item:'ashforge_cannon',qty:1},category:'Cannon',desc:'Assemble the four cannon parts into a complete dwarf cannon.'},
 );
 // New fletching
 GAME_DATA.recipes.fletching.push(
@@ -1354,12 +1354,12 @@ const _jewelry = [
   ['glory_amulet','Amulet of Glory','armor','amulet',null,null,{attackBonus:12,strengthBonus:10,defenceBonus:8},{attack:30},3000,'amulet-gold','A blessed amulet.'],
   ['occult_necklace','Occult Necklace','armor','amulet',null,null,{magicBonus:20,defenceBonus:4},{magic:50},10000,'amulet-purple','Boosts magic power.',true],
   ['obsidian_cape','Obsidian Cape','armor','cape',null,null,{defenceBonus:12,damageReduction:3},{defence:30},2000,'cape-black','Dark obsidian cape.'],
-  ['fire_cape','Fire Cape','armor','cape',null,null,{attackBonus:8,strengthBonus:8,defenceBonus:14,damageReduction:5},{defence:45},20000,'cape-red','Cape of living flame.',true],
+  ['ember_cape','Ember Cape','armor','cape',null,null,{attackBonus:8,strengthBonus:8,defenceBonus:14,damageReduction:5},{defence:45},20000,'cape-red','Cape of living flame.',true],
   ['ava_accumulator','Ava\'s Accumulator','armor','cape',null,null,{rangedBonus:16,defenceBonus:4},{ranged:40},5000,'cape-green','Retrieves ammo automatically.',true],
   ['mage_cape','Archmage Cape','armor','cape',null,null,{magicBonus:16,defenceBonus:6},{magic:50},8000,'cape-blue','Cape of arcane mastery.',true],
   ['leather_gloves','Leather Gloves','armor','gloves',null,null,{defenceBonus:2},{},50,'gloves-brown','Basic protection.'],
   ['combat_bracelet','Combat Bracelet','armor','gloves',null,null,{attackBonus:10,strengthBonus:8,defenceBonus:8},{attack:30},2500,'gloves-steel','All-round combat bracers.'],
-  ['barrows_gloves','Barrows Gloves','armor','gloves',null,null,{attackBonus:16,strengthBonus:14,defenceBonus:16,rangedBonus:14,magicBonus:10},{attack:50,defence:50},25000,'gloves-red','The best gloves.',true],
+  ['crypts_gloves','Crypts Gloves','armor','gloves',null,null,{attackBonus:16,strengthBonus:14,defenceBonus:16,rangedBonus:14,magicBonus:10},{attack:50,defence:50},25000,'gloves-red','The best gloves.',true],
 ];
 for (const [id,name,type,slot,style,speed,stats,req,price,sprite,desc,unique] of _jewelry) {
   const item = {id,name,type,slot,stats,levelReq:req||{},sellPrice:price,sprite,desc};
@@ -1460,9 +1460,9 @@ Object.assign(GAME_DATA.monsters, {
   ice_troll:    {id:'ice_troll',name:'Ice Troll',hp:450,maxHit:35,attackSpeed:2.8,combatLevel:35,style:'melee',evasion:{melee:35,ranged:30,magic:20},xp:720,gold:{min:20,max:80},alignment:'CE',drops:[{item:'big_bones',qty:1,chance:1.0},{item:'sapphire',qty:1,chance:0.06},{item:'mithril_ore',qty:2,chance:0.12},{item:'water_rune',qty:10,chance:0.20}]},
   shadow_beast: {id:'shadow_beast',name:'Shadow Beast',hp:800,maxHit:60,attackSpeed:2.2,combatLevel:55,style:'melee',evasion:{melee:50,ranged:45,magic:40},xp:1800,gold:{min:40,max:160},alignment:'NE',drops:[{item:'big_bones',qty:2,chance:1.0},{item:'death_rune',qty:5,chance:0.18},{item:'onyx',qty:1,chance:0.02},{item:'obsidian_ore',qty:2,chance:0.10}]},
   corrupted_golem:{id:'corrupted_golem',name:'Corrupted Golem',hp:2500,maxHit:80,attackSpeed:3.4,combatLevel:70,style:'melee',evasion:{melee:60,ranged:55,magic:30},xp:2800,gold:{min:80,max:300},alignment:'NN',drops:[{item:'dragon_bones',qty:1,chance:0.50},{item:'runite_ore',qty:3,chance:0.12},{item:'adamant_plate',qty:1,chance:0.03},{item:'diamond',qty:1,chance:0.05},{item:'void_crystal',qty:1,chance:0.02}]},
-  phoenix:      {id:'phoenix',name:'Phoenix',hp:1800,maxHit:95,attackSpeed:2.0,combatLevel:80,style:'magic',evasion:{melee:55,ranged:50,magic:75},xp:4000,gold:{min:120,max:400},alignment:'NG',drops:[{item:'dragon_bones',qty:2,chance:1.0},{item:'fire_rune',qty:20,chance:0.30},{item:'dragonbloom',qty:1,chance:0.15},{item:'celestial_essence',qty:1,chance:0.03},{item:'fire_cape',qty:1,chance:0.005}]},
+  phoenix:      {id:'phoenix',name:'Phoenix',hp:1800,maxHit:95,attackSpeed:2.0,combatLevel:80,style:'magic',evasion:{melee:55,ranged:50,magic:75},xp:4000,gold:{min:120,max:400},alignment:'NG',drops:[{item:'dragon_bones',qty:2,chance:1.0},{item:'fire_rune',qty:20,chance:0.30},{item:'dragonbloom',qty:1,chance:0.15},{item:'celestial_essence',qty:1,chance:0.03},{item:'ember_cape',qty:1,chance:0.005}]},
   ash_guardian: {id:'ash_guardian',name:'Ash Guardian',hp:3000,maxHit:120,attackSpeed:2.6,combatLevel:90,style:'melee',evasion:{melee:75,ranged:70,magic:55},xp:6000,gold:{min:200,max:600},alignment:'NN',drops:[{item:'dragon_bones',qty:3,chance:1.0},{item:'ashsteel_ore',qty:2,chance:0.15},{item:'celestial_essence',qty:1,chance:0.05},{item:'berserker_ring',qty:1,chance:0.003},{item:'fury_amulet',qty:1,chance:0.002}]},
-  abyssal_horror:{id:'abyssal_horror',name:'Abyssal Horror',hp:4000,maxHit:140,attackSpeed:2.4,combatLevel:95,style:'magic',evasion:{melee:60,ranged:55,magic:85},xp:8000,gold:{min:300,max:800},alignment:'CE',drops:[{item:'void_bones',qty:2,chance:1.0},{item:'death_rune',qty:15,chance:0.25},{item:'celestial_essence',qty:2,chance:0.08},{item:'occult_necklace',qty:1,chance:0.003},{item:'barrows_gloves',qty:1,chance:0.002}]},
+  abyssal_horror:{id:'abyssal_horror',name:'Abyssal Horror',hp:4000,maxHit:140,attackSpeed:2.4,combatLevel:95,style:'magic',evasion:{melee:60,ranged:55,magic:85},xp:8000,gold:{min:300,max:800},alignment:'CE',drops:[{item:'void_bones',qty:2,chance:1.0},{item:'death_rune',qty:15,chance:0.25},{item:'celestial_essence',qty:2,chance:0.08},{item:'occult_necklace',qty:1,chance:0.003},{item:'crypts_gloves',qty:1,chance:0.002}]},
 });
 
 // ── NEW COMBAT AREAS ─────────────────────────────────────
@@ -1797,7 +1797,7 @@ GAME_DATA.rarities = {
   for (const [id, item] of Object.entries(GAME_DATA.items)) {
     if (item.rarity) continue; // already assigned
     // Mythic: best-in-slot uniques
-    if (['barrows_gloves','fire_cape','berserker_ring','archers_ring','seers_ring','fury_amulet','occult_necklace','ava_accumulator','mage_cape'].includes(id)) {
+    if (['crypts_gloves','ember_cape','berserker_ring','archers_ring','seers_ring','fury_amulet','occult_necklace','ava_accumulator','mage_cape'].includes(id)) {
       item.rarity = 'mythic';
     }
     // Legendary: ashsteel gear, enchanted obsidian, protection jewelry
@@ -1866,7 +1866,7 @@ for (const wb of GAME_DATA.worldBosses) {
   if (!wb.rewards) wb.rewards = [];
   if (wb.id === 'blight_warden') { wb.rewards.push({item:'soul_rune',qty:10,chance:0.30}); wb.rewards.push({item:'ring_of_life',qty:1,chance:0.01}); }
   if (wb.id === 'storm_reaver') { wb.rewards.push({item:'wrath_rune',qty:5,chance:0.25}); wb.rewards.push({item:'phoenix_necklace',qty:1,chance:0.008}); }
-  if (wb.id === 'ashen_overlord') { wb.rewards.push({item:'wrath_rune',qty:10,chance:0.30}); wb.rewards.push({item:'barrows_gloves',qty:1,chance:0.005}); wb.rewards.push({item:'fury_amulet',qty:1,chance:0.003}); }
+  if (wb.id === 'ashen_overlord') { wb.rewards.push({item:'wrath_rune',qty:10,chance:0.30}); wb.rewards.push({item:'crypts_gloves',qty:1,chance:0.005}); wb.rewards.push({item:'fury_amulet',qty:1,chance:0.003}); }
 }
 
 if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.5 loaded: Rarity system, expanded drops');
@@ -2020,7 +2020,7 @@ GAME_DATA.dungeons.push(
 
 // ── MORE WORLD BOSS CONTENT ──────────────────────────────
 GAME_DATA.worldBosses.push(
-  {id:'void_emperor',name:'The Void Emperor',hp:60000,maxHit:280,combatLevel:120,style:'magic',attackSpeed:2.0,evasion:{melee:80,ranged:75,magic:95},desc:'Ruler of the void between worlds. Reality bends around him.',respawn:21600,xp:200000,gold:{min:15000,max:40000},rewards:[{item:'void_bones',qty:5,chance:1.0},{item:'wrath_rune',qty:15,chance:0.40},{item:'celestial_essence',qty:5,chance:0.20},{item:'occult_necklace',qty:1,chance:0.01},{item:'barrows_gloves',qty:1,chance:0.008}]},
+  {id:'void_emperor',name:'The Void Emperor',hp:60000,maxHit:280,combatLevel:120,style:'magic',attackSpeed:2.0,evasion:{melee:80,ranged:75,magic:95},desc:'Ruler of the void between worlds. Reality bends around him.',respawn:21600,xp:200000,gold:{min:15000,max:40000},rewards:[{item:'void_bones',qty:5,chance:1.0},{item:'wrath_rune',qty:15,chance:0.40},{item:'celestial_essence',qty:5,chance:0.20},{item:'occult_necklace',qty:1,chance:0.01},{item:'crypts_gloves',qty:1,chance:0.008}]},
 );
 
 if(window._ASHFALL_DEBUG) console.log('[Ashfall] v5.9 loaded: All monster art complete, new dungeons');
@@ -2457,7 +2457,7 @@ const _newAccessories = [
   // Capes — progression chain
   {id:'team_cape',           name:'Team Cape',             slot:'cape',  stats:{defenceBonus:6},levelReq:{},rarity:'common',sellPrice:500, desc:'A basic cape.'},
   {id:'obsidian_cape',       name:'Obsidian Cape',         slot:'cape',  stats:{defenceBonus:18,strengthBonus:4},levelReq:{defence:40},rarity:'rare',sellPrice:8000, desc:'A tough obsidian cape.'},
-  {id:'fire_cape',           name:'Fire Cape',             slot:'cape',  stats:{defenceBonus:25,strengthBonus:10,magicBonus:5,rangedBonus:5},levelReq:{},rarity:'epic',sellPrice:30000, desc:'Earned by completing the Fight Cave. The best general-purpose cape.'},
+  {id:'ember_cape',           name:'Ember Cape',             slot:'cape',  stats:{defenceBonus:25,strengthBonus:10,magicBonus:5,rangedBonus:5},levelReq:{},rarity:'epic',sellPrice:30000, desc:'Earned by completing the Fight Cave. The best general-purpose cape.'},
   {id:'infernal_cape',       name:'Infernal Cape',         slot:'cape',  stats:{defenceBonus:35,strengthBonus:18,magicBonus:8,rangedBonus:8,damageReduction:2},levelReq:{},rarity:'legendary',sellPrice:100000, desc:'Near-mythic power. Earned from the hardest challenges.'},
 ];
 for (const acc of _newAccessories) {
@@ -2507,7 +2507,7 @@ const _dropPatches = {
   ashfall_titan: [
     {item:'ashsteel_bar',       qty:5, chance:0.30},
     {item:'amulet_of_torture',  qty:1, chance:0.003},
-    {item:'fire_cape',          qty:1, chance:0.010},
+    {item:'ember_cape',          qty:1, chance:0.010},
     {item:'ashfire_blade',      qty:1, chance:0.005},
   ],
   steel_dragon: [
@@ -2622,14 +2622,14 @@ GAME_DATA.shop.push(
 if (!GAME_DATA.items.snapdragon) GAME_DATA.items.snapdragon = {id:'snapdragon',name:'Snapdragon',type:'resource',subtype:'herb',sellPrice:120,sprite:'herb-silver',desc:'A sharp-smelling herb only found in cultivated plots. Used in unfinished potions.'};
 if (!GAME_DATA.items.dwarf_weed) GAME_DATA.items.dwarf_weed = {id:'dwarf_weed',name:'Dwarf Weed',type:'resource',subtype:'herb',sellPrice:80,sprite:'herb-purple',desc:'A squat, bitter herb grown only through farming. Used in ranging potions.'};
 if (!GAME_DATA.items.irit_leaf) GAME_DATA.items.irit_leaf = {id:'irit_leaf',name:'Irit Leaf',type:'resource',subtype:'herb',sellPrice:60,sprite:'herb-pale',desc:'A sharp-edged herb from farming plots. Used in super potions.'};
-if (!GAME_DATA.items.kwuarm) GAME_DATA.items.kwuarm = {id:'kwuarm',name:'Kwuarm',type:'resource',subtype:'herb',sellPrice:90,sprite:'herb-red',desc:'A pungent farming herb. Required for super strength potions.'};
+if (!GAME_DATA.items.scorchleaf) GAME_DATA.items.scorchleaf = {id:'scorchleaf',name:'Scorchleaf',type:'resource',subtype:'herb',sellPrice:90,sprite:'herb-red',desc:'A pungent farming herb. Required for strength brews.'};
 if (!GAME_DATA.items.lantadyme) GAME_DATA.items.lantadyme = {id:'lantadyme',name:'Lantadyme',type:'resource',subtype:'herb',sellPrice:150,sprite:'herb-pale',desc:'A rare blue herb. Only growable via farming. Used in extreme potions.'};
 
 // Farming-exclusive seeds for those herbs
 if (!GAME_DATA.items.snapdragon_seed) GAME_DATA.items.snapdragon_seed = {id:'snapdragon_seed',name:'Snapdragon Seed',type:'seed',seedType:'herb',growTime:2400,yield:'snapdragon',baseYield:6,levelReq:62,xp:98.0,sellPrice:90,sprite:'misc-seed',desc:'Herb crop. Grows in 40 min. Farming-exclusive herb.'};
 if (!GAME_DATA.items.dwarf_weed_seed) GAME_DATA.items.dwarf_weed_seed = {id:'dwarf_weed_seed',name:'Dwarf Weed Seed',type:'seed',seedType:'herb',growTime:2200,yield:'dwarf_weed',baseYield:6,levelReq:70,xp:121.0,sellPrice:120,sprite:'misc-seed',desc:'Herb crop. Grows in 36 min.'};
 if (!GAME_DATA.items.irit_seed) GAME_DATA.items.irit_seed = {id:'irit_seed',name:'Irit Seed',type:'seed',seedType:'herb',growTime:1600,yield:'irit_leaf',baseYield:7,levelReq:44,xp:43.0,sellPrice:50,sprite:'misc-seed',desc:'Herb crop. Grows in 26 min.'};
-if (!GAME_DATA.items.kwuarm_seed) GAME_DATA.items.kwuarm_seed = {id:'kwuarm_seed',name:'Kwuarm Seed',type:'seed',seedType:'herb',growTime:2000,yield:'kwuarm',baseYield:6,levelReq:56,xp:78.0,sellPrice:75,sprite:'misc-seed',desc:'Herb crop. Grows in 33 min.'};
+if (!GAME_DATA.items.scorchleaf_seed) GAME_DATA.items.scorchleaf_seed = {id:'scorchleaf_seed',name:'Scorchleaf Seed',type:'seed',seedType:'herb',growTime:2000,yield:'scorchleaf',baseYield:6,levelReq:56,xp:78.0,sellPrice:75,sprite:'misc-seed',desc:'Herb crop. Grows in 33 min.'};
 if (!GAME_DATA.items.lantadyme_seed) GAME_DATA.items.lantadyme_seed = {id:'lantadyme_seed',name:'Lantadyme Seed',type:'seed',seedType:'herb',growTime:3200,yield:'lantadyme',baseYield:5,levelReq:73,xp:151.0,sellPrice:130,sprite:'misc-seed',desc:'Herb crop. Grows in 53 min.'};
 if (!GAME_DATA.items.celestial_seed) GAME_DATA.items.celestial_seed = {id:'celestial_seed',name:'Celestial Seed',type:'seed',seedType:'herb',growTime:5400,yield:'celestial_herb',baseYield:4,levelReq:90,xp:280.0,sellPrice:300,sprite:'misc-seed',desc:'A glowing seed. Farming level 90 required. Grows in 90 min.'};
 
@@ -2660,8 +2660,8 @@ GAME_DATA.recipes.alchemy.push(
   {id:'brew_sanfew',       name:'Sanfew Serum',      level:65,xp:800, time:6.5,input:[{item:'snapdragon',qty:3},{item:'silverleaf',qty:2}],output:{item:'super_restore',qty:2},   desc:'Farming herb required. Yields 2 restores.'},
   // Irit recipes
   {id:'brew_super_atk_irit',name:'Super Attack (Irit)',level:45,xp:420,time:5.0,input:[{item:'irit_leaf',qty:2},{item:'silverleaf',qty:2}], output:{item:'super_attack',qty:1},    desc:'Irit grows only in farming plots.'},
-  // Kwuarm recipes
-  {id:'brew_kwuarm_str',   name:'Super Strength+',   level:55,xp:500, time:5.5,input:[{item:'kwuarm',qty:2},{item:'bloodroot',qty:1}],     output:{item:'super_strength',qty:1},  desc:'Kwuarm farming herb. Stronger strength potion.'},
+  // Scorchleaf recipes
+  {id:'brew_scorchleaf_str',   name:'Super Strength+',   level:55,xp:500, time:5.5,input:[{item:'scorchleaf',qty:2},{item:'bloodroot',qty:1}],     output:{item:'super_strength',qty:1},  desc:'Scorchleaf farming herb. Stronger strength potion.'},
   // Dwarf weed recipes
   {id:'brew_ranging_super',name:'Super Ranging',     level:72,xp:900, time:7.0,input:[{item:'dwarf_weed',qty:2},{item:'voidbloom',qty:1}], output:{item:'ranging_potion',qty:2},  desc:'Yields 2 ranging potions. Dwarf weed required.'},
   // Lantadyme recipes
@@ -2669,7 +2669,7 @@ GAME_DATA.recipes.alchemy.push(
   // Ranarr exclusive — better prayer potion
   {id:'brew_ranarr_prayer',name:'Prayer Potion+',    level:38,xp:300, time:4.5,input:[{item:'ranarr',qty:2},{item:'snape_grass',qty:1}],   output:{item:'prayer_potion',qty:2},   desc:'Ranarr farming herb. Yields 2 prayer potions.'},
   // Torstol — end-game extreme potions
-  {id:'brew_extreme_str',  name:'Extreme Strength',  level:88,xp:1400,time:9.0,input:[{item:'torstol',qty:1},{item:'kwuarm',qty:2}],      output:{item:'super_strength',qty:3},  desc:'Extreme potion. Requires torstol (Farming lv85).'},
+  {id:'brew_extreme_str',  name:'Extreme Strength',  level:88,xp:1400,time:9.0,input:[{item:'torstol',qty:1},{item:'scorchleaf',qty:2}],      output:{item:'super_strength',qty:3},  desc:'Extreme potion. Requires torstol (Farming lv85).'},
   {id:'brew_extreme_atk',  name:'Extreme Attack',    level:90,xp:1500,time:9.0,input:[{item:'torstol',qty:1},{item:'irit_leaf',qty:2}],   output:{item:'super_attack',qty:3},    desc:'Extreme potion. Requires torstol.'},
 );
 
@@ -2677,7 +2677,7 @@ GAME_DATA.recipes.alchemy.push(
 const _farmSeeds = [
   {item:'snapdragon_seed',price:180,category:'seeds'},
   {item:'irit_seed',      price:90, category:'seeds'},
-  {item:'kwuarm_seed',    price:140,category:'seeds'},
+  {item:'scorchleaf_seed',    price:140,category:'seeds'},
   {item:'dwarf_weed_seed',price:220,category:'seeds'},
   {item:'lantadyme_seed', price:300,category:'seeds'},
   {item:'celestial_seed', price:800,category:'seeds'},
@@ -2694,7 +2694,7 @@ for (const [mId, mon] of Object.entries(GAME_DATA.monsters)) {
   if (cl >= 30  && cl < 55 && !mon.drops.find(d=>d.item==='blood_seed'))     mon.drops.push({item:'blood_seed',     qty:1,chance:0.03});
   if (cl >= 40  && cl < 70 && !mon.drops.find(d=>d.item==='irit_seed'))      mon.drops.push({item:'irit_seed',      qty:1,chance:0.025});
   if (cl >= 55  && cl < 80 && !mon.drops.find(d=>d.item==='snapdragon_seed'))mon.drops.push({item:'snapdragon_seed',qty:1,chance:0.018});
-  if (cl >= 65  && cl < 90 && !mon.drops.find(d=>d.item==='kwuarm_seed'))    mon.drops.push({item:'kwuarm_seed',    qty:1,chance:0.015});
+  if (cl >= 65  && cl < 90 && !mon.drops.find(d=>d.item==='scorchleaf_seed'))    mon.drops.push({item:'scorchleaf_seed',    qty:1,chance:0.015});
   if (cl >= 75           && !mon.drops.find(d=>d.item==='dwarf_weed_seed'))  mon.drops.push({item:'dwarf_weed_seed',qty:1,chance:0.012});
   if (cl >= 85           && !mon.drops.find(d=>d.item==='lantadyme_seed'))   mon.drops.push({item:'lantadyme_seed', qty:1,chance:0.008});
 }

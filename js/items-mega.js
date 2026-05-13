@@ -93,7 +93,7 @@ for (const a of _combatAmulets) {
 
 // ── CAPES WITH STATS ─────────────────────────────────────
 const _capes = [
-  {id:'fire_cape',     name:'Fire Cape',      lv:60, stats:{strengthBonus:10,defenceBonus:12}, r:'epic', desc:'Forged in fire. +10 Str, +12 Def.', price:100000},
+  {id:'ember_cape',     name:'Ember Cape',      lv:60, stats:{strengthBonus:10,defenceBonus:12}, r:'epic', desc:'Forged in fire. +10 Str, +12 Def.', price:100000},
   {id:'infernal_cape', name:'Infernal Cape',   lv:80, stats:{strengthBonus:18,defenceBonus:16,attackBonus:8}, r:'legendary', desc:'Infernal power. +18 Str, +16 Def, +8 Atk.', price:300000},
   {id:'avas_accumulator',name:'Ava\'s Accumulator',lv:40,stats:{rangedBonus:12}, r:'rare', desc:'+12 Ranged. Recovers ammo.', price:30000},
   {id:'avas_assembler', name:'Ava\'s Assembler', lv:70, stats:{rangedBonus:20,defenceBonus:4}, r:'epic', desc:'+20 Ranged, +4 Def. Better ammo recovery.', price:100000},
