@@ -1105,7 +1105,13 @@ class UI {
 
     let html = `<div class="combat-page cv3-page"><div class="cv3-main">`;
     // ── XP TRACKER with highlighted active skills ──
-    html += '<div class="combat-xp-panel" id="combat-xp-panel">';
+    const _xpPanelOpen = !c.active; // collapsed during active combat by default
+    html += `<div class="combat-xp-panel" id="combat-xp-panel">
+      <div class="cxp-toggle-header" onclick="const b=document.getElementById('cxp-body');const ch=this.querySelector('.cxp-toggle-chevron');if(b){const open=b.style.display!=='none';b.style.display=open?'none':'block';ch.textContent=open?'›':'⌄';}">
+        <span class="cxp-toggle-title">Combat Stats</span>
+        <span class="cxp-toggle-chevron">${_xpPanelOpen?'⌄':'›'}</span>
+      </div>
+      <div class="cxp-body" id="cxp-body" style="display:${_xpPanelOpen?'block':'none'}">`;
     const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','tactics'];
     for (const _sId of _cSkills) {
       const _sk = s.skills[_sId]; if (!_sk) continue;
@@ -1122,7 +1128,7 @@ class UI {
         <span class="cxp-pct">${isGaining?pct+'%':''}</span>
       </div>`;
     }
-    html += '</div>';
+    html += '</div></div>'; // close cxp-body + combat-xp-panel
 
     // ── CONTROLS ROW ──
     html += '<div class="combat-controls">';
@@ -1132,21 +1138,7 @@ class UI {
       html += `<button class="cc-btn ${combatStyle===id?'cc-btn-active':''}" onclick="ui.setStyle('${id}')">${icon(ic,14)} ${label}</button>`;
     }
     html += '</div></div>';
-    // XP Mode
-    html += '<div class="cc-group"><div class="cc-label">XP Mode</div><div class="cc-btns">';
-    if (combatStyle === 'melee') {
-      for (const [id,label,desc] of [['accurate','Attack','90% Atk XP'],['aggressive','Strength','90% Str XP'],['defensive','Defence','90% Def XP'],['controlled','Shared','Equal split']]) {
-        html += `<button class="cc-btn ${xpMode===id?'cc-btn-active':''}" onclick="ui.setXpMode('${id}')" title="${desc}">${label}</button>`;
-      }
-    } else if (combatStyle === 'ranged') {
-      for (const [id,label,desc] of [['accurate','Accurate','90% Rng + Def'],['rapid','Rapid','100% Ranged'],['longrange','Longrange','50/50 Rng+Def']]) {
-        html += `<button class="cc-btn ${xpMode===id?'cc-btn-active':''}" onclick="ui.setXpMode('${id}')" title="${desc}">${label}</button>`;
-      }
-    } else {
-      html += '<span class="cc-info">80% Magic / 20% Defence</span>';
-    }
-    html += '</div></div>';
-    html += '</div>';
+    html += '</div>'; // close combat-controls
 
     // ── SPELL SELECT (magic only) ──
     if (c.combatStyle === 'magic') {
@@ -1198,6 +1190,194 @@ class UI {
       </div>`;
     }
 
+    if (c.active && c.monster) {
+
+      // ── FIGHT CAVE OVERLAY (wave bar, between-wave, target cards) ──
+      const _fc = s.fightCave;
+      const _fcActive = _fc && _fc.active;
+
+      if (_fcActive) {
+        const _fcWaveNum = _fc.currentWave + 1;
+        const _fcProgress = ((_fc.currentWave) / 63) * 100;
+        const _fcPhase = GAME_DATA.fightCave?.phases?.find(p => _fcWaveNum >= p.startWave && _fcWaveNum <= p.endWave);
+        html += `<div class="fc-wave-bar">
+          <div class="fc-wave-label">Fight Cave — Wave ${_fcWaveNum} / 63</div>
+          <div class="fc-progress-track"><div class="fc-progress-fill" style="width:${_fcProgress}%"></div></div>
+        </div>`;
+        if (_fcPhase) {
+          html += `<div class="fc-phase-indicator">
+            <span class="fc-phase-badge">${_fcPhase.name}</span>
+            <span class="fc-phase-advice">${_fcPhase.tip}</span>
+          </div>`;
+        }
+      }
+
+      // ── FIGHT CAVE BETWEEN WAVES ──
+      if (_fcActive && _fc.betweenWaves) {
+        html += `<div class="fc-between-waves">
+          <h2>Wave ${_fc.currentWave} Cleared</h2>
+          <p id="fc-between-timer">Next wave in ${Math.ceil(_fc.betweenWaveTimer)}s...</p>
+          <p class="fc-between-tip">Eat food and drink potions now!</p>
+          <div class="fc-manual-actions">
+            <button class="btn btn-sm" data-fc-action="eat">Eat Food</button>
+            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="0">Potion 1</button>
+            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="1">Potion 2</button>
+            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="2">Potion 3</button>
+            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="3">Potion 4</button>
+          </div>
+        </div>`;
+        html += '</div>';
+        el.innerHTML = html;
+        return;
+      }
+
+      const mon = GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster);
+      if (!mon) { html += '<div class="bank-empty">Monster data missing. <button class="btn btn-sm" onclick="game.stopCombat();ui.renderPage(\'combat\')">Reset</button></div></div>'; el.innerHTML = html; return; }
+      const max = this.engine.getMaxHp();
+      const pHpPct = Math.max(0, Math.min(100, (c.playerHp||0) / max * 100));
+      const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
+
+      const mHpPct = Math.max(0, Math.min(100, (c.monsterHp||0) / (mon.hp||1) * 100));
+      const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
+
+      // Player avatar
+      const _prof = s.profile || {};
+      const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
+      const _playerAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${s.profile?.hair||'short04'}&skinColor=${s.profile?.skinColor||'c68642'}&hairColor=${s.profile?.hairColor||'2c1b18'}&eyes=${s.profile?.eyes||'variant04'}&mouth=${s.profile?.mouth||'happy01'}&clothing=${s.profile?.clothing||'variant04'}&clothingColor=${s.profile?.clothingColor||'4a90d4'}&size=64`;
+
+      // Boss phase data
+      const bossPhaseIdx = c._bossPhase || 0;
+      const bossPhaseData = GAME_DATA.bossPhases?.[c.monster];
+      const currentPhase = bossPhaseData && bossPhaseIdx > 0 ? bossPhaseData.phases[bossPhaseIdx - 1] : null;
+      // Monster weakness
+      const weakness = GAME_DATA.monsterWeaknesses?.[c.monster];
+      // Active protection prayers
+      const protPrayer = s.activePrayers?.find(id => ['protect_melee','protect_ranged','protect_magic'].includes(id));
+      const overheadIcon = { protect_melee:'⚔', protect_ranged:'🏹', protect_magic:'🔮' };
+
+      // ── ARENA V3 ──────────────────────────────────────────────
+      const _pName = typeof online!=='undefined'&&online.displayName ? online.displayName : 'You';
+      const _styleIcon = {melee:'⚔',ranged:'🏹',magic:'🔮'}[combatStyle]||'⚔';
+      const _monArt = GAME_DATA.monsterArt?.[c.monster]||'';
+      const _sessionDmgTotal = this.fmt((c._sessionDmg?.total)||0);
+      const _pPp = s.prayerPoints||0;
+      const _maxPp = s.skills.prayer?.level*10||10;
+      html += `<div class="arena-v3 combat-arena">
+        <!-- Monster HP bar across the top of arena -->
+        <div class="arena-top-bar">
+          <span class="atb-name">${mon.name}</span>
+          <div class="atb-hp-track"><div class="atb-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
+          <span class="atb-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))}/${mon.hp||0}</span>
+          <span class="atb-pct">${mHpPct.toFixed(0)}%</span>
+          ${currentPhase ? `<span class="atb-phase ${currentPhase.enrage?'atb-enrage':""}">${currentPhase.enrage?'🔥':''} ${currentPhase.name}</span>` : ''}
+        </div>
+
+        <!-- Main arena -->
+        <div class="arena-main">
+          <!-- Player column -->
+          <div class="arena-player">
+            <div class="arena-player-top">
+              ${protPrayer ? `<div class="arena-overhead-prayer" title="${protPrayer.replace(/_/g,' ')}">${overheadIcon[protPrayer]||'🛡'}</div>` : ''}
+              <div class="arena-avatar-wrap">
+                <img src="${_playerAvatar}" width="56" height="56" class="arena-avatar">
+                <div class="arena-style-badge">${_styleIcon}</div>
+              </div>
+              <div class="arena-pname">${_pName}</div>
+              <div class="arena-plevel">Combat Lv ${this.engine.getCombatLevel()}</div>
+            </div>
+            <div class="arena-bars">
+              <div class="arena-bar-row">
+                <span class="arena-bar-icon" style="color:#c44040">❤</span>
+                <div class="arena-bar-track"><div class="arena-bar-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
+                <span class="arena-bar-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))}/${max}</span>
+              </div>
+              <div class="arena-bar-row">
+                <span class="arena-bar-icon" style="color:#4a7ec4">✦</span>
+                <div class="arena-bar-track"><div class="arena-bar-fill" id="mana-bar" style="background:linear-gradient(90deg,#1a4a8e,#3a7adc)"></div></div>
+                <span class="arena-bar-text" id="mana-text">${Math.floor(c.mana?.current||0)}/${c.mana?.max||100}</span>
+              </div>
+              <div class="arena-bar-row">
+                <span class="arena-bar-icon" style="color:#d4a83a">✶</span>
+                <div class="arena-bar-track"><div class="arena-bar-fill" style="width:${Math.round(_pPp/Math.max(1,_maxPp)*100)}%;background:linear-gradient(90deg,#9b6c10,#d4a83a)"></div></div>
+                <span class="arena-bar-text">${_pPp}/${_maxPp}</span>
+              </div>
+            </div>
+            <div class="arena-status" id="player-status-live"></div>
+            <div class="splat-area" id="player-splats"></div>
+          </div>
+
+          <!-- Center: VS + combat info -->
+          <div class="arena-center">
+            <div class="arena-vs">VS</div>
+            <div class="arena-center-stats">
+              <div class="arena-stat-line">
+                <span class="arena-stat-label">Kills</span>
+                <span class="arena-stat-val" id="kill-count">${s.stats.monstersKilled||0}</span>
+              </div>
+              <div class="arena-stat-line">
+                <span class="arena-stat-label">Dealt</span>
+                <span class="arena-stat-val">${_sessionDmgTotal}</span>
+              </div>
+            </div>
+            ${weakness ? `<div class="arena-weakness">⚠ Weak: ${weakness.weak}<br>+${weakness.bonus}%</div>` : ''}
+            <button class="arena-flee-btn" onclick="game.stopCombat()">${icon('combat',12)} Flee</button>
+          </div>
+
+          <!-- Monster column -->
+          <div class="arena-monster">
+            <div class="arena-monster-art ${currentPhase?.enrage?'enrage-shake':''}">
+              ${_monArt || `<div class="arena-mon-placeholder">${icon('combat',64)}</div>`}
+            </div>
+            <div class="arena-mon-name">${mon.name}</div>
+            <div class="arena-mon-level">Lv ${mon.combatLevel||0} · ${(mon.style||'melee').toUpperCase()}</div>
+            <div class="arena-status arena-status-right" id="monster-status-live"></div>
+            <div class="splat-area" id="monster-splats"></div>
+          </div>
+        </div>
+      </div>`;
+
+      // ── ABILITY BAR V3 ────────────────────────────────────────
+      {
+        const _equipped = s.equippedAbilities.filter(Boolean).map(aid=>GAME_DATA.abilities.find(a=>a.id===aid)).filter(Boolean);
+        const _ultimate = _equipped.length>0 ? _equipped.reduce((a,b)=>(b.cooldown>a.cooldown?b:a)) : null;
+        const _specials = s.equippedAbilities.map((aid,i)=>{
+          if(!aid) return {empty:true,slot:i};
+          const ab=GAME_DATA.abilities.find(a=>a.id===aid);
+          return {ab,aid,slot:i};
+        }).filter(x=>!x.empty);
+        html += `<div class="ability-bar-v3">
+          <div class="ab3-section">
+            <div class="ab3-section-label">${icon('combat',11)} Special Attacks</div>
+            <div class="ab3-specials">`;
+        for (const {ab,aid,slot} of _specials) {
+          if (!ab) continue;
+          const cd = c.abilityCooldowns[aid]||0;
+          const cdPct = cd>0 ? Math.min(100,(cd/ab.cooldown)*100) : 0;
+          const noMana = (ab.manaCost||0)>0 && (c.mana?.current||0)<(ab.manaCost||0);
+          const ready = cd<=0 && !noMana;
+          html += `<button class="ab3-btn ${cd>0?'ab3-cd':''} ${noMana?'ab3-no-mana':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}${ab.manaCost?' | '+ab.manaCost+' mana':''}">
+            <div class="ab3-cd-sweep" style="--sweep:${cdPct}%"></div>
+            <div class="ab3-icon">${ab.icon||'⚔'}</div>
+            <div class="ab3-name">${ab.name}</div>
+            <div class="ab3-status ${ready?'ab3-ready':cd>0?'ab3-cooling':'ab3-nomana'}">${cd>0?Math.ceil(cd)+'s':noMana?'No mana':'Ready'}</div>
+            ${ab.manaCost?`<div class="ab3-mana">${ab.manaCost}mp</div>`:''}
+          </button>`;
+        }
+        if (_specials.length===0) html += `<div class="ab3-empty">No abilities equipped — visit Abilities tab</div>`;
+        html += `</div></div>`;
+        // Active buffs strip (inline, compact)
+        const _bufs = c.activeBuffs||[];
+        if (_bufs.length>0) {
+          html += `<div class="ab3-buffs">`;
+          for (const b of _bufs) {
+            const _blab = b.stat==='damageMult'?`×${b.value.toFixed(2)} DMG`:b.stat==='damageReduction'?`-${b.value}% DR`:b.stat==='dodgeCharges'?`${b.value} Dodge`:b.stat==='onKillHeal'?`Heal on Kill`:b.stat==='attackBonus'?`+${b.value} ATK`:b.stat==='strengthBonus'?`+${b.value} STR`:b.stat==='vengeance'?'Vengeance':(b.stat||'Buff').replace(/Bonus/,'').replace(/([A-Z])/,' $1').trim();
+            const _bpct = b._maxDuration>0?Math.min(100,b.remaining/b._maxDuration*100):100;
+            html += `<div class="ab3-buff-chip" title="${_blab} — ${Math.ceil(b.remaining)}s"><span class="ab3-bc-label">${_blab}</span><div class="ab3-bc-bar"><div class="ab3-bc-fill" style="width:${_bpct}%"></div></div></div>`;
+          }
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
     // ── PRAYER V3 ──────────────────────────────────────────────
     {
       const _pp = s.prayerPoints||0;
@@ -1365,194 +1545,7 @@ class UI {
     html += '</div>';
 
     // ── ACTIVE COMBAT ──
-    if (c.active && c.monster) {
 
-      // ── FIGHT CAVE OVERLAY (wave bar, between-wave, target cards) ──
-      const _fc = s.fightCave;
-      const _fcActive = _fc && _fc.active;
-
-      if (_fcActive) {
-        const _fcWaveNum = _fc.currentWave + 1;
-        const _fcProgress = ((_fc.currentWave) / 63) * 100;
-        const _fcPhase = GAME_DATA.fightCave?.phases?.find(p => _fcWaveNum >= p.startWave && _fcWaveNum <= p.endWave);
-        html += `<div class="fc-wave-bar">
-          <div class="fc-wave-label">Fight Cave — Wave ${_fcWaveNum} / 63</div>
-          <div class="fc-progress-track"><div class="fc-progress-fill" style="width:${_fcProgress}%"></div></div>
-        </div>`;
-        if (_fcPhase) {
-          html += `<div class="fc-phase-indicator">
-            <span class="fc-phase-badge">${_fcPhase.name}</span>
-            <span class="fc-phase-advice">${_fcPhase.tip}</span>
-          </div>`;
-        }
-      }
-
-      // ── FIGHT CAVE BETWEEN WAVES ──
-      if (_fcActive && _fc.betweenWaves) {
-        html += `<div class="fc-between-waves">
-          <h2>Wave ${_fc.currentWave} Cleared</h2>
-          <p id="fc-between-timer">Next wave in ${Math.ceil(_fc.betweenWaveTimer)}s...</p>
-          <p class="fc-between-tip">Eat food and drink potions now!</p>
-          <div class="fc-manual-actions">
-            <button class="btn btn-sm" data-fc-action="eat">Eat Food</button>
-            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="0">Potion 1</button>
-            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="1">Potion 2</button>
-            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="2">Potion 3</button>
-            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="3">Potion 4</button>
-          </div>
-        </div>`;
-        html += '</div>';
-        el.innerHTML = html;
-        return;
-      }
-
-      const mon = GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster);
-      if (!mon) { html += '<div class="bank-empty">Monster data missing. <button class="btn btn-sm" onclick="game.stopCombat();ui.renderPage(\'combat\')">Reset</button></div></div>'; el.innerHTML = html; return; }
-      const max = this.engine.getMaxHp();
-      const pHpPct = Math.max(0, Math.min(100, (c.playerHp||0) / max * 100));
-      const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
-
-      const mHpPct = Math.max(0, Math.min(100, (c.monsterHp||0) / (mon.hp||1) * 100));
-      const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
-
-      // Player avatar
-      const _prof = s.profile || {};
-      const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
-      const _playerAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${s.profile?.hair||'short04'}&skinColor=${s.profile?.skinColor||'c68642'}&hairColor=${s.profile?.hairColor||'2c1b18'}&eyes=${s.profile?.eyes||'variant04'}&mouth=${s.profile?.mouth||'happy01'}&clothing=${s.profile?.clothing||'variant04'}&clothingColor=${s.profile?.clothingColor||'4a90d4'}&size=64`;
-
-      // Boss phase data
-      const bossPhaseIdx = c._bossPhase || 0;
-      const bossPhaseData = GAME_DATA.bossPhases?.[c.monster];
-      const currentPhase = bossPhaseData && bossPhaseIdx > 0 ? bossPhaseData.phases[bossPhaseIdx - 1] : null;
-      // Monster weakness
-      const weakness = GAME_DATA.monsterWeaknesses?.[c.monster];
-      // Active protection prayers
-      const protPrayer = s.activePrayers?.find(id => ['protect_melee','protect_ranged','protect_magic'].includes(id));
-      const overheadIcon = { protect_melee:'⚔', protect_ranged:'🏹', protect_magic:'🔮' };
-
-      // ── ARENA V3 ──────────────────────────────────────────────
-      const _pName = typeof online!=='undefined'&&online.displayName ? online.displayName : 'You';
-      const _styleIcon = {melee:'⚔',ranged:'🏹',magic:'🔮'}[combatStyle]||'⚔';
-      const _monArt = GAME_DATA.monsterArt?.[c.monster]||'';
-      const _sessionDmgTotal = this.fmt((c._sessionDmg?.total)||0);
-      const _pPp = s.prayerPoints||0;
-      const _maxPp = s.skills.prayer?.level*10||10;
-      html += `<div class="arena-v3">
-        <!-- Monster HP bar across the top of arena -->
-        <div class="arena-top-bar">
-          <span class="atb-name">${mon.name}</span>
-          <div class="atb-hp-track"><div class="atb-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
-          <span class="atb-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))}/${mon.hp||0}</span>
-          <span class="atb-pct">${mHpPct.toFixed(0)}%</span>
-          ${currentPhase ? `<span class="atb-phase ${currentPhase.enrage?'atb-enrage':""}">${currentPhase.enrage?'🔥':''} ${currentPhase.name}</span>` : ''}
-        </div>
-
-        <!-- Main arena -->
-        <div class="arena-main">
-          <!-- Player column -->
-          <div class="arena-player">
-            <div class="arena-player-top">
-              ${protPrayer ? `<div class="arena-overhead-prayer" title="${protPrayer.replace(/_/g,' ')}">${overheadIcon[protPrayer]||'🛡'}</div>` : ''}
-              <div class="arena-avatar-wrap">
-                <img src="${_playerAvatar}" width="56" height="56" class="arena-avatar">
-                <div class="arena-style-badge">${_styleIcon}</div>
-              </div>
-              <div class="arena-pname">${_pName}</div>
-              <div class="arena-plevel">Combat Lv ${this.engine.getCombatLevel()}</div>
-            </div>
-            <div class="arena-bars">
-              <div class="arena-bar-row">
-                <span class="arena-bar-icon" style="color:#c44040">❤</span>
-                <div class="arena-bar-track"><div class="arena-bar-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
-                <span class="arena-bar-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))}/${max}</span>
-              </div>
-              <div class="arena-bar-row">
-                <span class="arena-bar-icon" style="color:#4a7ec4">✦</span>
-                <div class="arena-bar-track"><div class="arena-bar-fill" id="mana-bar" style="background:linear-gradient(90deg,#1a4a8e,#3a7adc)"></div></div>
-                <span class="arena-bar-text" id="mana-text">${Math.floor(c.mana?.current||0)}/${c.mana?.max||100}</span>
-              </div>
-              <div class="arena-bar-row">
-                <span class="arena-bar-icon" style="color:#d4a83a">✶</span>
-                <div class="arena-bar-track"><div class="arena-bar-fill" style="width:${Math.round(_pPp/Math.max(1,_maxPp)*100)}%;background:linear-gradient(90deg,#9b6c10,#d4a83a)"></div></div>
-                <span class="arena-bar-text">${_pPp}/${_maxPp}</span>
-              </div>
-            </div>
-            <div class="arena-status" id="player-status-live"></div>
-            <div class="splat-area" id="player-splats"></div>
-          </div>
-
-          <!-- Center: VS + combat info -->
-          <div class="arena-center">
-            <div class="arena-vs">VS</div>
-            <div class="arena-center-stats">
-              <div class="arena-stat-line">
-                <span class="arena-stat-label">Kills</span>
-                <span class="arena-stat-val" id="kill-count">${s.stats.monstersKilled||0}</span>
-              </div>
-              <div class="arena-stat-line">
-                <span class="arena-stat-label">Dealt</span>
-                <span class="arena-stat-val">${_sessionDmgTotal}</span>
-              </div>
-            </div>
-            ${weakness ? `<div class="arena-weakness">⚠ Weak: ${weakness.weak}<br>+${weakness.bonus}%</div>` : ''}
-            <button class="arena-flee-btn" onclick="game.stopCombat()">${icon('combat',12)} Flee</button>
-          </div>
-
-          <!-- Monster column -->
-          <div class="arena-monster">
-            <div class="arena-monster-art ${currentPhase?.enrage?'enrage-shake':''}">
-              ${_monArt || `<div class="arena-mon-placeholder">${icon('combat',64)}</div>`}
-            </div>
-            <div class="arena-mon-name">${mon.name}</div>
-            <div class="arena-mon-level">Lv ${mon.combatLevel||0} · ${(mon.style||'melee').toUpperCase()}</div>
-            <div class="arena-status arena-status-right" id="monster-status-live"></div>
-            <div class="splat-area" id="monster-splats"></div>
-          </div>
-        </div>
-      </div>`;
-
-      // ── ABILITY BAR V3 ────────────────────────────────────────
-      {
-        const _equipped = s.equippedAbilities.filter(Boolean).map(aid=>GAME_DATA.abilities.find(a=>a.id===aid)).filter(Boolean);
-        const _ultimate = _equipped.length>0 ? _equipped.reduce((a,b)=>(b.cooldown>a.cooldown?b:a)) : null;
-        const _specials = s.equippedAbilities.map((aid,i)=>{
-          if(!aid) return {empty:true,slot:i};
-          const ab=GAME_DATA.abilities.find(a=>a.id===aid);
-          return {ab,aid,slot:i};
-        }).filter(x=>!x.empty);
-        html += `<div class="ability-bar-v3">
-          <div class="ab3-section">
-            <div class="ab3-section-label">${icon('combat',11)} Special Attacks</div>
-            <div class="ab3-specials">`;
-        for (const {ab,aid,slot} of _specials) {
-          if (!ab) continue;
-          const cd = c.abilityCooldowns[aid]||0;
-          const cdPct = cd>0 ? Math.min(100,(cd/ab.cooldown)*100) : 0;
-          const noMana = (ab.manaCost||0)>0 && (c.mana?.current||0)<(ab.manaCost||0);
-          const ready = cd<=0 && !noMana;
-          html += `<button class="ab3-btn ${cd>0?'ab3-cd':''} ${noMana?'ab3-no-mana':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}${ab.manaCost?' | '+ab.manaCost+' mana':''}">
-            <div class="ab3-cd-sweep" style="--sweep:${cdPct}%"></div>
-            <div class="ab3-icon">${ab.icon||'⚔'}</div>
-            <div class="ab3-name">${ab.name}</div>
-            <div class="ab3-status ${ready?'ab3-ready':cd>0?'ab3-cooling':'ab3-nomana'}">${cd>0?Math.ceil(cd)+'s':noMana?'No mana':'Ready'}</div>
-            ${ab.manaCost?`<div class="ab3-mana">${ab.manaCost}mp</div>`:''}
-          </button>`;
-        }
-        if (_specials.length===0) html += `<div class="ab3-empty">No abilities equipped — visit Abilities tab</div>`;
-        html += `</div></div>`;
-        // Active buffs strip (inline, compact)
-        const _bufs = c.activeBuffs||[];
-        if (_bufs.length>0) {
-          html += `<div class="ab3-buffs">`;
-          for (const b of _bufs) {
-            const _blab = b.stat==='damageMult'?`×${b.value.toFixed(2)} DMG`:b.stat==='damageReduction'?`-${b.value}% DR`:b.stat==='dodgeCharges'?`${b.value} Dodge`:b.stat==='onKillHeal'?`Heal on Kill`:b.stat==='attackBonus'?`+${b.value} ATK`:b.stat==='strengthBonus'?`+${b.value} STR`:b.stat==='vengeance'?'Vengeance':(b.stat||'Buff').replace(/Bonus/,'').replace(/([A-Z])/,' $1').trim();
-            const _bpct = b._maxDuration>0?Math.min(100,b.remaining/b._maxDuration*100):100;
-            html += `<div class="ab3-buff-chip" title="${_blab} — ${Math.ceil(b.remaining)}s"><span class="ab3-bc-label">${_blab}</span><div class="ab3-bc-bar"><div class="ab3-bc-fill" style="width:${_bpct}%"></div></div></div>`;
-          }
-          html += `</div>`;
-        }
-        html += `</div>`;
-      }
 
       if (c.dungeon) {
         const d = GAME_DATA.dungeons.find(x=>x.id===c.dungeon);
@@ -1712,9 +1705,9 @@ class UI {
         const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
         html += `<div class="slayer-combat-bar"><span>${icon('target',14)} Slayer: <span id="slayer-killed">${s.slayerTask.killed}</span>/<span id="slayer-amount">${s.slayerTask.amount}</span></span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" id="slayer-fill" style="width:${pct}%"></div></div></div>`;
       }
-      html += _fcActive
-        ? `<button class="btn btn-danger btn-flee" data-fc-action="flee">${icon('combat',16)} Flee (Lose All Progress)</button>`
-        : `<button class="btn btn-danger btn-flee" onclick="game.stopCombat()">${icon('combat',16)} Flee Combat</button>`;
+      // Flee handled inside Arena V3 center column (arena-flee-btn)
+      // Fight cave: also show a dedicated flee at the bottom
+      if (_fcActive) html += `<button class="btn btn-danger btn-flee btn-flee-fc" data-fc-action="flee" style="margin:6px 0">${icon('combat',14)} Abandon Fight Cave</button>`;
       // Wilderness-specific buttons
       if (c._isWilderness) {
         const fleeChance = Math.min(80, 40 + Math.floor(s.skills.defence.level * 0.3) + Math.floor(s.skills.hitpoints.level * 0.2));
@@ -1812,24 +1805,6 @@ class UI {
         html += '</div>';
       }
 
-      // ── SESSION LOOT (inside combat) ──
-      const sl = c._sessionLoot || {};
-      const sk = c._sessionKills || 0;
-      html += `<div class="session-loot-section" id="session-loot">`;
-      if (sk > 0) {
-        const rarOrder = { mythic:0, legendary:1, epic:2, rare:3, uncommon:4, common:5 };
-        html += `<div class="sl-loot-title">Session Loot</div><div class="sl-items">`;
-        if (sl._gold?.qty > 0) html += `<div class="sl-item sl-gold"><span class="sl-icon">🪙</span><span class="sl-name">Gold</span><span class="sl-qty">${this.fmt(sl._gold.qty)}</span></div>`;
-        const sorted = Object.entries(sl).filter(([k])=>k!=='_gold').sort((a,b)=>(rarOrder[a[1].rarity]||5)-(rarOrder[b[1].rarity]||5));
-        for (const [itemId, data] of sorted) {
-          const it = GAME_DATA.items[itemId];
-          const rc = data.rarity==='legendary'||data.rarity==='mythic'?'sl-legendary':data.rarity==='epic'?'sl-epic':data.rarity==='rare'?'sl-rare':'';
-          const iconSvg = window.renderItemSprite ? window.renderItemSprite(itemId, 14) : '';
-          html += `<div class="sl-item ${rc}"><span class="sl-icon">${iconSvg}</span><span class="sl-name">${it?.name||itemId}</span><span class="sl-qty">x${data.qty}</span></div>`;
-        }
-        html += '</div>';
-      }
-      html += '</div>';
 
     } else {
       // ── AREA SELECT ──
@@ -1877,40 +1852,7 @@ class UI {
     const _sd = c._sessionDmg || {};
     const _sk = c._sessionKills || 0;
     const _totalDmg = _sd.total || 0;
-    const _dps = _totalDmg > 0 && c._sessionStartTime
-      ? (_totalDmg / ((Date.now() - c._sessionStartTime) / 1000)).toFixed(1) : '—';
-    const _hitRate = (_sd.hits||0)+(_sd.misses||0) > 0
-      ? Math.round(((_sd.hits||0)/((_sd.hits||0)+(_sd.misses||0)))*100) : 0;
-    const _critRate = (_sd.hits||0) > 0 ? Math.round(((_sd.crits||0)/(_sd.hits||0))*100) : 0;
 
-    html += `<div class="dmg-tracker-panel" id="dmg-tracker">
-      <div class="sl-dmg-header">
-        <span class="sl-dmg-title">⚔ Damage Tracker</span>
-        <button class="sl-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,burn:0,poison:0,bleed:0,total:0,taken:0,hits:0,misses:0,crits:0};game.state.combat._sessionStartTime=Date.now();ui._lastSessionGold=0;ui.renderPage('combat')">Reset</button>
-      </div>
-      <div class="sl-dmg-grid">
-        <div class="sl-dmg-row sl-dmg-melee"><span class="sl-dmg-type">Melee</span><span class="sl-dmg-val" id="sd-melee">${this.fmt(_sd.melee||0)}</span></div>
-        <div class="sl-dmg-row sl-dmg-ranged"><span class="sl-dmg-type">Ranged</span><span class="sl-dmg-val" id="sd-ranged">${this.fmt(_sd.ranged||0)}</span></div>
-        <div class="sl-dmg-row sl-dmg-magic"><span class="sl-dmg-type">Magic</span><span class="sl-dmg-val" id="sd-magic">${this.fmt(_sd.magic||0)}</span></div>
-        <div class="sl-dmg-row sl-dmg-ability"><span class="sl-dmg-type">Ability</span><span class="sl-dmg-val" id="sd-ability">${this.fmt(_sd.ability||0)}</span></div>
-        <div class="sl-dmg-row sl-dmg-burn"><span class="sl-dmg-type">🔥 Burn</span><span class="sl-dmg-val" id="sd-burn">${this.fmt(_sd.burn||0)}</span></div>
-        <div class="sl-dmg-row sl-dmg-poison"><span class="sl-dmg-type">☠ Poison</span><span class="sl-dmg-val" id="sd-poison">${this.fmt(_sd.poison||0)}</span></div>
-        <div class="sl-dmg-row sl-dmg-bleed2"><span class="sl-dmg-type">🩸 Bleed</span><span class="sl-dmg-val" id="sd-bleed">${this.fmt(_sd.bleed||0)}</span></div>
-        <div class="sl-dmg-row sl-dmg-total"><span class="sl-dmg-type">Total</span><span class="sl-dmg-val" id="sd-total">${this.fmt(_totalDmg)}</span></div>
-        <div class="sl-dmg-row sl-dmg-taken"><span class="sl-dmg-type">Taken</span><span class="sl-dmg-val" id="sd-taken">${this.fmt(_sd.taken||0)}</span></div>
-      </div>
-      <div class="sl-dmg-meta">
-        <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">DPS</span><span id="sd-dps">${_dps}</span></span>
-        <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Acc</span><span id="sd-acc">${_hitRate}%</span></span>
-        <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Crit</span><span id="sd-crit">${_critRate}%</span></span>
-        <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Kills</span><span id="sd-kills">${_sk}</span></span>
-      </div>
-    </div>
-
-    <div class="xp-rate-panel" id="xp-rate-panel">
-      <div class="xp-rate-title">XP Rates <span class="xp-rate-time" id="session-time">—</span></div>
-      <div class="xp-rate-grid" id="xp-rate-grid">${this._renderXpRates(s,c)}</div>
-    </div>`;
 
     // ── COMBAT LOG ────────────────────────────────────────────────
     const showLog = this._showCombatLog || false;
