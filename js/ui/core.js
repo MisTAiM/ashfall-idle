@@ -1198,18 +1198,43 @@ class UI {
       </div>`;
     }
 
-    // ── PRAYER BAR ──
-    html += `<div class="combat-section prayer-section"><div class="cs-header">${icon('sparkle',14)} Prayers <span class="prayer-pts" id="pp-live">${s.prayerPoints} pts</span> <span class="prayer-slots">${s.activePrayers.length}/2</span></div><div class="prayer-grid">`;
-    for (const p of GAME_DATA.prayers) {
-      if (s.skills.prayer.level < p.level) continue;
-      const active = s.activePrayers.includes(p.id);
-      html += `<button class="prayer-btn ${active?'prayer-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc} (${p.pointCost} pts/atk)">
-        <div class="pc-name">${p.name}</div>
-        <div class="pc-cost">${p.pointCost}pp</div>
-      </button>`;
+    // ── PRAYER V3 ──────────────────────────────────────────────
+    {
+      const _pp = s.prayerPoints||0;
+      const _maxPp = (s.skills.prayer?.level||1)*10;
+      const _ppPct = Math.round(_pp/Math.max(1,_maxPp)*100);
+      const _activePrayers = s.activePrayers||[];
+      const _pIconMap = {
+        thick_skin:'🛡',rock_skin:'🛡',steel_skin:'🛡',superhuman_strength:'💪',ultimate_strength:'💪',incredible_reflexes:'⚔',
+        clarity_of_thought:'⚔',sharp_eye:'🏹',hawk_eye:'🏹',mystic_will:'🔮',mystic_lore:'🔮',
+        protect_melee:'⚔',protect_ranged:'🏹',protect_magic:'🔮',
+        burst_of_strength:'💪',improved_reflexes:'⚔',steel_skin_t3:'🛡',
+      };
+      html += `<div class="prayer-v3">
+        <div class="pv3-header">
+          <div class="pv3-title">${icon('sparkle',12)} Prayers</div>
+          <div class="pv3-pp-wrap">
+            <div class="pv3-pp-bar"><div class="pv3-pp-fill" style="width:${_ppPct}%"></div></div>
+            <span class="pv3-pp-text" id="pp-live">${_pp}/${_maxPp}</span>
+          </div>
+          <span class="pv3-slots">${_activePrayers.length}/2 active</span>
+        </div>
+        <div class="pv3-grid">`;
+      for (const p of GAME_DATA.prayers) {
+        if (s.skills.prayer.level < p.level) continue;
+        const active = _activePrayers.includes(p.id);
+        const _icon = _pIconMap[p.id]||'✦';
+        const _tier = p.level<=30?'T1':p.level<=60?'T2':'T3';
+        html += `<button class="pv3-btn ${active?'pv3-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc||p.name} — ${p.pointCost}pp/atk">
+          <div class="pv3-btn-icon">${_icon}</div>
+          <div class="pv3-btn-name">${p.name}</div>
+          <div class="pv3-btn-meta"><span class="pv3-tier">${_tier}</span><span class="pv3-cost">${p.pointCost}pp</span></div>
+          ${active?'<div class="pv3-active-glow"></div>':''}
+        </button>`;
+      }
+      if (!GAME_DATA.prayers||GAME_DATA.prayers.length===0) html+='<div class="pv3-empty">No prayers unlocked</div>';
+      html += `</div></div>`;
     }
-    if (s.skills.prayer.level < 1) html += '<div class="cc-info">Train Prayer to unlock</div>';
-    html += '</div></div>';
 
     // ── RUNE POUCH ──
     const runeTypes = ['air_rune','water_rune','earth_rune','fire_rune','mind_rune','body_rune','chaos_rune','cosmic_rune','nature_rune','law_rune','astral_rune','death_rune','blood_rune','soul_rune','wrath_rune'];
@@ -1221,9 +1246,14 @@ class UI {
         if (qty <= 0) continue;
         const item = GAME_DATA.items[rId];
         const color = rId.includes('fire') ? '#d63a1a' : rId.includes('water') ? '#4a7ec4' : rId.includes('earth') ? '#8a6a3a' : rId.includes('air') ? '#c8cad4' : rId.includes('mind') ? '#5ac4c4' : rId.includes('body') ? '#4a7ec4' : rId.includes('chaos') ? '#8a5ec4' : rId.includes('death') ? '#3a3a4a' : rId.includes('blood') ? '#c44040' : rId.includes('soul') ? '#b585e0' : rId.includes('wrath') ? '#ff4040' : rId.includes('cosmic') ? '#8a5ec4' : rId.includes('nature') ? '#3a9e5c' : rId.includes('law') ? '#e8eaf2' : rId.includes('astral') ? '#5ac4c4' : 'var(--text)';
-        html += `<div class="rp-rune" title="${item?.name}: ${qty}">
-          <svg class="rp-icon" viewBox="0 0 20 20"><polygon points="10,2 18,8 15,18 5,18 2,8" fill="${color}" opacity="0.8"/><text x="10" y="13" text-anchor="middle" fill="#fff" font-size="6" font-weight="bold">${rId[0].toUpperCase()}</text></svg>
-          <span class="rp-qty" data-item-qty="${rId}">(${qty})</span>
+        const _qtyFmt = qty>=1000?Math.round(qty/100)/10+'k':qty;
+        html += `<div class="rp3-rune" title="${item?.name||rId}: ${qty.toLocaleString()}">
+          <svg class="rp3-icon" viewBox="0 0 22 22">
+            <polygon points="11,2 19,7 19,15 11,20 3,15 3,7" fill="${color}" opacity="0.85"/>
+            <polygon points="11,4 17,8 17,14 11,18 5,14 5,8" fill="${color}" opacity="0.4"/>
+            <text x="11" y="14" text-anchor="middle" fill="#fff" font-size="7" font-weight="bold">${(item?.name||rId).slice(0,2).toUpperCase()}</text>
+          </svg>
+          <span class="rp3-qty">${_qtyFmt}</span>
         </div>`;
       }
       html += '</div></div>';
@@ -1400,65 +1430,129 @@ class UI {
       const protPrayer = s.activePrayers?.find(id => ['protect_melee','protect_ranged','protect_magic'].includes(id));
       const overheadIcon = { protect_melee:'⚔', protect_ranged:'🏹', protect_magic:'🔮' };
 
-      html += `<div class="combat-arena-v2 combat-arena">
-        <div class="ca-side ca-player player-side">
-          ${protPrayer ? `<div class="overhead-prayer" title="${protPrayer.replace(/_/g,' ')}">${overheadIcon[protPrayer]||'🛡'}</div>` : ''}
-          <div class="ca-avatar"><img src="${_playerAvatar}" alt="You" width="64" height="64" class="player-combat-avatar"></div>
-          <div class="ca-name">${typeof online!=='undefined'&&online.displayName?online.displayName:'You'}</div>
-          <div class="ca-level">Combat Lv ${this.engine.getCombatLevel()}</div>
-          <div class="ca-hp-container">
-            <div class="ca-hp-bar"><div class="ca-hp-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
-            <div class="ca-hp-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))} / ${max}</div>
-          </div>
-          <div class="ca-mana-container">
-            <div class="ca-mana-bar"><div class="ca-mana-fill" id="mana-bar"></div></div>
-            <div class="ca-mana-text" id="mana-text">-- mana</div>
-          </div>
-          <div class="splat-area" id="player-splats"></div>
-          <div class="player-status-effects" id="player-status-live"></div>
+      // ── ARENA V3 ──────────────────────────────────────────────
+      const _pName = typeof online!=='undefined'&&online.displayName ? online.displayName : 'You';
+      const _styleIcon = {melee:'⚔',ranged:'🏹',magic:'🔮'}[combatStyle]||'⚔';
+      const _monArt = GAME_DATA.monsterArt?.[c.monster]||'';
+      const _sessionDmgTotal = this.fmt((c._sessionDmg?.total)||0);
+      const _pPp = s.prayerPoints||0;
+      const _maxPp = s.skills.prayer?.level*10||10;
+      html += `<div class="arena-v3">
+        <!-- Monster HP bar across the top of arena -->
+        <div class="arena-top-bar">
+          <span class="atb-name">${mon.name}</span>
+          <div class="atb-hp-track"><div class="atb-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
+          <span class="atb-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))}/${mon.hp||0}</span>
+          <span class="atb-pct">${mHpPct.toFixed(0)}%</span>
+          ${currentPhase ? `<span class="atb-phase ${currentPhase.enrage?'atb-enrage':""}">${currentPhase.enrage?'🔥':''} ${currentPhase.name}</span>` : ''}
         </div>
-        <div class="ca-center">
-          <div class="ca-vs-badge">VS</div>
-          <div class="ca-kills">Kills: <span id="kill-count">${s.stats.monstersKilled||0}</span></div>
-          ${currentPhase ? `<div class="boss-phase-badge phase-${bossPhaseIdx} ${currentPhase.enrage?'phase-enrage':''}">
-            ⚠ Phase ${bossPhaseIdx}: ${currentPhase.name}
-            ${c._enrageBonus > 0 ? `<span class="enrage-pct">+${Math.round(c._enrageBonus*100)}% dmg</span>` : ''}
-          </div>` : ''}
-          ${weakness ? `<div class="weakness-badge">Weak: ${weakness.weak} +${weakness.bonus}%</div>` : ''}
-        </div>
-        <div class="ca-side ca-monster">
-          ${GAME_DATA.monsterArt?.[c.monster] ? `<div class="monster-art ${currentPhase?.enrage?'enrage-shake':''}">${GAME_DATA.monsterArt[c.monster]}</div>` : `<div class="monster-art-placeholder">${icon('combat',48)}</div>`}
-          <div class="ca-name">${mon.name}</div>
-          <div class="ca-level">Level ${mon.combatLevel||0} | ${mon.style||'melee'}</div>
-          <div class="ca-hp-container">
-            <div class="ca-hp-bar ca-hp-monster"><div class="ca-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
-            <div class="ca-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))} / ${mon.hp||0}</div>
+
+        <!-- Main arena -->
+        <div class="arena-main">
+          <!-- Player column -->
+          <div class="arena-player">
+            <div class="arena-player-top">
+              ${protPrayer ? `<div class="arena-overhead-prayer" title="${protPrayer.replace(/_/g,' ')}">${overheadIcon[protPrayer]||'🛡'}</div>` : ''}
+              <div class="arena-avatar-wrap">
+                <img src="${_playerAvatar}" width="56" height="56" class="arena-avatar">
+                <div class="arena-style-badge">${_styleIcon}</div>
+              </div>
+              <div class="arena-pname">${_pName}</div>
+              <div class="arena-plevel">Combat Lv ${this.engine.getCombatLevel()}</div>
+            </div>
+            <div class="arena-bars">
+              <div class="arena-bar-row">
+                <span class="arena-bar-icon" style="color:#c44040">❤</span>
+                <div class="arena-bar-track"><div class="arena-bar-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
+                <span class="arena-bar-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))}/${max}</span>
+              </div>
+              <div class="arena-bar-row">
+                <span class="arena-bar-icon" style="color:#4a7ec4">✦</span>
+                <div class="arena-bar-track"><div class="arena-bar-fill" id="mana-bar" style="background:linear-gradient(90deg,#1a4a8e,#3a7adc)"></div></div>
+                <span class="arena-bar-text" id="mana-text">${Math.floor(c.mana?.current||0)}/${c.mana?.max||100}</span>
+              </div>
+              <div class="arena-bar-row">
+                <span class="arena-bar-icon" style="color:#d4a83a">✶</span>
+                <div class="arena-bar-track"><div class="arena-bar-fill" style="width:${Math.round(_pPp/Math.max(1,_maxPp)*100)}%;background:linear-gradient(90deg,#9b6c10,#d4a83a)"></div></div>
+                <span class="arena-bar-text">${_pPp}/${_maxPp}</span>
+              </div>
+            </div>
+            <div class="arena-status" id="player-status-live"></div>
+            <div class="splat-area" id="player-splats"></div>
           </div>
-          <div class="splat-area" id="monster-splats"></div>
-          <div class="player-status-effects" id="monster-status-live"></div>
+
+          <!-- Center: VS + combat info -->
+          <div class="arena-center">
+            <div class="arena-vs">VS</div>
+            <div class="arena-center-stats">
+              <div class="arena-stat-line">
+                <span class="arena-stat-label">Kills</span>
+                <span class="arena-stat-val" id="kill-count">${s.stats.monstersKilled||0}</span>
+              </div>
+              <div class="arena-stat-line">
+                <span class="arena-stat-label">Dealt</span>
+                <span class="arena-stat-val">${_sessionDmgTotal}</span>
+              </div>
+            </div>
+            ${weakness ? `<div class="arena-weakness">⚠ Weak: ${weakness.weak}<br>+${weakness.bonus}%</div>` : ''}
+            <button class="arena-flee-btn" onclick="game.stopCombat()">${icon('combat',12)} Flee</button>
+          </div>
+
+          <!-- Monster column -->
+          <div class="arena-monster">
+            <div class="arena-monster-art ${currentPhase?.enrage?'enrage-shake':''}">
+              ${_monArt || `<div class="arena-mon-placeholder">${icon('combat',64)}</div>`}
+            </div>
+            <div class="arena-mon-name">${mon.name}</div>
+            <div class="arena-mon-level">Lv ${mon.combatLevel||0} · ${(mon.style||'melee').toUpperCase()}</div>
+            <div class="arena-status arena-status-right" id="monster-status-live"></div>
+            <div class="splat-area" id="monster-splats"></div>
+          </div>
         </div>
       </div>`;
 
-      // ── ABILITY BAR ──
-      html += '<div class="ability-bar-v2">';
-      for (let i = 0; i < 4; i++) {
-        const aid = s.equippedAbilities[i];
-        const ab = aid ? GAME_DATA.abilities.find(a=>a.id===aid) : null;
-        const cd = ab ? (c.abilityCooldowns[aid] || 0) : 0;
-        if (ab) {
-          const cdPct = cd > 0 ? Math.min(100, (cd / ab.cooldown) * 100) : 0;
-          html += `<button class="ab-slot-v2 ${cd>0?'ab-cd':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}">
-            <div class="ab-cd-overlay" style="height:${cdPct}%"></div>
-            <div class="ab-content">
-              <div class="ab-name">${ab.name}</div>
-              <div class="ab-timer">${cd>0?Math.ceil(cd)+'s':'Ready'}</div>
-            </div>
+      // ── ABILITY BAR V3 ────────────────────────────────────────
+      {
+        const _equipped = s.equippedAbilities.filter(Boolean).map(aid=>GAME_DATA.abilities.find(a=>a.id===aid)).filter(Boolean);
+        const _ultimate = _equipped.length>0 ? _equipped.reduce((a,b)=>(b.cooldown>a.cooldown?b:a)) : null;
+        const _specials = s.equippedAbilities.map((aid,i)=>{
+          if(!aid) return {empty:true,slot:i};
+          const ab=GAME_DATA.abilities.find(a=>a.id===aid);
+          return {ab,aid,slot:i};
+        }).filter(x=>!x.empty);
+        html += `<div class="ability-bar-v3">
+          <div class="ab3-section">
+            <div class="ab3-section-label">${icon('combat',11)} Special Attacks</div>
+            <div class="ab3-specials">`;
+        for (const {ab,aid,slot} of _specials) {
+          if (!ab) continue;
+          const cd = c.abilityCooldowns[aid]||0;
+          const cdPct = cd>0 ? Math.min(100,(cd/ab.cooldown)*100) : 0;
+          const noMana = (ab.manaCost||0)>0 && (c.mana?.current||0)<(ab.manaCost||0);
+          const ready = cd<=0 && !noMana;
+          html += `<button class="ab3-btn ${cd>0?'ab3-cd':''} ${noMana?'ab3-no-mana':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}${ab.manaCost?' | '+ab.manaCost+' mana':''}">
+            <div class="ab3-cd-sweep" style="--sweep:${cdPct}%"></div>
+            <div class="ab3-icon">${ab.icon||'⚔'}</div>
+            <div class="ab3-name">${ab.name}</div>
+            <div class="ab3-status ${ready?'ab3-ready':cd>0?'ab3-cooling':'ab3-nomana'}">${cd>0?Math.ceil(cd)+'s':noMana?'No mana':'Ready'}</div>
+            ${ab.manaCost?`<div class="ab3-mana">${ab.manaCost}mp</div>`:''}
           </button>`;
-        } else {
-          html += `<div class="ab-slot-v2 ab-empty"><div class="ab-content">Slot ${i+1}</div></div>`;
         }
+        if (_specials.length===0) html += `<div class="ab3-empty">No abilities equipped — visit Abilities tab</div>`;
+        html += `</div></div>`;
+        // Active buffs strip (inline, compact)
+        const _bufs = c.activeBuffs||[];
+        if (_bufs.length>0) {
+          html += `<div class="ab3-buffs">`;
+          for (const b of _bufs) {
+            const _blab = b.stat==='damageMult'?`×${b.value.toFixed(2)} DMG`:b.stat==='damageReduction'?`-${b.value}% DR`:b.stat==='dodgeCharges'?`${b.value} Dodge`:b.stat==='onKillHeal'?`Heal on Kill`:b.stat==='attackBonus'?`+${b.value} ATK`:b.stat==='strengthBonus'?`+${b.value} STR`:b.stat==='vengeance'?'Vengeance':(b.stat||'Buff').replace(/Bonus/,'').replace(/([A-Z])/,' $1').trim();
+            const _bpct = b._maxDuration>0?Math.min(100,b.remaining/b._maxDuration*100):100;
+            html += `<div class="ab3-buff-chip" title="${_blab} — ${Math.ceil(b.remaining)}s"><span class="ab3-bc-label">${_blab}</span><div class="ab3-bc-bar"><div class="ab3-bc-fill" style="width:${_bpct}%"></div></div></div>`;
+          }
+          html += `</div>`;
+        }
+        html += `</div>`;
       }
-      html += '</div>';
 
       if (c.dungeon) {
         const d = GAME_DATA.dungeons.find(x=>x.id===c.dungeon);
@@ -1631,36 +1725,21 @@ class UI {
       }
 
       // ── COMBAT EQUIPMENT PANEL ──────────────────────────
-      const showEquipPanel = this._showEquipPanel !== false; // default open
-      const combatSlots = ['weapon','shield','head','body','legs','boots','gloves','ring','amulet','cape','ammo'];
-      html += `<div class="combat-equip-panel ${showEquipPanel?'':'cep-collapsed'}">
-        <div class="cep-header" onclick="ui._showEquipPanel=!ui._showEquipPanel;const b=document.querySelector('.combat-equip-panel');if(b){b.classList.toggle('cep-collapsed',!ui._showEquipPanel);document.querySelector('.cep-chevron').textContent=ui._showEquipPanel?'⌄':'›';}">
-          <span>⚔ Equipped Gear</span>
-          <span class="cep-chevron">${showEquipPanel?'⌄':'›'}</span>
-        </div>
-        <div class="cep-body">
-          <div class="cep-grid">`;
-      for (const slot of combatSlots) {
-        const eid = s.equipment[slot];
-        const eitem = eid ? GAME_DATA.items[eid] : null;
-        const isAmmo = slot === 'ammo';
-        const ammoQty = isAmmo && eid ? (s.bank[eid]||0) : null;
-        html += `<div class="cep-slot" title="${eitem ? eitem.name + (eitem.desc?'\n'+eitem.desc:'') : 'Empty '+slot}">
-          <div class="cep-slot-label">${slot.charAt(0).toUpperCase()+slot.slice(1)}</div>
-          <div class="cep-slot-item">
-            ${eitem ? `<div class="cep-icon">${window.renderItemSprite?renderItemSprite(eid,18):''}</div><span class="cep-name" style="${this.getRarityColor(eid)?'color:'+this.getRarityColor(eid):''}">${eitem.name.split(' ').pop()}</span>${isAmmo&&ammoQty!==null?`<span class="cep-ammo-qty">${ammoQty.toLocaleString()}</span>`:''}` : `<span class="cep-empty">-</span>`}
-          </div>
-        </div>`;
+      // ── GEAR STRIP V3 ──────────────────────────────────────────
+      {
+        const _gSlots = [['weapon','Weapon'],['shield','Shield'],['head','Helm'],['body','Body'],['legs','Legs'],['cape','Cape'],['gloves','Gloves'],['boots','Boots'],['ring','Ring'],['amulet','Amulet'],['ammo','Ammo']];
+        const _st = (k) => this.engine.getStatTotal ? Math.round(this.engine.getStatTotal(k)) : 0;
+        const _bStats = [['attackBonus','ATK','#e0a060'],['strengthBonus','STR','#c44040'],['defenceBonus','DEF','#4a7ec4'],['rangedBonus','RNG','#4a8a3e'],['magicBonus','MAG','#8a5ec4']];
+        html += `<div class="gear-strip-v3"><div class="gs3-header"><span class="gs3-title">Equipped Gear</span><div class="gs3-bonuses">${_bStats.map(([sk,lb,cl])=>{const v=_st(sk);return `<span class="gs3-bonus" style="color:${cl}">${v>0?'+':''}${v} ${lb}</span>`;}).join('')}</div></div><div class="gs3-slots">`;
+        for (const [slot, lbl] of _gSlots) {
+          const eid=s.equipment[slot], ei=eid?GAME_DATA.items[eid]:null;
+          const isAmmo=slot==='ammo', aq=isAmmo&&eid?(s.bank[eid]||0):null;
+          const rc=ei&&this.getRarityColor?this.getRarityColor(eid):'';
+          const tip=ei?(ei.name+(ei.stats?'\n'+Object.entries(ei.stats).map(([k,v])=>`+${v} ${k.replace('Bonus','')}`).join(', '):'')):'Empty '+lbl;
+          html += `<div class="gs3-slot ${ei?'gs3-filled':'gs3-empty'}" title="${tip}"><div class="gs3-slot-label">${lbl}</div><div class="gs3-slot-icon">${ei&&window.renderItemSprite?renderItemSprite(eid,20):''}</div><div class="gs3-slot-name" style="${rc?'color:'+rc:''}">${ei?ei.name.split(' ').slice(-1)[0]:'—'}</div>${isAmmo&&aq!==null?`<div class="gs3-ammo-qty">${aq>=1000?Math.round(aq/100)/10+'k':aq}</div>`:''}</div>`;
+        }
+        html += `</div><div class="gs3-actions"><button class="btn btn-xs" onclick="ui.currentPage='equipment';ui.renderPage('equipment')">⚙ Full Equipment</button><button class="btn btn-xs" onclick="ui.currentPage='bank';ui.renderPage('bank')">Bank</button><button class="btn btn-xs" onclick="ui.currentPage='gear_sets';ui.renderPage('gear_sets')">Gear Sets</button></div></div>`;
       }
-      html += `</div>
-          <div class="cep-actions">
-            <button class="btn btn-xs" onclick="ui.currentPage='equipment';ui.renderPage('equipment')">⚙ Full Equipment</button>
-            <button class="btn btn-xs" onclick="ui.currentPage='bank';ui.renderPage('bank')">🎒 Bank</button>
-            <button class="btn btn-xs" onclick="ui.currentPage='gear_sets';ui.renderPage('gear_sets')">🔄 Gear Sets</button>
-          </div>
-        </div>
-      </div>`;
-
       // ── SPEC BAR ──
       const weapon = GAME_DATA.items[s.equipment.weapon];
       const hasSpec = weapon?.specCost && weapon?.specEffect;
