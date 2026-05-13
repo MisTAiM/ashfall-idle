@@ -1729,7 +1729,24 @@ function applyAdminPanel() {
 
   // General
   UI.prototype._admGiveGold = function(){const a=parseInt(prompt('Gold amount:','100000'))||0;if(!a)return;game.state.gold+=a;this.toast({type:'success',text:`+${this.fmt(a)} gold`});this.renderPage('admin');};
-  UI.prototype._admMaxAll = function(){for(const sk of Object.keys(game.state.skills)){game.state.skills[sk].level=99;game.state.skills[sk].xp=13034431;}online?.adminLog?.('max_skills',{});this.toast({type:'success',text:'All skills maxed'});this.renderSidebar();this.renderPage('admin');};
+  UI.prototype._admMaxAll = function(){
+    if(!confirm('⚠️ WARNING: MAX ALL SKILLS TO 99?\n\nThis will set EVERY skill to maximum level.\nThis action is PERMANENT and cannot be easily undone.\n\nProceed?')){
+      return;
+    }
+    const confirm2 = prompt('⚠️ FINAL CONFIRMATION\n\nType the word "CONFIRM" to proceed with maxing all skills:');
+    if(confirm2 !== 'CONFIRM'){
+      this.toast({type:'warn',text:'Action cancelled'});
+      return;
+    }
+    for(const sk of Object.keys(game.state.skills)){
+      game.state.skills[sk].level=99;
+      game.state.skills[sk].xp=13034431;
+    }
+    online?.adminLog?.('max_skills',{confirmation:true});
+    this.toast({type:'success',text:'All skills maxed (double-confirmed)'});
+    this.renderSidebar();
+    this.renderPage('admin');
+  };
   UI.prototype._admFullHeal = function(){game.state.combat.playerHp=game.getMaxHp();this.toast({type:'success',text:'Healed'});this.renderPage('admin');};
   UI.prototype._admGiveAllItems = function(){let c=0;for(const id of Object.keys(GAME_DATA.items)){if(!game.state.bank[id]){game.addItem(id,10);c++;}}this.toast({type:'success',text:`Given ${c} item types`});this.renderPage('admin');};
   UI.prototype._admClearBank = function(){if(!confirm('Clear entire bank?'))return;game.state.bank={};this.toast({type:'success',text:'Bank cleared'});this.renderPage('admin');};
