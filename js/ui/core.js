@@ -1103,7 +1103,7 @@ class UI {
     } else xpSkills = {magic:80,defence:20};
     xpSkills.hitpoints = 33; // always
 
-    let html = `<div class="combat-page">`;
+    let html = `<div class="combat-page cv3-page"><div class="cv3-main">`;
     // ── XP TRACKER with highlighted active skills ──
     html += '<div class="combat-xp-panel" id="combat-xp-panel">';
     const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','tactics'];
@@ -1852,6 +1852,124 @@ class UI {
         </div>
       </div>
     </div>`;
+
+
+    // ── RIGHT SIDEBAR ──────────────────────────────────────────────
+    const _sideXpMode = c.xpMode || 'controlled';
+    const _sideStyle = c.combatStyle || 'melee';
+    const _sd2 = c._sessionDmg || {};
+    const _sk2 = c._sessionKills || 0;
+    const _sdTotal = _sd2.total || 1;
+    const _elapsed2 = c._sessionStartTime ? (Date.now()-c._sessionStartTime)/1000 : 0;
+    const _dps2 = _elapsed2>0 ? (_sdTotal/_elapsed2).toFixed(1) : '—';
+    const _killsHr = _elapsed2>0 ? Math.round(_sk2/(_elapsed2/3600)) : 0;
+    const _totalXp = c._xpBySkill ? Object.values(c._xpBySkill).reduce((a,b)=>a+b,0) : 0;
+    const _xpHr = _elapsed2>3 ? Math.round(_totalXp/(_elapsed2/3600)) : 0;
+    const _hits2 = (_sd2.hits||0)+(_sd2.misses||0);
+    const _acc2 = _hits2>0 ? Math.round((_sd2.hits||0)/_hits2*100) : 0;
+    const _crit2 = _sd2.hits>0 ? Math.round((_sd2.crits||0)/_sd2.hits*100) : 0;
+    const _dmgRows = [
+      {label:'Melee',  id:'sd-melee',  val:_sd2.melee||0,  col:'#c44040'},
+      {label:'Ranged', id:'sd-ranged', val:_sd2.ranged||0, col:'#4a8a3e'},
+      {label:'Magic',  id:'sd-magic',  val:_sd2.magic||0,  col:'#5a4ab0'},
+      {label:'Ability',id:'sd-ability',val:_sd2.ability||0,col:'#c9873e'},
+      {label:'Poison', id:'sd-poison', val:_sd2.poison||0, col:'#4abe6c'},
+      {label:'Bleed',  id:'sd-bleed',  val:_sd2.bleed||0,  col:'#8a3a3a'},
+    ];
+    const _dmgMax = Math.max(1,..._dmgRows.map(r=>r.val));
+    const _curArea = GAME_DATA.combatAreas?.find(a=>a.id===c.area);
+    const _xpRateRows = c._xpBySkill && _elapsed2>3 ? Object.entries(c._xpBySkill).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([sk,xp])=>{
+      const nm=GAME_DATA.skills[sk]?.name||sk;
+      return `<div class="cv3s-xr-row"><span>${nm}</span><span class="cv3s-xr-val" id="xr-${sk}">${this.fmt(Math.round(xp/(_elapsed2/3600)))}/hr</span></div>`;
+    }).join('') : '<div class="cv3s-xr-empty">Fight to see XP rates</div>';
+
+    html += `</div><div class="cv3-sidebar">
+
+      <!-- XP MODE -->
+      <div class="cv3s-card">
+        <div class="cv3s-title">XP Mode</div>
+        <div class="cv3s-xpmode">`;
+    if (_sideStyle==='melee') {
+      for (const [id,lbl] of [['accurate','Attack'],['aggressive','Strength'],['defensive','Defence'],['controlled','Shared']]) {
+        html += `<button class="cv3s-mode-btn ${_sideXpMode===id?'cv3s-mode-active':''}" onclick="ui.setXpMode('${id}')">${lbl}</button>`;
+      }
+    } else if (_sideStyle==='ranged') {
+      for (const [id,lbl] of [['accurate','Accurate'],['rapid','Rapid'],['longrange','Longrange']]) {
+        html += `<button class="cv3s-mode-btn ${_sideXpMode===id?'cv3s-mode-active':''}" onclick="ui.setXpMode('${id}')">${lbl}</button>`;
+      }
+    } else {
+      html += `<span class="cv3s-mode-info">80% Magic / 20% Defence</span>`;
+    }
+    html += `</div></div>
+
+      <!-- SESSION LOOT -->
+      <div class="cv3s-card cv3s-loot" id="session-loot">
+        <div class="cv3s-loot-header">
+          <div class="cv3s-title">Session Loot</div>
+          <span class="cv3s-kills-badge" id="cv3-kills">${_sk2} Kills</span>
+        </div>
+        <div class="cv3s-loot-items" id="cv3-loot-items">`;
+    const _sl2 = c._sessionLoot || {};
+    if (Object.keys(_sl2).length===0) {
+      html += `<div class="cv3s-loot-empty">No loot yet</div>`;
+    } else {
+      const _rarO={mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5};
+      if (_sl2._gold?.qty>0) html+=`<div class="cv3s-loot-row cv3s-gold"><span class="cv3s-li-icon">🪙</span><span class="cv3s-li-name">Gold</span><span class="cv3s-li-qty">${this.fmt(_sl2._gold.qty)}</span></div>`;
+      const _srt=Object.entries(_sl2).filter(([k])=>k!=='_gold').sort((a,b)=>(_rarO[a[1].rarity]||5)-(_rarO[b[1].rarity]||5)).slice(0,8);
+      for (const [iid,dat] of _srt) {
+        const _it=GAME_DATA.items[iid];
+        const _rc=dat.rarity==='legendary'||dat.rarity==='mythic'?'cv3s-legendary':dat.rarity==='epic'?'cv3s-epic':dat.rarity==='rare'?'cv3s-rare':'';
+        html+=`<div class="cv3s-loot-row ${_rc}"><span class="cv3s-li-icon">${window.renderItemSprite?window.renderItemSprite(iid,14):''}</span><span class="cv3s-li-name">${_it?.name||iid}</span><span class="cv3s-li-qty">x${dat.qty}</span></div>`;
+      }
+      if (Object.keys(_sl2).length>9) html+=`<button class="cv3s-view-more" onclick="ui.renderPage('bank')">View More</button>`;
+    }
+    html += `</div></div>
+
+      <!-- DAMAGE TRACKER -->
+      <div class="cv3s-card" id="dmg-tracker">
+        <div class="cv3s-dt-header">
+          <div class="cv3s-title">Damage Tracker</div>
+          <button class="cv3s-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,burn:0,poison:0,bleed:0,total:0,taken:0,hits:0,misses:0,crits:0};game.state.combat._xpBySkill={};game.state.combat._sessionStartTime=Date.now();ui._lastSessionGold=0;ui.renderPage('combat')">Reset</button>
+        </div>
+        <div class="cv3s-dt-rows">`;
+    for (const row of _dmgRows) {
+      const _pct = Math.round(row.val/_dmgMax*100);
+      html += `<div class="cv3s-dt-row"><span class="cv3s-dt-label">${row.label}</span><div class="cv3s-dt-bar-wrap"><div class="cv3s-dt-bar" id="${row.id}-bar" style="width:${_pct}%;background:${row.col}"></div></div><span class="cv3s-dt-val" id="${row.id}">${this.fmt(row.val)}</span></div>`;
+    }
+    html += `  <div class="cv3s-dt-total"><span>Total</span><span id="sd-total">${this.fmt(_sd2.total||0)}</span></div>
+          <div class="cv3s-dt-total cv3s-dt-taken"><span>Taken</span><span id="sd-taken">${this.fmt(_sd2.taken||0)}</span></div>
+        </div>
+        <div class="cv3s-dt-meta">
+          <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">DPS</span><span id="sd-dps">${_dps2}</span></div>
+          <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">ACC</span><span id="sd-acc">${_acc2}%</span></div>
+          <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">CRIT</span><span id="sd-crit">${_crit2}%</span></div>
+          <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">KILLS</span><span id="sd-kills">${_sk2}</span></div>
+        </div>
+      </div>
+
+      <!-- SESSION STATS -->
+      <div class="cv3s-card" id="xp-rate-panel">
+        <div class="cv3s-ss-header">
+          <div class="cv3s-title">Session Stats <span class="cv3s-timer" id="session-time">${_elapsed2>0?Math.floor(_elapsed2/60)+'m '+Math.floor(_elapsed2%60)+'s':'—'}</span></div>
+        </div>
+        <div class="cv3s-ss-grid">
+          <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-xpgain">${_xpHr>0?this.fmt(_xpHr)+'/hr':this.fmt(_totalXp)}</div><div class="cv3s-ss-lbl">XP Gain</div></div>
+          <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-khr">${_killsHr>0?this.fmt(_killsHr):'—'}</div><div class="cv3s-ss-lbl">Kills/hr</div></div>
+          <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-dmgdealt">${this.fmt(_sd2.total||0)}</div><div class="cv3s-ss-lbl">Dmg Dealt</div></div>
+          <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-dmgtaken">${this.fmt(_sd2.taken||0)}</div><div class="cv3s-ss-lbl">Dmg Taken</div></div>
+        </div>
+        <div class="cv3s-xr-rows" id="xp-rate-grid">${_xpRateRows}</div>
+      </div>
+
+      ${_curArea ? `<div class="cv3s-area-card">
+        <div class="cv3s-area-name">${_curArea.name}</div>
+        <div class="cv3s-area-level">Level ${_curArea.levelReq}+</div>
+        <div class="cv3s-area-desc">${_curArea.desc||''}</div>
+        <button class="btn btn-sm cv3s-area-btn" onclick="game.stopCombat();ui.renderPage('combat')">Change Area</button>
+      </div>` : ''}
+
+    </div>`;
+    // end sidebar
 
     html += '</div>';
     el.innerHTML = html;
@@ -7001,16 +7119,22 @@ class UI {
           const _sd = s.combat._sessionDmg || {};
           const _total = _sd.total || 0;
           const _set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-          _set('sd-melee',  this.fmt(_sd.melee  || 0));
-          _set('sd-ranged', this.fmt(_sd.ranged || 0));
-          _set('sd-magic',  this.fmt(_sd.magic  || 0));
-          _set('sd-ability',this.fmt(_sd.ability|| 0));
+          const _setBar = (id, val, max) => { const el = document.getElementById(id+'-bar'); if (el) el.style.width = Math.round(val/Math.max(1,max)*100)+'%'; };
+          const _dmgMax2 = Math.max(1,_sd.melee||0,_sd.ranged||0,_sd.magic||0,_sd.ability||0,_sd.poison||0,_sd.bleed||0);
+          _set('sd-melee',  this.fmt(_sd.melee  || 0)); _setBar('sd-melee',  _sd.melee||0,  _dmgMax2);
+          _set('sd-ranged', this.fmt(_sd.ranged || 0)); _setBar('sd-ranged', _sd.ranged||0, _dmgMax2);
+          _set('sd-magic',  this.fmt(_sd.magic  || 0)); _setBar('sd-magic',  _sd.magic||0,  _dmgMax2);
+          _set('sd-ability',this.fmt(_sd.ability|| 0)); _setBar('sd-ability',_sd.ability||0,_dmgMax2);
           _set('sd-burn',   this.fmt(_sd.burn   || 0));
-          _set('sd-poison', this.fmt(_sd.poison || 0));
-          _set('sd-bleed',  this.fmt(_sd.bleed  || 0));
+          _set('sd-poison', this.fmt(_sd.poison || 0)); _setBar('sd-poison', _sd.poison||0, _dmgMax2);
+          _set('sd-bleed',  this.fmt(_sd.bleed  || 0)); _setBar('sd-bleed',  _sd.bleed||0,  _dmgMax2);
           _set('sd-total',  this.fmt(_total));
           _set('sd-taken',  this.fmt(_sd.taken  || 0));
           _set('sd-kills',  s.combat._sessionKills || 0);
+          // Sidebar session boxes
+          _set('cv3-kills',  (s.combat._sessionKills||0)+' Kills');
+          _set('cv3-dmgdealt', this.fmt(_total));
+          _set('cv3-dmgtaken', this.fmt(_sd.taken||0));
           // Session timer
           const _stEl = document.getElementById('session-time');
           if (_stEl && s.combat._sessionStartTime) {

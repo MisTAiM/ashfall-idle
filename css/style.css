@@ -8199,3 +8199,87 @@ body.perf-mode .hit-splat { display:none !important; }
 /* ── ABILITY MANA STATE ───────────────────────────────────── */
 .ab-slot-v2.ab-no-mana { opacity:0.45; filter:grayscale(0.5); }
 .ab-mana-cost { font-size:9px; color:#4a7ec4; font-family:'JetBrains Mono',monospace; letter-spacing:0; margin-top:1px; }
+
+/* ════════════════════════════════════════════════════════════
+   COMBAT V3 — TWO-COLUMN LAYOUT
+   ════════════════════════════════════════════════════════════ */
+
+.cv3-page { display:grid; grid-template-columns:1fr 300px; gap:14px; align-items:start; padding-bottom:40px; }
+.cv3-main  { min-width:0; }
+.cv3-sidebar { display:flex; flex-direction:column; gap:10px; position:sticky; top:0; max-height:100vh; overflow-y:auto; scrollbar-width:thin; }
+.cv3-sidebar::-webkit-scrollbar { width:4px; }
+.cv3-sidebar::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+/* ── SIDEBAR CARD BASE ──────────────────────────────────────── */
+.cv3s-card { background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+.cv3s-title { font-family:'Cinzel',serif; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; display:block; }
+
+/* ── XP MODE ─────────────────────────────────────────────────── */
+.cv3s-xpmode { display:flex; gap:4px; flex-wrap:wrap; }
+.cv3s-mode-btn { flex:1; min-width:0; padding:5px 4px; font-size:11px; font-family:'Cinzel',serif; background:var(--bg-deep); border:1px solid var(--border); border-radius:5px; color:var(--text-dim); cursor:pointer; transition:all 0.15s; }
+.cv3s-mode-btn:hover { border-color:#c9873e; color:#c9873e; }
+.cv3s-mode-active { background:rgba(201,135,62,0.15)!important; border-color:#c9873e!important; color:#c9873e!important; }
+.cv3s-mode-info { font-size:11px; color:var(--text-dim); }
+
+/* ── SESSION LOOT ────────────────────────────────────────────── */
+.cv3s-loot-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.cv3s-kills-badge { font-family:'Cinzel',serif; font-size:10px; color:#c9873e; background:rgba(201,135,62,0.12); border:1px solid rgba(201,135,62,0.25); border-radius:10px; padding:2px 8px; }
+.cv3s-loot-items { display:flex; flex-direction:column; gap:3px; max-height:180px; overflow-y:auto; }
+.cv3s-loot-row { display:flex; align-items:center; gap:6px; padding:3px 4px; border-radius:4px; font-size:12px; }
+.cv3s-loot-row:hover { background:rgba(255,255,255,0.04); }
+.cv3s-li-icon { width:18px; height:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.cv3s-li-name { flex:1; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cv3s-li-qty { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); flex-shrink:0; }
+.cv3s-gold .cv3s-li-name { color:#d4a83a; }
+.cv3s-legendary .cv3s-li-name { color:#c9873e; }
+.cv3s-epic      .cv3s-li-name { color:#9b59b6; }
+.cv3s-rare      .cv3s-li-name { color:#3498db; }
+.cv3s-loot-empty { color:var(--text-dim); font-size:12px; font-style:italic; text-align:center; padding:8px 0; }
+.cv3s-view-more { width:100%; margin-top:4px; padding:4px; font-size:11px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); cursor:pointer; }
+.cv3s-view-more:hover { border-color:#c9873e; color:#c9873e; }
+
+/* ── DAMAGE TRACKER ──────────────────────────────────────────── */
+.cv3s-dt-header { display:flex; justify-content:space-between; align-items:center; }
+.cv3s-reset-btn { font-size:10px; padding:2px 8px; background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); cursor:pointer; }
+.cv3s-reset-btn:hover { border-color:#c44040; color:#c44040; }
+.cv3s-dt-rows { display:flex; flex-direction:column; gap:4px; margin-top:4px; }
+.cv3s-dt-row { display:grid; grid-template-columns:52px 1fr 52px; align-items:center; gap:6px; }
+.cv3s-dt-label { font-size:11px; color:var(--text-dim); }
+.cv3s-dt-bar-wrap { height:8px; background:var(--bg-deep); border-radius:4px; overflow:hidden; }
+.cv3s-dt-bar { height:100%; border-radius:4px; transition:width 0.3s ease-out; min-width:2px; }
+.cv3s-dt-val { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text); text-align:right; }
+.cv3s-dt-total { display:flex; justify-content:space-between; padding:5px 0 0; border-top:1px solid var(--border); margin-top:2px; font-size:12px; color:var(--text); font-weight:600; }
+.cv3s-dt-taken { color:var(--text-dim); font-size:11px; font-weight:400; padding-top:2px; border:none; margin-top:0; }
+.cv3s-dt-meta { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+.cv3s-meta-chip { display:flex; flex-direction:column; align-items:center; background:var(--bg-deep); border-radius:5px; padding:4px; }
+.cv3s-meta-lbl { font-size:9px; color:var(--text-dim); letter-spacing:1px; }
+.cv3s-meta-chip > span:last-child { font-family:'JetBrains Mono',monospace; font-size:12px; color:#c9873e; margin-top:1px; }
+
+/* ── SESSION STATS ───────────────────────────────────────────── */
+.cv3s-ss-header { display:flex; justify-content:space-between; align-items:center; }
+.cv3s-timer { font-family:'JetBrains Mono',monospace; font-size:10px; color:#c9873e; margin-left:8px; }
+.cv3s-ss-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:4px; }
+.cv3s-ss-box { background:var(--bg-deep); border-radius:6px; padding:7px 8px; text-align:center; }
+.cv3s-ss-val { font-family:'JetBrains Mono',monospace; font-size:13px; color:#c9873e; font-weight:600; }
+.cv3s-ss-lbl { font-size:9px; color:var(--text-dim); letter-spacing:0.5px; text-transform:uppercase; margin-top:2px; }
+.cv3s-xr-rows { display:flex; flex-direction:column; gap:2px; margin-top:8px; padding-top:6px; border-top:1px solid var(--border); }
+.cv3s-xr-row { display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); padding:2px 0; }
+.cv3s-xr-val { font-family:'JetBrains Mono',monospace; color:#c9873e; }
+.cv3s-xr-empty { font-size:11px; color:var(--text-dim); font-style:italic; text-align:center; padding:6px 0; }
+
+/* ── AREA CARD ────────────────────────────────────────────────── */
+.cv3s-area-card { background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:14px; overflow:hidden; position:relative; }
+.cv3s-area-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(201,135,62,0.04),rgba(10,11,15,0.8)); pointer-events:none; }
+.cv3s-area-name { font-family:'Cinzel',serif; font-size:14px; color:#c9873e; margin-bottom:2px; }
+.cv3s-area-level { font-size:10px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+.cv3s-area-desc { font-size:11px; color:var(--text-dim); line-height:1.5; margin-bottom:10px; }
+.cv3s-area-btn { width:100%; font-size:11px; }
+
+/* ── HIDE OLD STANDALONE PANELS (now in sidebar) ────────────── */
+.dmg-tracker-panel, .xp-rate-panel { display:none; }
+
+/* ── RESPONSIVE: single column on narrow ─────────────────────── */
+@media (max-width:900px) {
+  .cv3-page { grid-template-columns:1fr; }
+  .cv3-sidebar { position:static; max-height:none; }
+}
