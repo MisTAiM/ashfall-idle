@@ -715,6 +715,11 @@ class GameEngine {
     const before = this.state.skills[skillId].level;
     this.state.skills[skillId].xp += amount;
     this.state.stats.totalXpGained += amount;
+    // Track XP per skill for XP/hr rates (reset on session reset)
+    if (this.state.combat?.active) {
+      if (!this.state.combat._xpBySkill) this.state.combat._xpBySkill = {};
+      this.state.combat._xpBySkill[skillId] = (this.state.combat._xpBySkill[skillId] || 0) + amount;
+    }
     const table = GAME_DATA.xpTable;
     while (this.state.skills[skillId].level < 99 && this.state.skills[skillId].xp >= table[this.state.skills[skillId].level + 1]) {
       this.state.skills[skillId].level++;

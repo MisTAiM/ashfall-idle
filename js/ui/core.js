@@ -1826,6 +1826,16 @@ class UI {
         <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Crit</span><span id="sd-crit">${_critRate}%</span></span>
         <span class="sl-dmg-stat"><span class="sl-dmg-stat-label">Kills</span><span id="sd-kills">${_sk}</span></span>
       </div>
+    </div>
+
+    <div class="eq-bonus-panel" id="eq-bonus-panel">
+      <div class="eq-bonus-title">Equipment Bonuses</div>
+      <div class="eq-bonus-grid" id="eq-bonus-grid">${this._renderEqBonuses(s)}</div>
+    </div>
+
+    <div class="xp-rate-panel" id="xp-rate-panel">
+      <div class="xp-rate-title">XP Rates <span class="xp-rate-time" id="session-time">—</span></div>
+      <div class="xp-rate-grid" id="xp-rate-grid">${this._renderXpRates(s,c)}</div>
     </div>`;
 
     // ── COMBAT LOG ────────────────────────────────────────────────
@@ -6276,6 +6286,36 @@ class UI {
     }
   }
 
+  _renderEqBonuses(s) {
+    const G = this.engine.getStatTotal ? this.engine.getStatTotal.bind(this.engine) : () => 0;
+    const bonuses = [
+      {k:'attackBonus', label:'ATT', col:'#e0a060'},
+      {k:'strengthBonus', label:'STR', col:'#e06060'},
+      {k:'defenceBonus', label:'DEF', col:'#60a0e0'},
+      {k:'rangedBonus', label:'RNG', col:'#60c060'},
+      {k:'magicBonus', label:'MAG', col:'#a060e0'},
+      {k:'damageReduction', label:'DR%', col:'#c0c060'},
+    ];
+    return bonuses.map(b => {
+      const v = Math.round(G(b.k) || 0);
+      return `<div class="eq-bonus-chip" style="color:${b.col}"><span class="eq-bonus-label">${b.label}</span><span class="eq-bonus-val">${v>0?'+':''}${v}</span></div>`;
+    }).join('');
+  }
+
+  _renderXpRates(s, c) {
+    if (!c._xpBySkill || !c._sessionStartTime) return '<div class="xr-empty">Fight to see XP rates</div>';
+    const elapsed = (Date.now() - c._sessionStartTime) / 1000;
+    if (elapsed < 5) return '<div class="xr-empty">Calculating...</div>';
+    const skills = Object.entries(c._xpBySkill)
+      .filter(([,xp]) => xp > 0)
+      .sort((a,b) => b[1]-a[1]);
+    return skills.map(([sk, xp]) => {
+      const perHr = Math.round(xp / elapsed * 3600);
+      const name = GAME_DATA.skills[sk]?.name || sk;
+      return `<div class="xr-row"><span class="xr-skill">${name}</span><span class="xr-val" id="xr-${sk}">${this.fmt(perHr)}/hr</span></div>`;
+    }).join('');
+  }
+
   _renderSessionLootPanel(panel, sessionLoot, kills) {
     const rarOrder = { mythic:0, legendary:1, epic:2, rare:3, uncommon:4, common:5 };
     let html = `<div class="sl-header">
@@ -6976,6 +7016,31 @@ class UI {
           _set('sd-total',  this.fmt(_total));
           _set('sd-taken',  this.fmt(_sd.taken  || 0));
           _set('sd-kills',  s.combat._sessionKills || 0);
+          // Session timer
+          const _stEl = document.getElementById('session-time');
+          if (_stEl && s.combat._sessionStartTime) {
+            const _se = Math.floor((Date.now() - s.combat._sessionStartTime) / 1000);
+            const _sm = Math.floor(_se/60), _ss = _se%60;
+            _stEl.textContent = _sm+'m '+_ss+'s';
+          }
+          // XP rate updates
+          const _xbEl = document.getElementById('xp-rate-grid');
+          if (_xbEl && s.combat._xpBySkill && s.combat._sessionStartTime) {
+            const _xe = (Date.now() - s.combat._sessionStartTime) / 1000;
+            if (_xe > 3) {
+              let _xHtml = '';
+              const _xEntries = Object.entries(s.combat._xpBySkill).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+              for (const [_sk, _xp] of _xEntries) {
+                const _phr = Math.round(_xp / _xe * 3600);
+                const _nm = GAME_DATA.skills[_sk]?.name || _sk;
+                _xHtml += '<div class="xr-row"><span class="xr-skill">'+_nm+'</span><span class="xr-val">'+this.fmt(_phr)+'/hr</span></div>';
+              }
+              _xbEl.innerHTML = _xHtml || '<div class="xr-empty">No XP yet</div>';
+            }
+          }
+          // Equipment bonuses live update
+          const _eqEl = document.getElementById('eq-bonus-grid');
+          if (_eqEl) _eqEl.innerHTML = this._renderEqBonuses(s);
           if (_total > 0 && s.combat._sessionStartTime) {
             const elapsed = (Date.now() - s.combat._sessionStartTime) / 1000;
             _set('sd-dps', (_total / elapsed).toFixed(1));

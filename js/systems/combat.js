@@ -40,6 +40,15 @@
       this.emit('notification',{type:'warn',text:`${ab.name} on cooldown (${Math.ceil(c.abilityCooldowns[id])}s).`}); return;
     }
 
+    // ── MANA CHECK ───────────────────────────────────────────────
+    const _manaCost = ab.manaCost || 0;
+    if (_manaCost > 0) {
+      if (!c.mana || c.mana.current < _manaCost) {
+        this.emit('notification',{type:'warn',text:`${ab.name} requires ${_manaCost} mana (${Math.floor(c.mana?.current||0)} available).`});
+        return;
+      }
+    }
+
     const monster = GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster);
     const fx = ab.effect;
 
@@ -61,7 +70,7 @@
         const dmg = this.randInt(Math.floor(shotMax*0.15), shotMax);
         c.monsterHp -= dmg;
         this.emit('combatHit',{who:'player',dmg,crit:i===0,source:'ability'});
-        this.consumeAmmo();
+        // ranged abilities: don't consume ammo (auto-attack handles that)
       }
       this.emit('notification',{type:'success',text:`${ab.name}: ${fx.shots||3} shots fired!`});
       this.emit('abilityUsed',{ability:ab, source:'damage'});
@@ -235,7 +244,7 @@
         const dmg = this.randInt(Math.floor(baseMax*0.15), baseMax);
         c.monsterHp -= dmg;
         totalDmg += dmg;
-        this.consumeAmmo();
+        // ranged abilities: don't consume ammo
       }
       this.emit('combatHit',{who:'player',dmg:totalDmg,crit:false,source:'ability'});
       this.emit('notification',{type:'success',text:`${ab.name}: ${fx.hits||5} arrows for ${totalDmg} total damage!`});
@@ -253,6 +262,24 @@
       this.emit('notification',{type:'achievement',text:`${ab.name}: ${dmg} void damage!`});
       this.emit('abilityUsed',{ability:ab, source:'damage'});
 
+    } else if (fx.type === 'mana_burst') {
+      // Rune Burst — convert all mana to damage
+      if (!monster) return;
+      const manaAvail = c.mana?.current || 0;
+      if (manaAvail < 10) { this.emit('notification',{type:'warn',text:'Not enough mana for Rune Burst!'}); c.abilityCooldowns[id] = 0; return; }
+      const dmg = Math.floor(manaAvail * (fx.dmgPerMana || 0.8));
+      c.mana.current = 0; // consume all mana
+      c.monsterHp -= dmg;
+      this.emit('combatHit',{who:'player',dmg,crit:true,source:'ability'});
+      this.emit('notification',{type:'achievement',text:`${ab.name}: Spent ${Math.floor(manaAvail)} mana for ${dmg} damage!`});
+      this.emit('abilityUsed',{ability:ab, source:'damage'});
+
+    } else if (fx.type === 'vengeance') {
+      // Vengeance — reflect next hit
+      c.activeBuffs.push({ stat:'vengeance', value:fx.reflectMult||1.5, remaining:20, type:'time' });
+      this.emit('notification',{type:'success',text:`${ab.name}: Next hit reflected at ${Math.round((fx.reflectMult||1.5)*100)}%!`});
+      this.emit('abilityUsed',{ability:ab, source:'buff'});
+
     } else if (fx.type === 'prayer_surge') {
       // Prayer Surge — restore PP and boost Str+Def
       const ppRestored = Math.min(fx.ppRestore||40, (this.state.maxPp||99) - (this.state.prayerPoints||0));
@@ -263,6 +290,22 @@
       }
       this.emit('notification',{type:'success',text:`${ab.name}: Restored ${ppRestored} Prayer Points + Str/Def boost!`});
       this.emit('abilityUsed',{ability:ab, source:'buff'});
+    }
+
+    // ── CONSUME MANA + FORCE IMMEDIATE BAR UPDATE ───────────────
+    if (_manaCost > 0 && c.mana) {
+      if (fx.type === 'mana_burst') {
+        // mana_burst handled above, already consumed
+      } else {
+        c.mana.current = Math.max(0, c.mana.current - _manaCost);
+      }
+      // Force immediate DOM update so bar doesn't wait for next tick
+      const _mb = document.getElementById('mana-bar');
+      const _mt = document.getElementById('mana-text');
+      if (_mb && c.mana) {
+        _mb.style.width = Math.min(100, c.mana.current / (c.mana.max||100) * 100).toFixed(1) + '%';
+        if (_mt) _mt.textContent = Math.floor(c.mana.current) + ' / ' + c.mana.max + ' mana';
+      }
     }
 
     // Set cooldown and award tactics XP

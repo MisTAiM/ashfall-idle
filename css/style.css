@@ -8170,3 +8170,32 @@ body.perf-mode .hit-splat { display:none !important; }
 .ab-slot-v2 { position:relative; overflow:hidden; transition:transform 0.1s,box-shadow 0.1s; }
 .ab-slot-v2:hover:not(.ab-cd):not(.ab-no-mana) { transform:translateY(-2px); box-shadow:0 4px 12px rgba(201,135,62,0.3); }
 .ab-slot-v2:active:not(.ab-cd) { transform:scale(0.96); }
+
+/* ── EQUIPMENT BONUSES PANEL ──────────────────────────────── */
+.eq-bonus-panel { background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; padding:12px; margin:8px 0; }
+.eq-bonus-title { font-family:'Cinzel',serif; font-size:11px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.eq-bonus-grid { display:flex; flex-wrap:wrap; gap:6px; }
+.eq-bonus-chip { display:flex; flex-direction:column; align-items:center; background:var(--bg-deep); border-radius:6px; padding:5px 8px; min-width:44px; border:1px solid var(--border); }
+.eq-bonus-label { font-size:9px; color:var(--text-dim); letter-spacing:1px; }
+.eq-bonus-val { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:bold; }
+
+/* ── XP RATES PANEL ───────────────────────────────────────── */
+.xp-rate-panel { background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; padding:12px; margin:8px 0; }
+.xp-rate-title { font-family:'Cinzel',serif; font-size:11px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between; }
+.xp-rate-time { font-family:'JetBrains Mono',monospace; font-size:10px; color:#c9873e; }
+.xp-rate-grid { display:flex; flex-direction:column; gap:3px; }
+.xr-row { display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.xr-row:last-child { border:none; }
+.xr-skill { font-size:12px; color:var(--text); }
+.xr-val { font-family:'JetBrains Mono',monospace; font-size:11px; color:#c9873e; }
+.xr-empty { color:var(--text-dim); font-size:12px; font-style:italic; text-align:center; padding:8px; }
+
+/* ── MANA BAR POLISH ──────────────────────────────────────── */
+.ca-mana-container { margin:3px 0 5px; }
+.ca-mana-bar { height:10px; background:var(--bg-deep); border-radius:5px; overflow:hidden; border:1px solid rgba(74,126,196,0.25); }
+.ca-mana-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#1a4a8e,#3a7adc); transition:width 0.15s ease-out; }
+.ca-mana-text { font-family:'JetBrains Mono',monospace; font-size:10px; color:#4a7ec4; text-align:center; margin-top:2px; opacity:0.8; }
+
+/* ── ABILITY MANA STATE ───────────────────────────────────── */
+.ab-slot-v2.ab-no-mana { opacity:0.45; filter:grayscale(0.5); }
+.ab-mana-cost { font-size:9px; color:#4a7ec4; font-family:'JetBrains Mono',monospace; letter-spacing:0; margin-top:1px; }
