@@ -417,69 +417,63 @@
     }
   </script>
 
-  <!-- ═══ LAYER 1: SERVICES (loads first) ═══ -->
+  <!-- ════════════════════════════════════════════════════════════
+       LOAD ORDER — MUST NOT BE CHANGED WITHOUT UNDERSTANDING DEPS
+       1. Services (init firebase/debug with no deps)
+       2. Data (pure GAME_DATA, no class refs)
+       3. Core (GameEngine class definition)
+       4. Art (sprites/music, need GAME_DATA)
+       5. UI Core (defines UI class — MUST be before anything that extends UI.prototype)
+       6. Content drops (can extend GameEngine.prototype AND UI.prototype)
+       7. Systems (extend both GameEngine.prototype and UI.prototype)
+       8. UI sub-pages (extend UI.prototype with page renderers)
+       9. Services online/admin (need everything above)
+       ════════════════════════════════════════════════════════════ -->
+
+  <!-- LAYER 1: SERVICES -->
   <script src="js/services/firebase.js"></script>
   <script src="js/services/debug.js"></script>
 
-  <!-- ═══ LAYER 2: DATA (pure definitions, no logic) ═══ -->
+  <!-- LAYER 2: DATA — pure GAME_DATA objects, zero class references -->
   <script src="js/data/index.js"></script>
   <script src="js/data/items.js"></script>
   <script src="js/data/combat.js"></script>
   <script src="js/data/npcs.js"></script>
   <script src="js/data/quests.js"></script>
-  <!-- Future data files: uncomment when system is built
-  <script src="js/data/housing.js"></script>
-  <script src="js/data/cosmetics.js"></script>
-  <script src="js/data/events.js"></script>
-  <script src="js/data/minigames.js"></script>
-  -->
 
-  <!-- ═══ LAYER 2B: CONTENT DROPS (additive, no engine changes) ═══ -->
-  <script src="js/content/segment-content.js"></script>
-  <!-- Future content: uncomment when ready
-  <script src="js/content/world-tier-2.js"></script>
-  <script src="js/content/quest-chapter-2.js"></script>
-  <script src="js/content/seasonal-winter.js"></script>
-  <script src="js/content/boss-rotations.js"></script>
-  -->
-
-  <!-- ═══ LAYER 3: CORE ═══ -->
+  <!-- LAYER 3: CORE — GameEngine class + save system -->
   <script src="js/core/state.js"></script>
   <script src="js/core/engine.js"></script>
   <script src="js/core/save.js"></script>
-  <!-- Future modes: uncomment to activate
-  <script src="js/modes/ironman.js"></script>
-  <script src="js/modes/hardcore.js"></script>
-  <script src="js/modes/seasonal.js"></script>
-  -->
 
-  <!-- ═══ LAYER 4: SYSTEMS (game logic, no rendering) ═══ -->
+  <!-- LAYER 4: ART — needs GAME_DATA -->
+  <script src="js/art/sprites.js"></script>
+  <script src="js/art/music.js"></script>
+
+  <!-- LAYER 5: UI CORE — defines UI class. Everything below can use UI.prototype -->
+  <script src="js/ui/core.js"></script>
+
+  <!-- LAYER 6: CONTENT DROPS — additive, extends GameEngine + UI -->
+  <script src="js/content/segment-content.js"></script>
+  <script src="js/content/world-tier-2.js"></script>
+  <!-- <script src="js/content/quest-chapter-2.js"></script> -->
+  <!-- <script src="js/content/seasonal-winter.js"></script> -->
+  <!-- <script src="js/content/boss-rotations.js"></script> -->
+
+  <!-- LAYER 7: SYSTEMS — game logic + UI.prototype page renderers -->
   <script src="js/systems/skills.js"></script>
   <script src="js/systems/combat.js"></script>
   <script src="js/systems/quests.js"></script>
   <script src="js/systems/dungeons.js"></script>
   <script src="js/systems/endgame.js"></script>
   <script src="js/systems/social.js"></script>
-  <!-- Future systems: uncomment when built
-  <script src="js/systems/slayer.js"></script>
-  <script src="js/systems/wilderness.js"></script>
-  <script src="js/systems/prestige.js"></script>
-  <script src="js/systems/mastery.js"></script>
-  <script src="js/systems/achievements.js"></script>
-  <script src="js/systems/guilds.js"></script>
-  <script src="js/systems/housing.js"></script>
-  <script src="js/systems/trading.js"></script>
-  <script src="js/systems/events.js"></script>
-  <script src="js/systems/clans.js"></script>
-  <script src="js/systems/minigames.js"></script>
-  -->
+  <!-- <script src="js/systems/slayer.js"></script> -->
+  <!-- <script src="js/systems/wilderness.js"></script> -->
+  <!-- <script src="js/systems/prestige.js"></script> -->
+  <!-- <script src="js/systems/mastery.js"></script> -->
+  <!-- <script src="js/systems/achievements.js"></script> -->
 
-  <!-- ═══ LAYER 5: ART ═══ -->
-  <script src="js/art/sprites.js"></script>
-  <script src="js/art/music.js"></script>
-
-  <!-- ═══ LAYER 6: UI (rendering only) ═══ -->
-  <script src="js/ui/core.js"></script>
+  <!-- LAYER 8: UI SUB-PAGES -->
   <script src="js/ui/skills.js"></script>
   <script src="js/ui/quests.js"></script>
   <script src="js/ui/endgame.js"></script>
@@ -487,28 +481,12 @@
   <script src="js/ui/character.js"></script>
   <script src="js/ui/social.js"></script>
   <script src="js/ui/upgrades.js"></script>
-  <!-- Future UI: uncomment when split from ui/core.js
-  <script src="js/ui/hud.js"></script>
-  <script src="js/ui/combat.js"></script>
-  <script src="js/ui/inventory.js"></script>
-  <script src="js/ui/shop.js"></script>
-  <script src="js/ui/map.js"></script>
-  <script src="js/ui/housing.js"></script>
-  <script src="js/ui/trading.js"></script>
-  <script src="js/ui/guilds.js"></script>
-  <script src="js/ui/events.js"></script>
-  <script src="js/ui/cosmetics.js"></script>
-  <script src="js/ui/clans.js"></script>
-  <script src="js/ui/minigames.js"></script>
-  <script src="js/ui/leaderboards.js"></script>
-  <script src="js/ui/mastery.js"></script>
-  <script src="js/ui/wilderness.js"></script>
-  -->
 
-  <!-- ═══ LAYER 7: SERVICES (online + admin) ═══ -->
+  <!-- LAYER 9: ONLINE + ADMIN -->
   <script src="js/services/online.js"></script>
   <link rel="stylesheet" href="css/admin-v2.css">
   <script src="js/services/admin.js"></script>
+
   <script>
     // Global error boundary — prevent silent crashes
     window.addEventListener('error', function(e) {

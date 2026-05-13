@@ -746,8 +746,10 @@ GAME_DATA.collectionLog = {
   'Other Bosses': ['tanzanite_fang','magic_fang','serpentine_visage','dragon_chainbody','sarachnis_cudgel'],
 };
 
-// ── COLLECTION LOG UI ───────────────────────────────────────────
-UI.prototype.renderCollectionLogPage = function(el) {
+// ── COLLECTION LOG UI — deferred ────────────────────────────────
+(function registerCollectionLogUI() {
+  if (typeof UI === 'undefined') { setTimeout(registerCollectionLogUI, 50); return; }
+  UI.prototype.renderCollectionLogPage = function(el) {
   const s = this.engine.state;
   const inv = s.inventory || {};
   let html = this.header('Collection Log','scroll','Track every unique item you\'ve obtained.',null);
@@ -763,8 +765,9 @@ UI.prototype.renderCollectionLogPage = function(el) {
     }
     html += `</div>`;
   }
-  el.innerHTML = html;
-};
+    el.innerHTML = html;
+  };
+})();
 
 // ── SAVE MIGRATION ──────────────────────────────────────────────
 const _origMigrate96 = GameEngine.prototype.migrateSave;

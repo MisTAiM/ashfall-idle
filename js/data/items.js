@@ -1019,6 +1019,7 @@ for (const [id, svg] of Object.entries(_arts)) {
 }
 
 // ── ADD CHARMS TO DROP TABLES ────────────────────────────
+if (!GAME_DATA.dropTables) GAME_DATA.dropTables = {};
 GAME_DATA.dropTables.charms = [
   {item:'gold_charm',qty:1,weight:10},{item:'green_charm',qty:1,weight:7},
   {item:'crimson_charm',qty:1,weight:4},{item:'blue_charm',qty:1,weight:2},

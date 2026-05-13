@@ -1469,6 +1469,13 @@ class GameEngine {
     this.state.stats.uniqueKills[mId] = (this.state.stats.uniqueKills[mId] || 0) + 1;
     if (!this.state.stats.monsterKills) this.state.stats.monsterKills = {};
     this.state.stats.monsterKills[mId] = (this.state.stats.monsterKills[mId] || 0) + 1;
+    // On-kill heal (Blood Frenzy ability)
+    const _healBuff = (this.state.combat.activeBuffs||[]).find(b=>b.stat==='onKillHeal');
+    if (_healBuff && _healBuff.remaining > 0) {
+      const _healed = Math.floor(this.getMaxHp() * (_healBuff.value/100));
+      this.state.combat.playerHp = Math.min(this.getMaxHp(), this.state.combat.playerHp + _healed);
+      this.emit('notification',{type:'success',text:'Blood Frenzy healed '+_healed+' HP!'});
+    }
 
     const style = this.state.combat.combatStyle;
     const xpMode = this.state.combat.xpMode || 'controlled';
@@ -2708,6 +2715,30 @@ class GameEngine {
         c.activeBuffs.push({ stat:'defenceBonus',  value: eff.statBoost||8, remaining: eff.duration||20, _ability:true });
         noteSuffix = ` (+${eff.ppRestore||40} PP restored)`;
         break;
+
+      // ── DODGE BUFF: void_step — pure dodge charges ────────
+      case 'dodge_buff':
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'dodgeCharges');
+        c.activeBuffs.push({ stat:'dodgeCharges', value: eff.dodges || 3, remaining: eff.duration || 20 });
+        noteSuffix = ` (${eff.dodges||3} attacks dodged)`;
+        break;
+
+      // ── ON KILL HEAL: blood_frenzy — tag combat state ─────
+      case 'on_kill_heal':
+        c.activeBuffs = c.activeBuffs.filter(b => b.stat !== 'onKillHeal');
+        c.activeBuffs.push({ stat:'onKillHeal', value: eff.healPct || 15, remaining: eff.duration || 20, _ability:true });
+        noteSuffix = ` (heal ${eff.healPct||15}% on kill for ${eff.duration||20}s)`;
+        break;
+
+      // ── SPELL BURST: arcane_burst — high magic nuke ───────
+      case 'spell_burst': {
+        const _mL = this.state.skills?.magic?.level || 1;
+        const _mB = this.getStatTotal ? (this.getStatTotal('magicBonus') || 0) : 0;
+        const _mh = Math.max(5, Math.floor(0.5 + _mL * (_mB + 64) / 640));
+        totalDmg = Math.floor(this.randInt(Math.floor(_mh*0.6), _mh) * (eff.mult || 2.0));
+        if (eff.ignoreDefence) noteSuffix = ' (defence ignored)';
+        break;
+      }
 
       default:
         // Fallback: try legacy field checks
@@ -4269,6 +4300,7 @@ class GameEngine {
 }
 
 const game = new GameEngine();
+window.game = game; // expose globally for handlers that poll window.game
 // Convenience aliases
 game.startSkillAction   = (skill, action) => game.startSkill(skill, action);
 game._calcThievingFightChance = (action) => game.calcThievingFightChancePublic(action);

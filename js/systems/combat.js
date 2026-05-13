@@ -981,7 +981,7 @@ window.MAGIC_SYSTEM = {
   const MAX_RETRIES = 50; // 5 seconds max
   function initSpellDamageListener() {
     // Engine is exposed as 'game' (const game = new GameEngine() in engine.js)
-    const eng = window.game;
+    const eng = window.game || (typeof game !== "undefined" ? game : null);
     if (!eng) {
       if (++_spellDmgRetries > MAX_RETRIES) {
         console.warn('[Spell Damage] Engine never became ready — giving up.');
