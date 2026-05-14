@@ -2899,7 +2899,7 @@ class GameEngine {
       else { this.state.combat.activeBuffs.push({ ...item.buff, remaining: item.buff.duration || 120 }); }
     }
     if (item.prayerRestore) {
-      this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
+      this.state.prayerPoints = Math.min((this.state.skills.prayer?.level||1)*10, this.state.prayerPoints + (item.prayerRestore||1));
     }
     slot.qty--;
     this.state.stats.foodEaten = (this.state.stats.foodEaten || 0) + 1;
@@ -2931,7 +2931,7 @@ class GameEngine {
       else { this.state.combat.activeBuffs.push({ ...item.buff, remaining: item.buff.duration || 120 }); }
     }
     if (item.prayerRestore) {
-      this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
+      this.state.prayerPoints = Math.min((this.state.skills.prayer?.level||1)*10, this.state.prayerPoints + (item.prayerRestore||1));
     }
     slot.qty--;
     this.state.stats.foodEaten = (this.state.stats.foodEaten || 0) + 1;
@@ -2979,7 +2979,7 @@ class GameEngine {
       this.emit('notification', { type:'info', text:`${item.name}: +${item.buff.value} ${(item.buff.stat||'buff').replace('Bonus','')} for ${item.buff.duration||120}s` });
     }
     if (item.prayerRestore) {
-      this.state.prayerPoints = Math.min(99, this.state.prayerPoints + item.prayerRestore);
+      this.state.prayerPoints = Math.min((this.state.skills.prayer?.level||1)*10, this.state.prayerPoints + (item.prayerRestore||1));
     }
     if (item.heals) {
       this.state.combat.playerHp = Math.min(this.getMaxHp(), this.state.combat.playerHp + item.heals);
@@ -3951,7 +3951,7 @@ class GameEngine {
     this.removeItem(boneId, qty);
     const points = Math.floor(boneData.points * qty);
     const xp = Math.floor(boneData.xp * qty);
-    this.state.prayerPoints = Math.min(99, (this.state.prayerPoints || 0) + points);
+    this.state.prayerPoints = Math.min((this.state.skills.prayer?.level||1)*10, (this.state.prayerPoints || 0) + points);
     this.addXp('prayer', xp);
     this.state.stats.bonesBuried = (this.state.stats.bonesBuried || 0) + qty;
     // Quest tracking for bury objectives

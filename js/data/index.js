@@ -3259,3 +3259,72 @@ Object.assign(GAME_DATA.monsterArt || {}, {
 });
 
 console.log('[Ashfall] Content Expansion v10.0 loaded — new areas, monsters, items, recipes.');
+
+// ================================================================
+// MISSING ITEMS RESTORATION — Dragon weapons, tier completions
+// ================================================================
+
+(function() {
+const _i = (id, data) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = Object.assign({id}, data); };
+
+// ── DRAGON DAGGER TIERS ─────────────────────────────────────
+_i('dragon_dagger_unpoisoned', { name:'Dragon Dagger', type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.4, stats:{attackBonus:60,strengthBonus:58}, levelReq:{attack:60}, sellPrice:30000, desc:'A dragon dagger. Fast and powerful.' });
+_i('dragon_dagger_p',          { name:'Dragon Dagger (p)', type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.4, stats:{attackBonus:60,strengthBonus:58}, levelReq:{attack:60}, sellPrice:32000, desc:'Poisoned dragon dagger. Inflicts poison on hit.' });
+_i('dragon_dagger_pp',         { name:'Dragon Dagger (p+)', type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.4, stats:{attackBonus:61,strengthBonus:59}, levelReq:{attack:60}, sellPrice:35000, desc:'Super-poisoned dragon dagger.' });
+// dragon_dagger (p++) already exists in items.js as 'dragon_dagger'
+
+// ── ASHFORGE CANNON COMPONENTS (for crafting) ────────────────
+_i('cannon_mould',      { name:'Cannon Mould',       type:'quest_item', stackable:false, sellPrice:0,   desc:'A mould for crafting cannon parts.' });
+_i('cannon_base',       { name:'Cannon Base',        type:'resource',   subtype:'misc',  sellPrice:500, desc:'A cannon base. Part of the Ashforge Cannon.' });
+_i('cannon_stand',      { name:'Cannon Stand',        type:'resource',   subtype:'misc',  sellPrice:500, desc:'A cannon stand.' });
+_i('cannon_furnace',    { name:'Cannon Furnace',     type:'resource',   subtype:'misc',  sellPrice:500, desc:'A cannon furnace.' });
+_i('cannon_barrels',    { name:'Cannon Barrels',     type:'resource',   subtype:'misc',  sellPrice:500, desc:'The barrels of the cannon.' });
+
+// ── RESTORE KEY MISSING WEAPONS ──────────────────────────────
+_i('armadyl_crossbow_weapon', { name:'Armadyl Crossbow', type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6, stats:{rangedBonus:100}, levelReq:{ranged:70}, sellPrice:0, desc:'A blessed crossbow. Pearl bolt special: +15% ranged accuracy.', specCost:40, specEffect:{type:'accuracyBurst',accMult:1.15,dur:10} });
+_i('dragon_crossbow_weapon',  { name:'Dragon Crossbow',  type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6, stats:{rangedBonus:95},  levelReq:{ranged:64}, sellPrice:120000, desc:'Dragon limbs and stock. Powerful crossbow.', specCost:60, specEffect:{type:'rangedSpec',mult:1.5} });
+_i('blowpipe',                { name:'Toxic Blowpipe',   type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.2, stats:{rangedBonus:70},  levelReq:{ranged:75}, sellPrice:0, desc:'Extremely fast. Poisons on hit. Consumes zulrah scales.', specCost:50, specEffect:{type:'blowpipeSpec',mult:1.0,extraHit:true} });
+
+// ── WHIPS & SPEC WEAPONS ─────────────────────────────────────
+_i('abyssal_tentacle',        { name:'Abyssal Tentacle',    type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.6, stats:{attackBonus:90,strengthBonus:86},  levelReq:{attack:75}, sellPrice:0, desc:'Upgraded whip. Spec: 125% + 10% drain + chance to stun.' });
+_i('dragon_sword',            { name:'Dragon Sword',        type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.2, stats:{attackBonus:62,strengthBonus:66},  levelReq:{attack:60}, sellPrice:65000, desc:'Dragon sword. Spec: Double hit ignoring 25% defence.' });
+_i('crystal_halberd',         { name:'Crystal Halberd',     type:'weapon',slot:'weapon',style:'melee',attackSpeed:3.0, stats:{attackBonus:78,strengthBonus:110}, levelReq:{attack:70}, sellPrice:0, desc:'Two handed. Spec: AoE hit striking adjacent targets.' });
+
+// ── STAVES THAT WERE MISSING ─────────────────────────────────
+_i('ancient_staff',           { name:'Ancient Staff',       type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4, stats:{magicBonus:50},  levelReq:{magic:65}, sellPrice:0, desc:'Required to cast Ancient Magicks.' });
+_i('staff_of_the_dead',       { name:'Staff of the Dead',   type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4, stats:{magicBonus:75},  levelReq:{magic:75}, sellPrice:0, desc:'Unholy power. Spec: Prevent opponent from using melee.' });
+_i('sanguinesti_staff',       { name:'Sanguinesti Staff',   type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4, stats:{magicBonus:82},  levelReq:{magic:82}, sellPrice:0, desc:'Blood magic. Heals 50% of spell damage dealt.' });
+_i('kodai_wand',              { name:'Kodai Wand',          type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.0, stats:{magicBonus:90},  levelReq:{magic:80}, sellPrice:0, desc:'Most powerful wand. 15% chance to cast water spell for free.' });
+
+// ── SHIELDS ──────────────────────────────────────────────────
+_i('crystal_shield',          { name:'Crystal Shield',      type:'armor',slot:'shield', stats:{defenceBonus:58,magicBonus:6,rangedBonus:3}, levelReq:{defence:70}, sellPrice:0, desc:'A shield of crystallised song.' });
+_i('dragonfire_shield',       { name:'Dragonfire Shield',   type:'armor',slot:'shield', stats:{defenceBonus:70,magicBonus:-10,strengthBonus:7,damageReduction:5}, levelReq:{defence:75}, sellPrice:0, desc:'Absorbs dragonfire. Spec: exhale fire breath.' });
+_i('twisted_buckler',         { name:'Twisted Buckler',     type:'armor',slot:'shield', stats:{rangedBonus:18,defenceBonus:28,magicBonus:2}, levelReq:{ranged:75,defence:75}, sellPrice:0, desc:'A light shield from the Chambers. Best ranged offhand.' });
+_i('mages_book',              { name:"Mage's Book",         type:'armor',slot:'shield', stats:{magicBonus:15,defenceBonus:8}, levelReq:{magic:60}, sellPrice:0, desc:'A tome of ancient knowledge. +15 magic bonus.' });
+
+// ── RING OF RECOIL / WEALTH ───────────────────────────────────
+_i('ring_of_recoil',          { name:'Ring of Recoil',      type:'armor',slot:'ring',  stats:{defenceBonus:0}, levelReq:{}, sellPrice:1000, desc:'Reflects 10% of melee damage back to attacker.' });
+_i('ring_of_wealth',          { name:'Ring of Wealth',      type:'armor',slot:'ring',  stats:{defenceBonus:0}, levelReq:{}, sellPrice:0,    desc:'Increases rare drop rate from monsters.' });
+_i('ring_of_suffering',       { name:'Ring of Suffering',   type:'armor',slot:'ring',  stats:{defenceBonus:20,damageReduction:3}, levelReq:{}, sellPrice:0, desc:'Reduces incoming damage. Recoil effect included.' });
+
+// ── AMMUNITION COMPLETIONS ────────────────────────────────────
+_i('broad_bolts',             { name:'Broad-tipped Bolts',  type:'ammo', stackable:true, stats:{rangedBonus:28}, levelReq:{ranged:55,slayer:55}, sellPrice:12, desc:'Effective vs. slayer targets. Require Slayer 55.' });
+_i('amethyst_arrow',          { name:'Amethyst Arrows',     type:'ammo', stackable:true, stats:{rangedBonus:22}, levelReq:{ranged:65},           sellPrice:40, desc:'Amethyst-tipped arrows. Slower but hard-hitting.' });
+_i('bone_bolt',               { name:'Bone Bolts',          type:'ammo', stackable:true, stats:{rangedBonus:12}, levelReq:{ranged:25},           sellPrice:5,  desc:'Fired from the Dorgeshuun crossbow.' });
+
+// ── RESTORE FOOD COMPLETIONS ─────────────────────────────────
+_i('dark_crab',               { name:'Dark Crab',       type:'food', heals:22, cookLevel:90, sellPrice:2500, desc:'Heals 22. Found deep in the Wilderness.' });
+_i('manta_ray',               { name:'Manta Ray',       type:'food', heals:22, cookLevel:91, sellPrice:3000, desc:'Heals 22. Rare deep-sea catch.' });
+_i('karambwan',               { name:'Cooked Karambwan',type:'food', heals:18, cookLevel:30, sellPrice:1200, desc:'Heals 18. Can be combo-eaten instantly.' });
+_i('summer_pie',              { name:'Summer Pie',      type:'food', heals:11, boostAgility:5, cookLevel:95, sellPrice:2000, desc:'2 bites, 11 heal each. +5 Agility boost.' });
+_i('wild_pie',                { name:'Wild Pie',        type:'food', heals:11, boostSlayer:5,  cookLevel:85, sellPrice:1500, desc:'2 bites, 11 heal each. +5 Slayer boost.' });
+_i('mushroom_pie',            { name:'Mushroom Pie',    type:'food', heals:8,  cookLevel:60, sellPrice:600, desc:'Heals 8 per bite.' });
+
+// ── RESTORE POTIONS ───────────────────────────────────────────
+_i('super_restore',           { name:'Super Restore', type:'potion', buff:{stat:'prayerRestore',value:32,duration:1}, sellPrice:8000, desc:'Restores all stats including prayer by 32.' });
+_i('divine_super_combat',     { name:'Divine Super Combat', type:'potion', buff:{stat:'allCombat',value:5,duration:300,divine:true}, sellPrice:25000, desc:'+5 Attack/Strength/Defence. Divine: keeps boosted for 5min.' });
+_i('sara_brew',               { name:'Saradomin Brew', type:'potion', buff:{stat:'heal',value:15,defenceBoost:2}, sellPrice:12000, desc:'Heals 15HP and boosts Defence by 2. Lowers other stats.' });
+_i('extended_super_antifire', { name:'Extended Super Antifire', type:'potion', buff:{stat:'antifire',value:100,duration:720}, sellPrice:15000, desc:'Complete immunity to dragonfire for 12 minutes.' });
+
+console.log('[Ashfall] Missing items restored:', ['dragon_dagger_unpoisoned','dragon_dagger_p','dragon_dagger_pp','cannon_mould','blowpipe','kodai_wand','ring_of_suffering'].filter(id=>GAME_DATA.items[id]).length, 'confirmed.');
+})();

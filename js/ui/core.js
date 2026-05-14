@@ -1249,7 +1249,7 @@ class UI {
       html += `<div class="arena-v3 combat-arena">
         <!-- Monster HP bar across the top of arena -->
         <div class="arena-top-bar">
-          <span class="atb-name">${mon.name}</span>
+          <span class="atb-enemy-label">ENEMY HP</span><span class="atb-name">${mon.name}</span>
           <div class="atb-hp-track"><div class="atb-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
           <span class="atb-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))}/${mon.hp||0}</span>
           <span class="atb-pct">${mHpPct.toFixed(0)}%</span>
@@ -6715,6 +6715,7 @@ class UI {
 
       anim.className = 'atk-anim atk-player';
       anim.innerHTML = PLAYER_ANIMS[wType] || PLAYER_ANIMS.slash_fast;
+      anim.style.width = '90px'; anim.style.height = '90px';
 
     } else {
       // Monster attacks player - pick animation based on monster type
@@ -6752,7 +6753,7 @@ class UI {
         swordstrike: `<svg viewBox="0 0 70 70"><rect x="45" y="5" width="4" height="40" rx="1" fill="#aaa" transform="rotate(-40 47 25)"><animate attributeName="transform" from="rotate(-40 47 25)" to="rotate(30 47 25)" dur="0.2s" fill="freeze"/></rect><rect x="44" y="42" width="6" height="8" rx="1" fill="#666" transform="rotate(-40 47 25)"><animate attributeName="transform" from="rotate(-40 47 25)" to="rotate(30 47 25)" dur="0.2s" fill="freeze"/></rect><path d="M20 40 Q30 30 40 45" stroke="#ccc" stroke-width="1" fill="none" opacity="0"><animate attributeName="opacity" from="0" to="0.6" dur="0.1s" begin="0.15s" fill="freeze"/><animate attributeName="opacity" from="0.6" to="0" dur="0.15s" begin="0.25s" fill="freeze"/></path></svg>`,
       };
 
-      anim.className = `atk-anim atk-${atkType}`;
+      anim.className = `atk-anim atk-monster atk-${atkType}`;
       anim.innerHTML = ANIMS[atkType] || ANIMS.claw;
     }
     combatArena.appendChild(anim);

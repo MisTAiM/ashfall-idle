@@ -1165,7 +1165,11 @@ window.MAGIC_SYSTEM = {
 GameEngine.prototype.initManaSystem = function() {
   if (!this.state.combat.mana) {
     this.state.combat.mana = {
-      current: MANA_SYSTEM.maxManaBase,
+      // Start current at real scaled max (not hardcoded 100)
+      current: (function(){
+        const lv = (typeof game !== 'undefined' ? game?.state?.skills?.magic?.level : null) || 1;
+        return Math.floor(100 + lv * 1.3);
+      })(),
       max: MANA_SYSTEM.maxManaBase,
       regenRate: MANA_SYSTEM.manaRegenPerSecond,
       lastRegenTime: Date.now()

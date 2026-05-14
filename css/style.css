@@ -3933,25 +3933,19 @@ html, body {
 .atk-anim {
   position: absolute;
   pointer-events: none;
-  z-index: 50;
-  animation: atkFade 0.5s ease-out forwards;
+  z-index: 200;
+  animation: atkFade 0.55s ease-out forwards;
 }
-.atk-slash {
-  width: 80px; height: 80px;
-  top: 30%; right: 25%;
-}
-.atk-arrow {
-  width: 100px; height: 40px;
-  top: 45%; left: 10%;
-}
-.atk-spell {
-  width: 80px; height: 80px;
-  top: 30%; right: 20%;
-}
-.atk-claw {
-  width: 60px; height: 60px;
-  top: 25%; left: 20%;
-}
+/* Player attacks (travel right to monster) — position right 15-35% */
+.atk-player { top: 20%; right: 5%; width: 80px; height: 80px; }
+/* Monster attacks (travel left to player) — position left 0-20% */
+.atk-monster { top: 20%; left: 0%; width: 80px; height: 80px; }
+
+/* Legacy class names — point to correct sides */
+.atk-slash { width: 80px; height: 80px; top: 25%; right: 8%; }
+.atk-arrow { width: 100px; height: 40px; top: 40%; right: 5%; }
+.atk-spell { width: 80px; height: 80px; top: 25%; right: 8%; }
+.atk-claw  { width: 60px; height: 60px; top: 25%; left: 2%; }
 @keyframes atkFade {
   0% { opacity: 1; }
   80% { opacity: 0.8; }
@@ -4918,16 +4912,17 @@ html, body {
 }
 
 /* ── MONSTER ATTACK ANIMATIONS ────────────────────────── */
-.atk-fireball { width: 80px; height: 80px; top: 25%; left: 15%; }
-.atk-iceblast { width: 80px; height: 80px; top: 20%; left: 20%; }
-.atk-poison   { width: 70px; height: 70px; top: 15%; left: 18%; }
-.atk-darkbolt { width: 80px; height: 80px; top: 25%; left: 12%; }
-.atk-bite     { width: 60px; height: 60px; top: 30%; left: 22%; }
-.atk-slam     { width: 80px; height: 80px; top: 20%; left: 15%; }
-.atk-volley   { width: 80px; height: 60px; top: 35%; left: 10%; }
-.atk-tentacle { width: 70px; height: 70px; top: 25%; left: 15%; }
-.atk-bonestrike { width: 60px; height: 60px; top: 25%; left: 22%; }
-.atk-swordstrike { width: 70px; height: 70px; top: 20%; left: 18%; }
+/* Monster attack animations — ALL target the LEFT (player) column */
+.atk-fireball   { width: 80px; height: 80px; top: 15%; left: 0%; }
+.atk-iceblast   { width: 80px; height: 80px; top: 12%; left: 2%; }
+.atk-poison     { width: 70px; height: 70px; top: 18%; left: 1%; }
+.atk-darkbolt   { width: 80px; height: 80px; top: 15%; left: 0%; }
+.atk-bite       { width: 60px; height: 60px; top: 28%; left: 3%; }
+.atk-slam       { width: 80px; height: 80px; top: 20%; left: 0%; }
+.atk-volley     { width: 80px; height: 60px; top: 30%; left: 0%; }
+.atk-tentacle   { width: 70px; height: 70px; top: 18%; left: 1%; }
+.atk-bonestrike { width: 60px; height: 60px; top: 22%; left: 3%; }
+.atk-swordstrike{ width: 70px; height: 70px; top: 18%; left: 1%; }
 
 /* Player status effect display */
 .player-status-effects {
@@ -8288,7 +8283,7 @@ body.perf-mode .hit-splat { display:none !important; }
    ARENA V3
    ════════════════════════════════════════════════════════════ */
 
-.arena-v3 { background:linear-gradient(160deg,#0d0e12,#12090a); border:1px solid rgba(255,255,255,0.07); border-radius:12px; overflow:hidden; margin-bottom:12px; }
+.arena-v3 { background:linear-gradient(160deg,#0d0e12,#12090a); border:1px solid rgba(255,255,255,0.07); border-radius:12px; overflow:visible; margin-bottom:12px; position:relative; }
 
 /* Top HP bar spanning full width */
 .arena-top-bar { display:flex; align-items:center; gap:8px; padding:8px 14px; background:rgba(0,0,0,0.4); border-bottom:1px solid rgba(255,255,255,0.06); }
@@ -8858,3 +8853,61 @@ body.perf-mode .hit-splat { display:none !important; }
 /* ── XP Mode toggle buttons fluid ───────────────────────────── */
 .cv3s-xpmode { flex-wrap: wrap; }
 .cv3s-mode-btn { flex: 1 1 auto; min-width: clamp(50px, 15cqi, 80px); }
+
+/* ── ARENA TOP BAR ENEMY LABEL ──────────────────────────────── */
+.atb-enemy-label {
+  font-size: 9px;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1.5px;
+  color: #c44040;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* ── ATTACK ANIMATION — ensure combat-arena is positioned ────── */
+.combat-arena {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* Player attack anim travels RIGHT → lands on monster side (right 5%) */
+.atk-player {
+  top: 15% !important;
+  right: 3% !important;
+  left: auto !important;
+  width: clamp(60px, 12cqi, 90px);
+  height: clamp(60px, 12cqi, 90px);
+}
+
+/* Monster attack anim travels LEFT → lands on player side (left 0-10%) */
+.atk-monster {
+  top: 15% !important;
+  left: 1% !important;
+  right: auto !important;
+  width: clamp(60px, 10cqi, 80px);
+  height: clamp(60px, 10cqi, 80px);
+}
+
+/* Splat numbers land over the correct column */
+.splat-area {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 150;
+  overflow: visible;
+}
+
+.hit-splat {
+  position: absolute;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(14px, 2.5cqi, 22px);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+  animation: splatRise 1.1s ease-out forwards;
+  pointer-events: none;
+  z-index: 200;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
