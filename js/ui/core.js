@@ -1316,28 +1316,53 @@ class UI {
       }
       html += '</div>';
 
-      // Area grid
-      html += '<h2 class="section-title">Combat Areas</h2><div class="area-grid">';
-      for (const area of GAME_DATA.combatAreas) {
-        if (area.isGauntlet) continue; // handled by Void Gauntlet page
-        const locked = this.engine.getCombatLevel() < area.levelReq;
-        const monNames = (area.monsters||[]).slice(0,3).map(mid=>{
-          const m = GAME_DATA.monsters[mid]; return m?m.name:mid;
-        }).join(', ');
-        html += `<div class="area-card-v2 ${locked?'area-locked':''}">
-          <div class="area-header">
-            <span class="area-name">${area.name}</span>
-            <span class="area-req">Cb ${area.levelReq}+</span>
-          </div>
-          <div class="area-desc">${area.desc||''}</div>
-          <div class="area-monsters-v2">${monNames}</div>
-          ${area.wilderness?'<div class="area-wild-badge">⚠ Wilderness</div>':''}
-          ${area.slayerArea?'<div class="area-slayer-badge">Slayer</div>':''}
-          ${!locked ? `<button class="btn btn-sm area-start-btn" onclick="game.startCombat('${area.id}')">Fight Here</button>` : ''}
-          ${locked ? `<div class="locked-overlay">Combat Lv ${area.levelReq}</div>` : ''}
-        </div>`;
+      // Area grid — grouped by tier
+      const _cb = this.engine.getCombatLevel();
+      const _areaTiers = [
+        {label:'Beginner', min:1,  max:29,  icon:'🌿'},
+        {label:'Intermediate', min:30, max:59, icon:'⚔'},
+        {label:'Advanced', min:60, max:84, icon:'🔥'},
+        {label:'Elite',    min:85, max:999, icon:'💀'},
+      ];
+      for (const tier of _areaTiers) {
+        const tierAreas = GAME_DATA.combatAreas.filter(a=>!a.isGauntlet&&a.levelReq>=tier.min&&a.levelReq<=tier.max);
+        if (!tierAreas.length) continue;
+        html += `<h2 class="section-title">${tier.icon} ${tier.label} Areas</h2><div class="area-grid">`;
+        for (const area of tierAreas) {
+          const locked = _cb < area.levelReq;
+          const validMons = (area.monsters||[]).filter(mid=>GAME_DATA.monsters[mid]);
+          html += `<div class="area-card-v2 ${locked?'area-locked':''}">
+            <div class="area-header">
+              <span class="area-name">${area.name}</span>
+              <span class="area-req">Cb ${area.levelReq}+</span>
+            </div>
+            <div class="area-desc">${area.desc||''}</div>
+            ${area.wilderness?'<div class="area-wild-badge">⚠ Wilderness — PvP risk</div>':''}
+            ${area.slayerArea?'<div class="area-slayer-badge">⚔ Slayer area</div>':''}
+          `;
+          if (!locked && validMons.length) {
+            html += '<div class="area-monster-list">';
+            for (const mid of validMons) {
+              const m = GAME_DATA.monsters[mid]; if (!m) continue;
+              const styleIcon = {melee:'⚔',ranged:'🏹',magic:'🔮'}[m.style||'melee']||'⚔';
+              const diffColor = m.combatLevel<30?'#4abe6c':m.combatLevel<80?'#d4a83a':m.combatLevel<150?'#c9873e':'#c44040';
+              html += `<button class="area-monster-btn" onclick="game.startCombat('${area.id}','${mid}')" title="${m.desc||m.name}">
+                <span class="amb-icon">${styleIcon}</span>
+                <span class="amb-name">${m.name}</span>
+                <span class="amb-level" style="color:${diffColor}">Lv ${m.combatLevel}</span>
+                ${m.slayerReq?`<span class="amb-slayer">Slay ${m.slayerReq}+</span>`:''}
+              </button>`;
+            }
+            html += '</div>';
+            html += `<button class="btn btn-xs area-random-btn" onclick="game.startCombat('${area.id}')">⚡ Random</button>`;
+          } else if (!locked) {
+            html += `<button class="btn btn-sm area-start-btn" onclick="game.startCombat('${area.id}')">Fight Here</button>`;
+          }
+          html += `${locked?`<div class="locked-overlay">Combat Lv ${area.levelReq}</div>`:''}
+          </div>`;
+        }
+        html += '</div>';
       }
-      html += '</div>';
     }
 
     // ══════════════════════════════════════════════════════════════

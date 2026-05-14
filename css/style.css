@@ -8979,3 +8979,33 @@ body.perf-mode .hit-splat { display:none !important; }
 .spec-bar-fill { height:100%; background:linear-gradient(90deg,#8a3a00,#c9873e); border-radius:5px; transition:width 0.3s; }
 .spec-desc { font-size:11px; color:var(--text-dim); margin:3px 0 6px; }
 .spec-use-btn { width:100%; font-family:'Cinzel',serif; letter-spacing:1px; }
+
+/* ── AREA MONSTER BUTTONS ───────────────────────────────────── */
+.area-monster-list { display:flex; flex-direction:column; gap:4px; margin:8px 0; }
+
+.area-monster-btn {
+  display:flex; align-items:center; gap:8px; width:100%;
+  padding:7px 10px; background:var(--bg-deep);
+  border:1px solid rgba(255,255,255,0.08); border-radius:6px;
+  cursor:pointer; text-align:left; transition:all 0.12s;
+}
+.area-monster-btn:hover {
+  border-color:#c9873e; background:rgba(201,135,62,0.08);
+  transform:translateX(2px);
+}
+.amb-icon { font-size:13px; flex-shrink:0; }
+.amb-name { flex:1; font-size:12px; color:var(--text); }
+.amb-level { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; flex-shrink:0; }
+.amb-slayer { font-size:9px; color:#d4a83a; background:rgba(212,168,58,0.12); border-radius:3px; padding:1px 4px; flex-shrink:0; }
+
+.area-random-btn { width:100%; margin-top:2px; font-size:11px; opacity:0.7; }
+.area-random-btn:hover { opacity:1; }
+
+/* ── AREA TIER GROUPING ─────────────────────────────────────── */
+.area-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; margin-bottom:20px; }
+.area-card-v2 { background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:12px 14px; position:relative; overflow:hidden; }
+.area-card-v2:not(.area-locked):hover { border-color:rgba(201,135,62,0.3); }
+.area-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.area-name { font-family:'Cinzel',serif; font-size:13px; color:var(--text); }
+.area-req { font-size:10px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.area-desc { font-size:11px; color:var(--text-dim); line-height:1.4; margin-bottom:6px; }

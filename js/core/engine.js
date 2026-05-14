@@ -760,11 +760,18 @@ class GameEngine {
     if (areaId) {
       const area = GAME_DATA.combatAreas.find(a => a.id === areaId);
       if (!area) { this.emit('notification',{type:'warn',text:'Area not found.'}); return; }
-      if (!area.monsters.includes(monsterId)) { this.emit('notification',{type:'warn',text:'Monster not in this area.'}); return; }
-      if (this.getCombatLevel() < area.levelReq) { this.emit('notification', { type:'warn', text:`Requires combat level ${area.levelReq}.` }); return; }
+      if (this.getCombatLevel() < area.levelReq) { this.emit('notification',{type:'warn',text:`Requires combat level ${area.levelReq}.`}); return; }
+      // If no monster specified, pick a random valid one from the area
+      if (!monsterId) {
+        const valid = (area.monsters||[]).filter(mid => GAME_DATA.monsters[mid]);
+        if (!valid.length) { this.emit('notification',{type:'warn',text:`No valid monsters in ${area.name}.`}); return; }
+        monsterId = valid[Math.floor(Math.random() * valid.length)];
+      } else if (!area.monsters.includes(monsterId)) {
+        this.emit('notification',{type:'warn',text:'Monster not in this area.'}); return;
+      }
     }
     const monster = GAME_DATA.monsters[monsterId];
-    if (!monster) { this.emit('notification',{type:'warn',text:`Monster "${monsterId}" not found in game data.`}); return; }
+    if (!monster) { this.emit('notification',{type:'warn',text:`Monster "${monsterId}" not found.`}); return; }
     this._setupCombat(monster, monsterId);
     this.state.combat.area = areaId;
     this.state.combat._sessionLoot = {};
@@ -779,9 +786,12 @@ class GameEngine {
     const d = GAME_DATA.dungeons.find(x => x.id === dungeonId); if (!d) return;
     if (!d.waves || d.waves.length === 0) { this.emit('notification', { type:'warn', text:'Dungeon has no waves.' }); return; }
     if (this.getCombatLevel() < d.levelReq) { this.emit('notification', { type:'warn', text:`Requires combat level ${d.levelReq}.` }); return; }
-    const m = GAME_DATA.monsters[d.waves[0]];
-    if (!m) { this.emit('notification', { type:'warn', text:`Dungeon monster not found.` }); return; }
-    this._setupCombat(m, d.waves[0]);
+    const _w0 = d.waves[0];
+    // Support both old format (string ID) and new format ({enemies:[{id,qty}]})
+    const _w0id = typeof _w0==='string' ? _w0 : (_w0.enemies?.[0]?.id || _w0.monsters?.[0]?.id);
+    const m = _w0id ? GAME_DATA.monsters[_w0id] : null;
+    if (!m) { this.emit('notification',{type:'warn',text:'Dungeon monster not found: '+(_w0id||'unknown')}); return; }
+    this._setupCombat(m, _w0id);
     this.state.combat.dungeon = dungeonId;
     this.state.combat.dungeonWave = 0;
     this.emit('combatStart', { dungeon:dungeonId });
