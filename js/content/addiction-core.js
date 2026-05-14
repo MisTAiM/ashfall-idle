@@ -16,7 +16,7 @@
 
 const _i = (id, d) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = Object.assign({id}, d); };
 const _m = (id, d) => { if (!GAME_DATA.monsters[id]) GAME_DATA.monsters[id] = Object.assign({id}, d); };
-const _ab = (d) => { if (!GAME_DATA.abilities.find(a=>a.id===d.id)) GAME_DATA.abilities.push(d); };
+const _ab = (d) => { if (!GAME_DATA.abilities) GAME_DATA.abilities=[]; if (!GAME_DATA.abilities.find(a=>a.id===d.id)) GAME_DATA.abilities.push(d); };
 const _area = (d) => { if (!GAME_DATA.combatAreas.find(a=>a.id===d.id)) GAME_DATA.combatAreas.push(d); };
 
 // ═══════════════════════════════════════════════════════════════
@@ -299,7 +299,7 @@ _area({id:'ash_graveyard',    name:'Ash Graveyard',    levelReq:65, desc:'Ancien
 // ═══════════════════════════════════════════════════════════════
 
 if (!GAME_DATA.unholy_prayers) GAME_DATA.unholy_prayers = [];
-const _up = (d) => { if (!GAME_DATA.unholy_prayers.find(p=>p.id===d.id)) GAME_DATA.unholy_prayers.push(d); };
+const _up = (d) => { if (!GAME_DATA.unholy_prayers) GAME_DATA.unholy_prayers=[]; if (!GAME_DATA.unholy_prayers.find(p=>p.id===d.id)) GAME_DATA.unholy_prayers.push(d); };
 
 // Unholy = offensive, risk-based, powered by ashes/infernal energy
 _up({id:'demonic_strength',  name:'Demonic Strength',  level:1,  pointCost:2, icon:'💀', tier:'T1', desc:'+20% melee strength. But you take +10% more damage.',bonus:{strengthMult:1.20},penalty:{dmgTaken:1.10}});

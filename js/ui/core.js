@@ -70,6 +70,8 @@ const NAV = [
     {id:'theatre',      label:'Theatre of Ash',icon:'combat'},
     {id:'chambers',     label:'Chambers',      icon:'dungeon'},
     {id:'ashen_crypts', label:'Ashen Crypts',       icon:'skull'},
+    {id:'unholy_prayers',label:'Unholy Prayers',  icon:'skull'},
+    {id:'void_gauntlet', label:'Void Gauntlet',   icon:'skull'},
   ]},
   { header:'Magic', icon:'🔮', items:[
     {id:'spellbooks',   label:'Spellbooks',   icon:'wand'},
@@ -108,6 +110,8 @@ const NAV = [
     {id:'npcs',         label:'NPCs',         icon:'npc'},
     {id:'factions',     label:'Factions',     icon:'faction'},
     {id:'alignment',    label:'Alignment',    icon:'alignment'},
+    {id:'achievement_diary', label:'Diaries',    icon:'target'},
+    {id:'world_events', label:'World Events', icon:'globe'},
     {id:'storyline',    label:'Storyline',    icon:'book'},
     {id:'pets',         label:'Pets',         icon:'paw'},
     {id:'achievements', label:'Achievements', icon:'trophy'},
@@ -453,6 +457,10 @@ class UI {
     else if (pageId === 'inferno')    this.renderInfernoPage(main);
     else if (pageId === 'slayer_bosses') this.renderSlayerBossesPage(main);
     else if (pageId === 'world_bosses') this.renderWorldBossesPage(main);
+    else if (pageId === 'login_rewards') this.renderLoginRewardsPage(main);
+    else if (pageId === 'achievement_diary') this.renderDiaryPage(main);
+    else if (pageId === 'world_events') this.renderWorldEventsPage(main);
+    else if (pageId === 'unholy_prayers') this.renderUnholyPrayersPage(main);
     else if (pageId === 'abilities') this.renderAbilitiesPage(main);
     else if (pageId === 'farming') this.renderFarmingPage(main);
     else if (pageId === 'bank') this.renderBankPage(main);
@@ -2089,20 +2097,197 @@ class UI {
   }
 
   renderDungeonsPage(el) {
-    let html = this.header('Dungeons','dungeon','Multi-wave gauntlets with unique rewards.', null);
-    html += '<div class="actions-grid">';
-    for (const d of GAME_DATA.dungeons) {
-      const locked = this.engine.getCombatLevel() < d.levelReq;
-      html += `<div class="action-card ${locked?'locked':''}">
-        <div class="ac-header"><span class="ac-name">${d.name}</span><span class="ac-level">Cb Lv ${d.levelReq}</span></div>
-        <p class="area-desc">${d.desc}</p>
-        <div class="ac-footer"><span>${d.waves.length} waves</span></div>
-        <div class="dungeon-rewards">Rewards: ${d.rewards.map(r=>GAME_DATA.items[r.item]?.name||r.item).join(', ')}</div>
-        <button class="btn btn-sm" ${locked?'disabled':''} onclick="game.startDungeon('${d.id}')">Enter</button>
-        ${locked?`<div class="locked-overlay">Combat Lv ${d.levelReq}</div>`:''}
+    const s = this.engine.state;
+    const cb = this.engine.getCombatLevel();
+    // Separate dungeons into categories
+    const raids = (GAME_DATA.dungeons||[]).filter(d=>d.isRaid);
+    const colosseums = (GAME_DATA.dungeons||[]).filter(d=>d.isWave&&!d.isRaid);
+    const trials = (GAME_DATA.dungeons||[]).filter(d=>d.noSupplies);
+    const regular = (GAME_DATA.dungeons||[]).filter(d=>!d.isRaid&&!d.isWave&&!d.noSupplies);
+
+    let html = this.header('Dungeons & Raids','dungeon','Multi-wave challenges, raids, and arenas with unique rewards.', null);
+
+    const _renderDungeons = (list, label, icon) => {
+      if (!list.length) return '';
+      let h = `<h2 class="section-title">${icon} ${label}</h2><div class="actions-grid">`;
+      for (const d of list) {
+        const locked = cb < (d.levelReq||1);
+        const waveCount = d.waves?.length || d.maxWaves || '?';
+        const typeLabel = d.isRaid?'Raid':d.isWave?'Survival':d.noSupplies?'Trial':'Dungeon';
+        const typeBadge = `<span style="background:${d.isRaid?'rgba(201,135,62,0.2)':d.noSupplies?'rgba(196,64,64,0.2)':'rgba(74,126,196,0.2)'}; padding:1px 6px; border-radius:4px; font-size:10px; color:${d.isRaid?'#c9873e':d.noSupplies?'#c44040':'#4a7ec4'}">${typeLabel}</span>`;
+        const partyInfo = d.partySize?` · ${d.partySize.min}-${d.partySize.max} players`:'';
+        const rewardsItems = (d.rewards?.items||[]).slice(0,3).map(r=>GAME_DATA.items[r.item]?.name||r.item).join(', ');
+        const rewardGold = d.rewards?.gold?`${this.fmt(d.rewards.gold.max)} gold`:'';
+        h += `<div class="action-card ${locked?'locked':''}">
+          <div class="ac-header">
+            <span class="ac-name">${d.name}</span>
+            <span class="ac-level">Cb Lv ${d.levelReq}+</span>
+          </div>
+          ${typeBadge}
+          <p class="area-desc" style="margin:6px 0">${d.desc}</p>
+          <div class="ac-footer">
+            <span>${waveCount} waves${partyInfo}</span>
+            ${d.hardMode?'<span style="color:#c44040">HARD MODE</span>':''}
+            ${d.noSupplies?'<span style="color:#c9873e">No supplies</span>':''}
+          </div>
+          ${rewardsItems?`<div style="font-size:11px;color:var(--text-dim);margin:4px 0">Loot: ${rewardsItems}${rewardGold?', '+rewardGold:''}</div>`:''}
+          <button class="btn btn-sm" ${locked?'disabled':''} onclick="game.startDungeon('${d.id}')">
+            ${d.isRaid?'Enter Raid':d.isWave?'Enter Arena':'Start Dungeon'}
+          </button>
+          ${locked?`<div class="locked-overlay">Combat Lv ${d.levelReq}</div>`:''}
+        </div>`;
+      }
+      h += '</div>';
+      return h;
+    };
+
+    html += _renderDungeons(regular, 'Dungeons', '⚔');
+    html += _renderDungeons(colosseums, 'Arenas & Colosseums', '🏟');
+    html += _renderDungeons(trials, 'Trials', '🎯');
+    html += _renderDungeons(raids, 'Raids', '⚡');
+
+    el.innerHTML = html;
+  }
+
+  renderLoginRewardsPage(el) {
+    const s = this.engine.state;
+    const streak = s.loginStreak || {count:0, lastClaim:0};
+    const rewards = GAME_DATA.loginRewards || [];
+    const dayMs = 86400000;
+    const timeSinceLast = Date.now() - (streak.lastClaim||0);
+    const canClaim = timeSinceLast >= dayMs;
+    const timeLeft = canClaim ? 0 : Math.ceil((dayMs - timeSinceLast)/3600000);
+    let html = this.header('Daily Login','sparkle','Log in every day for escalating rewards. 7-day and 30-day rewards are legendary.',null);
+    html += `<div class="lr-header">
+      <div class="lr-streak"><div class="lr-streak-num">${streak.count||0}</div><div class="lr-streak-lbl">Day Streak</div></div>
+      <div class="lr-claim">
+        ${canClaim
+          ? `<button class="btn btn-primary lr-claim-btn" onclick="game.claimLoginReward();ui.renderPage('login_rewards')">🎁 Claim Day ${(streak.count||0)+1} Reward</button>`
+          : `<div class="lr-timer">Next reward in ${timeLeft} hours</div>`}
+      </div>
+    </div>`;
+    html += '<div class="lr-grid">';
+    for (const r of rewards) {
+      const done = (streak.count||0) >= r.day;
+      const isCurrent = r.day === Math.min(...rewards.map(x=>x.day).filter(d=>d>(streak.count||0)));
+      html += `<div class="lr-card ${done?'lr-done':''} ${isCurrent?'lr-current':''}">
+        <div class="lr-day-label">${r.label}</div>
+        ${r.gold?`<div class="lr-gold">💰 ${this.fmt(r.gold)} gold</div>`:''}
+        ${(r.items||[]).map(it=>{const item=GAME_DATA.items[it.item];return `<div class="lr-item">${item?.name||it.item} ×${it.qty}</div>`;}).join('')}
+        ${r.xpBonus?`<div class="lr-xp-bonus">+${r.xpBonus.pct}% XP (${Math.round(r.xpBonus.dur/60)}min)</div>`:''}
+        ${done?'<div class="lr-check">✓</div>':''}
       </div>`;
     }
     html += '</div>';
+    el.innerHTML = html;
+  }
+
+  renderDiaryPage(el) {
+    const s = this.engine.state;
+    const dp = s.diaryProgress || {};
+    let html = this.header('Achievement Diary','target','Complete tasks to earn exclusive rewards. Diary tiers: Easy → Medium → Hard → Elite.',null);
+    for (const [id, diary] of Object.entries(GAME_DATA.achievementDiaries||{})) {
+      html += `<div class="diary-region"><div class="diary-region-name">${diary.name}</div><div class="diary-tiers">`;
+      for (const [tier, data] of Object.entries(diary.tiers||{})) {
+        const complete = dp[id+'_'+tier+'_complete'];
+        const done = (data.tasks||[]).filter(t=>dp[t.id]).length;
+        const total = (data.tasks||[]).length;
+        html += `<div class="diary-tier ${complete?'diary-tier-done':''}">
+          <div class="diary-tier-header">
+            <span class="diary-tier-name">${data.name}</span>
+            <span class="diary-tier-progress">${done}/${total}</span>
+            ${complete?'<span class="diary-complete-badge">✓ Complete</span>':''}
+          </div>
+          <div class="diary-tasks">`;
+        for (const task of (data.tasks||[])) {
+          const done2 = !!dp[task.id];
+          html += `<div class="diary-task ${done2?'diary-task-done':''}"><span class="diary-check">${done2?'✓':'○'}</span>${task.desc}</div>`;
+        }
+        html += `</div>
+          ${!complete&&data.reward?`<div class="diary-reward">Reward: ${GAME_DATA.items[data.reward.item]?.name||data.reward.item}</div>`:''}
+        </div>`;
+      }
+      html += '</div></div>';
+    }
+    el.innerHTML = html;
+  }
+
+  renderWorldEventsPage(el) {
+    const s = this.engine.state;
+    const we = s.worldEvents || {};
+    const active = we.active;
+    const events = GAME_DATA.worldEvents || [];
+    let html = this.header('World Events','globe','Random bonus events fire throughout the day. Check back often.',null);
+    if (active) {
+      const msLeft = Math.max(0, (we.activeUntil||0) - Date.now());
+      const minLeft = Math.ceil(msLeft/60000);
+      html += `<div class="we-active-banner">
+        <div class="we-active-label">ACTIVE EVENT</div>
+        <div class="we-active-name">${active.name}</div>
+        <div class="we-active-desc">${active.desc}</div>
+        <div class="we-active-time">${minLeft} minutes remaining</div>
+      </div>`;
+    } else {
+      html += '<div class="we-none">No active world event. Check back in a few minutes!</div>';
+    }
+    html += '<h2 class="section-title">All World Events</h2><div class="we-grid">';
+    for (const ev of events) {
+      const rarColor = ev.rarity==='rare'?'#c9873e':ev.rarity==='uncommon'?'#9b59b6':'#4a8a3e';
+      html += `<div class="we-card ${active?.id===ev.id?'we-card-active':''}">
+        <div class="we-card-header">
+          <span class="we-card-name">${ev.name}</span>
+          <span class="we-card-rarity" style="color:${rarColor}">${ev.rarity}</span>
+        </div>
+        <p class="we-card-desc">${ev.desc}</p>
+        <div class="we-card-dur">${Math.round(ev.duration/60)} minutes</div>
+      </div>`;
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  renderUnholyPrayersPage(el) {
+    const s = this.engine.state;
+    const unlocked = (s.quests.completed||[]).includes('unholy_path');
+    const unholyPrayers = (GAME_DATA.prayers||[]).filter(p=>p.book==='unholy');
+    let html = this.header('Unholy Prayers','skull','Dark prayers for aggressive builds. High risk, devastating power. Requires completing The Unholy Path quest.',null);
+    if (!unlocked) {
+      html += '<div class="bank-empty"><p>🔒 Complete quest "The Unholy Path" to unlock the Unholy Prayer Book.</p></div>';
+    } else {
+      const pp = s.prayerPoints||0;
+      const maxPP = (s.skills.prayer?.level||1)*10;
+      html += `<div class="prayer-dash">
+        <div class="prayer-kpi"><div class="prayer-kpi-val" style="color:#8a2ae0">${pp}</div><div class="prayer-kpi-lbl">Prayer Pts</div></div>
+        <div class="prayer-kpi"><div class="prayer-kpi-val">${(s.activePrayers||[]).filter(id=>unholyPrayers.find(p=>p.id===id)).length}/2</div><div class="prayer-kpi-lbl">Unholy Active</div></div>
+      </div>`;
+      const tiers = ['T1','T2','T3','T4'];
+      for (const tier of tiers) {
+        const tierPrayers = unholyPrayers.filter(p=>p.tier===tier);
+        if (!tierPrayers.length) continue;
+        html += `<h2 class="section-title" style="color:#8a2ae0">${tier === 'T4' ? '⚡ Forbidden' : tier} — ${tier==='T1'?'Novice':tier==='T2'?'Adept':tier==='T3'?'Expert':'Forbidden'}</h2>`;
+        html += '<div class="prayer-grid">';
+        for (const p of tierPrayers) {
+          const locked = (s.skills.prayer?.level||1) < p.level;
+          const active2 = (s.activePrayers||[]).includes(p.id);
+          html += `<div class="prayer-card ${locked?'prayer-locked':''} ${active2?'prayer-active-card':''}" style="${active2?'border-color:#8a2ae0;background:rgba(138,42,224,0.1);':''}">
+            <div class="prayer-card-header">
+              <span class="prayer-card-icon" style="font-size:22px">${p.icon||'☠'}</span>
+              <span class="prayer-card-name">${p.name}</span>
+              <span class="prayer-card-level">Lv ${p.level}</span>
+            </div>
+            <p class="prayer-card-desc" style="color:#b060ff">${p.desc}</p>
+            <div class="prayer-card-cost" style="color:#6a1ab0">-${p.pointCost} pp/atk</div>
+            ${p.penalty?`<div style="color:#c44040;font-size:11px;margin:4px 0">⚠ ${JSON.stringify(p.penalty).replace(/[{}"]/g,' ').trim()}</div>`:''}
+            ${!locked
+              ? `<button class="btn btn-xs" style="border-color:#8a2ae0;color:${active2?'#c44040':'#8a2ae0'}" onclick="game.activatePrayer('${p.id}');ui.renderPage('unholy_prayers')">
+                  ${active2?'Deactivate':'Activate'}
+                </button>`
+              : `<div class="prayer-locked-text">Requires Prayer ${p.level}</div>`}
+          </div>`;
+        }
+        html += '</div>';
+      }
+    }
     el.innerHTML = html;
   }
 
@@ -2141,14 +2326,25 @@ class UI {
       </div>`;
     }
     html += '</div>';
+    // Style filter
+    const _abStyle = ui._abFilter || 'all';
+    html += `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--text-dim);align-self:center">Filter:</span>
+      ${['all','melee','ranged','magic','any'].map(st=>`<button class="btn btn-xs ${_abStyle===st?'cc-btn-active':''}" onclick="ui._abFilter='${st}';ui.renderPage('abilities')">${st.charAt(0).toUpperCase()+st.slice(1)}</button>`).join('')}
+    </div>`;
+    const _visAbs = _abStyle==='all' ? GAME_DATA.abilities : GAME_DATA.abilities.filter(a=>a.style===_abStyle||a.style==='any');
     html += '<h2 class="section-title">Available Abilities</h2><div class="actions-grid">';
-    for (const ab of GAME_DATA.abilities) {
-      const locked = s.skills.tactics.level < ab.tacticsReq;
+    for (const ab of _visAbs) {
+      const locked = (s.skills.tactics?.level||1) < (ab.tacticsReq||1);
       const equippedSlot = s.equippedAbilities.indexOf(ab.id);
       html += `<div class="action-card ${locked?'locked':''}">
         <div class="ac-header"><span class="ac-name">${ab.name}</span><span class="ac-level">Tac Lv ${ab.tacticsReq}</span></div>
         <p class="area-desc">${ab.desc}</p>
-        <div class="ac-footer"><span>CD: ${ab.cooldown}s</span><span>Style: ${ab.style}</span></div>
+        <div class="ac-footer">
+          <span>CD: ${ab.cooldown}s</span>
+          ${ab.manaCost?`<span style="color:#4a7ec4">${ab.manaCost}mp</span>`:''}
+          <span>Style: ${ab.style||'any'}</span>
+        </div>
         ${!locked ? `<div class="shop-btns">
           ${equippedSlot >= 0 ? `<span class="ac-mastery">Equipped slot ${equippedSlot+1}</span>` : ''}
           <button class="btn btn-xs" onclick="game.equipAbility(0,'${ab.id}')">Slot 1</button>
@@ -2160,6 +2356,32 @@ class UI {
       </div>`;
     }
     html += '</div>';
+
+    // ── UNHOLY PRAYERS ─────────────────────────────────────────────
+    const unholyPrayers = GAME_DATA.prayers.filter(p=>p.book==='unholy');
+    if (unholyPrayers.length) {
+      const hasUnlocked = (s.quests.completed||[]).includes('unholy_path');
+      html += `<h2 class="section-title" style="color:#8a2ae0">Unholy Prayers ${!hasUnlocked?'<span style="font-size:11px;color:var(--text-dim)">(Complete "The Unholy Path" quest to unlock)</span>':''}</h2>`;
+      html += '<div class="prayer-grid">';
+      for (const p of unholyPrayers) {
+        const locked = (s.skills.prayer?.level||1) < p.level || !hasUnlocked;
+        const active = (s.activePrayers||[]).includes(p.id);
+        html += `<div class="prayer-card ${locked?'prayer-locked':''} ${active?'prayer-active-card':''}">
+          <div class="prayer-card-header">
+            <span class="prayer-card-icon" style="font-size:20px">${p.icon||'☠'}</span>
+            <span class="prayer-card-name">${p.name}</span>
+            <span class="prayer-card-level">Lv ${p.level}</span>
+          </div>
+          <p class="prayer-card-desc" style="color:#b060ff">${p.desc}</p>
+          <div class="prayer-card-cost" style="color:#8a2ae0">-${p.pointCost} pp/atk · ${p.tier||'T1'}</div>
+          ${!locked?`<button class="btn btn-xs ${active?'btn-danger':''}" style="border-color:#8a2ae0;color:#8a2ae0" onclick="game.activatePrayer('${p.id}');ui.renderPage('prayer')">
+            ${active?'Deactivate':'Activate'}
+          </button>`:`<div class="prayer-locked-text">Level ${p.level} Prayer required</div>`}
+        </div>`;
+      }
+      html += '</div>';
+    }
+
     el.innerHTML = html;
   }
 
@@ -3617,7 +3839,7 @@ class UI {
   // ── PRAYER PAGE ─────────────────────────────────────────
   renderPrayerPage(el) {
     const s = this.engine.state;
-    const maxPP = 99, pp = s.prayerPoints || 0;
+    const maxPP = (s.skills.prayer?.level||1)*10, pp = s.prayerPoints || 0;
     const ppPct = Math.round((pp / maxPP) * 100);
     const active = s.activePrayers || [];
     const drainPerAtk = active.reduce((sum, id) => {

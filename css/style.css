@@ -8911,3 +8911,41 @@ body.perf-mode .hit-splat { display:none !important; }
   white-space: nowrap;
   transform: translateX(-50%);
 }
+
+/* ── LOGIN REWARDS ──────────────────────────────────────────── */
+.lr-header{display:flex;align-items:center;justify-content:space-between;background:var(--bg-mid);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px}
+.lr-streak{text-align:center}.lr-streak-num{font-family:'Cinzel',serif;font-size:36px;color:#c9873e}.lr-streak-lbl{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.lr-claim-btn{padding:12px 24px;font-family:'Cinzel',serif;letter-spacing:1px;font-size:14px}
+.lr-timer{color:var(--text-dim);font-size:13px;font-family:'JetBrains Mono',monospace}
+.lr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.lr-card{background:var(--bg-mid);border:1px solid var(--border);border-radius:8px;padding:12px;position:relative}
+.lr-current{border-color:#c9873e!important;box-shadow:0 0 12px rgba(201,135,62,0.2)}
+.lr-done{opacity:0.5}.lr-day-label{font-family:'Cinzel',serif;font-size:12px;color:#c9873e;margin-bottom:6px}
+.lr-gold{font-size:13px;color:#d4a83a;margin:2px 0}.lr-item{font-size:12px;color:var(--text);margin:2px 0}
+.lr-xp-bonus{font-size:11px;color:#4abe6c;margin-top:4px}
+.lr-check{position:absolute;top:8px;right:10px;font-size:18px;color:#4abe6c}
+
+/* ── ACHIEVEMENT DIARY ──────────────────────────────────────── */
+.diary-region{margin-bottom:24px}.diary-region-name{font-family:'Cinzel',serif;font-size:16px;color:#c9873e;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.diary-tiers{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.diary-tier{background:var(--bg-mid);border:1px solid var(--border);border-radius:8px;padding:12px}
+.diary-tier-done{border-color:#4abe6c;background:rgba(74,190,108,0.05)}
+.diary-tier-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.diary-tier-name{font-family:'Cinzel',serif;font-size:13px;color:var(--text)}.diary-tier-progress{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-left:auto}
+.diary-complete-badge{font-size:10px;color:#4abe6c;background:rgba(74,190,108,0.15);padding:1px 6px;border-radius:4px}
+.diary-task{display:flex;gap:6px;font-size:12px;color:var(--text-dim);margin:3px 0}
+.diary-task-done{color:var(--text)}.diary-check{flex-shrink:0;color:#4abe6c;width:14px}
+.diary-reward{font-size:11px;color:#c9873e;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)}
+
+/* ── WORLD EVENTS ───────────────────────────────────────────── */
+.we-active-banner{background:rgba(201,135,62,0.1);border:1px solid rgba(201,135,62,0.4);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center}
+.we-active-label{font-size:10px;letter-spacing:2px;color:#c9873e;text-transform:uppercase;margin-bottom:4px}
+.we-active-name{font-family:'Cinzel',serif;font-size:20px;color:#c9873e;margin-bottom:6px}
+.we-active-desc{color:var(--text);font-size:13px;margin-bottom:8px}.we-active-time{font-family:'JetBrains Mono',monospace;font-size:12px;color:#d4a83a}
+.we-none{text-align:center;color:var(--text-dim);padding:40px;font-style:italic}
+.we-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.we-card{background:var(--bg-mid);border:1px solid var(--border);border-radius:8px;padding:12px}
+.we-card-active{border-color:#c9873e;background:rgba(201,135,62,0.07)}
+.we-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.we-card-name{font-family:'Cinzel',serif;font-size:13px;color:var(--text)}.we-card-rarity{font-size:10px;text-transform:capitalize}
+.we-card-desc{font-size:12px;color:var(--text-dim);margin-bottom:6px}.we-card-dur{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
