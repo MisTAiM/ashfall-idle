@@ -1175,7 +1175,7 @@ class UI {
           <span class="atb-name">${mon.name}</span>
           <div class="atb-hp-track"><div class="atb-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
           <span class="atb-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))} / ${mon.hp||0}</span>
-          <span class="atb-pct">${mHpPct.toFixed(0)}%</span>
+          <span class="atb-pct" id="mhp-pct">${mHpPct.toFixed(0)}%</span>
           ${currentPhase ? `<span class="atb-phase ${currentPhase.enrage?'atb-enrage':''}">${currentPhase.enrage?'🔥':''} ${currentPhase.name}</span>` : ''}
         </div>
 
@@ -1205,7 +1205,7 @@ class UI {
               <div class="arena-bar-row">
                 <span class="arena-bar-icon" style="color:#d4a83a">✶</span>
                 <div class="arena-bar-track"><div class="arena-bar-fill" id="pp-bar" style="width:${Math.round(_pp/Math.max(1,_maxPp)*100)}%;background:linear-gradient(90deg,#9b6c10,#d4a83a)"></div></div>
-                <span class="arena-bar-text" id="pp-live">${_pp} / ${_maxPp}</span>
+                <span class="arena-bar-text arena-bar-text-wide" id="pp-live">${_pp}/${_maxPp}</span>
               </div>
             </div>
             ${(c.activeBuffs||[]).length ? `<div class="arena-buff-row">${(c.activeBuffs||[]).slice(0,4).map(b=>{
@@ -6396,8 +6396,9 @@ class UI {
   }
 
   showPetAction(d) {
-    const arena = document.querySelector('.combat-arena');
-    if (!arena) return;
+    // Attach to monster splats area so it floats over the monster, not the center
+    const target = document.getElementById('monster-splats') || document.querySelector('.combat-arena');
+    if (!target) return;
     const existing = document.getElementById('pet-action-flash');
     if (existing) existing.remove();
     const flash = document.createElement('div');
@@ -6406,11 +6407,11 @@ class UI {
     const typeColor = { damage:'#d67338', heal:'#4abe6c', status:'#b585e0', debuff:'#d4a83a', pierce:'#7ac4e8', stun:'#d4a83a', slow:'#4a9ed4' };
     const color = typeColor[d.type] || '#c9873e';
     let text = `${d.pet?.name||'Pet'}: ${d.action||'attacks'}`;
-    if (d.dmg)  text += ` (${d.dmg} dmg)`;
-    if (d.heal) text += ` (+${d.heal} HP)`;
+    if (d.dmg)  text += ` ▶ ${d.dmg}`;
+    if (d.heal) text += ` +${d.heal}hp`;
     flash.innerHTML = `<span class="pa-pet-name" style="color:${color}">${text}</span>`;
-    flash.style.borderColor = color + '50';
-    arena.appendChild(flash);
+    flash.style.cssText += `;border-color:${color}50;`;
+    target.appendChild(flash);
     setTimeout(() => { if (flash.parentNode) flash.remove(); }, 2000);
   }
 
@@ -6863,8 +6864,11 @@ class UI {
           const mhpBar = document.getElementById('mhp-bar');
           const mhpText = document.getElementById('mhp-text');
           const mHp = Math.max(0, s.combat.monsterHp || 0);
-          if (mhpBar)  mhpBar.style.width  = (mHp / (mon.hp||1) * 100).toFixed(1) + '%';
+          const _mhpPct = (mHp / (mon.hp||1) * 100);
+          if (mhpBar)  { mhpBar.style.width = _mhpPct.toFixed(1) + '%'; }
           if (mhpText) mhpText.textContent = Math.ceil(mHp) + ' / ' + (mon.hp||0);
+          const _mhpPctEl = document.getElementById('mhp-pct');
+          if (_mhpPctEl) _mhpPctEl.textContent = _mhpPct.toFixed(0) + '%';
           // HP bar colors live
           if (phpBar) {
             const pPct = pHp / max * 100;

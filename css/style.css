@@ -8332,8 +8332,8 @@ body.perf-mode .hit-splat { display:none !important; }
 
 /* Monster column */
 .arena-monster { padding:14px; display:flex; flex-direction:column; align-items:flex-end; gap:6px; border-left:1px solid rgba(255,255,255,0.05); position:relative; overflow:hidden; }
-.arena-monster-art { font-size:0; max-width:120px; max-height:120px; overflow:hidden; align-self:center; filter:drop-shadow(0 0 16px rgba(139,0,0,0.4)); }
-.arena-monster-art svg, .arena-monster-art img { max-width:120px; max-height:120px; }
+.arena-monster-art { display:flex; align-items:center; justify-content:center; width:100%; min-height:110px; overflow:visible; filter:drop-shadow(0 0 16px rgba(139,0,0,0.4)); }
+.arena-monster-art svg, .arena-monster-art img { width:110px; height:110px; max-width:none; max-height:none; }
 .arena-mon-placeholder { width:80px; height:80px; display:flex; align-items:center; justify-content:center; opacity:0.3; }
 .arena-mon-name { font-family:'Cinzel',serif; font-size:13px; color:#e0c090; text-align:right; }
 .arena-mon-level { font-size:10px; color:var(--text-dim); text-align:right; letter-spacing:0.5px; }
@@ -9026,4 +9026,131 @@ body.perf-mode .hit-splat { display:none !important; }
   width: 64px;
   height: 64px;
   filter: drop-shadow(0 0 6px rgba(201,135,62,0.2));
+}
+
+/* ════════════════════════════════════════════════════════════
+   COMBAT FIX PATCH — authoritative overrides for all conflicts
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Monster column: must be relative + visible for splats ── */
+.arena-monster {
+  position: relative !important;
+  overflow: visible !important;
+}
+.arena-player {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* ── Splat areas: fill parent column, z-index above art ───── */
+.splat-area {
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  overflow: visible !important;
+  z-index: 100 !important;
+}
+
+/* ── Monster art: fills monster column properly ────────────── */
+.arena-monster-art {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-height: 110px !important;
+  overflow: visible !important;
+}
+.arena-monster-art svg {
+  width: clamp(80px, 100%, 130px) !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+.arena-monster-art img {
+  width: clamp(80px, 100%, 130px) !important;
+  height: auto !important;
+}
+
+/* ── Hit splat numbers ─────────────────────────────────────── */
+.hit-splat {
+  position: absolute !important;
+  font-family: 'Cinzel', serif !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 0 10px currentColor !important;
+  animation: splatRise 1.1s ease-out forwards !important;
+  pointer-events: none !important;
+  z-index: 200 !important;
+  white-space: nowrap !important;
+  transform: translateX(-50%) !important;
+}
+@keyframes splatRise {
+  0%   { transform: translateX(-50%) translateY(0)    scale(0.7); opacity: 1; }
+  20%  { transform: translateX(-50%) translateY(-20px) scale(1.2); opacity: 1; }
+  70%  { transform: translateX(-50%) translateY(-55px) scale(1.0); opacity: 0.9; }
+  100% { transform: translateX(-50%) translateY(-90px) scale(0.8); opacity: 0; }
+}
+
+/* ── Arena top bar: HP % always visible ────────────────────── */
+.atb-pct {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Prayer bar text: wide enough for "99/140" ─────────────── */
+.arena-bar-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  min-width: 56px;
+  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.arena-bar-text-wide {
+  min-width: 62px;
+  font-size: 10px;
+}
+
+/* ── Pet action flash: inside monster column, not arena top ── */
+.pet-action-flash {
+  position: absolute !important;
+  top: 4px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: rgba(10,11,15,0.92);
+  border: 1px solid rgba(201,135,62,0.3);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  pointer-events: none;
+  z-index: 150 !important;
+  white-space: nowrap;
+  animation: petFlashIn 0.2s ease-out, petFlashOut 0.4s ease-in 1.6s forwards;
+}
+
+/* ── Attack animations: PLAYER attacks land on MONSTER side ── */
+.atk-player {
+  position: absolute !important;
+  top: 15% !important;
+  right: 2% !important;
+  left: auto !important;
+  width: 80px !important;
+  height: 80px !important;
+  z-index: 120 !important;
+  pointer-events: none !important;
+}
+/* MONSTER attacks land on PLAYER side */
+.atk-monster {
+  position: absolute !important;
+  top: 15% !important;
+  left: 2% !important;
+  right: auto !important;
+  width: 80px !important;
+  height: 80px !important;
+  z-index: 120 !important;
+  pointer-events: none !important;
 }
