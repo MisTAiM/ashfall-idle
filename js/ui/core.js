@@ -1100,6 +1100,7 @@ class UI {
     let _layout = null;
     try { const _r = localStorage.getItem('ashfall_combat_layout'); if(_r) _layout = JSON.parse(_r); } catch(e){}
     const combatStyle = c.combatStyle || 'melee';
+    const _panelOn = () => true; // all panels on by default
     const xpMode      = c.xpMode || 'controlled';
     const mon  = c.active && c.monster ? (GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster)) : null;
     const max  = this.engine.getMaxHp ? this.engine.getMaxHp() : 100;
