@@ -1588,6 +1588,11 @@ GameEngine.prototype.tick = function(now, prevNow) {
   
   // New systems tick
   this.tickMana(now - prevNow);
+  // World events + diary (every 10s)
+  if (Math.floor(now/10000) !== Math.floor((now - (now - prevNow))/10000)) {
+    if (typeof this.tickWorldEvents === 'function') this.tickWorldEvents();
+    if (typeof this.checkDiaries === 'function') this.checkDiaries();
+  }
   this.tickFoodDegradation();
   
   return result;
