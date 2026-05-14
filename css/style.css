@@ -9009,3 +9009,21 @@ body.perf-mode .hit-splat { display:none !important; }
 .area-name { font-family:'Cinzel',serif; font-size:13px; color:var(--text); }
 .area-req { font-size:10px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
 .area-desc { font-size:11px; color:var(--text-dim); line-height:1.4; margin-bottom:6px; }
+
+/* ── AREA CARD MONSTER ART ──────────────────────────────────── */
+.area-card-art {
+  width: 100%;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  margin: 6px 0;
+  overflow: hidden;
+}
+.area-card-art svg {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 0 6px rgba(201,135,62,0.2));
+}

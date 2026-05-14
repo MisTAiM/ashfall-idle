@@ -1332,11 +1332,15 @@ class UI {
         for (const area of tierAreas) {
           const locked = _cb < area.levelReq;
           const validMons = (area.monsters||[]).filter(mid=>GAME_DATA.monsters[mid]);
+          // Pick a representative monster for area card art
+          const _repMon = validMons.find(mid=>GAME_DATA.monsterArt?.[mid]) || validMons[0];
+          const _repArt  = _repMon ? GAME_DATA.monsterArt?.[_repMon] : '';
           html += `<div class="area-card-v2 ${locked?'area-locked':''}">
             <div class="area-header">
               <span class="area-name">${area.name}</span>
               <span class="area-req">Cb ${area.levelReq}+</span>
             </div>
+            ${_repArt ? `<div class="area-card-art">${_repArt}</div>` : ''}
             <div class="area-desc">${area.desc||''}</div>
             ${area.wilderness?'<div class="area-wild-badge">⚠ Wilderness — PvP risk</div>':''}
             ${area.slayerArea?'<div class="area-slayer-badge">⚔ Slayer area</div>':''}

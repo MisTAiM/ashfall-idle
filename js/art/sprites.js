@@ -1727,3 +1727,373 @@ GAME_DATA.actionArt = {
 
 console.log('[Ashfall] Skill Art & Polish loaded');
 console.log('  Action arts:', Object.keys(GAME_DATA.actionArt).length);
+
+// ================================================================
+// MONSTER ART EXPANSION — SVG art for all major monsters
+// ================================================================
+Object.assign(GAME_DATA.monsterArt, {
+
+  // ── LOW LEVEL ─────────────────────────────────────────────────
+  cow: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="52" rx="22" ry="14" fill="#c8a870"/>
+    <rect x="26" y="38" width="28" height="18" rx="8" fill="#c8a870"/>
+    <ellipse cx="40" cy="36" rx="14" ry="11" fill="#c8a870"/>
+    <circle cx="34" cy="32" r="4" fill="#b89050"/><circle cx="46" cy="32" r="4" fill="#b89050"/>
+    <ellipse cx="34" cy="32" rx="2" ry="2.5" fill="#1a1a1a"/><ellipse cx="46" cy="32" rx="2" ry="2.5" fill="#1a1a1a"/>
+    <ellipse cx="40" cy="42" rx="5" ry="3" fill="#e8b8a0"/>
+    <rect x="28" y="62" width="6" height="10" rx="2" fill="#b89050"/><rect x="46" y="62" width="6" height="10" rx="2" fill="#b89050"/>
+    <path d="M36 26 Q38 20 40 22 Q42 20 44 26" fill="#c8a870" stroke="#b89050" stroke-width="1"/>
+    <ellipse cx="38" cy="40" rx="2" ry="1.5" fill="#1a1a1a"/><ellipse cx="42" cy="40" rx="2" ry="1.5" fill="#1a1a1a"/>
+  </svg>`,
+
+  goblin: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="55" rx="14" ry="16" fill="#5a8a3a"/>
+    <ellipse cx="40" cy="36" rx="12" ry="13" fill="#6a9a4a"/>
+    <ellipse cx="33" cy="29" rx="4" ry="5" fill="#6a9a4a"/><ellipse cx="47" cy="29" rx="4" ry="5" fill="#6a9a4a"/>
+    <circle cx="36" cy="34" r="3" fill="#fff"/><circle cx="44" cy="34" r="3" fill="#fff"/>
+    <circle cx="36" cy="34" r="1.5" fill="#cc2200"/><circle cx="44" cy="34" r="1.5" fill="#cc2200"/>
+    <ellipse cx="40" cy="40" rx="4" ry="2" fill="#5a8a3a"/>
+    <path d="M36 42 L40 44 L44 42" stroke="#4a7a2a" stroke-width="1.5" fill="none"/>
+    <rect x="18" y="44" width="8" height="18" rx="3" fill="#5a8a3a"/><rect x="54" y="44" width="8" height="18" rx="3" fill="#5a8a3a"/>
+    <rect x="28" y="68" width="8" height="10" rx="2" fill="#4a7a2a"/><rect x="44" y="68" width="8" height="10" rx="2" fill="#4a7a2a"/>
+    <path d="M22 46 L16 36 L20 34 L24 44" fill="#8a6a3a"/>
+    <circle cx="16" cy="34" r="3" fill="#a08050"/>
+  </svg>`,
+
+  barbarian: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="52" rx="18" ry="20" fill="#8a6a4a"/>
+    <rect x="22" y="36" width="36" height="22" rx="4" fill="#7a5a3a"/>
+    <ellipse cx="40" cy="30" rx="13" ry="14" fill="#c8a880"/>
+    <rect x="28" y="18" width="24" height="14" rx="4" fill="#8a4a2a"/>
+    <circle cx="35" cy="28" r="2.5" fill="#3a2a1a"/><circle cx="45" cy="28" r="2.5" fill="#3a2a1a"/>
+    <path d="M35 34 L37 36 L40 34 L43 36 L45 34" stroke="#8a6a4a" stroke-width="1.5" fill="none"/>
+    <rect x="12" y="38" width="10" height="24" rx="4" fill="#8a6a4a"/><rect x="58" y="38" width="10" height="24" rx="4" fill="#8a6a4a"/>
+    <rect x="30" y="68" width="10" height="10" rx="2" fill="#7a5a3a"/><rect x="40" y="68" width="10" height="10" rx="2" fill="#7a5a3a"/>
+    <rect x="4" y="34" width="12" height="4" rx="2" fill="#a08060"/><circle cx="4" cy="36" r="3" fill="#c0a080"/>
+  </svg>`,
+
+  dark_wizard: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="55" rx="14" ry="18" fill="#2a1a4a"/>
+    <polygon points="40,4 52,28 28,28" fill="#1a0a3a"/>
+    <ellipse cx="40" cy="35" rx="11" ry="12" fill="#3a2a5a"/>
+    <circle cx="36" cy="32" r="3" fill="#8820ff"/><circle cx="44" cy="32" r="3" fill="#8820ff"/>
+    <circle cx="36" cy="32" r="1.5" fill="#cc80ff"/><circle cx="44" cy="32" r="1.5" fill="#cc80ff"/>
+    <path d="M36 38 Q40 40 44 38" stroke="#5a3a8a" stroke-width="1.5" fill="none"/>
+    <rect x="20" y="46" width="8" height="20" rx="3" fill="#2a1a4a"/><rect x="52" y="46" width="8" height="20" rx="3" fill="#2a1a4a"/>
+    <circle cx="20" cy="44" r="6" fill="none" stroke="#8820ff" stroke-width="1.5" opacity="0.8"/>
+    <circle cx="20" cy="44" r="3" fill="#6600cc" opacity="0.6"/>
+    <path d="M30 42 Q40 26 50 42" stroke="#8820ff" stroke-width="1" fill="none" opacity="0.5" stroke-dasharray="3,2"/>
+    <rect x="30" y="70" width="8" height="8" rx="2" fill="#1a0a3a"/><rect x="42" y="70" width="8" height="8" rx="2" fill="#1a0a3a"/>
+  </svg>`,
+
+  hill_giant: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="26" ry="20" fill="#8a7a5a"/>
+    <rect x="16" y="38" width="48" height="24" rx="6" fill="#9a8a6a"/>
+    <ellipse cx="40" cy="30" rx="18" ry="17" fill="#b8a880"/>
+    <circle cx="33" cy="26" r="4" fill="#d8c8a0"/><circle cx="47" cy="26" r="4" fill="#d8c8a0"/>
+    <ellipse cx="33" cy="26" rx="2.5" ry="3" fill="#2a1a0a"/><ellipse cx="47" cy="26" rx="2.5" ry="3" fill="#2a1a0a"/>
+    <path d="M35 34 L40 37 L45 34" stroke="#9a8a6a" stroke-width="2" fill="none"/>
+    <rect x="6" y="38" width="14" height="28" rx="5" fill="#9a8a6a"/>
+    <rect x="60" y="38" width="14" height="28" rx="5" fill="#9a8a6a"/>
+    <rect x="28" y="70" width="12" height="10" rx="3" fill="#7a6a4a"/><rect x="40" y="70" width="12" height="10" rx="3" fill="#7a6a4a"/>
+    <rect x="58" y="20" width="8" height="28" rx="3" fill="#6a5a3a"/>
+    <ellipse cx="62" cy="18" rx="6" ry="5" fill="#8a7a5a"/>
+  </svg>`,
+
+  lesser_demon: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="18" ry="19" fill="#8a2a1a"/>
+    <rect x="24" y="36" width="32" height="24" rx="4" fill="#7a1a0a"/>
+    <ellipse cx="40" cy="30" rx="14" ry="13" fill="#aa3a2a"/>
+    <polygon points="30,18 26,8 34,16" fill="#cc4a2a"/><polygon points="50,18 54,8 46,16" fill="#cc4a2a"/>
+    <circle cx="35" cy="28" r="3.5" fill="#ff8800"/><circle cx="45" cy="28" r="3.5" fill="#ff8800"/>
+    <circle cx="35" cy="28" r="1.5" fill="#ff0"/><circle cx="45" cy="28" r="1.5" fill="#ff0"/>
+    <path d="M35 35 L37 37 L40 35 L43 37 L45 35" stroke="#cc3a1a" stroke-width="1.5" fill="none"/>
+    <path d="M26 36 L14 26 L16 22 L28 34" fill="#8a2a1a"/>
+    <path d="M54 36 L66 26 L64 22 L52 34" fill="#8a2a1a"/>
+    <rect x="30" y="69" width="10" height="10" rx="2" fill="#7a1a0a"/><rect x="40" y="69" width="10" height="10" rx="2" fill="#7a1a0a"/>
+    <path d="M36 56 L38 66 L42 66 L44 56" fill="#aa3a2a" opacity="0.6"/>
+  </svg>`,
+
+  hellhound: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="52" rx="24" ry="14" fill="#1a1a1a"/>
+    <rect x="18" y="40" width="44" height="18" rx="8" fill="#222"/>
+    <ellipse cx="32" cy="36" rx="14" ry="12" fill="#1a1a1a"/>
+    <ellipse cx="26" cy="26" rx="6" ry="8" fill="#1a1a1a"/><ellipse cx="36" cy="24" rx="5" ry="7" fill="#1a1a1a"/>
+    <circle cx="28" cy="32" r="4" fill="#ff4400"/><circle cx="38" cy="32" r="4" fill="#ff4400"/>
+    <circle cx="28" cy="32" r="2" fill="#ff8800"/><circle cx="38" cy="32" r="2" fill="#ff8800"/>
+    <path d="M26 40 L28 43 L32 41 L36 43 L38 40" stroke="#444" stroke-width="1.5" fill="none"/>
+    <path d="M56 50 Q68 44 72 52 Q70 58 58 56" fill="#1a1a1a"/>
+    <rect x="22" y="58" width="8" height="14" rx="3" fill="#1a1a1a"/><rect x="34" y="58" width="8" height="14" rx="3" fill="#1a1a1a"/>
+    <rect x="46" y="58" width="8" height="14" rx="3" fill="#1a1a1a"/><rect x="58" y="58" width="6" height="14" rx="3" fill="#1a1a1a"/>
+    <path d="M30 34 Q20 28 18 22" stroke="#ff4400" stroke-width="1" fill="none" opacity="0.4"/>
+  </svg>`,
+
+  gargoyle: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="20" ry="18" fill="#5a5a6a"/>
+    <rect x="22" y="38" width="36" height="22" rx="4" fill="#4a4a5a"/>
+    <ellipse cx="40" cy="30" rx="15" ry="14" fill="#6a6a7a"/>
+    <polygon points="28,20 24,10 32,18" fill="#5a5a6a"/><polygon points="52,20 56,10 48,18" fill="#5a5a6a"/>
+    <polygon points="40,18 36,8 44,8" fill="#5a5a6a"/>
+    <circle cx="35" cy="28" r="3" fill="#aa0000"/><circle cx="45" cy="28" r="3" fill="#aa0000"/>
+    <path d="M34 36 L36 38 L40 36 L44 38 L46 36" stroke="#3a3a4a" stroke-width="2" fill="none"/>
+    <path d="M22 38 L8 20 L12 18 L24 38" fill="#5a5a6a"/>
+    <path d="M58 38 L72 20 L68 18 L56 38" fill="#5a5a6a"/>
+    <rect x="28" y="68" width="10" height="10" rx="2" fill="#4a4a5a"/><rect x="42" y="68" width="10" height="10" rx="2" fill="#4a4a5a"/>
+    <path d="M30 40 Q32 50 28 56" stroke="#3a3a4a" stroke-width="2" fill="none" opacity="0.6"/>
+  </svg>`,
+
+  steel_dragon: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="20" ry="14" fill="#707880"/>
+    <path d="M16 50 Q40 28 64 50 Q58 62 40 66 Q22 62 16 50Z" fill="#808890"/>
+    <ellipse cx="40" cy="32" rx="16" ry="14" fill="#909aa0"/>
+    <path d="M24 32 L10 16 L18 18 L28 34" fill="#707880"/>
+    <path d="M56 32 L70 16 L62 18 L52 34" fill="#707880"/>
+    <circle cx="34" cy="28" r="4" fill="#00ccff"/><circle cx="46" cy="28" r="4" fill="#00ccff"/>
+    <circle cx="34" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/>
+    <path d="M34 38 Q40 42 46 38" stroke="#607080" stroke-width="2" fill="none"/>
+    <path d="M66 52 Q74 50 76 54 Q74 60 66 58 Z" fill="#808890"/>
+    <rect x="28" y="64" width="8" height="12" rx="2" fill="#707880"/><rect x="44" y="64" width="8" height="12" rx="2" fill="#707880"/>
+    <path d="M40 38 L38 50 L42 50 Z" fill="#00ccff" opacity="0.4"/>
+  </svg>`,
+
+  cerberus: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="22" ry="14" fill="#1a1a1a"/>
+    <rect x="18" y="40" width="44" height="18" rx="6" fill="#222"/>
+    <!-- Three heads -->
+    <ellipse cx="24" cy="30" rx="10" ry="10" fill="#1a1a1a"/><ellipse cx="40" cy="26" rx="11" ry="11" fill="#1a1a1a"/><ellipse cx="56" cy="30" rx="10" ry="10" fill="#1a1a1a"/>
+    <circle cx="21" cy="27" r="3" fill="#ff2200"/><circle cx="27" cy="27" r="3" fill="#ff2200"/>
+    <circle cx="37" cy="23" r="3" fill="#ff8800"/><circle cx="43" cy="23" r="3" fill="#ff8800"/>
+    <circle cx="53" cy="27" r="3" fill="#ff2200"/><circle cx="59" cy="27" r="3" fill="#ff2200"/>
+    <path d="M20 33 L22 35 L24 33 L26 35 L28 33" stroke="#444" stroke-width="1" fill="none"/>
+    <path d="M37 30 L40 33 L43 30" stroke="#444" stroke-width="1.5" fill="none"/>
+    <path d="M52 33 L54 35 L56 33 L58 35 L60 33" stroke="#444" stroke-width="1" fill="none"/>
+    <path d="M64 52 Q72 46 74 54 Q72 60 62 58" fill="#1a1a1a"/>
+    <rect x="22" y="60" width="7" height="14" rx="3" fill="#1a1a1a"/><rect x="32" y="60" width="7" height="14" rx="3" fill="#1a1a1a"/>
+    <rect x="44" y="60" width="7" height="14" rx="3" fill="#1a1a1a"/><rect x="54" y="60" width="7" height="14" rx="3" fill="#1a1a1a"/>
+    <circle cx="40" cy="40" r="5" fill="#ff2200" opacity="0.3"/>
+  </svg>`,
+
+  alchemical_hydra: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="56" rx="20" ry="14" fill="#1a3a2a"/>
+    <rect x="20" y="44" width="40" height="18" rx="6" fill="#2a4a3a"/>
+    <!-- Three necks/heads -->
+    <path d="M28 44 Q22 32 26 22" stroke="#2a6a3a" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M40 44 Q40 28 40 18" stroke="#3a7a4a" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M52 44 Q58 32 54 22" stroke="#2a6a3a" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <ellipse cx="26" cy="20" rx="8" ry="7" fill="#2a6a3a"/>
+    <ellipse cx="40" cy="16" rx="9" ry="8" fill="#3a7a4a"/>
+    <ellipse cx="54" cy="20" rx="8" ry="7" fill="#2a6a3a"/>
+    <circle cx="23" cy="18" r="2.5" fill="#00ff88"/><circle cx="29" cy="18" r="2.5" fill="#00ff88"/>
+    <circle cx="37" cy="14" r="2.5" fill="#ffaa00"/><circle cx="43" cy="14" r="2.5" fill="#ffaa00"/>
+    <circle cx="51" cy="18" r="2.5" fill="#4488ff"/><circle cx="57" cy="18" r="2.5" fill="#4488ff"/>
+    <path d="M62 56 Q70 52 72 58 Q70 64 62 62" fill="#2a4a3a"/>
+    <rect x="26" y="66" width="8" height="12" rx="3" fill="#1a3a2a"/><rect x="46" y="66" width="8" height="12" rx="3" fill="#1a3a2a"/>
+  </svg>`,
+
+  cave_kraken: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="42" rx="22" ry="18" fill="#1a2a4a"/>
+    <ellipse cx="40" cy="38" rx="14" ry="12" fill="#2a3a5a"/>
+    <circle cx="34" cy="34" r="5" fill="#6644aa"/><circle cx="46" cy="34" r="5" fill="#6644aa"/>
+    <circle cx="34" cy="34" r="2.5" fill="#cc88ff"/><circle cx="46" cy="34" r="2.5" fill="#cc88ff"/>
+    <path d="M30 48 Q22 56 16 52 Q18 42 26 46" fill="#1a2a4a"/>
+    <path d="M26 50 Q16 62 10 58 Q12 48 20 50" fill="#1a2a4a"/>
+    <path d="M50 48 Q58 56 64 52 Q62 42 54 46" fill="#1a2a4a"/>
+    <path d="M54 50 Q64 62 70 58 Q68 48 60 50" fill="#1a2a4a"/>
+    <path d="M34 50 Q30 62 28 70 Q32 72 36 68 Q38 60 36 50" fill="#1a2a4a"/>
+    <path d="M46 50 Q50 62 52 70 Q48 72 44 68 Q42 60 44 50" fill="#1a2a4a"/>
+    <path d="M40 50 Q38 64 40 72 Q42 72 42 64 Z" fill="#2a3a5a"/>
+  </svg>`,
+
+  smoke_devil: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="18" ry="16" fill="#4a4a5a" opacity="0.8"/>
+    <path d="M22 54 Q16 46 20 38 Q26 36 32 42 Q30 50 22 54Z" fill="#6a6a7a" opacity="0.7"/>
+    <path d="M58 54 Q64 46 60 38 Q54 36 48 42 Q50 50 58 54Z" fill="#6a6a7a" opacity="0.7"/>
+    <ellipse cx="40" cy="36" rx="14" ry="13" fill="#5a5a6a"/>
+    <circle cx="35" cy="32" r="3.5" fill="#ff6600"/><circle cx="45" cy="32" r="3.5" fill="#ff6600"/>
+    <circle cx="35" cy="32" r="1.5" fill="#ffaa00"/><circle cx="45" cy="32" r="1.5" fill="#ffaa00"/>
+    <path d="M33 40 L36 42 L40 40 L44 42 L47 40" stroke="#3a3a4a" stroke-width="1.5" fill="none"/>
+    <ellipse cx="28" cy="26" rx="5" ry="7" fill="#4a4a5a" opacity="0.5"/>
+    <ellipse cx="52" cy="26" rx="5" ry="7" fill="#4a4a5a" opacity="0.5"/>
+    <path d="M30 58 Q28 66 24 70 Q28 72 32 68 Q34 62 32 58Z" fill="#5a5a6a"/>
+    <path d="M50 58 Q52 66 56 70 Q52 72 48 68 Q46 62 48 58Z" fill="#5a5a6a"/>
+    <circle cx="40" cy="22" r="4" fill="#4a4a5a" opacity="0.4"/>
+    <circle cx="34" cy="16" r="3" fill="#4a4a5a" opacity="0.3"/>
+    <circle cx="46" cy="14" r="2.5" fill="#4a4a5a" opacity="0.25"/>
+  </svg>`,
+
+  void_titan: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="22" ry="18" fill="#0a0a1a"/>
+    <rect x="18" y="38" width="44" height="24" rx="4" fill="#1a0a3a"/>
+    <ellipse cx="40" cy="28" rx="16" ry="15" fill="#0a0a2a"/>
+    <circle cx="33" cy="24" r="5" fill="#6600ff"/><circle cx="47" cy="24" r="5" fill="#6600ff"/>
+    <circle cx="33" cy="24" r="2.5" fill="#cc88ff"/><circle cx="47" cy="24" r="2.5" fill="#cc88ff"/>
+    <path d="M33 32 Q40 36 47 32" stroke="#3a1a6a" stroke-width="2" fill="none"/>
+    <rect x="6" y="36" width="12" height="30" rx="4" fill="#0a0a2a"/>
+    <rect x="62" y="36" width="12" height="30" rx="4" fill="#0a0a2a"/>
+    <rect x="28" y="68" width="10" height="10" rx="2" fill="#0a0a2a"/><rect x="42" y="68" width="10" height="10" rx="2" fill="#0a0a2a"/>
+    <circle cx="40" cy="20" r="20" fill="none" stroke="#6600ff" stroke-width="1" opacity="0.3" stroke-dasharray="5,4"/>
+    <path d="M26 40 L14 28 L16 24 L28 38" fill="#1a0a3a"/>
+    <path d="M54 40 L66 28 L64 24 L52 38" fill="#1a0a3a"/>
+  </svg>`,
+
+  demon_lord: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="22" ry="18" fill="#5a0a0a"/>
+    <rect x="18" y="36" width="44" height="26" rx="4" fill="#6a1a0a"/>
+    <ellipse cx="40" cy="26" rx="16" ry="15" fill="#7a1a0a"/>
+    <polygon points="28,16 22,4 34,14" fill="#8a2a0a"/><polygon points="52,16 58,4 46,14" fill="#8a2a0a"/>
+    <polygon points="40,14 36,4 44,4" fill="#aa3a0a"/>
+    <circle cx="33" cy="23" r="5" fill="#ff8800"/><circle cx="47" cy="23" r="5" fill="#ff8800"/>
+    <circle cx="33" cy="23" r="2.5" fill="#ffff00"/><circle cx="47" cy="23" r="2.5" fill="#ffff00"/>
+    <path d="M32 32 L35 35 L40 32 L45 35 L48 32" stroke="#8a1a0a" stroke-width="2" fill="none"/>
+    <rect x="6" y="34" width="13" height="28" rx="4" fill="#5a0a0a"/><rect x="61" y="34" width="13" height="28" rx="4" fill="#5a0a0a"/>
+    <rect x="28" y="68" width="10" height="10" rx="2" fill="#4a0a0a"/><rect x="42" y="68" width="10" height="10" rx="2" fill="#4a0a0a"/>
+    <path d="M20 40 L8 28 L11 24 L24 38" fill="#5a0a0a"/>
+    <path d="M60 40 L72 28 L69 24 L56 38" fill="#5a0a0a"/>
+    <ellipse cx="40" cy="56" rx="8" ry="3" fill="#ff4400" opacity="0.3"/>
+  </svg>`,
+
+  ash_titan: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="24" ry="18" fill="#2a2a2a"/>
+    <rect x="16" y="36" width="48" height="26" rx="4" fill="#3a3a3a"/>
+    <ellipse cx="40" cy="26" rx="18" ry="16" fill="#4a4a4a"/>
+    <circle cx="33" cy="22" r="5" fill="#ff6600"/><circle cx="47" cy="22" r="5" fill="#ff6600"/>
+    <circle cx="33" cy="22" r="2.5" fill="#ff8800"/><circle cx="47" cy="22" r="2.5" fill="#ff8800"/>
+    <path d="M32 32 L40 36 L48 32" stroke="#2a2a2a" stroke-width="2.5" fill="none"/>
+    <rect x="4" y="34" width="14" height="30" rx="4" fill="#3a3a3a"/>
+    <rect x="62" y="34" width="14" height="30" rx="4" fill="#3a3a3a"/>
+    <rect x="26" y="68" width="12" height="10" rx="3" fill="#2a2a2a"/><rect x="42" y="68" width="12" height="10" rx="3" fill="#2a2a2a"/>
+    <circle cx="40" cy="10" r="8" fill="#ff8800" opacity="0.6"/>
+    <path d="M38 10 L40 6 L42 10 L40 14Z" fill="#ffaa00"/>
+    <path d="M34 10 L30 8 L34 12Z" fill="#ffaa00"/><path d="M46 10 L50 8 L46 12Z" fill="#ffaa00"/>
+    <path d="M18 38 L6 26 L10 22 L20 36" fill="#3a3a3a"/>
+    <path d="M62 38 L74 26 L70 22 L60 36" fill="#3a3a3a"/>
+  </svg>`,
+
+  frost_wraith: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="58" rx="12" ry="18" fill="#6ae8ff" opacity="0.2"/>
+    <ellipse cx="40" cy="44" rx="14" ry="22" fill="#8af0ff" opacity="0.25"/>
+    <ellipse cx="40" cy="32" rx="12" ry="12" fill="#aaf8ff" opacity="0.5"/>
+    <circle cx="35" cy="30" r="4" fill="#fff" opacity="0.9"/><circle cx="45" cy="30" r="4" fill="#fff" opacity="0.9"/>
+    <circle cx="35" cy="30" r="2" fill="#44ccff"/><circle cx="45" cy="30" r="2" fill="#44ccff"/>
+    <path d="M34 38 Q40 42 46 38" stroke="#88eeff" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <path d="M30 52 Q28 62 26 68 Q30 70 32 64" stroke="#6ae8ff" stroke-width="2" fill="none" opacity="0.5"/>
+    <path d="M50 52 Q52 62 54 68 Q50 70 48 64" stroke="#6ae8ff" stroke-width="2" fill="none" opacity="0.5"/>
+    <path d="M36 52 Q34 64 32 72" stroke="#6ae8ff" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <path d="M44 52 Q46 64 48 72" stroke="#6ae8ff" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <path d="M40 20 L40 10 M36 16 L44 14 M36 14 L44 16" stroke="#88eeff" stroke-width="1.5" opacity="0.6"/>
+  </svg>`,
+
+  bloodfang_alpha: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="52" rx="22" ry="14" fill="#4a2a2a"/>
+    <rect x="18" y="40" width="44" height="18" rx="8" fill="#5a3a3a"/>
+    <ellipse cx="28" cy="34" rx="14" ry="12" fill="#4a2a2a"/>
+    <ellipse cx="22" cy="24" rx="6" ry="8" fill="#4a2a2a"/><ellipse cx="30" cy="22" rx="5" ry="7" fill="#4a2a2a"/>
+    <circle cx="24" cy="30" r="3.5" fill="#cc0000"/><circle cx="34" cy="30" r="3.5" fill="#cc0000"/>
+    <path d="M22 38 L24 40 L28 38 L32 40 L36 38" stroke="#3a2a2a" stroke-width="1.5" fill="none"/>
+    <path d="M18 38 L10 28 L14 26 L20 36" fill="#4a2a2a"/>
+    <path d="M24 38 L16 30 L14 34 L22 40" fill="#5a3a3a"/>
+    <path d="M60 50 Q70 44 72 52 Q70 58 60 56" fill="#4a2a2a"/>
+    <rect x="22" y="56" width="8" height="16" rx="3" fill="#4a2a2a"/><rect x="34" y="56" width="8" height="16" rx="3" fill="#4a2a2a"/>
+    <rect x="46" y="56" width="8" height="16" rx="3" fill="#4a2a2a"/><rect x="58" y="56" width="6" height="14" rx="3" fill="#4a2a2a"/>
+  </svg>`,
+
+  void_emperor_spawn: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="52" rx="20" ry="18" fill="#080810"/>
+    <rect x="20" y="36" width="40" height="24" rx="4" fill="#100820"/>
+    <ellipse cx="40" cy="28" rx="15" ry="14" fill="#0a0518"/>
+    <circle cx="33" cy="24" r="6" fill="#aa00ff"/><circle cx="47" cy="24" r="6" fill="#aa00ff"/>
+    <circle cx="33" cy="24" r="3" fill="#ee88ff"/><circle cx="47" cy="24" r="3" fill="#ee88ff"/>
+    <path d="M32 34 Q40 38 48 34" stroke="#6600cc" stroke-width="2" fill="none"/>
+    <rect x="4" y="36" width="12" height="26" rx="4" fill="#0a0518"/>
+    <rect x="64" y="36" width="12" height="26" rx="4" fill="#0a0518"/>
+    <rect x="26" y="68" width="10" height="10" rx="2" fill="#080810"/><rect x="44" y="68" width="10" height="10" rx="2" fill="#080810"/>
+    <circle cx="40" cy="16" r="14" fill="none" stroke="#aa00ff" stroke-width="1" opacity="0.4" stroke-dasharray="4,3"/>
+    <circle cx="40" cy="16" r="8" fill="none" stroke="#aa00ff" stroke-width="1" opacity="0.25"/>
+    <path d="M18 38 L6 24 L10 20 L22 36" fill="#100820"/>
+    <path d="M62 38 L74 24 L70 20 L58 36" fill="#100820"/>
+  </svg>`,
+
+  elder_ash_golem: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="56" rx="24" ry="16" fill="#3a3530"/>
+    <rect x="16" y="38" width="48" height="26" rx="4" fill="#4a4540"/>
+    <ellipse cx="40" cy="28" rx="18" ry="16" fill="#5a5550"/>
+    <path d="M26 26 L18 14 L24 16 L30 28" fill="#4a4540"/>
+    <path d="M54 26 L62 14 L56 16 L50 28" fill="#4a4540"/>
+    <circle cx="33" cy="24" r="5" fill="#d67338"/><circle cx="47" cy="24" r="5" fill="#d67338"/>
+    <circle cx="33" cy="24" r="2.5" fill="#ff9944"/><circle cx="47" cy="24" r="2.5" fill="#ff9944"/>
+    <path d="M32 33 L40 37 L48 33" stroke="#3a3530" stroke-width="2.5" fill="none"/>
+    <rect x="4" y="38" width="14" height="30" rx="4" fill="#4a4540"/>
+    <rect x="62" y="38" width="14" height="30" rx="4" fill="#4a4540"/>
+    <rect x="26" y="70" width="12" height="8" rx="3" fill="#3a3530"/><rect x="42" y="70" width="12" height="8" rx="3" fill="#3a3530"/>
+    <path d="M28 38 L24 28 L32 30 L30 38" fill="#5a5550"/>
+    <path d="M52 38 L56 28 L48 30 L50 38" fill="#5a5550"/>
+    <circle cx="40" cy="14" r="6" fill="#d67338" opacity="0.5"/>
+  </svg>`,
+
+  scorpia: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="50" rx="24" ry="18" fill="#8a6a2a"/>
+    <ellipse cx="40" cy="44" rx="18" ry="14" fill="#aa8a3a"/>
+    <ellipse cx="40" cy="30" rx="10" ry="9" fill="#8a6a2a"/>
+    <circle cx="35" cy="27" r="3" fill="#cc2200"/><circle cx="45" cy="27" r="3" fill="#cc2200"/>
+    <path d="M62 42 Q70 34 74 40 Q74 50 68 54 Q72 44 62 42Z" fill="#8a6a2a"/>
+    <path d="M68 52 Q76 52 78 58 Q74 64 68 58Z" fill="#aa8a3a"/>
+    <path d="M16 44 L6 34 L8 40 L16 48" fill="#8a6a2a"/><path d="M64 44 L74 34 L72 40 L64 48" fill="#8a6a2a"/>
+    <path d="M18 38 L10 28 L14 26 L20 36" fill="#8a6a2a"/>
+    <path d="M62 38 L70 28 L66 26 L60 36" fill="#8a6a2a"/>
+    <path d="M24 48 L16 54 L20 58 L28 52" fill="#8a6a2a"/>
+    <path d="M56 48 L64 54 L60 58 L52 52" fill="#8a6a2a"/>
+    <rect x="28" y="60" width="7" height="12" rx="2" fill="#7a5a1a"/><rect x="36" y="62" width="7" height="10" rx="2" fill="#7a5a1a"/>
+    <rect x="44" y="62" width="7" height="10" rx="2" fill="#7a5a1a"/>
+  </svg>`,
+
+  moss_giant: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="24" ry="18" fill="#3a6a3a"/>
+    <rect x="16" y="38" width="48" height="24" rx="6" fill="#4a7a4a"/>
+    <ellipse cx="40" cy="28" rx="18" ry="16" fill="#3a6a3a"/>
+    <circle cx="33" cy="24" r="4" fill="#88aa44"/><circle cx="47" cy="24" r="4" fill="#88aa44"/>
+    <ellipse cx="33" cy="24" rx="2.5" ry="3" fill="#2a3a2a"/><ellipse cx="47" cy="24" rx="2.5" ry="3" fill="#2a3a2a"/>
+    <path d="M35 33 L40 36 L45 33" stroke="#2a5a2a" stroke-width="2" fill="none"/>
+    <rect x="4" y="36" width="14" height="28" rx="5" fill="#3a6a3a"/>
+    <rect x="62" y="36" width="14" height="28" rx="5" fill="#3a6a3a"/>
+    <rect x="26" y="68" width="12" height="10" rx="3" fill="#2a5a2a"/><rect x="42" y="68" width="12" height="10" rx="3" fill="#2a5a2a"/>
+    <circle cx="28" cy="22" r="4" fill="#4a8a4a" opacity="0.7"/>
+    <circle cx="52" cy="20" r="3" fill="#4a8a4a" opacity="0.7"/>
+    <circle cx="40" cy="16" r="3" fill="#6aaa5a" opacity="0.6"/>
+    <path d="M34 12 Q36 8 38 12 Q40 8 42 12 Q44 8 46 12" stroke="#4a8a4a" stroke-width="1.5" fill="none"/>
+    <rect x="58" y="22" width="10" height="28" rx="3" fill="#2a4a2a"/><circle cx="63" cy="20" r="5" fill="#3a6a3a"/>
+  </svg>`,
+
+  fire_giant: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="54" rx="24" ry="18" fill="#6a3a1a"/>
+    <rect x="16" y="38" width="48" height="24" rx="6" fill="#8a4a2a"/>
+    <ellipse cx="40" cy="28" rx="18" ry="16" fill="#aa5a2a"/>
+    <circle cx="33" cy="24" r="5" fill="#ff6600"/><circle cx="47" cy="24" r="5" fill="#ff6600"/>
+    <circle cx="33" cy="24" r="2.5" fill="#ffcc00"/><circle cx="47" cy="24" r="2.5" fill="#ffcc00"/>
+    <path d="M33 33 L40 37 L47 33" stroke="#8a3a1a" stroke-width="2" fill="none"/>
+    <rect x="4" y="36" width="14" height="28" rx="5" fill="#8a4a2a"/>
+    <rect x="62" y="36" width="14" height="28" rx="5" fill="#8a4a2a"/>
+    <rect x="26" y="68" width="12" height="10" rx="3" fill="#6a3a1a"/><rect x="42" y="68" width="12" height="10" rx="3" fill="#6a3a1a"/>
+    <path d="M36 14 Q38 8 40 14 Q42 6 44 14 Q46 10 48 14 Q46 18 44 16 Q42 20 40 16 Q38 20 36 16 Q34 18 32 14 Q34 10 36 14Z" fill="#ff8800"/>
+    <path d="M38 16 Q40 12 42 16 Q40 20 38 16Z" fill="#ffcc00"/>
+    <circle cx="40" cy="50" r="8" fill="#ff4400" opacity="0.2"/>
+  </svg>`,
+
+  ankou: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="56" rx="14" ry="20" fill="#0a0a18" opacity="0.9"/>
+    <ellipse cx="40" cy="42" rx="16" ry="24" fill="#121222" opacity="0.8"/>
+    <ellipse cx="40" cy="28" rx="12" ry="11" fill="#1a1a2a"/>
+    <circle cx="35" cy="26" r="4" fill="#4444ff"/><circle cx="45" cy="26" r="4" fill="#4444ff"/>
+    <circle cx="35" cy="26" r="2" fill="#aaaaff"/><circle cx="45" cy="26" r="2" fill="#aaaaff"/>
+    <path d="M35 33 L37 35 L40 33 L43 35 L45 33" stroke="#2a2a3a" stroke-width="1.5" fill="none"/>
+    <path d="M28 46 L20 56 L24 58 L30 48" fill="#1a1a2a" opacity="0.7"/>
+    <path d="M52 46 L60 56 L56 58 L50 48" fill="#1a1a2a" opacity="0.7"/>
+    <path d="M34 58 Q32 68 30 74 Q34 76 36 70 Q38 64 36 58Z" fill="#121222"/>
+    <path d="M46 58 Q48 68 50 74 Q46 76 44 70 Q42 64 44 58Z" fill="#121222"/>
+    <path d="M40 58 L38 72 L42 72 Z" fill="#1a1a2a"/>
+    <path d="M38 38 Q26 36 22 40 Q26 50 36 48" stroke="#2222aa" stroke-width="1.5" fill="none" opacity="0.5"/>
+    <path d="M42 38 Q54 36 58 40 Q54 50 44 48" stroke="#2222aa" stroke-width="1.5" fill="none" opacity="0.5"/>
+  </svg>`,
+
+});
+
+console.log('[Ashfall] Monster Art Expansion loaded:', Object.keys(GAME_DATA.monsterArt).length, 'total monster arts');
