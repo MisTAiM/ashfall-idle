@@ -1094,179 +1094,92 @@ class UI {
   renderCombatPage(el) {
     try {
     const s = this.engine.state, c = s.combat;
-    if (!c) { el.innerHTML = '<div class="bank-empty">Combat state error. Try refreshing.</div>'; return; }
+    if (!c) { el.innerHTML = '<div class="bank-empty">Combat state error. Refresh the page.</div>'; return; }
 
-    // ── READ SAVED LAYOUT CONFIG ──────────────────────────────────
+    // ── LAYOUT CONFIG ────────────────────────────────────────────
     let _layout = null;
-    try { const _raw = localStorage.getItem('ashfall_combat_layout'); if (_raw) _layout = JSON.parse(_raw); } catch(e) {}
-    const _mainOrder  = _layout?.main || ['arena','abilities','prayers','runes','supplies','gear','combat_log'];
-    const _sideOrder  = _layout?.side || ['xp_mode','session_loot','dmg_tracker','session_stats','area_info'];
-    const _panelOn = (id) => _mainOrder.includes(id) || _sideOrder.includes(id);
-    const xpMode = c.xpMode || 'controlled';
+    try { const _r = localStorage.getItem('ashfall_combat_layout'); if(_r) _layout = JSON.parse(_r); } catch(e){}
     const combatStyle = c.combatStyle || 'melee';
-    // Determine which skills get XP based on style + mode
-    let xpSkills = {};
-    if (combatStyle === 'melee') {
-      if (xpMode==='accurate')   xpSkills = {attack:90,defence:10};
-      else if (xpMode==='aggressive') xpSkills = {strength:90,defence:10};
-      else if (xpMode==='defensive')  xpSkills = {defence:90,attack:10};
-      else xpSkills = {attack:33,strength:33,defence:34};
-    } else if (combatStyle === 'ranged') {
-      if (xpMode==='accurate')   xpSkills = {ranged:90,defence:10};
-      else if (xpMode==='rapid') xpSkills = {ranged:100};
-      else xpSkills = {ranged:50,defence:50};
-    } else xpSkills = {magic:80,defence:20};
-    xpSkills.hitpoints = 33; // always
+    const xpMode      = c.xpMode || 'controlled';
+    const mon  = c.active && c.monster ? (GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster)) : null;
+    const max  = this.engine.getMaxHp ? this.engine.getMaxHp() : 100;
 
+    // HP / mana colours
+    const pHpPct   = Math.min(100, Math.max(0, ((c.playerHp||0)/max)*100));
+    const mHpPct   = mon ? Math.min(100, Math.max(0, ((c.monsterHp||0)/(mon.hp||1))*100)) : 0;
+    const pHpColor = pHpPct > 60 ? '#4abe6c' : pHpPct > 30 ? '#d4a83a' : '#c44040';
+    const mHpColor = mHpPct > 60 ? '#c44040' : mHpPct > 30 ? '#d4a83a' : '#4abe6c';
+
+    // Prayer
+    const _pp    = s.prayerPoints || 0;
+    const _maxPp = (s.skills.prayer?.level||1) * 10;
+
+    // Mana
+    const _mana  = c.mana || {current:100, max:100};
+
+    // Phase / weakness / protect prayer
+    let currentPhase = null, bossPhaseIdx = 0;
+    if (mon?.phases) {
+      for (let i = 0; i < mon.phases.length; i++) {
+        if (mHpPct/100 <= mon.phases[i].threshold) { currentPhase = mon.phases[i]; bossPhaseIdx = i+1; break; }
+      }
+    }
+    const weakness = mon ? (GAME_DATA.monsterWeaknesses?.[c.monster]) : null;
+    const protPrayer = (s.activePrayers||[]).find(pid=>['protect_melee','protect_ranged','protect_magic'].includes(pid));
+    const overheadIcon = {protect_melee:'⚔',protect_ranged:'🏹',protect_magic:'🔮'};
+
+    // Player avatar
+    const _pName   = (typeof online!=='undefined'&&online.displayName) ? online.displayName : 'You';
+    const _styleIcon = {melee:'⚔',ranged:'🏹',magic:'🔮'}[combatStyle]||'⚔';
+    let _playerAvatar = 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Morpheus&backgroundColor=0a0b0f';
+    if (s.profile) {
+      try {
+        const getAvatarUrl = window.getAvatarUrl;
+        if (typeof getAvatarUrl === 'function') _playerAvatar = getAvatarUrl(s.profile);
+      } catch(e){}
+    }
+
+    // Session loot
+    const sl   = c._sessionLoot || {};
+    const _sk2 = c._sessionKills || 0;
+    const _sd  = c._sessionDmg || {};
+    const _elapsed = c._sessionStartTime ? (Date.now()-c._sessionStartTime)/1000 : 0;
+    const _dps  = _elapsed>0 ? (_sd.total||0)/_elapsed : 0;
+    const _sdMisses = _sd.misses||0; const _acc = (_sd.hits||0)+_sdMisses>0 ? Math.round((_sd.hits||0)/((_sd.hits||0)+_sdMisses)*100) : 0;
+    const _crit = _sd.hits>0 ? Math.round((_sd.crits||0)/_sd.hits*100) : 0;
+
+    // ── OPEN TWO-COLUMN GRID ──────────────────────────────────────
     let html = `<div class="combat-page cv3-page"><div class="cv3-main">`;
-    // ── XP TRACKER: only shown when NOT in combat (see area select else block) ──
-    const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','tactics'];
 
-    // ── CONTROLS ROW ──
-    html += '<div class="combat-controls">';
-    // Style
-    html += '<div class="cc-group"><div class="cc-label">Combat Style</div><div class="cc-btns">';
-    for (const [id,label,ic] of [['melee','Melee','sword'],['ranged','Ranged','target'],['magic','Magic','wand']]) {
-      html += `<button class="cc-btn ${combatStyle===id?'cc-btn-active':''}" onclick="ui.setStyle('${id}')">${icon(ic,14)} ${label}</button>`;
-    }
-    html += '</div></div>';
-    html += '</div>'; // close combat-controls
+    // ══════════════════════════════════════════════════════════════
+    // ARENA — always first
+    // ══════════════════════════════════════════════════════════════
+    if (c.active && mon) {
 
-    // ── SPELL SELECT (magic only) ──
-    if (c.combatStyle === 'magic') {
-      const bookName = GAME_DATA.spellbooks[s.activeSpellbook||'standard']?.name || 'Standard';
-      // Determine which runes are free from equipped staff
-      const wpnId = s.equipment?.weapon;
-      const wpnData = wpnId ? GAME_DATA.items[wpnId] : null;
-      const allRunesFree = wpnData?.providesAllRunes || false;
-      const rawFree = wpnData?.providesRune;
-      const freeRuneSet = allRunesFree ? null : (rawFree ? new Set(Array.isArray(rawFree) ? rawFree : [rawFree]) : new Set());
-
-      html += `<div class="combat-section"><div class="cs-header">${icon('wand',14)} ${bookName} Spellbook</div><div class="spell-grid">`;
-      const spells = this.engine.getSpellsForActiveBook();
-      for (const sp of spells) {
-        const locked = s.skills.magic.level < sp.level;
-        const active = c.selectedSpell === sp.id;
-        const runeLabel = sp.runes.map(r => {
-          const isFree = allRunesFree || (freeRuneSet && freeRuneSet.has(r.item));
-          const name = GAME_DATA.items[r.item]?.name || r.item;
-          return isFree
-            ? `<span class="rune-free" title="Provided by staff">${name} ∞</span>`
-            : `${name} x${r.qty}`;
-        }).join(', ');
-        html += `<button class="spell-card ${active?'spell-active':''} ${locked?'locked':''}" ${locked?'disabled':''} onclick="ui.selectSpell('${sp.id}')" title="${sp.desc}">
-          <div class="sc-name">${sp.name}</div>
-          <div class="sc-info">Lv${sp.level} | Hit: ${sp.maxHit}</div>
-          <div class="sc-runes">${runeLabel || 'No runes'}</div>
-        </button>`;
-      }
-      html += '</div></div>';
-    }
-
-    // ── ACTIVE PET STRIP ──
-    const pets = GAME_DATA.combatPets || GAME_DATA.pets || [];
-    const activePetData = s.activePet ? pets.find(p => p.id === s.activePet) : null;
-    if (activePetData) {
-      const petArtSvg = GAME_DATA.petArt?.[activePetData.id] || '';
-      html += `<div class="pet-combat-strip" onclick="ui.renderPage('pets')" title="Active Pet — Click to manage">
-        <div class="pcs-art">${petArtSvg}</div>
-        <div>
-          <div class="pcs-name">🐾 ${activePetData.name}</div>
-          <div class="pcs-ability">${activePetData.action?.desc||'ability'} every ${activePetData.action?.every||4} attacks</div>
-        </div>
-      </div>`;
-    } else {
-      html += `<div class="pet-combat-strip" onclick="ui.renderPage('pets')" style="opacity:0.5" title="No pet equipped">
-        <div class="pcs-art"><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="10" fill="none" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="3,2"/><text x="14" y="18" text-anchor="middle" fill="var(--text-dim)" font-size="10">?</text></svg></div>
-        <div><div class="pcs-name" style="color:var(--text-dim)">No pet equipped</div><div class="pcs-ability">Visit Pets page to equip one</div></div>
-      </div>`;
-    }
-
-    if (c.active && c.monster) {
-
-      // ── FIGHT CAVE OVERLAY (wave bar, between-wave, target cards) ──
-      const _fc = s.fightCave;
-      const _fcActive = _fc && _fc.active;
-
-      if (_fcActive) {
-        const _fcWaveNum = _fc.currentWave + 1;
-        const _fcProgress = ((_fc.currentWave) / 63) * 100;
-        const _fcPhase = GAME_DATA.fightCave?.phases?.find(p => _fcWaveNum >= p.startWave && _fcWaveNum <= p.endWave);
+      // ── Fight Cave wave bar ──────────────────────────────────────
+      const _fc = s.fightCave; const _fcActive = _fc && _fc.active;
+      if (_fcActive && !_fc.betweenWaves) {
+        const _fwNum = _fc.currentWave + 1;
+        const _fwPct = Math.round(_fwNum / 63 * 100);
         html += `<div class="fc-wave-bar">
-          <div class="fc-wave-label">Fight Cave — Wave ${_fcWaveNum} / 63</div>
-          <div class="fc-progress-track"><div class="fc-progress-fill" style="width:${_fcProgress}%"></div></div>
+          <div class="fc-wave-fill" style="width:${_fwPct}%"></div>
+          <span class="fc-wave-label">Wave ${_fwNum} / 63</span>
         </div>`;
-        if (_fcPhase) {
-          html += `<div class="fc-phase-indicator">
-            <span class="fc-phase-badge">${_fcPhase.name}</span>
-            <span class="fc-phase-advice">${_fcPhase.tip}</span>
-          </div>`;
-        }
       }
 
-      // ── FIGHT CAVE BETWEEN WAVES ──
-      if (_fcActive && _fc.betweenWaves) {
-        html += `<div class="fc-between-waves">
-          <h2>Wave ${_fc.currentWave} Cleared</h2>
-          <p id="fc-between-timer">Next wave in ${Math.ceil(_fc.betweenWaveTimer)}s...</p>
-          <p class="fc-between-tip">Eat food and drink potions now!</p>
-          <div class="fc-manual-actions">
-            <button class="btn btn-sm" data-fc-action="eat">Eat Food</button>
-            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="0">Potion 1</button>
-            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="1">Potion 2</button>
-            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="2">Potion 3</button>
-            <button class="btn btn-sm" data-fc-action="potion" data-fc-param="3">Potion 4</button>
-          </div>
-        </div>`;
-        html += '</div>';
-        el.innerHTML = html;
-        return;
-      }
-
-      const mon = GAME_DATA.monsters[c.monster] || (GAME_DATA.worldBosses||[]).find(b=>b.id===c.monster);
-      if (!mon) { html += '<div class="bank-empty">Monster data missing. <button class="btn btn-sm" onclick="game.stopCombat();ui.renderPage(\'combat\')">Reset</button></div></div>'; el.innerHTML = html; return; }
-      const max = this.engine.getMaxHp();
-      const pHpPct = Math.max(0, Math.min(100, (c.playerHp||0) / max * 100));
-      const pHpColor = pHpPct > 50 ? '#4a8a3e' : pHpPct > 25 ? '#c4a83a' : '#c44040';
-
-      const mHpPct = Math.max(0, Math.min(100, (c.monsterHp||0) / (mon.hp||1) * 100));
-      const mHpColor = mHpPct > 50 ? '#8a3a3a' : mHpPct > 25 ? '#c4a83a' : '#4a8a3e';
-
-      // Player avatar
-      const _prof = s.profile || {};
-      const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
-      const _playerAvatar = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${s.profile?.hair||'short04'}&skinColor=${s.profile?.skinColor||'c68642'}&hairColor=${s.profile?.hairColor||'2c1b18'}&eyes=${s.profile?.eyes||'variant04'}&mouth=${s.profile?.mouth||'happy01'}&clothing=${s.profile?.clothing||'variant04'}&clothingColor=${s.profile?.clothingColor||'4a90d4'}&size=64`;
-
-      // Boss phase data
-      const bossPhaseIdx = c._bossPhase || 0;
-      const bossPhaseData = GAME_DATA.bossPhases?.[c.monster];
-      const currentPhase = bossPhaseData && bossPhaseIdx > 0 ? bossPhaseData.phases[bossPhaseIdx - 1] : null;
-      // Monster weakness
-      const weakness = GAME_DATA.monsterWeaknesses?.[c.monster];
-      // Active protection prayers
-      const protPrayer = s.activePrayers?.find(id => ['protect_melee','protect_ranged','protect_magic'].includes(id));
-      const overheadIcon = { protect_melee:'⚔', protect_ranged:'🏹', protect_magic:'🔮' };
-
-      // ── ARENA V3 ──────────────────────────────────────────────
-      const _pName = typeof online!=='undefined'&&online.displayName ? online.displayName : 'You';
-      const _styleIcon = {melee:'⚔',ranged:'🏹',magic:'🔮'}[combatStyle]||'⚔';
-      const _monArt = GAME_DATA.monsterArt?.[c.monster]||'';
-      const _sessionDmgTotal = this.fmt((c._sessionDmg?.total)||0);
-      const _pPp = s.prayerPoints||0;
-      const _maxPp = s.skills.prayer?.level*10||10;
+      // ── MAIN ARENA ───────────────────────────────────────────────
       html += `<div class="arena-v3 combat-arena">
-        <!-- Monster HP bar across the top of arena -->
         <div class="arena-top-bar">
-          <span class="atb-enemy-label">ENEMY HP</span><span class="atb-name">${mon.name}</span>
+          <span class="atb-enemy-label">ENEMY HP</span>
+          <span class="atb-name">${mon.name}</span>
           <div class="atb-hp-track"><div class="atb-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
-          <span class="atb-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))}/${mon.hp||0}</span>
+          <span class="atb-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))} / ${mon.hp||0}</span>
           <span class="atb-pct">${mHpPct.toFixed(0)}%</span>
-          ${currentPhase ? `<span class="atb-phase ${currentPhase.enrage?'atb-enrage':""}">${currentPhase.enrage?'🔥':''} ${currentPhase.name}</span>` : ''}
+          ${currentPhase ? `<span class="atb-phase ${currentPhase.enrage?'atb-enrage':''}">${currentPhase.enrage?'🔥':''} ${currentPhase.name}</span>` : ''}
         </div>
 
-        <!-- Main arena -->
         <div class="arena-main">
-          <!-- Player column -->
+          <!-- PLAYER ─────────────────────────────────────────── -->
           <div class="arena-player">
             <div class="arena-player-top">
               ${protPrayer ? `<div class="arena-overhead-prayer" title="${protPrayer.replace(/_/g,' ')}">${overheadIcon[protPrayer]||'🛡'}</div>` : ''}
@@ -1281,619 +1194,365 @@ class UI {
               <div class="arena-bar-row">
                 <span class="arena-bar-icon" style="color:#c44040">❤</span>
                 <div class="arena-bar-track"><div class="arena-bar-fill" id="php-bar" style="width:${pHpPct.toFixed(1)}%;background:${pHpColor}"></div></div>
-                <span class="arena-bar-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))}/${max}</span>
+                <span class="arena-bar-text" id="php-text">${Math.max(0,Math.floor(c.playerHp||0))} / ${max}</span>
               </div>
               <div class="arena-bar-row">
                 <span class="arena-bar-icon" style="color:#4a7ec4">✦</span>
-                <div class="arena-bar-track"><div class="arena-bar-fill" id="mana-bar" style="background:linear-gradient(90deg,#1a4a8e,#3a7adc)"></div></div>
-                <span class="arena-bar-text" id="mana-text">${Math.floor(c.mana?.current||0)}/${c.mana?.max||100}</span>
+                <div class="arena-bar-track"><div class="arena-bar-fill" id="mana-bar" style="width:${Math.min(100,(_mana.current/_mana.max||1)*100).toFixed(1)}%;background:linear-gradient(90deg,#1a4a8e,#3a7adc)"></div></div>
+                <span class="arena-bar-text" id="mana-text">${Math.floor(_mana.current)} / ${_mana.max}</span>
               </div>
               <div class="arena-bar-row">
                 <span class="arena-bar-icon" style="color:#d4a83a">✶</span>
-                <div class="arena-bar-track"><div class="arena-bar-fill" style="width:${Math.round(_pPp/Math.max(1,_maxPp)*100)}%;background:linear-gradient(90deg,#9b6c10,#d4a83a)"></div></div>
-                <span class="arena-bar-text">${_pPp}/${_maxPp}</span>
+                <div class="arena-bar-track"><div class="arena-bar-fill" id="pp-bar" style="width:${Math.round(_pp/Math.max(1,_maxPp)*100)}%;background:linear-gradient(90deg,#9b6c10,#d4a83a)"></div></div>
+                <span class="arena-bar-text" id="pp-live">${_pp} / ${_maxPp}</span>
               </div>
             </div>
+            ${(c.activeBuffs||[]).length ? `<div class="arena-buff-row">${(c.activeBuffs||[]).slice(0,4).map(b=>{
+              const dur = b.type==='time'?Math.ceil(b.remaining)+'s':b.type==='hits'?b.remaining+'x':'';
+              const col = b.stat==='damageMult'?'#c44040':b.stat==='damageReduction'?'#4a7ec4':b.stat==='onKillHeal'?'#4abe6c':'#c9873e';
+              const lbl = b.stat==='damageMult'?'DMG↑':b.stat==='damageReduction'?'DR↑':b.stat==='strengthBonus'?'STR+':b.stat==='attackBonus'?'ATK+':b.stat==='onKillHeal'?'HEAL':b.stat==='dodgeCharges'?'DODGE':b.stat==='vengeance'?'VENG':'BUFF';
+              return `<div class="arena-mini-buff" style="border-color:${col}40;color:${col}"><span>${lbl}</span><span>${dur}</span></div>`;
+            }).join('')}</div>` : ''}
             <div class="arena-status" id="player-status-live"></div>
             <div class="splat-area" id="player-splats"></div>
           </div>
 
-          <!-- Center: VS + combat info -->
+          <!-- CENTER ───────────────────────────────────────────── -->
           <div class="arena-center">
             <div class="arena-vs">VS</div>
             <div class="arena-center-stats">
-              <div class="arena-stat-line">
-                <span class="arena-stat-label">Kills</span>
-                <span class="arena-stat-val" id="kill-count">${s.stats.monstersKilled||0}</span>
-              </div>
-              <div class="arena-stat-line">
-                <span class="arena-stat-label">Dealt</span>
-                <span class="arena-stat-val">${_sessionDmgTotal}</span>
-              </div>
+              <div class="arena-stat-line"><span class="arena-stat-label">Kills</span><span class="arena-stat-val" id="kill-count">${_sk2}</span></div>
+              <div class="arena-stat-line"><span class="arena-stat-label">Dealt</span><span class="arena-stat-val">${this.fmt(_sd.total||0)}</span></div>
+              <div class="arena-stat-line"><span class="arena-stat-label">DPS</span><span class="arena-stat-val">${_dps>0?_dps.toFixed(1):'—'}</span></div>
             </div>
-            ${weakness ? `<div class="arena-weakness">⚠ Weak: ${weakness.weak}<br>+${weakness.bonus}%</div>` : ''}
-            <button class="arena-flee-btn" onclick="game.stopCombat()">${icon('combat',12)} Flee</button>
+            ${weakness ? `<div class="arena-weakness">⚠ Weak: ${weakness.weak} +${weakness.bonus}%</div>` : ''}
+            ${mon.desc ? `<div class="arena-mon-desc">${mon.desc}</div>` : ''}
+            <button class="arena-flee-btn" onclick="game.stopCombat()">Flee</button>
           </div>
 
-          <!-- Monster column -->
+          <!-- MONSTER ──────────────────────────────────────────── -->
           <div class="arena-monster">
             <div class="arena-monster-art ${currentPhase?.enrage?'enrage-shake':''}">
-              ${_monArt || `<div class="arena-mon-placeholder">${icon('combat',64)}</div>`}
+              ${GAME_DATA.monsterArt?.[c.monster] || `<div class="arena-mon-placeholder"><svg viewBox="0 0 80 80"><circle cx="40" cy="35" r="20" fill="rgba(255,255,255,0.06)"/><path d="M20 70 Q40 45 60 70" fill="rgba(255,255,255,0.06)"/></svg></div>`}
             </div>
             <div class="arena-mon-name">${mon.name}</div>
-            <div class="arena-mon-level">Lv ${mon.combatLevel||0} · ${(mon.style||'melee').toUpperCase()}</div>
+            <div class="arena-mon-level">Lv ${mon.combatLevel||0} · ${(mon.style||'melee').toUpperCase()}${mon.slayerReq?` · Slay ${mon.slayerReq}+`:''}</div>
             <div class="arena-status arena-status-right" id="monster-status-live"></div>
             <div class="splat-area" id="monster-splats"></div>
           </div>
         </div>
       </div>`;
 
-      // ── ABILITY BAR V3 ────────────────────────────────────────
+      // ── ABILITY BAR ──────────────────────────────────────────────
       if (_panelOn('abilities')) {
-        const _equipped = s.equippedAbilities.filter(Boolean).map(aid=>GAME_DATA.abilities.find(a=>a.id===aid)).filter(Boolean);
-        const _ultimate = _equipped.length>0 ? _equipped.reduce((a,b)=>(b.cooldown>a.cooldown?b:a)) : null;
-        const _specials = s.equippedAbilities.map((aid,i)=>{
-          if(!aid) return {empty:true,slot:i};
-          const ab=GAME_DATA.abilities.find(a=>a.id===aid);
-          return {ab,aid,slot:i};
-        }).filter(x=>!x.empty);
+        const _equipped = (s.equippedAbilities||[]).map(aid=>aid?GAME_DATA.abilities.find(a=>a.id===aid):null).filter(Boolean);
         html += `<div class="ability-bar-v3">
-          <div class="ab3-section">
-            <div class="ab3-section-label">${icon('combat',11)} Special Attacks</div>
-            <div class="ab3-specials">`;
-        for (const {ab,aid,slot} of _specials) {
-          if (!ab) continue;
-          const cd = c.abilityCooldowns[aid]||0;
-          const cdPct = cd>0 ? Math.min(100,(cd/ab.cooldown)*100) : 0;
-          const noMana = (ab.manaCost||0)>0 && (c.mana?.current||0)<(ab.manaCost||0);
-          const ready = cd<=0 && !noMana;
-          html += `<button class="ab3-btn ${cd>0?'ab3-cd':''} ${noMana?'ab3-no-mana':''}" onclick="game.useAbility('${aid}')" title="${ab.desc}${ab.manaCost?' | '+ab.manaCost+' mana':''}">
+          <div class="ab3-section-label">Special Attacks</div>
+          <div class="ab3-specials">`;
+        for (const ab of _equipped) {
+          const cd = (c.abilityCooldowns||{})[ab.id] || 0;
+          const cdPct = cd > 0 ? Math.min(100,(cd/ab.cooldown)*100) : 0;
+          const noMana = (ab.manaCost||0) > 0 && (_mana.current||0) < (ab.manaCost||0);
+          const ready  = cd <= 0 && !noMana;
+          html += `<button class="ab3-btn ${cd>0?'ab3-cd':''} ${noMana?'ab3-no-mana':''}"
+            onclick="game.useAbility('${ab.id}')"
+            title="${ab.desc}${ab.manaCost?' | '+ab.manaCost+' mana':''}">
             <div class="ab3-cd-sweep" style="--sweep:${cdPct}%"></div>
             <div class="ab3-icon">${ab.icon||'⚔'}</div>
             <div class="ab3-name">${ab.name}</div>
-            <div class="ab3-status ${ready?'ab3-ready':cd>0?'ab3-cooling':'ab3-nomana'}">${cd>0?Math.ceil(cd)+'s':noMana?'No mana':'Ready'}</div>
+            <div class="ab3-status ${ready?'ab3-ready':cd>0?'ab3-cooling':'ab3-nomana'}">
+              ${cd>0?Math.ceil(cd)+'s':noMana?'No mana':'Ready'}
+            </div>
             ${ab.manaCost?`<div class="ab3-mana">${ab.manaCost}mp</div>`:''}
           </button>`;
         }
-        if (_specials.length===0) html += `<div class="ab3-empty">No abilities equipped — visit Abilities tab</div>`;
-        html += `</div></div>`;
-        // Active buffs strip (inline, compact)
-        const _bufs = c.activeBuffs||[];
-        if (_bufs.length>0) {
+        if (_equipped.length === 0) html += `<div class="ab3-empty">No abilities equipped — visit the Abilities tab to equip up to 4.</div>`;
+        html += `</div>`;
+
+        // Active buff chips
+        if ((c.activeBuffs||[]).length) {
           html += `<div class="ab3-buffs">`;
-          for (const b of _bufs) {
-            const _blab = b.stat==='damageMult'?`×${b.value.toFixed(2)} DMG`:b.stat==='damageReduction'?`-${b.value}% DR`:b.stat==='dodgeCharges'?`${b.value} Dodge`:b.stat==='onKillHeal'?`Heal on Kill`:b.stat==='attackBonus'?`+${b.value} ATK`:b.stat==='strengthBonus'?`+${b.value} STR`:b.stat==='vengeance'?'Vengeance':(b.stat||'Buff').replace(/Bonus/,'').replace(/([A-Z])/,' $1').trim();
-            const _bpct = b._maxDuration>0?Math.min(100,b.remaining/b._maxDuration*100):100;
-            html += `<div class="ab3-buff-chip" title="${_blab} — ${Math.ceil(b.remaining)}s"><span class="ab3-bc-label">${_blab}</span><div class="ab3-bc-bar"><div class="ab3-bc-fill" style="width:${_bpct}%"></div></div></div>`;
+          for (const b of (c.activeBuffs||[])) {
+            const pct = b._maxDuration > 0 ? Math.min(100, b.remaining / b._maxDuration * 100) : 100;
+            const lbl = b.stat==='damageMult'?`×${b.value.toFixed(2)} DMG`:
+                        b.stat==='damageReduction'?`-${b.value}% DR`:
+                        b.stat==='dodgeCharges'?`${b.value} Dodge`:
+                        b.stat==='onKillHeal'?`Heal on Kill`:
+                        b.stat==='vengeance'?'Vengeance':
+                        (b.stat||'Buff').replace(/Bonus/,'').replace(/([A-Z])/,' $1').trim();
+            html += `<div class="ab3-buff-chip" title="${lbl} — ${Math.ceil(b.remaining)}s">
+              <span class="ab3-bc-label">${lbl}</span>
+              <div class="ab3-bc-bar"><div class="ab3-bc-fill" style="width:${pct}%"></div></div>
+            </div>`;
           }
           html += `</div>`;
         }
         html += `</div>`;
       }
-    // ── PRAYER V3 ──────────────────────────────────────────────
-    {
-      const _pp = s.prayerPoints||0;
-      const _maxPp = (s.skills.prayer?.level||1)*10;
-      const _ppPct = Math.round(_pp/Math.max(1,_maxPp)*100);
-      const _activePrayers = s.activePrayers||[];
-      const _pIconMap = {
-        thick_skin:'🛡',rock_skin:'🛡',steel_skin:'🛡',superhuman_strength:'💪',ultimate_strength:'💪',incredible_reflexes:'⚔',
-        clarity_of_thought:'⚔',sharp_eye:'🏹',hawk_eye:'🏹',mystic_will:'🔮',mystic_lore:'🔮',
-        protect_melee:'⚔',protect_ranged:'🏹',protect_magic:'🔮',
-        burst_of_strength:'💪',improved_reflexes:'⚔',steel_skin_t3:'🛡',
-      };
-      html += `<div class="prayer-v3">
-        <div class="pv3-header">
-          <div class="pv3-title">${icon('sparkle',12)} Prayers</div>
-          <div class="pv3-pp-wrap">
-            <div class="pv3-pp-bar"><div class="pv3-pp-fill" style="width:${_ppPct}%"></div></div>
-            <span class="pv3-pp-text" id="pp-live">${_pp}/${_maxPp}</span>
-          </div>
-          <span class="pv3-slots">${_activePrayers.length}/2 active</span>
-        </div>
-        <div class="pv3-grid">`;
-      for (const p of GAME_DATA.prayers) {
-        if (s.skills.prayer.level < p.level) continue;
-        const active = _activePrayers.includes(p.id);
-        const _icon = _pIconMap[p.id]||'✦';
-        const _tier = p.level<=30?'T1':p.level<=60?'T2':'T3';
-        html += `<button class="pv3-btn ${active?'pv3-active':''}" onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')" title="${p.desc||p.name} — ${p.pointCost}pp/atk">
-          <div class="pv3-btn-icon">${_icon}</div>
-          <div class="pv3-btn-name">${p.name}</div>
-          <div class="pv3-btn-meta"><span class="pv3-tier">${_tier}</span><span class="pv3-cost">${p.pointCost}pp</span></div>
-          ${active?'<div class="pv3-active-glow"></div>':''}
-        </button>`;
-      }
-      if (!GAME_DATA.prayers||GAME_DATA.prayers.length===0) html+='<div class="pv3-empty">No prayers unlocked</div>';
-      html += `</div></div>`;
-    }
 
-    // ── RUNE POUCH ──
-    const runeTypes = ['air_rune','water_rune','earth_rune','fire_rune','mind_rune','body_rune','chaos_rune','cosmic_rune','nature_rune','law_rune','astral_rune','death_rune','blood_rune','soul_rune','wrath_rune'];
-    const ownedRunes = runeTypes.filter(r => (s.bank[r]||0) > 0);
-    if (ownedRunes.length > 0 || s.combat.combatStyle === 'magic') {
-      html += `<div class="combat-section rune-pouch-section"><div class="cs-header">${icon('wand',14)} Rune Pouch</div><div class="rune-pouch-grid">`;
-      for (const rId of runeTypes) {
-        const qty = s.bank[rId] || 0;
-        if (qty <= 0) continue;
-        const item = GAME_DATA.items[rId];
-        const color = rId.includes('fire') ? '#d63a1a' : rId.includes('water') ? '#4a7ec4' : rId.includes('earth') ? '#8a6a3a' : rId.includes('air') ? '#c8cad4' : rId.includes('mind') ? '#5ac4c4' : rId.includes('body') ? '#4a7ec4' : rId.includes('chaos') ? '#8a5ec4' : rId.includes('death') ? '#3a3a4a' : rId.includes('blood') ? '#c44040' : rId.includes('soul') ? '#b585e0' : rId.includes('wrath') ? '#ff4040' : rId.includes('cosmic') ? '#8a5ec4' : rId.includes('nature') ? '#3a9e5c' : rId.includes('law') ? '#e8eaf2' : rId.includes('astral') ? '#5ac4c4' : 'var(--text)';
-        const _qtyFmt = qty>=1000?Math.round(qty/100)/10+'k':qty;
-        html += `<div class="rp3-rune" title="${item?.name||rId}: ${qty.toLocaleString()}">
-          <svg class="rp3-icon" viewBox="0 0 22 22">
-            <polygon points="11,2 19,7 19,15 11,20 3,15 3,7" fill="${color}" opacity="0.85"/>
-            <polygon points="11,4 17,8 17,14 11,18 5,14 5,8" fill="${color}" opacity="0.4"/>
-            <text x="11" y="14" text-anchor="middle" fill="#fff" font-size="7" font-weight="bold">${(item?.name||rId).slice(0,2).toUpperCase()}</text>
-          </svg>
-          <span class="rp3-qty">${_qtyFmt}</span>
-        </div>`;
-      }
-      html += '</div></div>';
-    }
-
-    // ── FOOD + POTION BELT + EQUIPMENT STATS ──
-    html += `<div class="combat-loadout">
-      <div class="cl-food">
-        <div class="cs-header">${icon('heart',14)} Food Bag</div>
-        <div class="food-bag" id="food-bag">`;
-    const foodBag = s.foodBag || [];
-    if (foodBag.length > 0) {
-      for (let i = 0; i < foodBag.length; i++) {
-        const slot = foodBag[i];
-        const item = GAME_DATA.items[slot.id];
-        if (!item) continue;
-        html += `<div class="fb-slot fb-clickable" onclick="game.eatFoodSlot(${i})" title="Click to eat ${item.name}: Heals ${item.heals||0} HP">
-          <span class="fb-name">${item.name}</span>
-          <span class="fb-qty" id="fb-qty-${i}">x${slot.qty}</span>
-          <span class="fb-heals">+${item.heals||0}hp</span>
-        </div>`;
-      }
     } else {
-      html += '<div class="cc-info">No food. Equip from Bank.</div>';
-    }
-    html += `</div>
-        <div class="cl-food-btns">
-          <button class="btn btn-xs" onclick="game.eatFood()">Eat Best</button>
-          <label class="auto-eat-label"><input type="checkbox" ${c.autoEat?'checked':''} onchange="ui.toggleAutoEat()"> Auto @ 40%</label>
-        </div>
-      </div>
-      <div class="cl-potions">
-        <div class="cs-header">${icon('potion',14)} Potion Belt <span class="cs-header-sub">tap to drink</span></div>
-        <div class="potion-belt" id="potion-belt">`;
-    for (let i = 0; i < 4; i++) {
-      const slot = s.potionBelt[i];
-      const pot = slot?.id ? GAME_DATA.items[slot.id] : null;
-      if (pot) {
-        let effectStr = pot.desc || '';
-        if (pot.buff) { const sL = (pot.buff.stat||'buff').replace('Bonus','').replace(/([A-Z])/g,' $1').trim(); effectStr = `+${pot.buff.value} ${sL} for ${pot.buff.duration||120}s`; }
-        if (pot.prayerRestore) effectStr = `+${pot.prayerRestore} Prayer`;
-        if (pot.heals) effectStr = effectStr ? effectStr + ` · Heals ${pot.heals}` : `Heals ${pot.heals}HP`;
-        const shortName = pot.name.replace(' Potion','').replace('Super ','S.');
-        html += `<button class="pb-slot pb-filled" onclick="game.drinkPotionBelt(${i})" title="${pot.name}&#10;${effectStr}&#10;${slot.qty} left">
-          <div class="pb-icon-wrap">${window.renderItemSprite?window.renderItemSprite(slot.id,18):'🧪'}</div>
-          <span class="pb-name">${shortName}</span>
-          <span class="pb-qty" id="pb-qty-${i}">${slot.qty}</span>
-          <span class="pb-effect-line">${effectStr}</span>
-        </button>`;
-      } else {
-        html += `<div class="pb-slot pb-empty"><span class="pb-empty-num">${i+1}</span><span class="pb-empty-label">Empty</span></div>`;
+      // ── AREA SELECT ──────────────────────────────────────────────
+      html += '<div class="combat-controls">';
+      html += '<div class="cc-group"><div class="cc-label">Combat Style</div><div class="cc-btns">';
+      for (const [id,label,ic] of [['melee','⚔ Melee','sword'],['ranged','🏹 Ranged','target'],['magic','🔮 Magic','wand']]) {
+        html += `<button class="cc-btn ${combatStyle===id?'cc-btn-active':''}" onclick="ui.setStyle('${id}')">${label}</button>`;
       }
-    }
-    html += `</div>
-        <button class="btn btn-xs pb-manage-btn" onclick="ui.currentPage='equipment';ui.renderPage('equipment')">⚙ Manage Belt</button>
-      </div>
-      <div class="cl-stats">
-        <div class="cs-header">${icon('shield',14)} Equipment Bonuses</div>
-        <div class="cl-stat-chips">`;
-    for (const [stat,label] of [['attackBonus','Atk'],['strengthBonus','Str'],['defenceBonus','Def'],['rangedBonus','Rng'],['magicBonus','Mag'],['damageReduction','DR']]) {
-      const v = this.engine.getStatTotal(stat);
-      html += `<span class="stat-chip ${v>0?'':'stat-zero'}">+${v} ${label}</span>`;
-    }
-    html += `<span class="stat-chip stat-speed">${this.engine.getPlayerAttackSpeed().toFixed(1)}s spd</span>`;
-    html += '</div></div></div>';
+      html += '</div></div></div>';
 
-    // ── ACTIVE BUFFS DISPLAY ──
-    // Always render the container so onTick can update it
-    html += '<div class="active-buffs-bar" id="active-buffs">';
-    if (c.activeBuffs.length > 0) {
-      for (const buff of c.activeBuffs) {
-        // Ensure _maxDuration is always set (prevents flashing on initial render)
-        if (!buff._maxDuration) {
-          buff._maxDuration = buff.remaining;
-        }
-        
-        const isTime = buff.type === 'time';
-        const isHits = buff.type === 'hits';
-        let label = '', icon = '', color = '';
-        if (buff.stat === 'damageMult')      { label = `Dmg ×${buff.value.toFixed(2)}`; icon = '⚔'; color = '#c44040'; }
-        else if (buff.stat === 'damageReduction') { label = `-${buff.value}% Dmg Taken`; icon = '🛡'; color = '#4a7ec4'; }
-        else if (buff.stat === 'attackBonus')    { label = `+${buff.value} Attack`; icon = '⚡'; color = '#d4a83a'; }
-        else if (buff.stat === 'strengthBonus')  { label = `+${buff.value} Str`; icon = '💪'; color = '#c44040'; }
-        else if (buff.stat === 'defenceBonus')   { label = `+${buff.value} Def`; icon = '🛡'; color = '#4a7ec4'; }
-        else if (buff.stat === 'rangedBonus')    { label = `+${buff.value} Rng`; icon = '🏹'; color = '#4a8a3e'; }
-        else if (buff.stat === 'magicBonus')     { label = `+${buff.value} Mag`; icon = '🔮'; color = '#8a5ec4'; }
-        else if (buff.stat === 'speedBonus')     { label = `+${buff.value}% Speed`; icon = '⚡'; color = '#c9873e'; }
-        else if (buff.stat === 'dodgeCharges')   { label = `${buff.value} Dodge${buff.value!==1?'s':''}`; icon = '✦'; color = '#9b30d0'; }
-        else if (buff.stat === 'vengeance')      { label = `Vengeance ×${buff.value}`; icon = '🔁'; color = '#c44040'; }
-        else if (buff.stat === 'onKillHeal')     { label = `Heal ${buff.value}% on kill`; icon = '💉'; color = '#4abe6c'; }
-        else if (buff.stat === 'runeRecovery')   { label = `Rune Save ${Math.round(buff.value*100)}%`; icon = '♦'; color = '#8a5ec4'; }
-        else if (buff.stat === 'lifeRestore')    { label = `Life Restore +${Math.round(buff.value*100)}%`; icon = '❤'; color = '#e24040'; }
-        else if (buff.stat === 'evasionBonus')   { label = `+${buff.value} Evasion`; icon = '💨'; color = '#7ec444'; }
-        else { label = (buff.stat||'Buff').replace(/([A-Z])/g,' $1').replace('Bonus','').trim() + ' +' + buff.value; icon = '✦'; color = '#c9873e'; }
-
-        const durText = isTime ? `${Math.ceil(buff.remaining)}s` : isHits ? `${buff.remaining} hit${buff.remaining!==1?'s':''}` : '';
-        const pct = isTime && buff._maxDuration ? Math.max(0, (buff.remaining / buff._maxDuration) * 100) : 100;
-
-        html += `<div class="buff-chip-v2" style="border-color:${color}20;background:${color}10" title="${label} — ${durText} remaining" data-buff="${buff.stat}">
-          <span class="buff-chip-icon" style="color:${color}">${icon}</span>
-          <div class="buff-chip-body">
-            <span class="buff-chip-label" style="color:${color}">${label}</span>
-            <span class="buff-chip-dur">${durText}</span>
-          </div>
-          ${isTime && buff._maxDuration ? `<div class="buff-chip-bar"><div class="buff-chip-fill" style="width:${pct.toFixed(0)}%;background:${color}"></div></div>` : ''}
+      // XP Stats grid
+      const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','tactics'];
+      html += '<div class="combat-xp-panel">';
+      for (const sk of _cSkills) {
+        const skill = s.skills[sk]; if (!skill) continue;
+        const _p = this.engine.getXpProgress ? this.engine.getXpProgress(sk) : 0;
+        const _name = GAME_DATA.skills[sk]?.name || sk;
+        html += `<div class="cxp-row" title="${_name} — Level ${skill.level}">
+          <span class="cxp-icon">${icon(GAME_DATA.skills[sk]?.icon||'sparkle',14)}</span>
+          <span class="cxp-name">${_name}</span>
+          <span class="cxp-level">${skill.level}</span>
+          <div class="cxp-bar"><div class="cxp-fill" style="width:${(_p*100).toFixed(1)}%"></div></div>
+          <span class="cxp-xp">${this.fmt(skill.xp)}</span>
         </div>`;
       }
-    }
-    html += '</div>';
+      html += '</div>';
 
-    // ── ACTIVE COMBAT ──
-
-
-      if (c.dungeon) {
-        const d = GAME_DATA.dungeons.find(x=>x.id===c.dungeon);
-        html += `<div class="dungeon-progress-v2"><span>Dungeon: ${d.name}</span><span>Wave ${c.dungeonWave+1} / ${d.waves.length}</span></div>`;
+      // Area grid
+      html += '<h2 class="section-title">Combat Areas</h2><div class="area-grid">';
+      for (const area of GAME_DATA.combatAreas) {
+        if (area.isGauntlet) continue; // handled by Void Gauntlet page
+        const locked = this.engine.getCombatLevel() < area.levelReq;
+        const monNames = (area.monsters||[]).slice(0,3).map(mid=>{
+          const m = GAME_DATA.monsters[mid]; return m?m.name:mid;
+        }).join(', ');
+        html += `<div class="area-card-v2 ${locked?'area-locked':''}">
+          <div class="area-header">
+            <span class="area-name">${area.name}</span>
+            <span class="area-req">Cb ${area.levelReq}+</span>
+          </div>
+          <div class="area-desc">${area.desc||''}</div>
+          <div class="area-monsters-v2">${monNames}</div>
+          ${area.wilderness?'<div class="area-wild-badge">⚠ Wilderness</div>':''}
+          ${area.slayerArea?'<div class="area-slayer-badge">Slayer</div>':''}
+          ${!locked ? `<button class="btn btn-sm area-start-btn" onclick="game.startCombat('${area.id}')">Fight Here</button>` : ''}
+          ${locked ? `<div class="locked-overlay">Combat Lv ${area.levelReq}</div>` : ''}
+        </div>`;
       }
+      html += '</div>';
+    }
 
-      // ── MULTI-MOB TARGET CARDS ──────────────────────────────
-      if (c._multiMobMode && this.engine.state.multiMob?.active) {
-        const mm = this.engine.state.multiMob;
-        const aliveCount = mm.alive.filter(Boolean).length;
-        html += `<div class="fc-wave-monsters">
-          <span class="fc-queue-label">⚔ ${aliveCount}/${mm.mobs.length} enemies — ALL attacking simultaneously — click to switch target:</span>
-          <div class="fc-target-grid">`;
-        for (let i = 0; i < mm.mobs.length; i++) {
-          const mob    = mm.mobs[i];
-          const alive  = mm.alive[i];
-          const hp     = mm.hp[i];
-          const hPct   = alive ? Math.max(0, Math.min(100, (hp/mob.hp)*100)) : 0;
-          const isTgt  = alive && mm.targetIdx === i;
-          const _styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
-          const sColor = _styleColors[mob.style] || '#888';
-          html += `<div class="fc-target-card ${isTgt ? 'fc-target-active' : ''} ${!alive ? 'mm-dead-card' : ''}"
-            style="border-color:${isTgt ? sColor : alive ? 'rgba(80,70,60,0.3)' : 'rgba(40,40,40,0.2)'};${alive&&!isTgt?'cursor:pointer':''}"
-            ${alive && !isTgt ? `onclick="game.multiMobSetTarget(${i})"` : ''}>
-            <div class="fc-target-header">
-              <span class="fc-target-name">${mob.name}</span>
-              <span class="fc-target-style" style="color:${sColor}">${mob.style}</span>
+    // ══════════════════════════════════════════════════════════════
+    // ALWAYS-VISIBLE SECTIONS (prayers, runes, food, gear)
+    // Only when in combat
+    // ══════════════════════════════════════════════════════════════
+    if (c.active && mon) {
+
+      // ── PRAYERS ─────────────────────────────────────────────────
+      {
+        const _activePrayers = s.activePrayers || [];
+        const _pIconMap = {
+          thick_skin:'🛡',rock_skin:'🛡',steel_skin:'🛡',steel_skin_t3:'🛡',
+          superhuman_strength:'💪',ultimate_strength:'💪',burst_of_strength:'💪',
+          clarity_of_thought:'⚔',incredible_reflexes:'⚔',improved_reflexes:'⚔',
+          sharp_eye:'🏹',hawk_eye:'🏹',
+          mystic_will:'🔮',mystic_lore:'🔮',
+          protect_melee:'⚔',protect_ranged:'🏹',protect_magic:'🔮',
+          chivalry:'⚜',piety:'⚜',rigour:'🏹',augury:'🔮',
+          soul_split:'✦',turmoil:'💢',
+        };
+        html += `<div class="prayer-v3">
+          <div class="pv3-header">
+            <div class="pv3-title">Prayers</div>
+            <div class="pv3-pp-wrap">
+              <div class="pv3-pp-bar"><div class="pv3-pp-fill" id="prayer-fill-bar" style="width:${Math.round(_pp/Math.max(1,_maxPp)*100)}%"></div></div>
+              <span class="pv3-pp-text" id="pp-live2">${_pp}/${_maxPp} pp</span>
             </div>
-            <div class="fc-bar-track fc-target-hp-track">
-              <div class="fc-bar-fill fc-monster-fill" id="mm-mhp-fill-${i}" style="width:${hPct.toFixed(1)}%;opacity:${alive?1:0.3}"></div>
+            <span class="pv3-slots">${_activePrayers.length}/2 active</span>
+          </div>
+          <div class="pv3-grid">`;
+        for (const p of GAME_DATA.prayers) {
+          if ((s.skills.prayer?.level||1) < p.level) continue;
+          if (p.book === 'unholy' && !(s.quests?.completed||[]).includes('unholy_path')) continue;
+          const active = _activePrayers.includes(p.id);
+          const _icon2 = _pIconMap[p.id] || (p.book==='unholy'?'☠':'✦');
+          const _tier = p.level<=30?'T1':p.level<=60?'T2':p.level<=75?'T3':'T4';
+          const _isUnholy = p.book==='unholy';
+          html += `<button class="pv3-btn ${active?'pv3-active':''} ${_isUnholy?'pv3-unholy':''}"
+            onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')"
+            title="${p.desc||p.name} — ${p.pointCost}pp/atk${_isUnholy?' | UNHOLY':''}"
+            style="${_isUnholy&&active?'border-color:#8a2ae0;background:rgba(138,42,224,0.15);':''}">
+            <div class="pv3-btn-icon">${_icon2}</div>
+            <div class="pv3-btn-name">${p.name}</div>
+            <div class="pv3-btn-meta">
+              <span class="pv3-tier" style="${_isUnholy?'color:#8a2ae0;border-color:#8a2ae060;':''}">${_tier}</span>
+              <span class="pv3-cost">${p.pointCost}pp</span>
             </div>
-            <div class="fc-target-hp" id="mm-mhp-val-${i}">${alive ? Math.ceil(hp)+'/'+mob.hp : 'DEAD'}</div>
-            ${isTgt ? `<div class="fc-target-fighting" style="color:${sColor}">ATTACKING</div>` : alive ? '<div class="fc-target-switch">Click to target</div>' : '<div class="fc-target-fighting" style="color:#666">☠ Defeated</div>'}
-          </div>`;
+            ${active?'<div class="pv3-active-glow"></div>':''}
+          </button>`;
         }
         html += `</div></div>`;
-        // Prayer hint
-        const aliveStyles = mm.mobs.filter((_,i) => mm.alive[i]).map(m => m.style);
-        const hasMulti = new Set(aliveStyles).size > 1;
-        if (hasMulti) {
-          html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">Multiple attack styles active — Protection prayers only block one type!</div></div>`;
-        } else if (aliveStyles[0] === 'magic') {
-          html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">All enemies use Magic — Protect from Magic!</div></div>`;
-        } else if (aliveStyles[0] === 'ranged') {
-          html += `<div class="fc-prayer-hint"><div class="fc-hint-warn">All enemies use Ranged — Protect from Ranged!</div></div>`;
-        }
       }
 
-      // ── FIGHT CAVE TARGET CARDS + JAD PANEL ──
-      if (_fcActive) {
-        const _fcMon = GAME_DATA.monsters[c.monster];
-        const _isJad = _fcMon && _fcMon.isJad;
-
-        // Target selection cards (all alive monsters in wave)
-        if (!_isJad) {
-          html += `<div class="fc-wave-monsters">
-            <span class="fc-queue-label">Wave Monsters (click to switch target):</span>
-            <div class="fc-target-grid">`;
-          for (let i = 0; i < _fc.monsterQueue.length; i++) {
-            if (!_fc.waveMonsterAlive[i]) continue;
-            const _tmId = _fc.monsterQueue[i];
-            const _tm = GAME_DATA.monsters[_tmId];
-            if (!_tm) continue;
-            const _isCurrent = i === _fc.currentMonsterIdx;
-            const _thp = _fc.waveMonsterHp[i] || 0;
-            const _thpPct = Math.max(0, (_thp / _tm.hp) * 100);
-            const _styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
-            const _sColor = _styleColors[_tm.style] || '#666';
-            html += `<div class="fc-target-card ${_isCurrent ? 'fc-target-active' : ''}"
-              data-fc-action="switch-target" data-fc-param="${i}"
-              style="border-color:${_isCurrent ? _sColor : 'rgba(80,70,60,0.3)'}">
-              <div class="fc-target-header">
-                <span class="fc-target-name">${_tm.name}</span>
-                <span class="fc-target-style" style="color:${_sColor}">${_tm.style}</span>
-              </div>
-              <div class="fc-bar-track fc-target-hp-track">
-                <div class="fc-bar-fill fc-monster-fill" style="width:${_thpPct}%"></div>
-              </div>
-              <div class="fc-target-hp">${_thp}/${_tm.hp}</div>
-              ${_isCurrent ? '<div class="fc-target-fighting">ATTACKING</div>' : '<div class="fc-target-switch">Click to target</div>'}
+      // ── RUNE POUCH (magic only) ─────────────────────────────────
+      if (combatStyle === 'magic' || (s.bank && Object.keys(s.bank).some(k=>k.endsWith('_rune')&&s.bank[k]>0))) {
+        const runeTypes = ['air_rune','water_rune','earth_rune','fire_rune','mind_rune','chaos_rune','nature_rune','law_rune','cosmic_rune','death_rune','blood_rune','soul_rune','wrath_rune','ash_rune'];
+        const ownedRunes = runeTypes.filter(r => (s.bank[r]||0) > 0);
+        if (ownedRunes.length) {
+          const runeColors = {fire_rune:'#d63a1a',water_rune:'#4a7ec4',earth_rune:'#8a6a3a',air_rune:'#c8cad4',chaos_rune:'#8a5ec4',death_rune:'#4a4a5a',blood_rune:'#c44040',soul_rune:'#b585e0',wrath_rune:'#ff6040',nature_rune:'#3a9e5c',law_rune:'#dde4f0',cosmic_rune:'#7a5ec4',mind_rune:'#5ac4c4',ash_rune:'#d67338'};
+          html += `<div class="combat-section rune-pouch-section"><div class="cs-header">Rune Pouch</div><div class="rune-pouch-grid">`;
+          for (const rId of ownedRunes) {
+            const qty = s.bank[rId]||0;
+            const item = GAME_DATA.items[rId];
+            const color = runeColors[rId] || '#888';
+            const abbr = (item?.name||rId).replace(' Rune','').slice(0,3).toUpperCase();
+            const qtyFmt = qty>=1000?`${Math.round(qty/100)/10}k`:qty;
+            html += `<div class="rp3-rune" title="${item?.name||rId}: ${qty.toLocaleString()}">
+              <svg class="rp3-icon" viewBox="0 0 22 22">
+                <polygon points="11,2 19,7 19,15 11,20 3,15 3,7" fill="${color}" opacity="0.85"/>
+                <polygon points="11,4 17,8 17,14 11,18 5,14 5,8" fill="${color}" opacity="0.35"/>
+                <text x="11" y="14" text-anchor="middle" fill="#fff" font-size="6" font-weight="bold">${abbr}</text>
+              </svg>
+              <span class="rp3-qty">${qtyFmt}</span>
             </div>`;
           }
           html += `</div></div>`;
-
-          // Prayer hints for active threats
-          const _aliveMonsters = _fc.monsterQueue.filter((_, i) => _fc.waveMonsterAlive[i]);
-          const _hasRanger = _aliveMonsters.includes('obsidian_ranger');
-          const _hasMage = _aliveMonsters.includes('volcanic_mage');
-          if (_hasMage) {
-            html += `<div class="fc-prayer-hint"><div class="fc-hint-danger">Volcanic Mage active — Protect from Magic!</div></div>`;
-          } else if (_hasRanger) {
-            html += `<div class="fc-prayer-hint"><div class="fc-hint-warn">Obsidian Ranger active — Protect from Ranged!</div></div>`;
-          }
-        }
-
-        // Jad telegraph panel
-        if (_isJad) {
-          html += `<div class="fc-jad-panel"><div class="fc-jad-telegraph">`;
-          if (_fc.jadPhase === 'charging') {
-            const _chPct = (_fc.jadChargeTimer / 2.0) * 100;
-            html += `<div class="fc-jad-charging">
-              <div class="fc-jad-charge-label">Jad is preparing an attack...</div>
-              <div class="fc-bar-track fc-jad-charge-track"><div class="fc-bar-fill fc-jad-charge-fill" id="fc-jad-charge-fill" style="width:${_chPct}%"></div></div>
-            </div>`;
-          } else if (_fc.jadPhase === 'telegraph' || _fc.jadPhase === 'awaiting_input') {
-            const _jStyle = _fc.jadAttackStyle;
-            const _jIcons = {
-              melee:  { symbol:'&#9994;', label:'MELEE', desc:'Jad lunges forward!', color:'#e74c3c', bg:'rgba(231,76,60,0.15)' },
-              ranged: { symbol:'&#11015;', label:'RANGED', desc:'Jad slams his feet to the ground!', color:'#e67e22', bg:'rgba(230,126,34,0.15)' },
-              magic:  { symbol:'&#128293;', label:'MAGIC', desc:'Jad rears up — fireball incoming!', color:'#3498db', bg:'rgba(52,152,219,0.15)' },
-            };
-            const _jt = _jIcons[_jStyle] || _jIcons.magic;
-            html += `<div class="fc-jad-telegraph-alert" style="background:${_jt.bg};border-color:${_jt.color}">
-              <div class="fc-jad-telegraph-icon" style="color:${_jt.color}">${_jt.symbol}</div>
-              <div class="fc-jad-telegraph-style" style="color:${_jt.color}">${_jt.label} ATTACK</div>
-              <div class="fc-jad-telegraph-desc">${_jt.desc}</div>
-            </div>`;
-            if (_fc.jadPhase === 'awaiting_input') {
-              const _tLeft = Math.max(0, 2.5 - _fc.jadInputTimer);
-              const _tPct = (_tLeft / 2.5) * 100;
-              html += `<div class="fc-jad-input-window">
-                <div class="fc-jad-timer-label" id="fc-jad-timer-label">PRAY NOW! ${_tLeft.toFixed(1)}s</div>
-                <div class="fc-bar-track fc-jad-timer-track"><div class="fc-bar-fill fc-jad-timer-fill" id="fc-jad-timer-fill" style="width:${_tPct}%"></div></div>
-              </div>
-              <div class="fc-jad-prayer-buttons">
-                <button class="fc-jad-pray-btn fc-pray-melee" data-fc-action="jad-flick" data-fc-param="melee"><span class="fc-pray-icon">&#9994;</span><span class="fc-pray-text">Protect Melee</span></button>
-                <button class="fc-jad-pray-btn fc-pray-ranged" data-fc-action="jad-flick" data-fc-param="ranged"><span class="fc-pray-icon">&#11015;</span><span class="fc-pray-text">Protect Ranged</span></button>
-                <button class="fc-jad-pray-btn fc-pray-magic" data-fc-action="jad-flick" data-fc-param="magic"><span class="fc-pray-icon">&#128293;</span><span class="fc-pray-text">Protect Magic</span></button>
-              </div>`;
-            }
-          } else if (_fc.jadPhase === 'resolving') {
-            html += `<div class="fc-jad-resolving"><div class="fc-jad-resolve-text">Attack resolved. Next attack charging...</div></div>`;
-          }
-          html += `</div>`; // end telegraph
-
-          // Jad healers
-          if (_fc.jadHealers && _fc.jadHealers.length > 0) {
-            html += `<div class="fc-jad-healers"><h3 class="fc-healer-title">Yt-HurKot Healers — Tag them to stop healing!</h3><div class="fc-healer-grid">`;
-            for (let i = 0; i < _fc.jadHealers.length; i++) {
-              const _h = _fc.jadHealers[i];
-              const _hhpPct = (_h.hp / _h.maxHp) * 100;
-              html += `<div class="fc-healer-card ${_h.tagged ? 'fc-healer-tagged' : 'fc-healer-healing'}">
-                <div class="fc-healer-label">Healer ${i + 1}</div>
-                <div class="fc-healer-status">${_h.tagged ? 'TAGGED (attacking you)' : 'HEALING JAD'}</div>
-                <div class="fc-bar-track fc-healer-hp-track"><div class="fc-bar-fill fc-healer-hp-fill" style="width:${_hhpPct}%"></div></div>
-                <div class="fc-healer-hp">${_h.hp}/${_h.maxHp}</div>
-                ${!_h.tagged && _h.hp > 0 ? `<button class="btn btn-xs btn-danger" data-fc-action="tag-healer" data-fc-param="${i}">TAG</button>` : ''}
-              </div>`;
-            }
-            html += `</div></div>`;
-          }
-          html += `</div>`; // end jad panel
         }
       }
-      // Slayer task progress
-      if (s.slayerTask && s.slayerTask.monster === c.monster) {
-        const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
-        html += `<div class="slayer-combat-bar"><span>${icon('target',14)} Slayer: <span id="slayer-killed">${s.slayerTask.killed}</span>/<span id="slayer-amount">${s.slayerTask.amount}</span></span><div class="cxp-bar" style="flex:1"><div class="cxp-fill cxp-fill-active" id="slayer-fill" style="width:${pct}%"></div></div></div>`;
-      }
-      // Flee handled inside Arena V3 center column (arena-flee-btn)
-      // Fight cave: also show a dedicated flee at the bottom
-      if (_fcActive) html += `<button class="btn btn-danger btn-flee btn-flee-fc" data-fc-action="flee" style="margin:6px 0">${icon('combat',14)} Abandon Fight Cave</button>`;
-      // Wilderness-specific buttons
-      if (c._isWilderness) {
-        const fleeChance = Math.min(80, 40 + Math.floor(s.skills.defence.level * 0.3) + Math.floor(s.skills.hitpoints.level * 0.2));
-        html += `<div class="wild-combat-btns">
-          <button class="btn" onclick="game.attemptFlee()">Flee (${fleeChance}%)</button>
-          <button class="btn" onclick="game.castTeleHome()">TeleHome (3 Fire + 5 Air)</button>
-        </div>`;
-      }
 
-      // ── COMBAT EQUIPMENT PANEL ──────────────────────────
-      // ── GEAR STRIP V3 ──────────────────────────────────────────
+      // ── FOOD + POTIONS + EQ BONUSES ─────────────────────────────
+      html += `<div class="combat-loadout">
+        <div class="cl-food">
+          <div class="cs-header">Food</div>
+          <div class="food-bag" id="food-bag">`;
+      const foodBag = s.foodBag || [];
+      if (foodBag.length > 0) {
+        for (let i = 0; i < foodBag.length; i++) {
+          const slot = foodBag[i];
+          const item = GAME_DATA.items[slot.id];
+          if (!item) continue;
+          html += `<div class="fb-slot fb-clickable" onclick="game.eatFoodSlot(${i})" title="${item.name}: Heals ${item.heals||0} HP">
+            <span class="fb-name">${item.name}</span>
+            <span class="fb-qty" id="fb-qty-${i}">x${slot.qty}</span>
+            <span class="fb-heals">+${item.heals||0}</span>
+          </div>`;
+        }
+      } else {
+        html += `<div class="cc-info">No food. Equip from Bank.</div>`;
+      }
+      html += `</div>
+          <div class="cl-food-btns">
+            <button class="btn btn-xs" onclick="game.eatFood()">Eat Best</button>
+            <label class="auto-eat-label"><input type="checkbox" ${c.autoEat?'checked':''} onchange="ui.toggleAutoEat()"> Auto @ 40%</label>
+          </div>
+        </div>
+        <div class="cl-potions">
+          <div class="cs-header">Potions <span class="cs-header-sub">tap to drink</span></div>
+          <div class="potion-belt" id="potion-belt">`;
+      for (let i = 0; i < 4; i++) {
+        const slot = s.potionBelt[i];
+        const pot  = slot?.id ? GAME_DATA.items[slot.id] : null;
+        if (pot) {
+          const shortName = pot.name.replace(' Potion','').replace('Super ','S.');
+          let effectStr = pot.desc||'';
+          if (pot.buff) { const sL=(pot.buff.stat||'').replace('Bonus','').replace(/([A-Z])/,' $1').trim(); effectStr=`+${pot.buff.value} ${sL} ${pot.buff.duration||120}s`; }
+          html += `<button class="pb-slot pb-filled" onclick="game.drinkPotionBelt(${i})" title="${pot.name}\n${slot.qty} left">
+            <div class="pb-icon-wrap">${window.renderItemSprite?renderItemSprite(slot.id,18):'🧪'}</div>
+            <span class="pb-name">${shortName}</span>
+            <span class="pb-qty" id="pb-qty-${i}">${slot.qty}</span>
+          </button>`;
+        } else {
+          html += `<div class="pb-slot pb-empty"><span class="pb-empty-num">${i+1}</span></div>`;
+        }
+      }
+      html += `</div>
+          <button class="btn btn-xs pb-manage-btn" onclick="ui.renderPage('equipment')">⚙ Belt</button>
+        </div>
+        <div class="cl-stats">
+          <div class="cs-header">Equipment Bonuses</div>
+          <div class="cl-stat-chips">`;
+      for (const [stat,label] of [['attackBonus','ATK'],['strengthBonus','STR'],['defenceBonus','DEF'],['rangedBonus','RNG'],['magicBonus','MAG'],['damageReduction','DR']]) {
+        const v = this.engine.getStatTotal ? Math.round(this.engine.getStatTotal(stat)) : 0;
+        html += `<span class="stat-chip ${v>0?'':'stat-zero'}">${v>0?'+':''}${v} ${label}</span>`;
+      }
+      html += `<span class="stat-chip stat-speed">${this.engine.getPlayerAttackSpeed?.().toFixed(1)||'—'}s</span>`;
+      html += `</div></div></div>`;
+
+      // ── GEAR STRIP ───────────────────────────────────────────────
       {
         const _gSlots = [['weapon','Weapon'],['shield','Shield'],['head','Helm'],['body','Body'],['legs','Legs'],['cape','Cape'],['gloves','Gloves'],['boots','Boots'],['ring','Ring'],['amulet','Amulet'],['ammo','Ammo']];
-        const _st = (k) => this.engine.getStatTotal ? Math.round(this.engine.getStatTotal(k)) : 0;
         const _bStats = [['attackBonus','ATK','#e0a060'],['strengthBonus','STR','#c44040'],['defenceBonus','DEF','#4a7ec4'],['rangedBonus','RNG','#4a8a3e'],['magicBonus','MAG','#8a5ec4']];
-        html += `<div class="gear-strip-v3"><div class="gs3-header"><span class="gs3-title">Equipped Gear</span><div class="gs3-bonuses">${_bStats.map(([sk,lb,cl])=>{const v=_st(sk);return `<span class="gs3-bonus" style="color:${cl}">${v>0?'+':''}${v} ${lb}</span>`;}).join('')}</div></div><div class="gs3-slots">`;
-        for (const [slot, lbl] of _gSlots) {
+        html += `<div class="gear-strip-v3">
+          <div class="gs3-header">
+            <span class="gs3-title">Equipped Gear</span>
+            <div class="gs3-bonuses">${_bStats.map(([sk,lb,cl])=>{
+              const v=this.engine.getStatTotal?Math.round(this.engine.getStatTotal(sk)):0;
+              return `<span class="gs3-bonus" style="color:${cl}">${v>0?'+':''}${v} ${lb}</span>`;
+            }).join('')}</div>
+          </div>
+          <div class="gs3-slots">`;
+        for (const [slot,lbl] of _gSlots) {
           const eid=s.equipment[slot], ei=eid?GAME_DATA.items[eid]:null;
           const isAmmo=slot==='ammo', aq=isAmmo&&eid?(s.bank[eid]||0):null;
           const rc=ei&&this.getRarityColor?this.getRarityColor(eid):'';
-          const tip=ei?(ei.name+(ei.stats?'\n'+Object.entries(ei.stats).map(([k,v])=>`+${v} ${k.replace('Bonus','')}`).join(', '):'')):'Empty '+lbl;
-          html += `<div class="gs3-slot ${ei?'gs3-filled':'gs3-empty'}" title="${tip}"><div class="gs3-slot-label">${lbl}</div><div class="gs3-slot-icon">${ei&&window.renderItemSprite?renderItemSprite(eid,20):''}</div><div class="gs3-slot-name" style="${rc?'color:'+rc:''}">${ei?ei.name.split(' ').slice(-1)[0]:'—'}</div>${isAmmo&&aq!==null?`<div class="gs3-ammo-qty">${aq>=1000?Math.round(aq/100)/10+'k':aq}</div>`:''}</div>`;
+          const tip=ei?(ei.name+(ei.stats?' — '+Object.entries(ei.stats).map(([k,v])=>'+'+v+' '+k.replace('Bonus','')).join(', '):'')):'Empty '+lbl;
+          html += `<div class="gs3-slot ${ei?'gs3-filled':'gs3-empty'}" title="${tip}">
+            <div class="gs3-slot-label">${lbl}</div>
+            <div class="gs3-slot-icon">${ei&&window.renderItemSprite?renderItemSprite(eid,20):''}</div>
+            <div class="gs3-slot-name" style="${rc?'color:'+rc:''}">${ei?ei.name.split(' ').slice(-1)[0]:'—'}</div>
+            ${isAmmo&&aq!==null?`<div class="gs3-ammo-qty">${aq>=1000?Math.round(aq/100)/10+'k':aq}</div>`:''}
+          </div>`;
         }
-        html += `</div><div class="gs3-actions"><button class="btn btn-xs" onclick="ui.currentPage='equipment';ui.renderPage('equipment')">⚙ Full Equipment</button><button class="btn btn-xs" onclick="ui.currentPage='bank';ui.renderPage('bank')">Bank</button><button class="btn btn-xs" onclick="ui.currentPage='gear_sets';ui.renderPage('gear_sets')">Gear Sets</button></div></div>`;
+        html += `</div>
+          <div class="gs3-actions">
+            <button class="btn btn-xs" onclick="ui.renderPage('equipment')">⚙ Equipment</button>
+            <button class="btn btn-xs" onclick="ui.renderPage('bank')">Bank</button>
+            <button class="btn btn-xs" onclick="ui.renderPage('gear_sets')">Gear Sets</button>
+          </div>
+        </div>`;
       }
-      // ── SPEC BAR ──
-      const weapon = GAME_DATA.items[s.equipment.weapon];
-      const hasSpec = weapon?.specCost && weapon?.specEffect;
-      const specE = s.specEnergy || 0;
-      html += `<div class="spec-bar-section">
-        <div class="spec-bar-label">Special Attack <span id="spec-pct">${specE}%</span></div>
-        <div class="spec-bar">
-          <div class="spec-fill" id="spec-fill" style="width:${specE}%"></div>
-          <div class="spec-segments">
-            <div class="spec-seg" style="left:25%"></div>
-            <div class="spec-seg" style="left:50%"></div>
-            <div class="spec-seg" style="left:75%"></div>
+
+      // ── SPEC BAR ─────────────────────────────────────────────────
+      const specData = this.engine._getSpecWeapon ? this.engine._getSpecWeapon() : null;
+      if (specData) {
+        const specPct = Math.min(100, c.specEnergy || 0);
+        html += `<div class="spec-bar-v2">
+          <div class="spec-bar-label">
+            <span>⚡ Special Attack — ${specData.name}</span>
+            <span class="spec-pct" id="spec-pct">${specPct}%</span>
+          </div>
+          <div class="spec-bar-track"><div class="spec-bar-fill" id="spec-bar-fill" style="width:${specPct}%"></div></div>
+          <div class="spec-desc">${specData.desc||''}</div>
+          ${specPct >= (specData.specCost||50) ? `<button class="btn btn-sm spec-use-btn" onclick="game.useSpecial()">USE (${specData.specCost||50}% energy)</button>` : ''}
+        </div>`;
+      }
+
+      // ── COMBAT LOG ───────────────────────────────────────────────
+      const showLog = this._showCombatLog || false;
+      html += `<div class="combat-log-section">
+        <div class="combat-log-header" onclick="ui._showCombatLog=!ui._showCombatLog;const l=document.getElementById('combat-log-body');if(l)l.style.display=ui._showCombatLog?'block':'none'">
+          <span>📋 Combat Log</span>
+          <span>${showLog?'▲':'▼'}</span>
+          <button class="clog-clear-btn" onclick="event.stopPropagation();ui._combatLog=[];this.closest('.combat-log-section').querySelector('#combat-log-entries').innerHTML='<div class=cl-entry cl-miss>Cleared.</div>'">Clear</button>
+        </div>
+        <div id="combat-log-body" style="display:${showLog?'block':'none'}">
+          <div class="combat-log-entries" id="combat-log-entries">
+            ${(this._combatLog||[]).slice(-30).reverse().map(entry=>{
+              const cls=entry.type==='hit'?'cl-hit':entry.type==='taken'?'cl-taken':entry.type==='miss'?'cl-miss':entry.type==='kill'?'cl-kill':'cl-dot';
+              const ico=entry.type==='hit'?'⚔':entry.type==='taken'?'💥':entry.type==='miss'?'○':entry.type==='kill'?'💀':'⬡';
+              return `<div class="cl-entry ${cls}">${ico} ${entry.text}</div>`;
+            }).join('') || '<div class="cl-entry cl-miss">No combat yet.</div>'}
           </div>
         </div>
-        ${hasSpec ? `<button class="btn spec-btn ${specE >= weapon.specCost ? '' : 'btn-disabled'}" onclick="game.useSpecialAttack()" ${specE >= weapon.specCost ? '' : 'disabled'}>
-          ${weapon.specEffect.type === 'doubleHit' ? 'Double Hit' : weapon.specEffect.type === 'armorPierce' ? 'Armor Pierce' : weapon.specEffect.type === 'execute' ? 'Execute' : weapon.specEffect.type === 'burnStrike' ? 'Burn Strike' : weapon.specEffect.type === 'doubleShot' ? 'Double Shot' : weapon.specEffect.type === 'energyDrain' ? 'Energy Drain' : weapon.specEffect.type === 'magicShield' ? 'Magic Shield' : weapon.specEffect.type === 'runeRecovery' ? 'Rune Recovery' : 'Special'} (${weapon.specCost}%)
-        </button>` : '<div class="spec-no-weapon">No spec weapon equipped</div>'}
       </div>`;
-
-      // ── DWARF CANNON PANEL ─────────────────────────────────────
-      const hasCannon = (s.bank?.['ashforge_cannon'] > 0);
-      const cannonQuest = s.quests?.completed?.includes('artillerists_calling');
-      const cannonActive = c.cannon?.active || false;
-      const cballs = s.bank?.['cannonball'] || 0;
-      const ammoItem = s.equipment?.ammo ? GAME_DATA.items[s.equipment?.ammo] : null;
-      const ammoQty = s.equipment?.ammo ? (s.bank?.[s.equipment.ammo] || 0) : 0;
-
-      if (cannonQuest || hasCannon) {
-        html += `<div class="cannon-panel ${cannonActive ? 'cannon-active' : ''}">
-          <div class="cannon-panel-header">
-            <span class="cannon-icon">${window.spriteFor ? spriteFor('misc-cannon') : '🔴'}</span>
-            <span class="cannon-title">Ashforge Cannon</span>
-            <span class="cannon-balls">${cballs.toLocaleString()} balls</span>
-          </div>
-          <div class="cannon-status">${hasCannon ? (cannonActive ? '⟳ FIRING — multi-target splash' : 'Packed up') : 'No cannon in bank'}</div>
-          <button class="btn cannon-toggle-btn ${cannonActive ? 'cannon-btn-active' : ''} ${!hasCannon || cballs <= 0 ? 'btn-disabled' : ''}"
-            onclick="game.toggleCannon()" ${!hasCannon || cballs <= 0 ? 'disabled' : ''}>
-            ${cannonActive ? '■ Pack Cannon' : '▶ Deploy Cannon'}
-          </button>
-        </div>`;
-      } else if (s.quests?.completed?.length > 0 || s.quests?.active?.length > 0) {
-        // Hint toward cannon quest
-        const questActive = s.quests?.active?.includes('artillerists_calling');
-        if (!questActive) {
-          html += `<div class="cannon-hint">Quest unlocks: <b>Artillerist's Calling</b> — multi-target Ashforge Cannon</div>`;
-        }
-      }
-
-      // Ammo counter (arrows/cannonballs)
-      if (ammoItem) {
-        html += `<div class="ammo-counter-bar">
-          <span class="ammo-icon">${window.renderItemSprite ? window.renderItemSprite(s.equipment.ammo, 14) : ''}</span>
-          <span class="ammo-name">${ammoItem.name}</span>
-          <span class="ammo-qty ${ammoQty < 50 ? 'ammo-low' : ''}">${ammoQty.toLocaleString()}</span>
-        </div>`;
-      } else if (combatStyle === 'ranged') {
-        html += `<div class="ammo-counter-bar ammo-missing">⚠ No ammo equipped — equip arrows in Equipment tab</div>`;
-      }
-      // Active familiar in combat
-      if (s.familiar?.active) {
-        const mins = Math.floor(s.familiar.timeLeft / 60);
-        html += `<div class="familiar-combat"><span class="fc-name">${s.familiar.name}</span><span class="fc-timer" id="fam-timer">${mins}m</span>`;
-        if (s.familiar.buff) {
-          for (const [stat,val] of Object.entries(s.familiar.buff)) {
-            if (stat === 'healOverTime') html += `<span class="fa-buff">+${val} heal/atk</span>`;
-            else if (stat === 'damageMult') html += `<span class="fa-buff">+${((val-1)*100).toFixed(0)}% dmg</span>`;
-            else html += `<span class="fa-buff">+${val} ${stat.replace('Bonus','')}</span>`;
-          }
-        }
-        html += '</div>';
-      }
-
-
-    } else {
-      // ── AREA SELECT ──
-      // Show combat stats XP panel here (not during combat)
-      html += '<div class="combat-xp-panel" id="combat-xp-panel" style="display:block">';
-      for (const _sId of _cSkills) {
-        const _sk = s.skills[_sId]; if (!_sk) continue;
-        const _p = this.engine.getXpProgress(_sId);
-        const _name = GAME_DATA.skills[_sId]?.name || _sId;
-        const isGaining = xpSkills[_sId] > 0;
-        const pct = xpSkills[_sId] || 0;
-        html += `<div class="cxp-row ${isGaining?'cxp-active':''}" title="${_name}: Level ${_sk.level} | ${this.fmt(_sk.xp)} XP">
-          <span class="cxp-icon">${icon(GAME_DATA.skills[_sId]?.icon||'sparkle',14)}</span>
-          <span class="cxp-name">${_name}</span>
-          <span class="cxp-level" id="cxp-lv-${_sId}">${_sk.level}</span>
-          <div class="cxp-bar"><div class="cxp-fill ${isGaining?'cxp-fill-active':''}" id="cxp-fill-${_sId}" style="width:${(_p*100).toFixed(1)}%"></div></div>
-          <span class="cxp-xp" id="cxp-xp-${_sId}">${this.fmt(_sk.xp)}</span>
-          <span class="cxp-pct">${isGaining?pct+'%':''}</span>
-        </div>`;
-      }
-      html += '</div>';
-      html += '<h2 class="section-title">Combat Areas</h2><div class="area-grid">';
-      for (const area of GAME_DATA.combatAreas) {
-        const locked = this.engine.getCombatLevel() < area.levelReq;
-        html += `<div class="area-card-v2 ${locked?'area-locked':''}">
-          <div class="area-header"><span class="area-name">${area.name}</span><span class="area-req">Cb ${area.levelReq}+</span></div>
-          <div class="area-desc">${area.desc}</div>
-          <div class="area-monsters-v2">`;
-        for (const mId of area.monsters) {
-          const m = GAME_DATA.monsters[mId];
-          const topDrops = (m.drops||[]).filter(d=>d.chance<1.0).slice(0,3).map(d=>{
-            const it=GAME_DATA.items[d.item]; return `<span class="md-drop">${it?.name||d.item} <small>${(d.chance*100).toFixed(0)}%</small></span>`;
-          }).join('');
-          const rollCount = (m.rollTables||[]).length;
-          html += `<button class="monster-btn-v2" ${locked?'disabled':''} onclick="game.startCombat('${area.id}','${mId}')">
-            ${GAME_DATA.monsterArt?.[mId] ? `<span class="mb-art">${GAME_DATA.monsterArt[mId]}</span>` : ''}
-            <span class="mb-name">${m.name}</span>
-            <span class="mb-info">Lv${m.combatLevel} | ${m.hp}hp | ${m.style} | ${m.xp||0}xp</span>
-            ${topDrops ? `<div class="mb-drops">${topDrops}</div>` : ''}
-            ${rollCount > 0 ? `<span class="mb-tables">${rollCount} drop tables</span>` : ''}
-          </button>`;
-        }
-        html += '</div>';
-        // Multi-mob encounters for this area
-        const multiMobs = (GAME_DATA.multiMobEncounters||[]).filter(e => e.levelReq >= area.levelReq - 10 && e.levelReq <= area.levelReq + 15);
-        if (multiMobs.length > 0 && !locked) {
-          html += '<div class="multi-mob-section"><div class="mm-label">Multi-Mob Encounters</div>';
-          for (const enc of multiMobs) {
-            const encLocked = this.engine.getCombatLevel() < enc.levelReq;
-            html += `<button class="monster-btn-v2 mm-btn ${encLocked?'locked':''}" ${encLocked?'disabled':''} onclick="game.startMultiMobCombat(${JSON.stringify(enc.mobs).replace(/"/g,'&quot;')})">
-              <span class="mb-name mm-name">${enc.name} <small>(${enc.mobs.length} mobs)</small></span>
-              <span class="mb-info">${enc.desc}</span>
-            </button>`;
-          }
-          html += '</div>';
-        }
-        html += '</div>';
-      }
-      html += '</div>';
     }
 
-    // ── DAMAGE TRACKER — always rendered, updated live by onTick ──
-    const _sd = c._sessionDmg || {};
-    const _sk = c._sessionKills || 0;
-    const _totalDmg = _sd.total || 0;
-
-
-    // ── COMBAT LOG ────────────────────────────────────────────────
-    const showLog = this._showCombatLog || false;
-    html += `<div class="combat-log-section">
-      <div class="combat-log-header" onclick="ui._showCombatLog=!ui._showCombatLog;const l=document.getElementById('combat-log-body');if(l)l.style.display=ui._showCombatLog?'block':'none'">
-        <span>📋 Combat Log</span>
-        <span class="combat-log-toggle">${showLog ? '▲' : '▼'}</span>
-        <button class="clog-clear-btn" onclick="event.stopPropagation();ui._combatLog=[];ui.renderPage('combat')" style="margin-left:auto;padding:4px 8px;background:#c9873e;border:none;color:#000;cursor:pointer;border-radius:3px;font-size:11px">Clear</button>
-      </div>
-      <div id="combat-log-body" style="display:${showLog?'block':'none'}">
-        <div class="combat-log-entries" id="combat-log-entries">
-          ${(this._combatLog||[]).slice(-30).reverse().map(entry => {
-            const cls = entry.type === 'hit' ? 'cl-hit' : entry.type === 'taken' ? 'cl-taken' : entry.type === 'miss' ? 'cl-miss' : entry.type === 'kill' ? 'cl-kill' : entry.type === 'cannon' ? 'cl-cannon' : 'cl-dot';
-            const icon_ = entry.type === 'hit' ? '⚔' : entry.type === 'taken' ? '💥' : entry.type === 'miss' ? '○' : entry.type === 'kill' ? '💀' : entry.type === 'cannon' ? '🔴' : '⬡';
-            const ts = entry.time ? new Date(entry.time).toLocaleTimeString('en-US', {hour12:false}) : '';
-            return `<div class="cl-entry ${cls}" title="${ts}">${icon_} ${entry.text}</div>`;
-          }).join('') || '<div class="cl-entry cl-miss">No combat yet.</div>'}
-        </div>
-      </div>
-    </div>`;
-
-
-    // ── RIGHT SIDEBAR — renders panels in _sideOrder sequence ───────
-    const _sideXpMode = c.xpMode || 'controlled';
-    const _sideStyle = c.combatStyle || 'melee';
+    // ══════════════════════════════════════════════════════════════
+    // RIGHT SIDEBAR
+    // ══════════════════════════════════════════════════════════════
     const _sd2 = c._sessionDmg || {};
-    const _sk2 = c._sessionKills || 0;
-    const _sdTotal = _sd2.total || 1;
+    const _sk2b= c._sessionKills || 0;
     const _elapsed2 = c._sessionStartTime ? (Date.now()-c._sessionStartTime)/1000 : 0;
-    const _dps2 = _elapsed2>0 ? (_sdTotal/_elapsed2).toFixed(1) : '—';
-    const _killsHr = _elapsed2>0 ? Math.round(_sk2/(_elapsed2/3600)) : 0;
+    const _dps2 = _elapsed2>0 ? ((_sd2.total||0)/_elapsed2).toFixed(1) : '—';
+    const _killsHr = _elapsed2>0 ? Math.round(_sk2b/(_elapsed2/3600)) : 0;
     const _totalXp = c._xpBySkill ? Object.values(c._xpBySkill).reduce((a,b)=>a+b,0) : 0;
     const _xpHr = _elapsed2>3 ? Math.round(_totalXp/(_elapsed2/3600)) : 0;
     const _hits2 = (_sd2.hits||0)+(_sd2.misses||0);
@@ -1907,196 +1566,115 @@ class UI {
       {label:'Poison', id:'sd-poison', val:_sd2.poison||0, col:'#4abe6c'},
       {label:'Bleed',  id:'sd-bleed',  val:_sd2.bleed||0,  col:'#8a3a3a'},
     ];
-    const _dmgMax = Math.max(1,..._dmgRows.map(r=>r.val));
+    const _dmgMax = Math.max(1, ..._dmgRows.map(r=>r.val));
     const _curArea = GAME_DATA.combatAreas?.find(a=>a.id===c.area);
-    const _xpRateRows = c._xpBySkill && _elapsed2>3 ? Object.entries(c._xpBySkill).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([sk,xp])=>{
-      const nm=GAME_DATA.skills[sk]?.name||sk;
-      return `<div class="cv3s-xr-row"><span>${nm}</span><span class="cv3s-xr-val" id="xr-${sk}">${this.fmt(Math.round(xp/(_elapsed2/3600)))}/hr</span></div>`;
-    }).join('') : '<div class="cv3s-xr-empty">Fight to see XP rates</div>';
+    const _xpRateRows = c._xpBySkill && _elapsed2>3
+      ? Object.entries(c._xpBySkill).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([sk,xp])=>{
+          const nm = GAME_DATA.skills[sk]?.name||sk;
+          return `<div class="cv3s-xr-row"><span>${nm}</span><span class="cv3s-xr-val">${this.fmt(Math.round(xp/(_elapsed2/3600)))}/hr</span></div>`;
+        }).join('')
+      : '<div class="cv3s-xr-empty">Fight to see XP rates</div>';
 
-    html += `</div><div class="cv3-sidebar">
+    html += `</div><div class="cv3-sidebar">`;
 
-      <!-- XP MODE -->
-      <div class="cv3s-card">
-        <div class="cv3s-title">XP Mode</div>
-        <div class="cv3s-xpmode">`;
-    if (_sideStyle==='melee') {
+    // XP Mode
+    html += `<div class="cv3s-card"><div class="cv3s-title">XP Mode</div><div class="cv3s-xpmode">`;
+    if (combatStyle==='melee') {
       for (const [id,lbl] of [['accurate','Attack'],['aggressive','Strength'],['defensive','Defence'],['controlled','Shared']]) {
-        html += `<button class="cv3s-mode-btn ${_sideXpMode===id?'cv3s-mode-active':''}" onclick="ui.setXpMode('${id}')">${lbl}</button>`;
+        html += `<button class="cv3s-mode-btn ${xpMode===id?'cv3s-mode-active':''}" onclick="ui.setXpMode('${id}')">${lbl}</button>`;
       }
-    } else if (_sideStyle==='ranged') {
-      for (const [id,lbl] of [['accurate','Accurate'],['rapid','Rapid'],['longrange','Longrange']]) {
-        html += `<button class="cv3s-mode-btn ${_sideXpMode===id?'cv3s-mode-active':''}" onclick="ui.setXpMode('${id}')">${lbl}</button>`;
+    } else if (combatStyle==='ranged') {
+      for (const [id,lbl] of [['accurate','Accurate'],['rapid','Rapid'],['longrange','Long']]) {
+        html += `<button class="cv3s-mode-btn ${xpMode===id?'cv3s-mode-active':''}" onclick="ui.setXpMode('${id}')">${lbl}</button>`;
       }
     } else {
       html += `<span class="cv3s-mode-info">80% Magic / 20% Defence</span>`;
     }
-    html += `</div></div>
+    html += `</div></div>`;
 
-      <!-- SESSION LOOT -->
-      <div class="cv3s-card cv3s-loot" id="session-loot">
-        <div class="cv3s-loot-header">
-          <div class="cv3s-title">Session Loot</div>
-          <span class="cv3s-kills-badge" id="cv3-kills">${_sk2} Kills</span>
-        </div>
-        <div class="cv3s-loot-items" id="cv3-loot-items">`;
-    const _sl2 = c._sessionLoot || {};
-    if (Object.keys(_sl2).length===0) {
+    // Session Loot
+    html += `<div class="cv3s-card cv3s-loot" id="session-loot">
+      <div class="cv3s-loot-header">
+        <div class="cv3s-title">Session Loot</div>
+        <span class="cv3s-kills-badge" id="cv3-kills">${_sk2b} Kills</span>
+      </div>
+      <div class="cv3s-loot-items" id="cv3-loot-items">`;
+    if (Object.keys(sl).length === 0) {
       html += `<div class="cv3s-loot-empty">No loot yet</div>`;
     } else {
-      const _rarO={mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5};
-      if (_sl2._gold?.qty>0) html+=`<div class="cv3s-loot-row cv3s-gold"><span class="cv3s-li-icon">🪙</span><span class="cv3s-li-name">Gold</span><span class="cv3s-li-qty">${this.fmt(_sl2._gold.qty)}</span></div>`;
-      const _srt=Object.entries(_sl2).filter(([k])=>k!=='_gold').sort((a,b)=>(_rarO[a[1].rarity]||5)-(_rarO[b[1].rarity]||5)).slice(0,8);
+      if (sl._gold?.qty > 0) html += `<div class="cv3s-loot-row cv3s-gold"><span class="cv3s-li-name">🪙 Gold</span><span class="cv3s-li-qty">${this.fmt(sl._gold.qty)}</span></div>`;
+      const _rarO = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5};
+      const _srt = Object.entries(sl).filter(([k])=>k!=='_gold').sort((a,b)=>(_rarO[a[1].rarity]||5)-(_rarO[b[1].rarity]||5)).slice(0,8);
       for (const [iid,dat] of _srt) {
-        const _it=GAME_DATA.items[iid];
-        const _rc=dat.rarity==='legendary'||dat.rarity==='mythic'?'cv3s-legendary':dat.rarity==='epic'?'cv3s-epic':dat.rarity==='rare'?'cv3s-rare':'';
-        html+=`<div class="cv3s-loot-row ${_rc}"><span class="cv3s-li-icon">${window.renderItemSprite?window.renderItemSprite(iid,14):''}</span><span class="cv3s-li-name">${_it?.name||iid}</span><span class="cv3s-li-qty">x${dat.qty}</span></div>`;
+        const _it = GAME_DATA.items[iid];
+        const _rc = dat.rarity==='legendary'||dat.rarity==='mythic'?'cv3s-legendary':dat.rarity==='epic'?'cv3s-epic':dat.rarity==='rare'?'cv3s-rare':'';
+        html += `<div class="cv3s-loot-row ${_rc}"><span class="cv3s-li-name">${_it?.name||iid}</span><span class="cv3s-li-qty">x${dat.qty}</span></div>`;
       }
-      if (Object.keys(_sl2).length>9) html+=`<button class="cv3s-view-more" onclick="ui.renderPage('bank')">View More</button>`;
+      if (Object.keys(sl).length > 9) html += `<button class="cv3s-view-more" onclick="ui.renderPage('bank')">View All</button>`;
     }
-    html += `</div></div>
+    html += `</div></div>`;
 
-      <!-- DAMAGE TRACKER -->
-      <div class="cv3s-card" id="dmg-tracker">
-        <div class="cv3s-dt-header">
-          <div class="cv3s-title">Damage Tracker</div>
-          <button class="cv3s-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,burn:0,poison:0,bleed:0,total:0,taken:0,hits:0,misses:0,crits:0};game.state.combat._xpBySkill={};game.state.combat._sessionStartTime=Date.now();ui._lastSessionGold=0;ui.renderPage('combat')">Reset</button>
-        </div>
-        <div class="cv3s-dt-rows">`;
+    // Damage Tracker
+    html += `<div class="cv3s-card" id="dmg-tracker">
+      <div class="cv3s-dt-header">
+        <div class="cv3s-title">Damage Tracker</div>
+        <button class="cv3s-reset-btn" onclick="game.state.combat._sessionLoot={};game.state.combat._sessionKills=0;game.state.combat._sessionDmg={melee:0,ranged:0,magic:0,ability:0,burn:0,poison:0,bleed:0,total:0,taken:0,hits:0,misses:0,crits:0};game.state.combat._xpBySkill={};game.state.combat._sessionStartTime=Date.now();ui.renderPage('combat')">Reset</button>
+      </div>
+      <div class="cv3s-dt-rows">`;
     for (const row of _dmgRows) {
       const _pct = Math.round(row.val/_dmgMax*100);
-      html += `<div class="cv3s-dt-row"><span class="cv3s-dt-label">${row.label}</span><div class="cv3s-dt-bar-wrap"><div class="cv3s-dt-bar" id="${row.id}-bar" style="width:${_pct}%;background:${row.col}"></div></div><span class="cv3s-dt-val" id="${row.id}">${this.fmt(row.val)}</span></div>`;
+      html += `<div class="cv3s-dt-row">
+        <span class="cv3s-dt-label">${row.label}</span>
+        <div class="cv3s-dt-bar-wrap"><div class="cv3s-dt-bar" id="${row.id}-bar" style="width:${_pct}%;background:${row.col}"></div></div>
+        <span class="cv3s-dt-val" id="${row.id}">${this.fmt(row.val)}</span>
+      </div>`;
     }
-    html += `  <div class="cv3s-dt-total"><span>Total</span><span id="sd-total">${this.fmt(_sd2.total||0)}</span></div>
-          <div class="cv3s-dt-total cv3s-dt-taken"><span>Taken</span><span id="sd-taken">${this.fmt(_sd2.taken||0)}</span></div>
-        </div>
-        <div class="cv3s-dt-meta">
-          <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">DPS</span><span id="sd-dps">${_dps2}</span></div>
-          <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">ACC</span><span id="sd-acc">${_acc2}%</span></div>
-          <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">CRIT</span><span id="sd-crit">${_crit2}%</span></div>
-          <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">KILLS</span><span id="sd-kills">${_sk2}</span></div>
-        </div>
+    html += `<div class="cv3s-dt-total"><span>Total</span><span id="sd-total">${this.fmt(_sd2.total||0)}</span></div>
+        <div class="cv3s-dt-total cv3s-dt-taken"><span>Taken</span><span id="sd-taken">${this.fmt(_sd2.taken||0)}</span></div>
       </div>
-
-      <!-- SESSION STATS -->
-      <div class="cv3s-card" id="xp-rate-panel">
-        <div class="cv3s-ss-header">
-          <div class="cv3s-title">Session Stats <span class="cv3s-timer" id="session-time">${_elapsed2>0?Math.floor(_elapsed2/60)+'m '+Math.floor(_elapsed2%60)+'s':'—'}</span></div>
-        </div>
-        <div class="cv3s-ss-grid">
-          <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-xpgain">${_xpHr>0?this.fmt(_xpHr)+'/hr':this.fmt(_totalXp)}</div><div class="cv3s-ss-lbl">XP Gain</div></div>
-          <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-khr">${_killsHr>0?this.fmt(_killsHr):'—'}</div><div class="cv3s-ss-lbl">Kills/hr</div></div>
-          <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-dmgdealt">${this.fmt(_sd2.total||0)}</div><div class="cv3s-ss-lbl">Dmg Dealt</div></div>
-          <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-dmgtaken">${this.fmt(_sd2.taken||0)}</div><div class="cv3s-ss-lbl">Dmg Taken</div></div>
-        </div>
-        <div class="cv3s-xr-rows" id="xp-rate-grid">${_xpRateRows}</div>
+      <div class="cv3s-dt-meta">
+        <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">DPS</span><span id="sd-dps">${_dps2}</span></div>
+        <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">ACC</span><span id="sd-acc">${_acc2}%</span></div>
+        <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">CRIT</span><span id="sd-crit">${_crit2}%</span></div>
+        <div class="cv3s-meta-chip"><span class="cv3s-meta-lbl">KILLS</span><span id="sd-kills">${_sk2b}</span></div>
       </div>
+    </div>`;
 
-      ${_curArea ? `<div class="cv3s-area-card">
+    // Session Stats
+    html += `<div class="cv3s-card" id="xp-rate-panel">
+      <div class="cv3s-ss-header">
+        <div class="cv3s-title">Session Stats <span class="cv3s-timer" id="session-time">${_elapsed2>0?Math.floor(_elapsed2/60)+'m '+Math.floor(_elapsed2%60)+'s':'—'}</span></div>
+      </div>
+      <div class="cv3s-ss-grid">
+        <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-xpgain">${_xpHr>0?this.fmt(_xpHr)+'/hr':this.fmt(_totalXp)}</div><div class="cv3s-ss-lbl">XP Gain</div></div>
+        <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-khr">${_killsHr>0?this.fmt(_killsHr):'—'}</div><div class="cv3s-ss-lbl">Kills/hr</div></div>
+        <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-dmgdealt">${this.fmt(_sd2.total||0)}</div><div class="cv3s-ss-lbl">Dmg Dealt</div></div>
+        <div class="cv3s-ss-box"><div class="cv3s-ss-val" id="cv3-dmgtaken">${this.fmt(_sd2.taken||0)}</div><div class="cv3s-ss-lbl">Dmg Taken</div></div>
+      </div>
+      <div class="cv3s-xr-rows" id="xp-rate-grid">${_xpRateRows}</div>
+    </div>`;
+
+    // Area card
+    if (_curArea) {
+      html += `<div class="cv3s-area-card">
         <div class="cv3s-area-name">${_curArea.name}</div>
-        <div class="cv3s-area-level">Level ${_curArea.levelReq}+</div>
+        <div class="cv3s-area-level">Level ${_curArea.levelReq}+${_curArea.wilderness?' · ⚠ Wilderness':''}</div>
         <div class="cv3s-area-desc">${_curArea.desc||''}</div>
         <button class="btn btn-sm cv3s-area-btn" onclick="game.stopCombat();ui.renderPage('combat')">Change Area</button>
-      </div>` : ''}
+      </div>`;
+    }
 
-    </div>`;
-    // end sidebar
-
-    html += '</div>';
+    html += `</div></div>`;
     el.innerHTML = html;
+
     } catch(err) {
-      console.error('Combat page render error:', err);
-      el.innerHTML = `<div class="bank-empty">Combat page error: ${err.message}. <button class="btn" onclick="game.stopCombat();ui.renderPage('combat')">Reset Combat</button></div>`;
+      console.error('[Combat] Render error:', err.message, err.stack);
+      el.innerHTML = `<div class="bank-empty">Combat render error: ${err.message}.<br><button class="btn" onclick="game.stopCombat();ui.renderPage('combat')">Reset</button></div>`;
     }
   }
 
-  renderStatusEffects(effects) {
-    if (!effects || typeof effects !== 'object') return '';
-    const entries = Object.entries(effects);
-    if (entries.length === 0) return '';
-    return '<div class="status-bar">' + entries.map(([k,fx]) => {
-      const def = GAME_DATA.statusEffects?.[k];
-      if (!def) return `<span class="status-tag">${k} x${fx?.stacks||1}</span>`;
-      return `<span class="status-tag" style="background:${def.color}22;color:${def.color}" title="${def.desc||''}">${def.name} x${fx?.stacks||1} (${Math.ceil(fx?.duration||0)}s)</span>`;
-    }).join('') + '</div>';
-  }
 
-  // ── WILDERNESS PAGE ─────────────────────────────────────
-  renderWildernessPage(el) {
-    const s = this.engine.state;
-    const c = s.combat;
-    const al = GAME_DATA.alignments[s.alignment];
-    const pvpKills = s.stats.pvpKills || 0;
-    const pvpDeaths = s.stats.pvpDeaths || 0;
-    const pvpStreak = s.stats.pvpStreak || 0;
-
-    let html = `<div class="wild-page">`;
-    html += `<div class="wild-header">
-      <div class="wild-title">${icon('combat',24)} THE WILDERNESS</div>
-      <div class="wild-sub">Dangerous PvP-enabled zones. Other players may attack you at any time.</div>
-    </div>`;
-
-    // PvP stats
-    html += `<div class="wild-stats">
-      <div class="ws-stat"><span class="ws-label">PvP Kills</span><span class="ws-val">${pvpKills}</span></div>
-      <div class="ws-stat"><span class="ws-label">PvP Deaths</span><span class="ws-val">${pvpDeaths}</span></div>
-      <div class="ws-stat"><span class="ws-label">Streak</span><span class="ws-val ws-streak">${pvpStreak}</span></div>
-      <div class="ws-stat"><span class="ws-label">K/D Ratio</span><span class="ws-val">${pvpDeaths>0?(pvpKills/pvpDeaths).toFixed(2):'--'}</span></div>
-      <div class="ws-stat"><span class="ws-label">Alignment</span><span class="ws-val">${al.name}</span></div>
-    </div>`;
-
-    // Warnings
-    html += `<div class="wild-warnings">
-      <div class="ww-item ww-danger">PvP kills shift your alignment toward Evil & Chaotic. Evil alignment raises shop prices and reduces quest rewards.</div>
-      <div class="ww-item ww-info">Equip a <strong>Ring of Life</strong> or <strong>Phoenix Necklace</strong> to survive death at the cost of 2% total XP.</div>
-      <div class="ww-item ww-info">Cast <strong>TeleHome</strong> (3 Fire + 5 Air runes) to escape. Enemies may <strong>TeleBlock</strong> you (35% chance, blocks 10 rounds).</div>
-      <div class="ww-item ww-info">In <strong>Duels</strong>, flee is disabled. In <strong>Wilderness</strong>, flee chance is based on your Defence + HP levels.</div>
-    </div>`;
-
-    // Active wilderness combat
-    if (c.active && c._isWilderness) {
-      const mon = GAME_DATA.monsters[c.monster];
-      if (mon) {
-        html += `<div class="wild-combat-active">
-          <div class="wca-title">WILDERNESS COMBAT</div>
-          <div class="wca-vs">${mon.name} (Lv ${mon.combatLevel})</div>
-          <div class="wca-btns">
-            <button class="btn btn-danger" onclick="game.attemptFlee()">Flee (${Math.min(80,40+Math.floor(s.skills.defence.level*0.3))}%)</button>
-            <button class="btn" onclick="game.castTeleHome()">TeleHome</button>
-            <button class="btn btn-sm" onclick="game.stopCombat()">Surrender</button>
-          </div>
-        </div>`;
-      }
-    }
-
-    // Wilderness zones
-    html += '<h2 class="section-title">Wilderness Zones</h2><div class="area-grid">';
-    for (const zone of (GAME_DATA.wildernessLevels || [])) {
-      const cb = this.engine.getCombatLevel();
-      const locked = cb < zone.minCb;
-      html += `<div class="area-card-v2 wild-zone ${locked?'area-locked':''}">
-        <div class="area-header">
-          <span class="area-name">${zone.name}</span>
-          <span class="area-req wild-pvp-badge">PvP ${(zone.pvpChance*100).toFixed(0)}%</span>
-        </div>
-        <div class="area-desc">Combat Level ${zone.minCb}-${zone.maxCb}. Higher PvP encounter rate in deeper zones.</div>
-        <div class="area-monsters-v2">`;
-      for (const mId of zone.monsters) {
-        const m = GAME_DATA.monsters[mId];
-        if (!m) continue;
-        html += `<button class="monster-btn-v2" ${locked?'disabled':''} onclick="game.startWildernessCombat('${zone.id}','${mId}')">
-          ${GAME_DATA.monsterArt?.[mId] ? `<span class="mb-art">${GAME_DATA.monsterArt[mId]}</span>` : ''}
-          <span class="mb-name">${m.name}</span>
-          <span class="mb-info">Lv${m.combatLevel} | ${m.hp}hp</span>
-        </button>`;
-      }
-      html += '</div></div>';
-    }
-    html += '</div></div>';
-    el.innerHTML = html;
-  }
-
-  renderDungeonsPage(el) {
+    renderDungeonsPage(el) {
     const s = this.engine.state;
     const cb = this.engine.getCombatLevel();
     // Separate dungeons into categories
@@ -7269,6 +6847,13 @@ class UI {
           // Prayer points
           const ppEl = document.getElementById('pp-live');
           if (ppEl) ppEl.textContent = s.prayerPoints;
+          const ppEl2 = document.getElementById('pp-live2');
+          if (ppEl2) { const _maxPp2=(s.skills.prayer?.level||1)*10; ppEl2.textContent=s.prayerPoints+'/'+_maxPp2+' pp'; }
+          const ppFillBar = document.getElementById('prayer-fill-bar');
+          if (ppFillBar) ppFillBar.style.width=Math.round((s.prayerPoints/((s.skills.prayer?.level||1)*10))*100)+'%';
+          // Mini buff row update
+          const _killBadge = document.getElementById('cv3-kills');
+          if (_killBadge) _killBadge.textContent = (s.combat._sessionKills||0)+' Kills';
           // Mana live update
           const mBarEl = document.getElementById('mana-bar');
           const mTxtEl = document.getElementById('mana-text');
