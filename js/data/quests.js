@@ -16,11 +16,19 @@ if (!GAME_DATA.questItems) GAME_DATA.questItems = {};
 
 // ── DIFFICULTY TIER CONFIG
 GAME_DATA.questDifficulties = {
-  novice:       { label:'Novice',       color:'#7dcc44', icon:'◆',   qpRange:[1,2] },
-  intermediate: { label:'Intermediate', color:'#4db8ff', icon:'◆◆',  qpRange:[2,4] },
-  experienced:  { label:'Experienced',  color:'#d4a83a', icon:'◆◆◆', qpRange:[4,6] },
-  master:       { label:'Master',       color:'#c44040', icon:'◆◆◆◆',qpRange:[6,8] },
-  grandmaster:  { label:'Grandmaster',  color:'#9b59b6', icon:'★',   qpRange:[8,12] },
+  // lowercase keys (legacy quests.js)
+  novice:       { label:'Novice',       color:'#7dcc44', icon:'◆',    qpRange:[1,2]  },
+  intermediate: { label:'Intermediate', color:'#4db8ff', icon:'◆◆',  qpRange:[2,4]  },
+  experienced:  { label:'Experienced',  color:'#d4a83a', icon:'◆◆◆', qpRange:[4,6]  },
+  master:       { label:'Master',       color:'#c44040', icon:'◆◆◆◆',qpRange:[6,8]  },
+  grandmaster:  { label:'Grandmaster',  color:'#9b59b6', icon:'★',    qpRange:[8,12] },
+  // Title Case aliases (chapter-2 and world-tier-2 quests)
+  Novice:       { label:'Novice',       color:'#7dcc44', icon:'◆',    qpRange:[1,2]  },
+  Easy:         { label:'Easy',         color:'#4abe6c', icon:'◆◆',   qpRange:[1,3]  },
+  Medium:       { label:'Medium',       color:'#4db8ff', icon:'◆◆◆', qpRange:[3,5]  },
+  Hard:         { label:'Hard',         color:'#d4a83a', icon:'◆◆◆◆',qpRange:[5,8]  },
+  Elite:        { label:'Elite',        color:'#c44040', icon:'★',    qpRange:[8,12] },
+  Grandmaster:  { label:'Grandmaster',  color:'#9b59b6', icon:'★★',   qpRange:[10,15]},
 };
 
 // ── QUEST ITEM DEFINITIONS

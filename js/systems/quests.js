@@ -696,7 +696,7 @@ U._renderAvailableQuestCard = function(q, s) {
         <div class="qa-meta">
           <span class="qa-series">${q.series||''}</span>
           <span class="qa-diff" style="color:${diffConf.color||'#888'}">${diffConf.label||''} ${diffConf.icon||''}</span>
-          <span class="qa-length">${lengthLabels[q.length]||q.length}</span>
+          ${q.length?`<span class="qa-length">${lengthLabels[q.length]||q.length}</span>`:''}
           ${q.combatLevel?`<span class="qa-combat">Combat ${q.combatLevel}+</span>`:''}
         </div>
       </div>
