@@ -9154,3 +9154,30 @@ body.perf-mode .hit-splat { display:none !important; }
   z-index: 120 !important;
   pointer-events: none !important;
 }
+
+/* ── PRAYER SVG ICONS ───────────────────────────────────────── */
+.pv3-svg-icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; }
+.pv3-svg-icon svg { width:28px; height:28px; }
+.pv3-btn-icon { display:flex; align-items:center; justify-content:center; width:32px; height:32px; flex-shrink:0; }
+.pv3-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 6px; }
+
+/* ── ABILITY SVG ICONS ──────────────────────────────────────── */
+.ab3-svg-icon { width:32px; height:32px; display:flex; align-items:center; justify-content:center; }
+.ab3-svg-icon svg { width:32px; height:32px; }
+.ab3-icon { display:flex; align-items:center; justify-content:center; height:36px; }
+
+/* ── COOLDOWN SWEEP — the fill-down overlay ─────────────────── */
+.ab3-cd-sweep {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.6);
+  clip-path: inset(0 0 calc(100% - var(--sweep, 0%)) 0);
+  pointer-events: none;
+  border-radius: 8px;
+  transition: clip-path 0.05s linear;
+}
+.ab3-btn { position: relative; overflow: hidden; }
+
+/* ── COOLDOWN STATUS TEXT ───────────────────────────────────── */
+.ab3-ready  { color: #4abe6c; font-size: 10px; font-weight: 600; }
+.ab3-cooling { color: #c9873e; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.ab3-nomana  { color: #4a7ec4; font-size: 10px; }

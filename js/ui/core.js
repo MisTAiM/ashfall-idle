@@ -1255,11 +1255,11 @@ class UI {
           const cdPct = cd > 0 ? Math.min(100,(cd/ab.cooldown)*100) : 0;
           const noMana = (ab.manaCost||0) > 0 && (_mana.current||0) < (ab.manaCost||0);
           const ready  = cd <= 0 && !noMana;
-          html += `<button class="ab3-btn ${cd>0?'ab3-cd':''} ${noMana?'ab3-no-mana':''}"
+          html += `<button class="ab3-btn ${cd>0?'ab3-cd':''} ${noMana?'ab3-no-mana':''}" data-abid="${ab.id}"
             onclick="game.useAbility('${ab.id}')"
             title="${ab.desc}${ab.manaCost?' | '+ab.manaCost+' mana':''}">
             <div class="ab3-cd-sweep" style="--sweep:${cdPct}%"></div>
-            <div class="ab3-icon">${ab.icon||'⚔'}</div>
+            <div class="ab3-icon">${(ab.svgIcon||GAME_DATA.abilityIcons?.[ab.id]) ? `<div class="ab3-svg-icon">${ab.svgIcon||GAME_DATA.abilityIcons[ab.id]}</div>` : (ab.icon||'⚔')}</div>
             <div class="ab3-name">${ab.name}</div>
             <div class="ab3-status ${ready?'ab3-ready':cd>0?'ab3-cooling':'ab3-nomana'}">
               ${cd>0?Math.ceil(cd)+'s':noMana?'No mana':'Ready'}
@@ -1403,14 +1403,15 @@ class UI {
           if ((s.skills.prayer?.level||1) < p.level) continue;
           if (p.book === 'unholy' && !(s.quests?.completed||[]).includes('unholy_path')) continue;
           const active = _activePrayers.includes(p.id);
-          const _icon2 = _pIconMap[p.id] || (p.book==='unholy'?'☠':'✦');
+          const _svgIcon = p.svgIcon || (GAME_DATA.prayerIcons?.[p.id] || null);
+          const _fallbackIcon = _pIconMap[p.id] || (p.book==='unholy'?'☠':'✦');
           const _tier = p.level<=30?'T1':p.level<=60?'T2':p.level<=75?'T3':'T4';
           const _isUnholy = p.book==='unholy';
           html += `<button class="pv3-btn ${active?'pv3-active':''} ${_isUnholy?'pv3-unholy':''}"
             onclick="game.activatePrayer('${p.id}');ui.renderPage('combat')"
             title="${p.desc||p.name} — ${p.pointCost}pp/atk${_isUnholy?' | UNHOLY':''}"
             style="${_isUnholy&&active?'border-color:#8a2ae0;background:rgba(138,42,224,0.15);':''}">
-            <div class="pv3-btn-icon">${_icon2}</div>
+            <div class="pv3-btn-icon">${_svgIcon ? `<div class="pv3-svg-icon">${_svgIcon}</div>` : _fallbackIcon}</div>
             <div class="pv3-btn-name">${p.name}</div>
             <div class="pv3-btn-meta">
               <span class="pv3-tier" style="${_isUnholy?'color:#8a2ae0;border-color:#8a2ae060;':''}">${_tier}</span>
@@ -6965,20 +6966,27 @@ class UI {
               return `<span class="pse-chip pse-${k}" style="${def?.color?'color:'+def.color:''}">${def?.name||k}${fx.stacks>1?' x'+fx.stacks:''}</span>`;
             }).join('');
           }
-          // Ability cooldowns
-          for (let i = 0; i < 4; i++) {
-            const aid = s.equippedAbilities[i]; if (!aid) continue;
-            const ab = GAME_DATA.abilities.find(a=>a.id===aid); if (!ab) continue;
-            const cd = s.combat.abilityCooldowns[aid]||0;
-            const slotEl = document.querySelectorAll('.ab-slot-v2')[i];
-            if (slotEl) {
-              const overlay = slotEl.querySelector('.ab-cd-overlay');
-              const timer   = slotEl.querySelector('.ab-timer');
-              if (overlay) overlay.style.height = (cd>0?Math.min(100,(cd/ab.cooldown)*100):0)+'%';
-              if (timer)   timer.textContent    = cd>0?Math.ceil(cd)+'s':'Ready';
-              if (cd>0) slotEl.classList.add('ab-cd'); else slotEl.classList.remove('ab-cd');
+          // Ability cooldowns — update ab3-btn elements by data-id
+          const _cds = s.combat.abilityCooldowns || {};
+          document.querySelectorAll('.ab3-btn[data-abid]').forEach(btn => {
+            const aid = btn.dataset.abid;
+            const ab  = GAME_DATA.abilities.find(a => a.id === aid);
+            if (!ab) return;
+            const cd  = _cds[aid] || 0;
+            const pct = cd > 0 ? Math.min(100, (cd / ab.cooldown) * 100) : 0;
+            const sweep = btn.querySelector('.ab3-cd-sweep');
+            const status = btn.querySelector('.ab3-status');
+            const mana = s.combat.mana || {};
+            const noMana = (ab.manaCost||0) > 0 && (mana.current||0) < (ab.manaCost||0);
+            if (sweep) sweep.style.setProperty('--sweep', pct.toFixed(1) + '%');
+            if (status) {
+              if (cd > 0)      { status.textContent = Math.ceil(cd) + 's'; status.className = 'ab3-status ab3-cooling'; }
+              else if (noMana) { status.textContent = 'No mana';           status.className = 'ab3-status ab3-nomana'; }
+              else             { status.textContent = 'Ready';             status.className = 'ab3-status ab3-ready'; }
             }
-          }
+            if (cd > 0 || noMana) { btn.classList.add('ab3-cd'); }
+            else                   { btn.classList.remove('ab3-cd'); }
+          });
 
           // ── DAMAGE TRACKER live update ──
           const _sd = s.combat._sessionDmg || {};

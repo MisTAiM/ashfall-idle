@@ -442,7 +442,8 @@ class GameEngine {
       }
       for (const drop of (action.loot || (action.output ? [{item:action.output.item,qty:action.output.qty||1}] : []))) {
         if (drop.chance !== undefined && Math.random() > drop.chance) continue; // optional probability
-        const isOre = GAME_DATA.items[drop.item]?.type === 'ore' || GAME_DATA.oreBagConfig?.oreTypes?.includes(drop.item);
+        const _dropItem = GAME_DATA.items[drop.item];
+        const isOre = _dropItem?.subtype === 'ore' || _dropItem?.type === 'ore' || GAME_DATA.oreBagConfig?.oreTypes?.includes(drop.item);
         if (isOre && this.state.oreBag) {
           // Route to ore bag
           const ob = this.state.oreBag;
