@@ -3947,9 +3947,9 @@ html, body {
 .atk-spell { width: 80px; height: 80px; top: 25%; right: 8%; }
 .atk-claw  { width: 60px; height: 60px; top: 25%; left: 2%; }
 @keyframes atkFade {
-  0% { opacity: 1; }
-  80% { opacity: 0.8; }
-  100% { opacity: 0; }
+  0%   { opacity: 1; }
+  60%  { opacity: 0.85; }
+  100% { opacity: 0; transform: scale(1.05); }
 }
 
 /* Monster shake on hit */
@@ -9286,3 +9286,12 @@ body.perf-mode .hit-splat { display:none !important; }
   border: none !important; color: #fff !important;
   animation: specPulse 1.5s ease-in-out infinite;
 }
+
+/* ── PREVENT ATTACK ANIMATIONS ESCAPING ARENA ─────────────── */
+/* atk-anim elements are absolute-positioned inside .combat-arena.
+   overflow:hidden clips them so they can't stripe across the UI. */
+.arena-v3.combat-arena {
+  overflow: hidden !important;
+}
+/* But splat areas need visible overflow — only clip atk-anim */
+.splat-area { overflow: visible !important; }

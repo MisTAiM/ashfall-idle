@@ -6678,8 +6678,13 @@ class UI {
       anim.className = `atk-anim atk-monster atk-${atkType}`;
       anim.innerHTML = ANIMS[atkType] || ANIMS.claw;
     }
+    // Purge any stuck animations before adding new one
+    document.querySelectorAll('.atk-anim').forEach(el => el.remove());
     combatArena.appendChild(anim);
-    setTimeout(() => anim.remove(), 600);
+    // Force fade: CSS animation + explicit style fallback + DOM removal
+    anim.style.animation = 'atkFade 0.5s ease-out forwards';
+    const _animEl = anim; // capture for closure
+    setTimeout(() => { if (_animEl.parentNode) _animEl.remove(); }, 550);
 
     // Shake/flash the target
     if (d.who === 'player' && !d.miss) {
