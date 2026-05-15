@@ -9181,3 +9181,89 @@ body.perf-mode .hit-splat { display:none !important; }
 .ab3-ready  { color: #4abe6c; font-size: 10px; font-weight: 600; }
 .ab3-cooling { color: #c9873e; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
 .ab3-nomana  { color: #4a7ec4; font-size: 10px; }
+
+/* ════════════════════════════════════════════════════════════
+   MISSING COMBAT SYSTEMS — Slayer task, familiar, pet strip
+   ════════════════════════════════════════════════════════════ */
+
+/* ── SLAYER TASK STRIP ───────────────────────────────────── */
+.slayer-task-strip {
+  background: rgba(201,135,62,0.05);
+  border: 1px solid rgba(201,135,62,0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+.sts-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+.sts-label {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.sts-monster { flex: 1; color: var(--text); font-weight: 600; }
+.sts-progress { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
+.sts-bar {
+  height: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.sts-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease-out;
+}
+
+/* ── FAMILIAR STRIP ──────────────────────────────────────── */
+.familiar-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(138,42,224,0.06);
+  border: 1px solid rgba(138,42,224,0.2);
+  border-radius: 8px;
+  padding: 7px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.familiar-name { font-family: 'Cinzel', serif; font-size: 11px; color: #b060ff; }
+.familiar-buff { flex: 1; color: var(--text-dim); font-size: 11px; }
+.familiar-timer { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8a5ec4; }
+
+/* ── CANNON MISSING BADGE ────────────────────────────────── */
+.cannon-missing { opacity: 0.6; }
+.cannon-missing .cannon-panel-title { color: var(--text-dim); }
+
+/* ── SPEC BAR USE BUTTON WHEN READY ─────────────────────── */
+.spec-use-btn {
+  width: 100%;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #8a3a00, #c9873e);
+  border: none;
+  color: #fff;
+  animation: specPulse 1.5s ease-in-out infinite;
+}
+@keyframes specPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(201,135,62,0.4); }
+  50% { box-shadow: 0 0 18px rgba(201,135,62,0.7); }
+}
+
+/* ── FORGE HEAT BAR ANIMATED GLOW ───────────────────────── */
+.heat-fill { transition: width 0.3s ease-out, background 0.5s ease; }
+.heat-hot .heat-bar { animation: heatPulse 1.2s ease-in-out infinite; }
+@keyframes heatPulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(255,80,0,0.3); }
+  50% { box-shadow: 0 0 12px rgba(255,80,0,0.6); }
+}
+
+/* ── COMBAT LOG CANNON ENTRY ─────────────────────────────── */
+.cl-cannon { color: #ff6600; }

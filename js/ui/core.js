@@ -1550,9 +1550,83 @@ class UI {
             <span>⚡ Special Attack — ${specData.name}</span>
             <span class="spec-pct" id="spec-pct">${specPct}%</span>
           </div>
-          <div class="spec-bar-track"><div class="spec-bar-fill" id="spec-bar-fill" style="width:${specPct}%"></div></div>
+          <div class="spec-bar-track"><div class="spec-bar-fill" id="spec-fill" style="width:${specPct}%"></div></div>
           <div class="spec-desc">${specData.desc||''}</div>
           ${specPct >= (specData.specCost||50) ? `<button class="btn btn-sm spec-use-btn" onclick="game.useSpecial()">USE (${specData.specCost||50}% energy)</button>` : ''}
+        </div>`;
+      }
+
+      // ── CANNON PANEL ─────────────────────────────────────────────
+      const _hasCannon = this.engine.hasCannon?.() || false;
+      const _cannonActive = c.cannon?.active || false;
+      const _cannonBalls = s.bank['cannonball'] || 0;
+      const _cannonQuestDone = this.engine.isCannonQuestComplete?.() || false;
+      if (_hasCannon && c.active) {
+        html += `<div class="cannon-panel ${_cannonActive?'cannon-active':''}" id="cannon-panel">
+          <div class="cannon-panel-header">
+            <div class="cannon-panel-title">🔴 Ashforge Cannon</div>
+            <div class="cannon-status">${_cannonActive?'FIRING':'Standby'}</div>
+          </div>
+          <div class="cannon-panel-body">
+            <div class="cannon-balls-row">
+              <span class="cannon-balls-label">Cannonballs</span>
+              <span class="cannon-balls" id="cannon-balls">${_cannonBalls.toLocaleString()}</span>
+            </div>
+            <button class="btn ${_cannonActive?'btn-danger':'btn-primary'} btn-sm cannon-toggle-btn"
+              onclick="game.toggleCannon()">
+              ${_cannonActive?'Pack Up':'Deploy Cannon'}
+            </button>
+          </div>
+        </div>`;
+      } else if (_cannonQuestDone && !_hasCannon && c.active) {
+        html += `<div class="cannon-panel cannon-missing">
+          <div class="cannon-panel-header"><div class="cannon-panel-title">🔴 Cannon</div></div>
+          <div style="font-size:11px;color:var(--text-dim);padding:6px">Smith an Ashforge Cannon (Smithing 42) to deploy it.</div>
+        </div>`;
+      }
+
+      // ── SLAYER TASK ───────────────────────────────────────────────
+      if (s.slayerTask) {
+        const _st = s.slayerTask;
+        const _stMon = GAME_DATA.monsters[_st.monster];
+        const _stPct = Math.round((_st.killed||0)/(_st.qty||1)*100);
+        const _stColor = _stPct>=75?'#4abe6c':_stPct>=40?'#d4a83a':'#c9873e';
+        html += `<div class="slayer-task-strip">
+          <div class="sts-header">
+            <span class="sts-label">⚔ Slayer Task</span>
+            <span class="sts-monster">${_stMon?.name||_st.monster}</span>
+            <span class="sts-progress" style="color:${_stColor}">${_st.killed||0}/${_st.qty} killed</span>
+          </div>
+          <div class="sts-bar"><div class="sts-fill" id="sts-fill" style="width:${_stPct}%;background:${_stColor}"></div></div>
+        </div>`;
+      }
+
+      // ── FAMILIAR STRIP ────────────────────────────────────────────
+      if (s.familiar?.active) {
+        const _fam = GAME_DATA.familiars?.find(f=>f.id===s.familiar.active);
+        const _famTimeLeft = Math.ceil((s.familiar.timeLeft||0)/60);
+        if (_fam) html += `<div class="familiar-strip">
+          <span class="familiar-name">🐾 ${_fam.name}</span>
+          <span class="familiar-buff">${_fam.buff?.desc||''}</span>
+          <span class="familiar-timer" id="familiar-timer">${_famTimeLeft}m left</span>
+        </div>`;
+      }
+
+      // ── PET COMBAT STRIP ─────────────────────────────────────────
+      if (s.activePet) {
+        const _pets = GAME_DATA.combatPets||GAME_DATA.pets||[];
+        const _pet  = _pets.find(p=>p.id===s.activePet);
+        if (_pet) {
+          const _petArt = GAME_DATA.petArt?.[s.activePet]||'';
+          html += `<div class="pet-combat-strip" onclick="ui.renderPage('pets')" title="Pet — click to manage">
+            <div class="pcs-art">${_petArt||`<div style="width:28px;height:28px;border-radius:50%;background:rgba(201,135,62,0.2);display:flex;align-items:center;justify-content:center;font-size:14px">🐾</div>`}</div>
+            <div><div class="pcs-name">${_pet.name}</div><div class="pcs-ability">${_pet.action?.desc||''} every ${_pet.action?.every||3} attacks</div></div>
+          </div>`;
+        }
+      } else {
+        html += `<div class="pet-combat-strip" onclick="ui.renderPage('pets')" style="opacity:0.5" title="No pet — click to equip">
+          <div class="pcs-art"><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="10" fill="none" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="3,2"/><text x="14" y="18" text-anchor="middle" fill="var(--text-dim)" font-size="10">?</text></svg></div>
+          <div><div class="pcs-name" style="color:var(--text-dim)">No pet equipped</div><div class="pcs-ability">Visit Pets to equip one</div></div>
         </div>`;
       }
 
@@ -6826,6 +6900,20 @@ class UI {
     const gv = document.querySelector('.gold-val');
     if (gv) gv.textContent = this.fmt(s.gold);
 
+    // ── FORGE HEAT BAR (smithing page) ──────────────────────────
+    if (s.activeSkill === 'smithing' && GAME_DATA.smeltingHeat?.enabled) {
+      const _heatFill = document.querySelector('.heat-fill');
+      const _heatPctEl = document.querySelector('.heat-pct');
+      const _heatWrap = document.querySelector('.heat-bar-wrap');
+      const _heat = Math.min(100, Math.round(s._smithingHeat || 0));
+      const _threshold = GAME_DATA.smeltingHeat.bonusThreshold || 60;
+      const _isHot = _heat >= _threshold;
+      const _heatColor = _heat>80?'#ff4000':_heat>60?'#ff8c00':_heat>40?'#d4a83a':'#5a6070';
+      if (_heatFill) { _heatFill.style.width = _heat+'%'; _heatFill.style.background = _heatColor; }
+      if (_heatPctEl) { _heatPctEl.textContent = _heat+'%'; _heatPctEl.style.color = _heatColor; }
+      if (_heatWrap) { _heatWrap.classList.toggle('heat-hot', _isHot); }
+    }
+
     // ── XP BAR on skill pages ──
     const xpFill = document.querySelector('.sh-xp-fill:not(.growing-fill):not(.rep-fill)');
     if (xpFill && this.currentPage) {
@@ -6889,6 +6977,15 @@ class UI {
           // Mini buff row update
           const _killBadge = document.getElementById('cv3-kills');
           if (_killBadge) _killBadge.textContent = (s.combat._sessionKills||0)+' Kills';
+          // Cannon balls live update
+          const _cbEl = document.getElementById('cannon-balls');
+          if (_cbEl) _cbEl.textContent = (s.bank['cannonball']||0).toLocaleString();
+          // Slayer task progress
+          if (s.slayerTask) {
+            const _stsFill = document.getElementById('sts-fill');
+            const _stsPct  = Math.round((s.slayerTask.killed||0)/(s.slayerTask.qty||1)*100);
+            if (_stsFill) { _stsFill.style.width = _stsPct+'%'; }
+          }
           // Mana live update
           const mBarEl = document.getElementById('mana-bar');
           const mTxtEl = document.getElementById('mana-text');
