@@ -9544,3 +9544,58 @@ body.perf-mode .hit-splat { display:none !important; }
 
 } /* end @media 420px */
 
+
+/* ── ENEMY HP BAR — now inside monster column ───────────── */
+.mon-hp-bar-wrap {
+  width: 100%;
+  padding: 0 0 6px;
+}
+.mon-hp-bar-track {
+  width: 100%;
+  height: 10px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 3px;
+}
+.mon-hp-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.2s ease-out;
+  box-shadow: 0 0 8px currentColor;
+}
+.mon-hp-bar-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* Hide old top bar completely */
+.arena-top-bar { display: none !important; }
+
+/* Monster column: top-align content */
+.arena-monster {
+  align-items: flex-start !important;
+}
+.arena-mon-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+.arena-mon-level {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+/* Mobile: HP bar still readable */
+@media (max-width: 768px) {
+  .mon-hp-bar-track { height: 8px; }
+  .mon-hp-bar-text  { font-size: 9px; }
+  .arena-mon-name   { font-size: 11px; }
+}

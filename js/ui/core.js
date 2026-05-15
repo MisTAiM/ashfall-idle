@@ -1171,14 +1171,6 @@ class UI {
 
       // ── MAIN ARENA ───────────────────────────────────────────────
       html += `<div class="arena-v3 combat-arena">
-        <div class="arena-top-bar">
-          <span class="atb-enemy-label">ENEMY HP</span>
-          <span class="atb-name">${mon.name}</span>
-          <div class="atb-hp-track"><div class="atb-hp-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div></div>
-          <span class="atb-hp-text" id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))} / ${mon.hp||0}</span>
-          <span class="atb-pct" id="mhp-pct">${mHpPct.toFixed(0)}%</span>
-          ${currentPhase ? `<span class="atb-phase ${currentPhase.enrage?'atb-enrage':''}">${currentPhase.enrage?'🔥':''} ${currentPhase.name}</span>` : ''}
-        </div>
 
         <div class="arena-main">
           <!-- PLAYER ─────────────────────────────────────────── -->
@@ -1234,11 +1226,22 @@ class UI {
 
           <!-- MONSTER ──────────────────────────────────────────── -->
           <div class="arena-monster">
+            <div class="arena-mon-name">${mon.name}</div>
+            <div class="arena-mon-level">Lv ${mon.combatLevel||0} · ${(mon.style||'melee').toUpperCase()}${mon.slayerReq?` · Slay ${mon.slayerReq}+`:''}</div>
+            <!-- Enemy HP bar — lives in monster column, right side -->
+            <div class="mon-hp-bar-wrap">
+              <div class="mon-hp-bar-track">
+                <div class="mon-hp-bar-fill" id="mhp-bar" style="width:${mHpPct.toFixed(1)}%;background:${mHpColor}"></div>
+              </div>
+              <div class="mon-hp-bar-text">
+                <span id="mhp-text">${Math.max(0,Math.ceil(c.monsterHp||0))} / ${mon.hp||0}</span>
+                <span id="mhp-pct" style="color:${mHpColor};font-weight:700">${mHpPct.toFixed(0)}%</span>
+              </div>
+              ${currentPhase ? `<div class="atb-phase ${currentPhase.enrage?'atb-enrage':''}">${currentPhase.enrage?'🔥':''} ${currentPhase.name}</div>` : ''}
+            </div>
             <div class="arena-monster-art ${currentPhase?.enrage?'enrage-shake':''}">
               ${GAME_DATA.monsterArt?.[c.monster] || `<div class="arena-mon-placeholder"><svg viewBox="0 0 80 80"><circle cx="40" cy="35" r="20" fill="rgba(255,255,255,0.06)"/><path d="M20 70 Q40 45 60 70" fill="rgba(255,255,255,0.06)"/></svg></div>`}
             </div>
-            <div class="arena-mon-name">${mon.name}</div>
-            <div class="arena-mon-level">Lv ${mon.combatLevel||0} · ${(mon.style||'melee').toUpperCase()}${mon.slayerReq?` · Slay ${mon.slayerReq}+`:''}</div>
             <div class="arena-status arena-status-right" id="monster-status-live"></div>
             <div class="splat-area" id="monster-splats"></div>
           </div>
