@@ -3328,3 +3328,121 @@ _i('extended_super_antifire', { name:'Extended Super Antifire', type:'potion', b
 
 console.log('[Ashfall] Missing items restored:', ['dragon_dagger_unpoisoned','dragon_dagger_p','dragon_dagger_pp','cannon_mould','blowpipe','kodai_wand','ring_of_suffering'].filter(id=>GAME_DATA.items[id]).length, 'confirmed.');
 })();
+
+// ================================================================
+// QUEST COMPLETABILITY PATCH — items referenced by quests that
+// weren't defined anywhere in the codebase
+// ================================================================
+(function() {
+const _qi = (id, d) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = Object.assign({id}, d); };
+
+// ── BASIC RESOURCES (used in early quests) ────────────────────
+_qi('coal',        {name:'Coal',          type:'resource',subtype:'ore',   sellPrice:15,  desc:'Coal ore. Used in smithing.'});
+_qi('magic_log',   {name:'Magic Log',     type:'resource',subtype:'log',   sellPrice:180, desc:'From magic trees. High WC level needed.',woodcuttingLevel:75});
+_qi('yew_log',     {name:'Yew Log',       type:'resource',subtype:'log',   sellPrice:60,  desc:'From yew trees.',woodcuttingLevel:60});
+_qi('oak_log',     {name:'Oak Log',       type:'resource',subtype:'log',   sellPrice:8,   desc:'From oak trees.',woodcuttingLevel:15});
+_qi('willow_log',  {name:'Willow Log',    type:'resource',subtype:'log',   sellPrice:18,  desc:'From willow trees.',woodcuttingLevel:30});
+_qi('maple_log',   {name:'Maple Log',     type:'resource',subtype:'log',   sellPrice:35,  desc:'From maple trees.',woodcuttingLevel:45});
+_qi('ranarr',      {name:'Ranarr Weed',   type:'resource',subtype:'herb',  sellPrice:600, desc:'A clean ranarr herb. Used in prayer potions.'});
+_qi('torstol',     {name:'Torstol',       type:'resource',subtype:'herb',  sellPrice:5000,desc:'The rarest herb. Used in overloads.'});
+_qi('grimy_ranarr',{name:'Grimy Ranarr',  type:'resource',subtype:'herb',  sellPrice:400, desc:'A grimy ranarr. Clean it.'});
+_qi('snapdragon',  {name:'Snapdragon',    type:'resource',subtype:'herb',  sellPrice:1800,desc:'A clean snapdragon herb.'});
+_qi('wheat',       {name:'Wheat',         type:'resource',subtype:'crop',  sellPrice:2,   desc:'Farmed wheat.'});
+_qi('dragon_ore',  {name:'Dragon Ore',    type:'resource',subtype:'ore',   sellPrice:1200,desc:'Legendary ore. Mining 85+ required.',miningLevel:85});
+_qi('soul_rune',   {name:'Soul Rune',     type:'rune',    stackable:true,  sellPrice:300, desc:'Used in powerful spells.'});
+_qi('ash_rune',    {name:'Ash Rune',      type:'rune',    stackable:true,  sellPrice:150, desc:'Ashfall-specific rune.'});
+_qi('wrath_rune',  {name:'Wrath Rune',    type:'rune',    stackable:true,  sellPrice:500, desc:'Most powerful rune.'});
+
+// ── TOOLS ─────────────────────────────────────────────────────
+_qi('dragon_axe',     {name:'Dragon Axe',     type:'tool',slot:'weapon',stats:{woodcuttingBonus:20},levelReq:{woodcutting:61},sellPrice:0,  desc:'Best woodcutting axe. Spec: +10% WC speed for 30s.'});
+_qi('dragon_pickaxe', {name:'Dragon Pickaxe', type:'tool',slot:'weapon',stats:{miningBonus:20},    levelReq:{mining:61},    sellPrice:0,  desc:'Best mining pick. Spec: +10% mining speed for 30s.'});
+_qi('magic_secateurs',{name:'Magic Secateurs',type:'tool',              stats:{farmingBonus:10},   levelReq:{farming:1},    sellPrice:0,  desc:'+10% herb yield from farming patches.'});
+
+// ── WEAPONS / GEAR quest rewards ─────────────────────────────
+_qi('rune_scimitar',   {name:'Rune Scimitar',  type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.8,stats:{attackBonus:60,strengthBonus:67},levelReq:{attack:50},sellPrice:35000,desc:'Best smithable scimitar.'});
+_qi('rune_battleaxe',  {name:'Rune Battleaxe', type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.8,stats:{attackBonus:65,strengthBonus:95},levelReq:{attack:50},sellPrice:55000,desc:'Devastating rune battleaxe.'});
+_qi('rune_bolt',       {name:'Rune Bolts',      type:'ammo',  stackable:true,stats:{rangedBonus:28},levelReq:{ranged:40},sellPrice:50,desc:'Rune-tipped crossbow bolts.'});
+_qi('slayer_helm_i',   {name:'Slayer Helm (i)', type:'armor', slot:'head',stats:{defenceBonus:12,attackBonus:8,strengthBonus:5,rangedBonus:8,magicBonus:8},levelReq:{slayer:10},sellPrice:0,desc:'+15% accuracy and damage all styles on task.'});
+_qi('armadyl_crossbow_weapon',{name:'Armadyl Crossbow',type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6,stats:{rangedBonus:100},levelReq:{ranged:70},sellPrice:0,desc:'Blessed crossbow. Pearl bolt special.'});
+_qi('blowpipe',        {name:'Toxic Blowpipe', type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.2,stats:{rangedBonus:70},levelReq:{ranged:75},sellPrice:0,desc:'Fast. Poisons on hit.'});
+_qi('trident_swamp',   {name:'Trident of the Swamp',type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.2,stats:{magicBonus:78},levelReq:{magic:75},sellPrice:0,desc:'Auto-cast slime trident. Venomous.'});
+_qi('nightmare_staff', {name:'Nightmare Staff', type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4,stats:{magicBonus:85},levelReq:{magic:65},sellPrice:0,desc:'Powerful nightmare magic staff.'});
+_qi('harmonised_nightmare',{name:'Harmonised Staff',type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4,stats:{magicBonus:95},levelReq:{magic:82},sellPrice:0,desc:'First cast each cycle fires instantly.'});
+_qi('dragon_hunter_lance',    {name:'Dragon Hunter Lance',   type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.4,stats:{attackBonus:85,strengthBonus:85},levelReq:{attack:78},sellPrice:0,desc:'+20% vs draconic.'});
+_qi('dragon_hunter_crossbow', {name:'Dragon Hunter Crossbow',type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6,stats:{rangedBonus:95},levelReq:{ranged:65},sellPrice:0,desc:'+30% ranged accuracy vs draconic.'});
+_qi('zaryte_crossbow', {name:'Zaryte Crossbow',type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6,stats:{rangedBonus:110},levelReq:{ranged:80},sellPrice:0,desc:'Best-in-slot ranged weapon.'});
+_qi('abyssal_bludgeon',{name:'Abyssal Bludgeon',type:'weapon',slot:'weapon',style:'melee',attackSpeed:3.0,stats:{attackBonus:85,strengthBonus:125},levelReq:{attack:70,slayer:85},sellPrice:0,desc:'Spec: +0.5% per missing prayer pt.'});
+_qi('ancient_staff',   {name:'Ancient Staff',   type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4,stats:{magicBonus:50},levelReq:{magic:65},sellPrice:0,desc:'Cast Ancient Magicks.'});
+
+// ── ARMOUR ────────────────────────────────────────────────────
+_qi('primordial_boots',   {name:'Primordial Boots',   type:'armor',slot:'boots', stats:{defenceBonus:22,strengthBonus:5},levelReq:{defence:75},sellPrice:0,desc:'Best melee boots.'});
+_qi('tormented_bracelet', {name:'Tormented Bracelet', type:'armor',slot:'gloves',stats:{magicBonus:18,defenceBonus:8},levelReq:{magic:75},sellPrice:0,desc:'Best magic gloves.'});
+_qi('ferocious_gloves',   {name:'Ferocious Gloves',   type:'armor',slot:'gloves',stats:{attackBonus:16,strengthBonus:14},levelReq:{attack:80,defence:80},sellPrice:0,desc:'Best melee gloves.'});
+_qi('ancestral_hat',      {name:'Ancestral Hat',      type:'armor',slot:'head', stats:{magicBonus:12,defenceBonus:8},levelReq:{magic:75},sellPrice:0,desc:'Best magic helmet.'});
+_qi('ancestral_robe',     {name:'Ancestral Robe Top', type:'armor',slot:'body', stats:{magicBonus:35,defenceBonus:40},levelReq:{magic:75},sellPrice:0,desc:'Best magic body.'});
+_qi('ancestral_legs',     {name:'Ancestral Robe Legs',type:'armor',slot:'legs', stats:{magicBonus:26,defenceBonus:32},levelReq:{magic:75},sellPrice:0,desc:'Best magic legs.'});
+_qi('infernal_cape',      {name:'Infernal Cape',      type:'armor',slot:'cape', stats:{attackBonus:8,strengthBonus:8,defenceBonus:8,magicBonus:8,rangedBonus:8,damageReduction:2},levelReq:{},sellPrice:0,desc:'The ultimate cape.'});
+_qi('void_emperor_cape',  {name:"Void Emperor's Cape",type:'armor',slot:'cape', stats:{attackBonus:12,strengthBonus:12,defenceBonus:12,magicBonus:12,rangedBonus:12,damageReduction:4},levelReq:{},sellPrice:0,desc:'Dropped by the Void Emperor. Best cape in the game.'});
+_qi('salve_amulet',       {name:'Salve Amulet',       type:'armor',slot:'amulet',stats:{attackBonus:3,strengthBonus:3},levelReq:{},sellPrice:0,desc:'+16.7% attack vs undead.'});
+_qi('berserker_ring_i',   {name:'Berserker Ring (i)',  type:'armor',slot:'ring', stats:{strengthBonus:12},levelReq:{},sellPrice:0,desc:'Best melee ring.'});
+_qi('ring_of_visibility', {name:'Ring of Visibility',  type:'armor',slot:'ring', stats:{magicBonus:2},levelReq:{},sellPrice:0,desc:'See hidden. Dark altar access.'});
+
+// ── QUEST-SPECIFIC ITEMS ──────────────────────────────────────
+_qi('ancient_scroll',     {name:'Ancient Scroll',      type:'quest_item',sellPrice:0,desc:'Ancient scroll found in the Ashfall ruins.'});
+_qi('ash_infused_bones',  {name:'Ash-Infused Bones',   type:'bones',prayerXp:200,sellPrice:5000,desc:'Prayer XP: 200. Only in the Ashfall.'});
+_qi('elder_core',         {name:'Elder Core',           type:'resource',sellPrice:8000,desc:'A fragment of the first Ashfall weapon.'});
+_qi('void_essence',       {name:'Void Essence',         type:'resource',sellPrice:3000,desc:'Essence harvested from void core.'});
+_qi('void_wand',          {name:'Void Wand',            type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.0,stats:{magicBonus:88},levelReq:{magic:80},sellPrice:0,desc:'The Void Emperor\'s own wand.'});
+_qi('celestial_blade',    {name:'Celestial Blade',      type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.2,stats:{attackBonus:95,strengthBonus:98},levelReq:{attack:85},sellPrice:0,desc:'Forged from celestial ore. Glows with light.'});
+_qi('celestial_ingot',    {name:'Celestial Ingot',      type:'resource',sellPrice:10000,desc:'A rare ingot of celestial metal.'});
+
+// ── POTIONS / CONSUMABLES ─────────────────────────────────────
+_qi('antipoison',         {name:'Antipoison',  type:'potion',buff:{stat:'cure_poison',value:1,duration:1},sellPrice:200,desc:'Cures poison.'});
+_qi('antidote_pp',        {name:'Antidote++',  type:'potion',buff:{stat:'cure_poison',value:1,duration:720},sellPrice:3000,desc:'12 min poison immunity.'});
+_qi('super_combat',       {name:'Super Combat',type:'potion',buff:{stat:'allCombat',value:15,duration:300},sellPrice:8000,desc:'+15 all melee stats.'});
+_qi('super_antifire',     {name:'Super Antifire',type:'potion',buff:{stat:'antifire',value:100,duration:360},sellPrice:4000,desc:'Full dragonfire immunity.'});
+_qi('bastion_potion',     {name:'Bastion Potion',type:'potion',buff:{stat:'rangedDefence',value:15,duration:300},sellPrice:2000,desc:'+15 Ranged+Defence.'});
+_qi('battlemage_potion',  {name:'Battlemage Potion',type:'potion',buff:{stat:'magicDefence',value:15,duration:300},sellPrice:2000,desc:'+15 Magic+Defence.'});
+_qi('overload_potion',    {name:'Overload',   type:'potion',buff:{stat:'allCombat',value:20,duration:300},sellPrice:25000,desc:'+20 all combat stats. Warning: damages you.'});
+
+// ── FOOD (quest references) ───────────────────────────────────
+_qi('cooked_shark',      {name:'Shark',          type:'food',heals:20,sellPrice:1200,desc:'Heals 20 HP.'});
+_qi('cooked_anglerfish', {name:'Anglerfish',     type:'food',heals:22,sellPrice:2000,desc:'Heals 22 HP. Can overheal.'});
+_qi('raw_shark',         {name:'Raw Shark',      type:'food',raw:true,cookLevel:76,sellPrice:500,desc:'Cook it first.'});
+
+// ── MISC / SKILLING REWARDS ───────────────────────────────────
+_qi('rogue_top',          {name:'Rogue Top',      type:'armor',slot:'body',stats:{defenceBonus:8},levelReq:{},sellPrice:0,desc:'Doubles pickpocket loot from NPCs.'});
+_qi('chef_hat',           {name:'Chef Hat',       type:'armor',slot:'head',stats:{},levelReq:{},sellPrice:100,desc:'Cook\'s headwear. +2% cooking XP.'});
+_qi('runecrafting_tiara', {name:'Runecrafting Tiara',type:'armor',slot:'head',stats:{},levelReq:{},sellPrice:0,desc:'Allows entry to runecrafting altars without talismans.'});
+_qi('air_staff',          {name:'Air Staff',      type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4,stats:{magicBonus:15},levelReq:{magic:1},sellPrice:1500,desc:'Provides unlimited air runes.'});
+_qi('occult_necklace',    {name:'Occult Necklace',type:'armor',slot:'amulet',stats:{magicBonus:12},levelReq:{},sellPrice:0,desc:'+10% magic damage.'});
+
+// ── SHADOW / CELESTIAL / VOID GEAR (endgame quests) ──────────
+_qi('shadow_ore',      {name:'Shadow Ore',        type:'resource',subtype:'ore',sellPrice:2000,desc:'Rare ore from shadow realm.'});
+_qi('shadow_bar',      {name:'Shadow Bar',         type:'resource',subtype:'bar',sellPrice:5000,desc:'Smelted from shadow ore.'});
+_qi('shadow_blade',    {name:'Shadow Blade',       type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.0,stats:{attackBonus:90,strengthBonus:92},levelReq:{attack:80},sellPrice:0,desc:'Strikes from the shadows. +15% in darkness.'});
+_qi('shadow_helm',     {name:'Shadow Helm',        type:'armor',slot:'head', stats:{defenceBonus:28,strengthBonus:4},levelReq:{defence:80},sellPrice:0,desc:'Shadow realm armour.'});
+_qi('shadow_platebody',{name:'Shadow Platebody',   type:'armor',slot:'body', stats:{defenceBonus:72,strengthBonus:8},levelReq:{defence:80},sellPrice:0,desc:'Shadow realm armour.'});
+_qi('infernal_bar',    {name:'Infernal Bar',        type:'resource',subtype:'bar',sellPrice:8000,desc:'Forged in infernal flame.'});
+_qi('titan_shard',     {name:'Titan Shard',         type:'resource',sellPrice:3000,desc:'Fragment from a Void Titan.'});
+_qi('void_ring',       {name:'Void Ring',            type:'armor',slot:'ring',stats:{magicBonus:8,attackBonus:4,strengthBonus:4},levelReq:{},sellPrice:0,desc:'Ring of void energy.'});
+_qi('dragon_longsword',{name:'Dragon Longsword',    type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.4,stats:{attackBonus:72,strengthBonus:80},levelReq:{attack:60},sellPrice:100000,desc:'A long dragon blade.'});
+
+// ── CELESTIAL ARMOUR SET ──────────────────────────────────────
+_qi('celestial_helm', {name:'Celestial Helm',  type:'armor',slot:'head', stats:{defenceBonus:35,strengthBonus:8,magicBonus:4},levelReq:{defence:85},sellPrice:0,desc:'Celestial armour.'});
+_qi('celestial_body', {name:'Celestial Body',  type:'armor',slot:'body', stats:{defenceBonus:90,strengthBonus:15,magicBonus:8},levelReq:{defence:85},sellPrice:0,desc:'Celestial armour.'});
+_qi('celestial_legs', {name:'Celestial Legs',  type:'armor',slot:'legs', stats:{defenceBonus:75,strengthBonus:10,magicBonus:6},levelReq:{defence:85},sellPrice:0,desc:'Celestial armour.'});
+_qi('celestial_robe', {name:'Celestial Robe',  type:'armor',slot:'body', stats:{magicBonus:45,defenceBonus:50},levelReq:{magic:85},sellPrice:0,desc:'Celestial mage robe.'});
+_qi('dragon_2h',      {name:'Dragon 2H Sword', type:'weapon',slot:'weapon',style:'melee',attackSpeed:3.2,stats:{attackBonus:78,strengthBonus:108},levelReq:{attack:60},sellPrice:200000,desc:'Massive dragon 2-hander.'});
+_qi('dragon_platebody',{name:'Dragon Platebody',type:'armor',slot:'body', stats:{defenceBonus:82,strengthBonus:4},levelReq:{defence:60},sellPrice:0,desc:'Dragon platebody.'});
+_qi('dragon_platelegs',{name:'Dragon Platelegs',type:'armor',slot:'legs', stats:{defenceBonus:68,strengthBonus:2},levelReq:{defence:60},sellPrice:0,desc:'Dragon platelegs.'});
+_qi('dragon_chainbody',{name:'Dragon Chainbody',type:'armor',slot:'body', stats:{defenceBonus:70,strengthBonus:2},levelReq:{defence:60},sellPrice:0,desc:'Dragon chainbody.'});
+_qi('dragon_med_helm', {name:'Dragon Med Helm', type:'armor',slot:'head', stats:{defenceBonus:30,strengthBonus:2},levelReq:{defence:60},sellPrice:0,desc:'Dragon helmet.'});
+_qi('draconic_visage', {name:'Draconic Visage',  type:'resource',sellPrice:20000,desc:'A draconic visage. Used to make the dragonfire shield.'});
+_qi('smoke_staff',     {name:'Smoke Battlestaff',type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4,stats:{magicBonus:60},levelReq:{magic:30},sellPrice:0,desc:'Unlimited air+fire runes.'});
+
+console.log('[Ashfall] Quest completability patch loaded:', 
+  ['coal','magic_log','rune_scimitar','dragon_pickaxe','soul_rune','ancestral_hat',
+   'void_emperor_cape','celestial_blade','ancient_scroll','ferocious_gloves'].filter(id=>GAME_DATA.items[id]).length,
+  'of 10 spot-check items confirmed.');
+})();

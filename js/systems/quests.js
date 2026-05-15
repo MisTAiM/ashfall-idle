@@ -99,7 +99,9 @@ E._processQuestStage = function(questId) {
   } else if (stage.type === 'objectives') {
     // Initialize progress for this stage's objectives
     this.state.quests.progress[questId] = (stage.objectives||[]).map((obj, i) => {
-      if (obj.type === 'skill_level') return (this.state.skills[obj.skill]?.level||1) >= obj.level ? (obj.qty||1) : 0;
+      if (obj.type === 'skill_level' || obj.type === 'level') return (this.state.skills[obj.skill]?.level||1) >= (obj.level||obj.qty||1) ? (obj.qty||1) : 0;
+      if (obj.type === 'stat') return (this.state.skills[obj.stat]?.level||1) >= (obj.qty||1) ? 1 : 0;
+      if (obj.type === 'item' || obj.type === 'gather') return Math.min(obj.qty||1, this.state.bank[obj.item]||0);
       return 0;
     });
   }
@@ -167,6 +169,10 @@ function _matchObj(obj, type, data, state) {
     case 'slayer_tasks': return type==='slayer_tasks' ? -(state.stats.slayerTasksCompleted||0) : 0; // negative = absolute set
     case 'slayer_kills': return type==='kill' && state.combat?.onSlayerTask ? data.qty : 0;
     case 'skill_level':  return type==='skill_level' && obj.skill===data.skill ? -((state.skills[obj.skill]?.level||1)>=obj.level?(obj.qty||1):0) : 0;
+    // Convenience aliases used in chapter-2 quests
+    case 'stat':         return type==='skill_level' && obj.stat===data.skill ? -((state.skills[obj.stat]?.level||1)>=(obj.qty||1)?1:0) : 0;
+    case 'item':         return type==='gather' && obj.item===data.item ? data.qty : 0; // alias for gather
+    case 'level':        return type==='skill_level' && obj.skill===data.skill ? -((state.skills[obj.skill]?.level||1)>=(obj.level||obj.qty||1)?1:0) : 0;
     case 'gold':         return -(Math.min(obj.qty, state.gold));
     case 'pets':         return -(Math.min(obj.qty, (state.pets||[]).length));
     case 'magic_kills':  return type==='magic_kills' ? (data.qty||0) : 0;

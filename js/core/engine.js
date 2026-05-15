@@ -3082,6 +3082,10 @@ class GameEngine {
     if (typeof online !== 'undefined' && online.isOnline && this.state.activeSkill) {
       online.tickContractProgress('gather', id, qty);
     }
+    // Track quest progress for 'gather' and 'item' objectives
+    if (this._trackAllQuests) {
+      this._trackAllQuests('gather', { item: id, qty });
+    }
   }
 
   removeItem(id, qty) {
