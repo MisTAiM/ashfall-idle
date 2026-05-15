@@ -9295,3 +9295,252 @@ body.perf-mode .hit-splat { display:none !important; }
 }
 /* But splat areas need visible overflow — only clip atk-anim */
 .splat-area { overflow: visible !important; }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE COMBAT — complete overhaul for screens ≤ 768px
+   Every panel reflows to single-column, touch-friendly sizing.
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  /* ── KILL the 900px cap override so page fills screen ──── */
+  #main-content:has(.cv3-page) {
+    padding: 8px 8px 80px !important;
+  }
+
+  /* ── TWO-COL → SINGLE COL ─────────────────────────────── */
+  .cv3-page {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  /* Sidebar moves ABOVE abilities on mobile (most useful stuff first) */
+  .cv3-sidebar {
+    position: static !important;
+    max-height: none !important;
+    order: -1;               /* push above main content */
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    overflow: visible !important;
+  }
+
+  /* XP mode and area card take full width */
+  .cv3-sidebar > div:first-child,
+  .cv3s-area-card {
+    grid-column: 1 / -1;
+  }
+
+  /* ── ARENA TOP BAR ───────────────────────────────────────── */
+  .arena-top-bar {
+    padding: 6px 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .atb-name       { font-size: 11px; min-width: 80px; }
+  .atb-hp-track   { height: 10px; }
+  .atb-hp-text    { font-size: 10px; }
+  .atb-pct        { font-size: 11px; min-width: 30px; }
+  .atb-enemy-label { display: none; } /* save space on mobile */
+
+  /* ── ARENA MAIN GRID → STACKED ───────────────────────────── */
+  .arena-main {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto auto !important;
+    min-height: 0 !important;
+  }
+
+  /* Player: top-left */
+  .arena-player {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 10px !important;
+    border-right: 1px solid rgba(255,255,255,0.05) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  /* Monster: top-right */
+  .arena-monster {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 10px !important;
+    border-left: 1px solid rgba(255,255,255,0.05) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    align-items: center !important;
+  }
+
+  /* Center (VS + stats + flee): full width bottom row */
+  .arena-center {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    background: rgba(0,0,0,0.2);
+  }
+
+  .arena-vs { font-size: 18px !important; }
+  .arena-center-stats { flex-direction: row !important; gap: 12px !important; }
+  .arena-stat-line { flex-direction: column; align-items: center; gap: 1px; }
+  .arena-stat-label { font-size: 9px; }
+  .arena-stat-val   { font-size: 12px; }
+  .arena-weakness, .arena-mon-desc { display: none; } /* hide on small screens */
+  .arena-flee-btn { padding: 6px 14px !important; font-size: 11px !important; }
+
+  /* Monster art shrinks gracefully */
+  .arena-monster-art { min-height: 70px !important; }
+  .arena-monster-art svg,
+  .arena-monster-art img { width: 70px !important; height: 70px !important; }
+  .arena-mon-name   { font-size: 11px !important; }
+  .arena-mon-level  { font-size: 10px !important; }
+
+  /* Player column tighter */
+  .arena-avatar { width: 40px !important; height: 40px !important; }
+  .arena-pname  { font-size: 11px !important; }
+  .arena-plevel { font-size: 10px !important; }
+  .arena-bar-row { gap: 4px !important; }
+  .arena-bar-icon { font-size: 10px !important; }
+  .arena-bar-track { height: 8px !important; }
+  .arena-bar-text { font-size: 9px !important; min-width: 44px !important; }
+
+  /* Drop chips full-width */
+  .arena-drop-chips { flex-wrap: wrap; gap: 4px; }
+  .arena-drop-chip  { font-size: 10px; padding: 2px 6px; }
+
+  /* ── ABILITY BAR ─────────────────────────────────────────── */
+  .ability-bar-v3 { padding: 8px 10px !important; }
+  .ab3-section-label { font-size: 9px !important; margin-bottom: 6px !important; }
+  .ab3-specials { gap: 6px !important; }
+  .ab3-btn {
+    min-width: 0 !important;
+    flex: 1 1 calc(50% - 6px) !important;
+    max-width: calc(50% - 6px) !important;
+    padding: 8px 6px !important;
+  }
+  .ab3-svg-icon, .ab3-svg-icon svg { width: 22px !important; height: 22px !important; }
+  .ab3-icon  { height: 26px !important; font-size: 20px !important; }
+  .ab3-name  { font-size: 9px !important; }
+  .ab3-status { font-size: 9px !important; }
+  .ab3-mana  { font-size: 8px !important; }
+
+  /* Buff chips under ability bar */
+  .ab3-buffs { gap: 4px !important; flex-wrap: wrap !important; }
+  .ab3-buff-chip { font-size: 9px !important; padding: 2px 6px !important; }
+
+  /* ── PRAYERS ─────────────────────────────────────────────── */
+  .prayer-v3 { padding: 8px 10px !important; }
+  .pv3-header { gap: 6px !important; flex-wrap: wrap !important; }
+  .pv3-title  { font-size: 10px !important; }
+  .pv3-pp-wrap { flex: 1; min-width: 80px; }
+  .pv3-pp-bar { height: 6px !important; }
+  .pv3-pp-text { font-size: 9px !important; }
+  .pv3-grid {
+    grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)) !important;
+    gap: 4px !important;
+  }
+  .pv3-btn { padding: 6px 4px !important; gap: 2px !important; }
+  .pv3-svg-icon, .pv3-svg-icon svg { width: 20px !important; height: 20px !important; }
+  .pv3-btn-icon { width: 24px !important; height: 24px !important; }
+  .pv3-btn-name { font-size: 8px !important; }
+  .pv3-btn-meta { gap: 2px !important; }
+  .pv3-tier  { font-size: 7px !important; padding: 0 3px !important; }
+  .pv3-cost  { font-size: 8px !important; }
+
+  /* ── RUNE POUCH ──────────────────────────────────────────── */
+  .rune-pouch-section { padding: 8px 10px !important; }
+  .rune-pouch-grid { gap: 4px !important; flex-wrap: wrap !important; }
+  .rp3-rune { min-width: 36px !important; flex: 0 0 36px !important; }
+  .rp3-icon  { width: 18px !important; height: 18px !important; }
+  .rp3-qty   { font-size: 9px !important; }
+
+  /* ── COMBAT LOADOUT (food / potions / gear bonuses) ─────── */
+  .combat-loadout {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+  .cl-food, .cl-potions, .cl-stats { padding: 8px 10px !important; }
+  .fb-slot { padding: 5px 8px !important; font-size: 11px !important; }
+  .pb-slot  { padding: 5px 4px !important; }
+  .pb-name  { font-size: 9px !important; }
+  .pb-qty   { font-size: 9px !important; }
+  .cl-stat-chips { gap: 4px !important; flex-wrap: wrap !important; }
+  .stat-chip { font-size: 10px !important; padding: 2px 5px !important; }
+
+  /* ── GEAR STRIP ──────────────────────────────────────────── */
+  .gear-strip-v3 { padding: 8px 10px !important; }
+  .gs3-header { flex-direction: column !important; gap: 4px !important; align-items: flex-start !important; }
+  .gs3-bonuses { flex-wrap: wrap !important; gap: 4px !important; font-size: 10px !important; }
+  .gs3-slots { gap: 4px !important; }
+  .gs3-slot {
+    min-width: 52px !important;
+    flex: 1 1 52px !important;
+    padding: 5px 3px !important;
+  }
+  .gs3-slot-label { font-size: 8px !important; }
+  .gs3-slot-name  { font-size: 8px !important; }
+  .gs3-actions { gap: 4px !important; flex-wrap: wrap !important; }
+  .gs3-actions .btn { font-size: 10px !important; padding: 5px 8px !important; }
+
+  /* ── SPEC BAR ────────────────────────────────────────────── */
+  .spec-bar-v2 { padding: 8px 10px !important; }
+  .spec-bar-label { font-size: 11px !important; }
+  .spec-use-btn { font-size: 11px !important; padding: 7px 10px !important; }
+
+  /* ── SLAYER TASK STRIP ───────────────────────────────────── */
+  .slayer-task-strip { padding: 6px 10px !important; }
+  .sts-header { font-size: 11px !important; }
+
+  /* ── COMBAT LOG ──────────────────────────────────────────── */
+  .combat-log-section { margin-bottom: 60px; } /* space above nav bar */
+  .cl-entry { font-size: 11px !important; }
+
+  /* ── CANNON PANEL ────────────────────────────────────────── */
+  .cannon-panel { padding: 8px 10px !important; }
+
+  /* ── SIDEBAR CARDS ───────────────────────────────────────── */
+  .cv3s-card { padding: 10px !important; }
+  .cv3s-title { font-size: 10px !important; }
+  .cv3s-loot-row { font-size: 11px !important; }
+  .cv3s-dt-row { font-size: 10px !important; }
+  .cv3s-ss-grid { grid-template-columns: 1fr 1fr !important; }
+  .cv3s-ss-val  { font-size: 14px !important; }
+  .cv3s-kills-badge { font-size: 9px !important; padding: 2px 5px !important; }
+
+  /* ── AREA SELECT (not in combat) ─────────────────────────── */
+  .area-grid { grid-template-columns: 1fr !important; }
+  .area-monster-list { gap: 3px !important; }
+  .area-monster-btn { padding: 6px 8px !important; font-size: 11px !important; }
+  .combat-xp-panel  { grid-template-columns: 1fr 1fr !important; }
+  .cxp-row { font-size: 10px !important; }
+
+} /* end @media 768px */
+
+/* ── VERY SMALL (375px — iPhone SE, Galaxy S) ──────────────── */
+@media (max-width: 420px) {
+
+  #main-content:has(.cv3-page) { padding: 6px 6px 80px !important; }
+
+  /* Sidebar goes full single column on tiny screens */
+  .cv3-sidebar { grid-template-columns: 1fr !important; }
+
+  /* Arena: truly minimal on tiny screens */
+  .arena-monster-art svg,
+  .arena-monster-art img { width: 56px !important; height: 56px !important; }
+  .arena-avatar { width: 32px !important; height: 32px !important; }
+
+  /* Abilities: 2-per-row still but tighter */
+  .ab3-btn { flex: 1 1 calc(50% - 4px) !important; max-width: calc(50% - 4px) !important; padding: 6px 4px !important; }
+
+  /* Prayers: 4 columns */
+  .pv3-grid { grid-template-columns: repeat(4, 1fr) !important; }
+
+  /* Gear strip: smaller slots */
+  .gs3-slot { min-width: 44px !important; flex: 1 1 44px !important; }
+
+} /* end @media 420px */
+

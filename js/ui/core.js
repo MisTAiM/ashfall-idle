@@ -1150,6 +1150,7 @@ class UI {
     const _crit = _sd.hits>0 ? Math.round((_sd.crits||0)/_sd.hits*100) : 0;
 
     // ── OPEN TWO-COLUMN GRID ──────────────────────────────────────
+    const _isMobile = typeof window !== 'undefined' && (window.innerWidth || 768) <= 768;
     let html = `<div class="combat-page cv3-page"><div class="cv3-main">`;
 
     // ══════════════════════════════════════════════════════════════
