@@ -4321,6 +4321,15 @@ class GameEngine {
 
 const game = new GameEngine();
 window.game = game; // expose globally for handlers that poll window.game
+// _getSpecWeapon helper
+game._getSpecWeapon = function() {
+  const wId = this.state.equipment?.weapon;
+  const weapon = wId ? GAME_DATA.items[wId] : null;
+  if (!weapon?.specCost) return null;
+  return { id:wId, name:weapon.name, desc:weapon.desc||'', specCost:weapon.specCost, specEffect:weapon.specEffect };
+};
+game.useSpecial = function() { return this.useSpecialAttack ? this.useSpecialAttack() : null; };
+
 // Convenience aliases
 game.startSkillAction   = (skill, action) => game.startSkill(skill, action);
 // _calcThievingFightChance is defined as a class method at line ~2140 — alias removed to prevent infinite recursion

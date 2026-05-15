@@ -1542,17 +1542,33 @@ class UI {
       }
 
       // ── SPEC BAR ─────────────────────────────────────────────────
+      // ── SPECIAL ATTACK BAR — always show when weapon has spec ──────
       const specData = this.engine._getSpecWeapon ? this.engine._getSpecWeapon() : null;
-      if (specData) {
-        const specPct = Math.min(100, c.specEnergy || 0);
+      // Fallback: check equipped weapon directly if _getSpecWeapon not ready
+      const _specWeapon = specData || (() => {
+        const wId = s.equipment?.weapon;
+        const w = wId ? GAME_DATA.items[wId] : null;
+        return w?.specCost ? {name:w.name,desc:w.desc||'',specCost:w.specCost} : null;
+      })();
+      {
+        const specPct  = Math.min(100, s.specEnergy || 0);
+        const specCost = _specWeapon?.specCost || 50;
+        const canUse   = specPct >= specCost;
         html += `<div class="spec-bar-v2">
           <div class="spec-bar-label">
-            <span>⚡ Special Attack — ${specData.name}</span>
+            <span>⚡ ${_specWeapon ? `Special — ${_specWeapon.name}` : 'Special Attack'}</span>
             <span class="spec-pct" id="spec-pct">${specPct}%</span>
           </div>
-          <div class="spec-bar-track"><div class="spec-bar-fill" id="spec-fill" style="width:${specPct}%"></div></div>
-          <div class="spec-desc">${specData.desc||''}</div>
-          ${specPct >= (specData.specCost||50) ? `<button class="btn btn-sm spec-use-btn" onclick="game.useSpecial()">USE (${specData.specCost||50}% energy)</button>` : ''}
+          <div class="spec-bar-track">
+            <div class="spec-bar-fill" id="spec-fill" style="width:${specPct}%"></div>
+            ${_specWeapon ? `<div class="spec-cost-line" style="left:${specCost}%" title="${specCost}% cost"></div>` : ''}
+          </div>
+          ${_specWeapon ? `<div class="spec-desc">${_specWeapon.desc}</div>` : '<div class="spec-desc" style="color:var(--text-dim)">Equip a weapon with a special attack</div>'}
+          <button class="btn btn-sm spec-use-btn ${canUse?'spec-ready':'spec-not-ready'}"
+            onclick="game.useSpecial()"
+            ${!canUse?`disabled title="Need ${specCost}% energy"`:''}>
+            ${canUse ? `⚡ USE SPECIAL (${specCost}% energy)` : `Charging… ${specPct}/${specCost}%`}
+          </button>
         </div>`;
       }
 

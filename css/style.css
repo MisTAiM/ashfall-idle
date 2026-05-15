@@ -9267,3 +9267,22 @@ body.perf-mode .hit-splat { display:none !important; }
 
 /* ── COMBAT LOG CANNON ENTRY ─────────────────────────────── */
 .cl-cannon { color: #ff6600; }
+
+/* ── SPEC BAR ALWAYS VISIBLE ────────────────────────────── */
+.spec-cost-line {
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: rgba(255,255,255,0.25); pointer-events: none;
+}
+.spec-not-ready {
+  background: var(--bg-deep) !important;
+  border-color: var(--border) !important;
+  color: var(--text-dim) !important;
+  cursor: not-allowed;
+  animation: none !important;
+  opacity: 0.6;
+}
+.spec-ready {
+  background: linear-gradient(135deg,#8a3a00,#c9873e) !important;
+  border: none !important; color: #fff !important;
+  animation: specPulse 1.5s ease-in-out infinite;
+}
