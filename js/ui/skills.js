@@ -440,8 +440,9 @@ const uiFarm = {
     }
     html += '</div></div>';
     
+    // Show inline seed picker (no modal needed - reload farming page with selected plot)
     if (typeof ui !== 'undefined') {
-      ui.showModal(html);
+      ui.renderPage('farming'); // farming page shows seeds inline per plot
     }
   },
 
@@ -449,8 +450,8 @@ const uiFarm = {
     const farmingLevel = this.engine?.getSkillLevel?.('farming') || 0;
     if (this.engine?.plantCrop?.(plotId, cropId, farmingLevel)) {
       if (typeof ui !== 'undefined') {
-        ui.toast({ type: 'success', text: 'Crop planted!', duration: 2000 });
-        ui.closeModal();
+        ui.toast?.({ type: 'success', text: 'Crop planted!', duration: 2000 });
+        ui.renderPage?.('farming');
       }
     }
   },
@@ -926,69 +927,6 @@ UI.prototype.renderInventory = function(el) {
 };
 
 // ── NEW PAGE: FARMING ──────────────────────────────────────────
-UI.prototype.renderFarmingPage = function(el) {
-  const s = this.engine.state;
-  let html = '<div class="farming-page">';
-
-  // Skill info
-  const farmLevel = s.skills.farming?.level || 0;
-  const farmXp = s.skills.farming?.xp || 0;
-  const farmProgress = this.engine.getXpProgress('farming');
-
-  html += `<div class="skill-header">
-    <h2>Farming</h2>
-    <div class="skill-stats">
-      Level ${farmLevel} | ${this.fmt(farmXp)} XP
-      <div class="xp-bar" style="width: 100%; height: 20px; background: #333; margin-top: 6px; border-radius: 3px; overflow: hidden;">
-        <div style="width: ${(farmProgress * 100).toFixed(1)}%; height: 100%; background: linear-gradient(90deg, #4abe6c, #7ec444);"></div>
-      </div>
-    </div>
-  </div>`;
-
-  // Farm plots
-  html += '<div style="margin-top: 12px;"><h3>Farm Plots</h3>';
-  const farmContainer = document.createElement('div');
-  farmContainer.id = 'farm-plots-container';
-  
-  // Initialize farming UI
-  uiFarm.engine = this.engine;
-
-  html += '<div id="farm-plots-container"></div></div>';
-
-  // Crop reference
-  html += '<div style="margin-top: 12px;"><h3>Crops</h3>';
-  html += '<table style="width: 100%; font-size: 12px; border-collapse: collapse;">';
-  html += '<tr style="background: #222;"><th style="padding: 6px; text-align: left; border-bottom: 1px solid #444;">Crop</th><th style="padding: 6px; border-bottom: 1px solid #444;">Level</th><th style="padding: 6px; border-bottom: 1px solid #444;">Growth</th><th style="padding: 6px; border-bottom: 1px solid #444;">Yield</th></tr>';
-  
-  for (const crop of FARMING_IMPROVEMENTS.cropVarieties) {
-    const canGrow = farmLevel >= crop.level;
-    html += `<tr style="background: ${canGrow ? '#1a1a2e' : '#222'}; opacity: ${canGrow ? '1' : '0.5'};">
-      <td style="padding: 6px; border-bottom: 1px solid #333;">${crop.name}</td>
-      <td style="padding: 6px; border-bottom: 1px solid #333;">${crop.level}</td>
-      <td style="padding: 6px; border-bottom: 1px solid #333;">${crop.growTime} min</td>
-      <td style="padding: 6px; border-bottom: 1px solid #333;">${crop.yield} items</td>
-    </tr>`;
-  }
-  
-  html += '</table></div>';
-  html += '</div>';
-
-  el.innerHTML = html;
-
-  // Render farm plots
-  setTimeout(() => {
-    const plotsDiv = document.getElementById('farm-plots-container');
-    if (plotsDiv) {
-      const farmComponent = new FarmPlotComponent('farm-plots-container');
-      farmComponent.render(this.engine);
-
-      // Auto-update farm plots
-      setInterval(() => {
-        farmComponent.render(this.engine);
-      }, 5000); // Update every 5 seconds
-    }
-  }, 10);
-};
 
 // ── NEW PAGE: SPELLBOOK ────────────────────────────────────────
 UI.prototype.renderSpellbookPage = function(el) {

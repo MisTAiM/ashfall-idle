@@ -9639,3 +9639,114 @@ body.perf-mode .hit-splat { display:none !important; }
 .qo-label { font-size: 12px; line-height: 1.4; flex: 1; }
 .qo-done .qo-label { color: #4abe6c; }
 .qo-done { opacity: 0.8; }
+
+/* ════════════════════════════════════════════════════════════
+   FARMING PAGE — Complete visual overhaul
+   ════════════════════════════════════════════════════════════ */
+
+/* ── SKILL HEADER ────────────────────────────────────────── */
+.farm-skill-header { display:flex; align-items:center; gap:14px; background:var(--bg-mid); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:14px; }
+.fsh-left { text-align:center; }
+.fsh-level { font-family:'Cinzel',serif; font-size:32px; color:#4abe6c; font-weight:700; line-height:1; }
+.fsh-label { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
+.fsh-center { flex:1; }
+.fsh-xp-bar { height:10px; background:rgba(0,0,0,0.4); border-radius:5px; overflow:hidden; border:1px solid rgba(74,190,108,0.2); margin-bottom:5px; }
+.fsh-xp-fill { height:100%; background:linear-gradient(90deg,#2a6a3a,#4abe6c); border-radius:4px; transition:width 0.5s; box-shadow:0 0 8px rgba(74,190,108,0.3); }
+.fsh-xp-text { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.fsh-stats { display:flex; gap:16px; }
+.fsh-stat { text-align:center; }
+.fsh-stat-val { font-family:'Cinzel',serif; font-size:18px; font-weight:700; display:block; }
+.fsh-stat-lbl { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; }
+
+/* ── TOOLS ROW ───────────────────────────────────────────── */
+.farm-tools-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; padding:8px 12px; background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; }
+.farm-tool-chip { font-size:11px; padding:3px 8px; border-radius:20px; border:1px solid; white-space:nowrap; }
+.tool-have { color:#4abe6c; border-color:rgba(74,190,108,0.3); background:rgba(74,190,108,0.06); }
+.tool-miss { color:var(--text-dim); border-color:var(--border); opacity:0.7; }
+
+/* ── QUICK ACTION BAR ────────────────────────────────────── */
+.farm-quick-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:13px; }
+.farm-ready-bar { background:rgba(74,190,108,0.08); border:1px solid rgba(74,190,108,0.3); color:#4abe6c; }
+
+/* ── FARM SECTION ────────────────────────────────────────── */
+.farm-section { margin-bottom:24px; }
+.farm-section-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.farm-section-icon { font-size:24px; }
+.farm-section-title { font-family:'Cinzel',serif; font-size:15px; color:var(--text); }
+.farm-section-desc { font-size:11px; color:var(--text-dim); margin-top:2px; }
+
+/* ── PATCH GRID ──────────────────────────────────────────── */
+.farm-patch-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+
+/* ── PLOT CARDS ──────────────────────────────────────────── */
+.farm-plot-card { background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; position:relative; transition:border-color 0.2s; }
+.farm-plot-card:hover { border-color:rgba(74,190,108,0.3); }
+.fp-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:2px; }
+.fp-plot-label { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-family:'Cinzel',serif; }
+
+/* States */
+.fpc-ready { border-color:rgba(74,190,108,0.4) !important; background:rgba(74,190,108,0.04) !important; }
+.fpc-dead  { border-color:rgba(196,64,64,0.4) !important; background:rgba(196,64,64,0.04) !important; }
+.fpc-growing { border-color:rgba(74,126,196,0.3) !important; }
+
+/* Crop art - big emoji icon */
+.fp-crop-art { font-size:32px; text-align:center; margin:4px 0; line-height:1; }
+.fp-art-dead { opacity:0.6; filter:grayscale(1); }
+.fp-art-ready { animation:readyPulse 1.5s ease-in-out infinite; }
+@keyframes readyPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+.fp-crop-name { font-family:'Cinzel',serif; font-size:12px; color:var(--text); text-align:center; font-weight:600; }
+.fp-crop-note { font-size:10px; color:var(--text-dim); text-align:center; }
+.fp-ready-label { font-size:11px; color:#4abe6c; text-align:center; font-weight:700; letter-spacing:0.5px; }
+.fp-yield-hint { font-size:10px; color:var(--text-dim); text-align:center; }
+
+/* Grow bar */
+.fp-grow-bar-wrap { display:flex; align-items:center; gap:6px; }
+.fp-grow-bar-track { flex:1; height:8px; background:rgba(0,0,0,0.4); border-radius:4px; overflow:hidden; border:1px solid rgba(74,126,196,0.2); }
+.fp-grow-bar-fill { height:100%; background:linear-gradient(90deg,#1a4a8e,#4a8adc); border-radius:3px; transition:width 1s linear; }
+.fp-timer { font-family:'JetBrains Mono',monospace; font-size:10px; color:#4a7ec4; white-space:nowrap; min-width:40px; text-align:right; }
+
+/* Badges */
+.fp-badges-row { display:flex; flex-wrap:wrap; gap:3px; }
+.fp-badge { font-size:9px; padding:1px 5px; border-radius:3px; border:1px solid; }
+.fp-watered { color:#4a7ec4; border-color:rgba(74,126,196,0.3); background:rgba(74,126,196,0.08); }
+.fp-compost { color:#8a6a3a; border-color:rgba(138,106,58,0.3); background:rgba(138,106,58,0.08); }
+.fp-weeds   { color:#d4a83a; border-color:rgba(212,168,58,0.3); background:rgba(212,168,58,0.08); animation:weedsPulse 2s ease-in-out infinite; }
+@keyframes weedsPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* Action buttons */
+.fp-actions-row { display:flex; gap:4px; flex-wrap:wrap; margin-top:2px; }
+.farm-harvest-btn { width:100%; font-family:'Cinzel',serif; background:linear-gradient(135deg,#2a6a3a,#4abe6c) !important; border:none !important; color:#fff !important; font-size:12px !important; margin-top:4px; }
+.farm-harvest-btn:hover { opacity:0.85 !important; }
+
+/* Seed picker inline */
+.fp-seed-picker { display:flex; flex-direction:column; gap:3px; margin-top:4px; }
+.farm-seed-btn { display:flex; align-items:center; gap:4px; text-align:left; padding:5px 8px !important; }
+.fsb-name { flex:1; font-size:11px; }
+.fsb-qty  { font-size:9px; color:var(--text-dim); }
+.fsb-time { font-size:9px; color:#4a7ec4; margin-left:auto; }
+.fp-no-seeds { font-size:11px; color:var(--text-dim); text-align:center; padding:4px 0; }
+.fp-compost-btn { width:100%; font-size:10px !important; }
+
+/* ── SEED REFERENCE TABLE ─────────────────────────────────── */
+.farm-seed-table { margin-bottom:16px; }
+.fst-header { font-family:'Cinzel',serif; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; padding:6px 0; margin-bottom:6px; border-bottom:1px solid var(--border); }
+.fst-grid { display:flex; flex-direction:column; gap:2px; }
+.fst-row { display:flex; align-items:center; gap:10px; padding:5px 8px; border-radius:5px; font-size:12px; }
+.fst-row:hover { background:rgba(255,255,255,0.03); }
+.fst-locked { opacity:0.45; }
+.fst-owned { background:rgba(74,190,108,0.04); }
+.fst-name  { flex:1; font-weight:500; }
+.fst-level { font-size:10px; font-weight:600; min-width:36px; }
+.fst-yield { color:var(--text-dim); font-size:11px; flex:1; }
+.fst-time  { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-dim); min-width:48px; text-align:right; }
+.fst-xp    { font-size:10px; color:#c9873e; min-width:48px; text-align:right; }
+.fst-owned { min-width:30px; text-align:right; color:#4abe6c; font-weight:600; }
+.fst-none  { color:var(--text-dim) !important; font-weight:normal !important; }
+
+/* Mobile */
+@media (max-width:600px) {
+  .farm-patch-grid { grid-template-columns:1fr 1fr; }
+  .fsh-stats { gap:10px; }
+  .fst-time,.fst-xp { display:none; }
+}

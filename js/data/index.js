@@ -3446,3 +3446,90 @@ console.log('[Ashfall] Quest completability patch loaded:',
    'void_emperor_cape','celestial_blade','ancient_scroll','ferocious_gloves'].filter(id=>GAME_DATA.items[id]).length,
   'of 10 spot-check items confirmed.');
 })();
+
+// ================================================================
+// FARMING EXPANSION — Complete seed and crop library
+// ================================================================
+(function() {
+const _fi = (id, d) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = Object.assign({id}, d); };
+
+// ── ALLOTMENT SEEDS (vegetables & fruits) ─────────────────────
+_fi('potato_seed',    {name:'Potato Seed',     type:'seed',seedType:'allotment',growTime:600, baseYield:5, yield:'potato',       levelReq:1,  xp:8,   sellPrice:3,  desc:'Allotment. 10 min.'});
+_fi('onion_seed',     {name:'Onion Seed',       type:'seed',seedType:'allotment',growTime:720, baseYield:4, yield:'onion',        levelReq:5,  xp:10.5,sellPrice:5,  desc:'Allotment. 12 min.'});
+_fi('cabbage_seed',   {name:'Cabbage Seed',     type:'seed',seedType:'allotment',growTime:840, baseYield:4, yield:'cabbage',      levelReq:7,  xp:11.5,sellPrice:5,  desc:'Allotment. 14 min.'});
+_fi('garlic_seed',    {name:'Garlic Seed',      type:'seed',seedType:'allotment',growTime:960, baseYield:4, yield:'garlic',       levelReq:14, xp:17,  sellPrice:10, desc:'Allotment. 16 min.'});
+_fi('herb_seed',      {name:'Herb Seed',        type:'seed',seedType:'allotment',growTime:900, baseYield:4, yield:'silverleaf',   levelReq:1,  xp:12,  sellPrice:8,  desc:'Allotment. 15 min.'});
+_fi('blood_seed',     {name:'Blood Seed',       type:'seed',seedType:'allotment',growTime:1800,baseYield:3, yield:'bloodleaf',    levelReq:25, xp:24,  sellPrice:60, desc:'Dark crop. 30 min.'});
+
+// ── HERB SEEDS (Herblore crops) ────────────────────────────────
+_fi('guam_seed',      {name:'Guam Seed',        type:'seed',seedType:'herb',growTime:900, baseYield:6, yield:'guam',         levelReq:9,  xp:12.5,sellPrice:15, desc:'Herb. Grows in 15 min.'});
+_fi('marrentill_seed',{name:'Marrentill Seed',  type:'seed',seedType:'herb',growTime:1100,baseYield:6, yield:'marrentill',   levelReq:14, xp:14.5,sellPrice:18, desc:'Herb. Grows in 18 min.'});
+_fi('tarromin_seed',  {name:'Tarromin Seed',    type:'seed',seedType:'herb',growTime:1200,baseYield:6, yield:'tarromin',     levelReq:19, xp:16,  sellPrice:20, desc:'Herb. Grows in 20 min.'});
+_fi('harralander_seed',{name:'Harralander Seed',type:'seed',seedType:'herb',growTime:1400,baseYield:6, yield:'harralander',  levelReq:26, xp:21.5,sellPrice:30, desc:'Herb. Grows in 23 min.'});
+_fi('ranarr_seed',    {name:'Ranarr Seed',      type:'seed',seedType:'herb',growTime:1500,baseYield:6, yield:'ranarr',       levelReq:32, xp:27,  sellPrice:150,desc:'Herb. Grows in 25 min. Highly valuable.'});
+_fi('toadflax_seed',  {name:'Toadflax Seed',    type:'seed',seedType:'herb',growTime:1600,baseYield:6, yield:'toadflax',     levelReq:38, xp:34,  sellPrice:80, desc:'Herb. Grows in 26 min.'});
+_fi('irit_seed',      {name:'Irit Seed',        type:'seed',seedType:'herb',growTime:1800,baseYield:6, yield:'irit',         levelReq:44, xp:43,  sellPrice:60, desc:'Herb. Grows in 30 min.'});
+_fi('avantoe_seed',   {name:'Avantoe Seed',     type:'seed',seedType:'herb',growTime:2100,baseYield:6, yield:'avantoe',      levelReq:50, xp:54.5,sellPrice:100,desc:'Herb. Grows in 35 min.'});
+_fi('kwuarm_seed',    {name:'Kwuarm Seed',      type:'seed',seedType:'herb',growTime:2400,baseYield:6, yield:'kwuarm',       levelReq:56, xp:69,  sellPrice:120,desc:'Herb. Grows in 40 min.'});
+_fi('snapdragon_seed',{name:'Snapdragon Seed',  type:'seed',seedType:'herb',growTime:2700,baseYield:6, yield:'snapdragon',   levelReq:62, xp:87.5,sellPrice:200,desc:'Herb. Grows in 45 min. Very high value.'});
+_fi('cadantine_seed', {name:'Cadantine Seed',   type:'seed',seedType:'herb',growTime:3000,baseYield:6, yield:'cadantine',    levelReq:67, xp:106.5,sellPrice:150,desc:'Herb. Grows in 50 min.'});
+_fi('lantadyme_seed', {name:'Lantadyme Seed',   type:'seed',seedType:'herb',growTime:3300,baseYield:6, yield:'lantadyme',    levelReq:73, xp:134.5,sellPrice:180,desc:'Herb. Grows in 55 min.'});
+_fi('torstol_seed',   {name:'Torstol Seed',     type:'seed',seedType:'herb',growTime:3600,baseYield:6, yield:'torstol',      levelReq:85, xp:199.5,sellPrice:800,desc:'Herb. Grows in 60 min. Overload ingredient.'});
+
+// ── TREE SEEDS (slow but massive XP) ──────────────────────────
+_fi('oak_sapling',    {name:'Oak Sapling',      type:'seed',seedType:'tree',growTime:14400,baseYield:1, yield:'oak_log',      levelReq:15, xp:481.3,sellPrice:25, desc:'Tree. 4 hours to grow.'});
+_fi('willow_sapling', {name:'Willow Sapling',   type:'seed',seedType:'tree',growTime:25200,baseYield:1, yield:'willow_log',   levelReq:30, xp:1481.5,sellPrice:50,desc:'Tree. 7 hours to grow.'});
+_fi('maple_sapling',  {name:'Maple Sapling',    type:'seed',seedType:'tree',growTime:50400,baseYield:1, yield:'maple_log',    levelReq:45, xp:3448,  sellPrice:100,desc:'Tree. 14 hours to grow.'});
+_fi('yew_sapling',    {name:'Yew Sapling',      type:'seed',seedType:'tree',growTime:72000,baseYield:1, yield:'yew_log',      levelReq:60, xp:7069.5,sellPrice:200,desc:'Tree. 20 hours to grow.'});
+_fi('magic_sapling',  {name:'Magic Sapling',    type:'seed',seedType:'tree',growTime:144000,baseYield:1,yield:'magic_log',    levelReq:75, xp:13913.5,sellPrice:500,desc:'Tree. 40 hours to grow.'});
+
+// ── SPECIAL SEEDS (unique yields) ─────────────────────────────
+_fi('void_seed',      {name:'Void Seed',        type:'seed',seedType:'special',growTime:3600, baseYield:3, yield:'void_essence', levelReq:70, xp:250,  sellPrice:500,desc:'Special. 60 min. Yields void essence.'});
+_fi('ashbloom_seed',  {name:'Ashbloom Seed',    type:'seed',seedType:'special',growTime:2700, baseYield:4, yield:'ashbloom_sample',levelReq:50,xp:180, sellPrice:300,desc:'Special. 45 min. Quest item drop.'});
+_fi('dragonfire_seed',{name:'Dragonfire Seed',  type:'seed',seedType:'special',growTime:5400, baseYield:2, yield:'dragon_ore',   levelReq:85, xp:400,  sellPrice:1200,desc:'Special. 90 min. Yields dragon ore.'});
+
+// ── FARMING TOOLS ─────────────────────────────────────────────
+_fi('rake',           {name:'Rake',             type:'tool',sellPrice:10,  desc:'Removes weeds from farming patches. Buy from shop.'});
+_fi('spade',          {name:'Spade',            type:'tool',sellPrice:10,  desc:'Clears dead crops from patches.'});
+_fi('watering_can',   {name:'Watering Can',     type:'tool',charges:8,     sellPrice:25,  desc:'Waters crops for faster growth. 8 charges.'});
+_fi('watering_can_iron',{name:'Iron Watering Can',type:'tool',charges:16, sellPrice:80,  desc:'Larger can. 16 charges.'});
+_fi('watering_can_mith',{name:'Mithril Watering Can',type:'tool',charges:24,sellPrice:400,desc:'Best can. 24 charges. +15% yield on watered crops.'});
+_fi('secateurs_magic',{name:'Magic Secateurs',  type:'tool',sellPrice:0,   desc:'+10% herb yield. Quest reward from The Farmer\'s Almanac.'});
+
+// ── COMPOST ───────────────────────────────────────────────────
+_fi('compost_bin',    {name:'Compost',          type:'compost',compostTier:1,bonus:0.10,diseaseReduce:0.05,sellPrice:50,  desc:'+10% yield, -5% disease chance.'});
+_fi('supercompost',   {name:'Supercompost',     type:'compost',compostTier:2,bonus:0.25,diseaseReduce:0.10,sellPrice:200, desc:'+25% yield, -10% disease chance.'});
+_fi('ultracompost',   {name:'Ultracompost',     type:'compost',compostTier:3,bonus:0.50,diseaseReduce:0.20,sellPrice:1000,desc:'+50% yield, -20% disease chance. Best available.'});
+
+// ── CROP YIELDS (things farming produces) ─────────────────────
+const _crops = [
+  ['potato','Potato',10,'food',3],['onion','Onion',12,'food',3],['cabbage','Cabbage',12,'food',3],
+  ['garlic','Garlic',25,'resource',5],['sweetcorn','Sweetcorn',40,'food',5],
+  ['tomato','Tomato',30,'food',4],['strawberry','Strawberry',50,'food',4],
+  ['watermelon','Watermelon',80,'food',5],['snape_grass','Snape Grass',90,'resource',5],
+  ['silverleaf','Silverleaf',18,'resource',5],['bloodleaf','Bloodleaf',50,'resource',5],
+  ['ashbloom_sample','Ashbloom Sample',0,'quest_item',0],
+];
+_crops.forEach(([id,name,sell,type,heal])=>{
+  _fi(id,{name,type,subtype:type==='food'?'crop':'herb',sellPrice:sell,heals:heal,desc:`Grown in farming patches.`});
+});
+
+// Shop entries for farming
+if (!GAME_DATA.shop) GAME_DATA.shop = [];
+const _farmShop = [
+  {item:'potato_seed',price:3,category:'seeds'},{item:'onion_seed',price:5,category:'seeds'},
+  {item:'cabbage_seed',price:5,category:'seeds'},{item:'garlic_seed',price:10,category:'seeds'},
+  {item:'guam_seed',price:20,category:'seeds'},{item:'marrentill_seed',price:25,category:'seeds'},
+  {item:'tarromin_seed',price:35,category:'seeds'},{item:'harralander_seed',price:50,category:'seeds'},
+  {item:'ranarr_seed',price:200,category:'seeds'},{item:'snapdragon_seed',price:300,category:'seeds'},
+  {item:'rake',price:10,category:'farming'},{item:'spade',price:10,category:'farming'},
+  {item:'watering_can',price:25,category:'farming'},{item:'watering_can_iron',price:100,category:'farming'},
+  {item:'compost_bin',price:50,category:'farming'},{item:'supercompost',price:200,category:'farming'},
+  {item:'ultracompost',price:1000,category:'farming'},
+];
+_farmShop.forEach(entry=>{
+  if (!GAME_DATA.shop.find(s=>s.item===entry.item)) GAME_DATA.shop.push(entry);
+});
+
+console.log('[Ashfall] Farming expansion loaded:', ['ranarr_seed','torstol_seed','magic_sapling','ultracompost','rake','spade'].filter(id=>GAME_DATA.items[id]).length, 'key items confirmed');
+})();

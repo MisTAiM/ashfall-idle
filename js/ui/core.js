@@ -2093,131 +2093,221 @@ class UI {
     game._ensureFarmingState && game._ensureFarmingState();
     const plots = s.farming?.plots || [];
     const farmLv = s.skills.farming?.level || 1;
-    let html = this.header('Farming','seedling','Plant seeds, water crops, compost plots, and harvest yields. Keep weeds away with a rake.','farming');
+    const farmXp = s.skills.farming?.xp || 0;
+    const farmProg = this.engine.getXpProgress?.('farming') || 0;
 
-    // Stats bar
-    html += `<div class="prayer-dash" style="margin-bottom:12px">
-      <div class="prayer-kpi"><div class="prayer-kpi-val">${farmLv}</div><div class="prayer-kpi-lbl">Farm Level</div></div>
-      <div class="prayer-kpi"><div class="prayer-kpi-val">${plots.filter(p=>p.seed&&p.ready).length}</div><div class="prayer-kpi-lbl">Ready</div></div>
-      <div class="prayer-kpi"><div class="prayer-kpi-val">${plots.filter(p=>p.seed&&!p.ready&&!p.dead).length}</div><div class="prayer-kpi-lbl">Growing</div></div>
-      <div class="prayer-kpi"><div class="prayer-kpi-val">${plots.filter(p=>p.dead).length}</div><div class="prayer-kpi-lbl">Dead</div></div>
+    let html = this.header('Farming','seedling','Plant seeds and herbs, water and compost your crops, and harvest yields for cooking, herblore, and gold.','farming');
+
+    // ── SKILL BAR ─────────────────────────────────────────────
+    const xpToNext = this.engine.getXpToNextLevel?.('farming') || 0;
+    html += `<div class="farm-skill-header">
+      <div class="fsh-left">
+        <div class="fsh-level">${farmLv}</div>
+        <div class="fsh-label">Farm<br>Level</div>
+      </div>
+      <div class="fsh-center">
+        <div class="fsh-xp-bar"><div class="fsh-xp-fill" style="width:${(farmProg*100).toFixed(1)}%"></div></div>
+        <div class="fsh-xp-text">${this.fmt(farmXp)} XP · ${xpToNext>0?this.fmt(xpToNext)+' to next level':'MAX'}</div>
+      </div>
+      <div class="fsh-stats">
+        <div class="fsh-stat"><span class="fsh-stat-val" style="color:#4abe6c">${plots.filter(p=>p.ready).length}</span><span class="fsh-stat-lbl">Ready</span></div>
+        <div class="fsh-stat"><span class="fsh-stat-val" style="color:#4a7ec4">${plots.filter(p=>p.seed&&!p.ready&&!p.dead).length}</span><span class="fsh-stat-lbl">Growing</span></div>
+        <div class="fsh-stat"><span class="fsh-stat-val" style="color:#c44040">${plots.filter(p=>p.dead).length}</span><span class="fsh-stat-lbl">Dead</span></div>
+        <div class="fsh-stat"><span class="fsh-stat-val">${plots.filter(p=>!p.seed&&!p.dead).length}</span><span class="fsh-stat-lbl">Empty</span></div>
+      </div>
     </div>`;
 
-    // Gardening tools in bank info strip
-    const toolCheck = (id,name) => (s.bank[id]||0)>0 ? `<span class="farm-tool-have">✓ ${name}</span>` : `<span class="farm-tool-miss">✗ ${name}</span>`;
-    html += `<div class="farm-tools-strip">
-      <span class="farm-tools-label">Tools:</span>
-      ${toolCheck('watering_can_mith','Mith Can')||toolCheck('watering_can_iron','Iron Can')||toolCheck('watering_can','Can')}
-      ${toolCheck('spade','Spade')}
-      ${toolCheck('rake','Rake')}
-      <span class="farm-tools-sep">Compost:</span>
-      ${(s.bank['ultracompost']||0)>0?`<span class="farm-tool-have">✓ Ultra x${s.bank['ultracompost']}</span>`:
-        (s.bank['supercompost']||0)>0?`<span class="farm-tool-have">✓ Super x${s.bank['supercompost']}</span>`:
-        (s.bank['compost_bin']||0)>0?`<span class="farm-tool-have">✓ Compost x${s.bank['compost_bin']}</span>`:
-        `<span class="farm-tool-miss">✗ No compost</span>`}
+    // ── TOOLS & COMPOST STRIP ─────────────────────────────────
+    const has = id => (s.bank[id]||0) > 0;
+    const qty = id => s.bank[id]||0;
+    const bestCan = has('watering_can_mith')?'🪣 Mith Can':has('watering_can_iron')?'🪣 Iron Can':has('watering_can')?'🪣 Can':'—';
+    const bestCompost = has('ultracompost')?`🟣 Ultra x${qty('ultracompost')}`:has('supercompost')?`🟢 Super x${qty('supercompost')}`:has('compost_bin')?`🟤 Compost x${qty('compost_bin')}`:'None';
+    html += `<div class="farm-tools-row">
+      <div class="farm-tool-chip ${has('watering_can')||has('watering_can_iron')||has('watering_can_mith')?'tool-have':'tool-miss'}">${bestCan}</div>
+      <div class="farm-tool-chip ${has('spade')?'tool-have':'tool-miss'}">${has('spade')?'⛏ Spade':'⛏ No Spade'}</div>
+      <div class="farm-tool-chip ${has('rake')?'tool-have':'tool-miss'}">${has('rake')?'🌾 Rake':'🌾 No Rake'}</div>
+      <div class="farm-tool-chip ${has('ultracompost')||has('supercompost')||has('compost_bin')?'tool-have':'tool-miss'}">🌱 ${bestCompost}</div>
+      ${has('secateurs_magic')?'<div class="farm-tool-chip tool-have">✂ Magic Secateurs</div>':''}
+      <button class="btn btn-xs" onclick="ui.renderPage('shop')">Buy Seeds & Tools →</button>
     </div>`;
 
-    // Plot sections by type
+    // ── QUICK ACTIONS ─────────────────────────────────────────
+    const readyPlots = plots.map((p,i)=>({...p,i})).filter(p=>p.ready);
+    const emptyPlots = plots.map((p,i)=>({...p,i})).filter(p=>!p.seed&&!p.dead);
+    if (readyPlots.length > 0) {
+      html += `<div class="farm-quick-bar farm-ready-bar">
+        <span>🌾 ${readyPlots.length} crop${readyPlots.length>1?'s':''} ready to harvest!</span>
+        <button class="btn btn-sm" onclick="${readyPlots.map(p=>`game.harvestPlot(${p.i})`).join(';')};ui.renderPage('farming')">Harvest All</button>
+      </div>`;
+    }
+
+    // ── PATCH SECTIONS ────────────────────────────────────────
     const patchTypes = [
-      {type:'allotment', label:'Allotment Patches', icon:'🌽'},
-      {type:'herb',      label:'Herb Patches',      icon:'🌿'},
-      {type:'tree',      label:'Tree Patches',       icon:'🌳'},
-      {type:'special',   label:'Special Patches',    icon:'✨'},
+      {type:'allotment', label:'Allotment Patches', icon:'🌽', desc:'Vegetables and fruits. Provide food and cooking ingredients.'},
+      {type:'herb',      label:'Herb Patches',      icon:'🌿', desc:'Magical herbs for Herblore. High XP, valuable yields.'},
+      {type:'tree',      label:'Tree Patch',         icon:'🌳', desc:'Slow-growing trees. Massive XP when chopped.'},
+      {type:'special',   label:'Special Patch',      icon:'✨', desc:'Rare and exotic crops. Unique rewards.'},
     ];
 
     for (const patch of patchTypes) {
       const patchPlots = plots.map((p,i)=>({...p,idx:i})).filter(p=>(p.type||'allotment')===patch.type);
       if (!patchPlots.length) continue;
+      const allSeeds = Object.values(GAME_DATA.items).filter(it => it.type==='seed' && (it.seedType===patch.type||(patch.type==='allotment'&&!it.seedType))).sort((a,b)=>(a.levelReq||0)-(b.levelReq||0));
+      const inBank = allSeeds.filter(sd=>(s.bank[sd.id]||0)>0 && farmLv>=(sd.levelReq||1));
 
-      // Check if any seeds exist for this type
-      const seeds = Object.values(GAME_DATA.items).filter(i => i.type==='seed' && (i.seedType===patch.type || (patch.type==='allotment'&&!i.seedType)));
-      const hasSeeds = seeds.some(sd => (s.bank[sd.id]||0) > 0);
-
-      html += `<h2 class="section-title">${patch.icon} ${patch.label}</h2><div class="farm-patch-grid">`;
+      html += `<div class="farm-section">
+        <div class="farm-section-header">
+          <span class="farm-section-icon">${patch.icon}</span>
+          <div>
+            <div class="farm-section-title">${patch.label}</div>
+            <div class="farm-section-desc">${patch.desc}</div>
+          </div>
+        </div>
+        <div class="farm-patch-grid">`;
 
       for (const plot of patchPlots) {
         const i = plot.idx;
         const seed = plot.seed ? GAME_DATA.items[plot.seed] : null;
-        const compostLabel = plot.compostTier===3?'🟣 Ultra':plot.compostTier===2?'🟢 Super':plot.compostTier===1?'🟤 Compost':'';
+        const compostTierLabel = ['','🟤','🟢','🟣'][plot.compostTier||0];
+        const compostBonusText = plot.compostBonus > 0 ? `+${Math.round(plot.compostBonus*100)}% yield` : '';
+        const canApplyCompost = !plot.seed && !plot.dead && !plot.compostTier && (has('ultracompost')||has('supercompost')||has('compost_bin'));
 
-        let plotClass = 'farm-plot-card';
-        let plotContent = '';
+        // Plant buttons: show available seeds inline
+        const plantBtns = inBank.length > 0
+          ? inBank.slice(0,4).map(sd => {
+              const yName = GAME_DATA.items[sd.yield]?.name || sd.yield;
+              const tStr = this.fmtTime ? this.fmtTime(sd.growTime) : Math.round(sd.growTime/60)+'m';
+              return `<button class="btn btn-xs farm-seed-btn" onclick="game.plantSeed(${i},'${sd.id}');ui.renderPage('farming')" title="Grows in ${tStr} → ${yName}">
+                <span class="fsb-name">${sd.name.replace(' Seed','').replace(' Sapling','')}</span>
+                <span class="fsb-qty">x${s.bank[sd.id]}</span>
+                <span class="fsb-time">${tStr}</span>
+              </button>`;
+            }).join('')
+          : `<div class="fp-no-seeds">No seeds. <button class="btn btn-xs" onclick="ui.renderPage('shop')">Shop →</button></div>`;
+
+        let cardClass = 'farm-plot-card';
+        let cardBody = '';
 
         if (plot.dead) {
-          plotClass += ' farm-plot-dead';
-          plotContent = `<div class="fp-state fp-dead">☠ Dead — ${seed?.name?.replace(' Seed','')||'Crop'}</div>
-            <div class="fp-actions">
-              <button class="btn btn-sm btn-danger" onclick="game.clearPlot(${i});ui.renderPage('farming')">🗑 Clear (Spade)</button>
-            </div>`;
-        } else if (plot.seed && plot.ready) {
-          plotClass += ' farm-plot-ready';
+          cardClass += ' fpc-dead';
+          cardBody = `
+            <div class="fp-crop-art fp-art-dead">💀</div>
+            <div class="fp-crop-name" style="color:#c44040">☠ ${seed?.name?.replace(' Seed','') || 'Dead crop'}</div>
+            <div class="fp-crop-note">Disease killed this crop.</div>
+            <button class="btn btn-sm btn-danger" onclick="game.clearPlot(${i});ui.renderPage('farming')">⛏ Clear with Spade</button>`;
+        } else if (plot.ready) {
           const yieldItem = GAME_DATA.items[seed?.yield];
-          plotContent = `<div class="fp-state fp-ready">✅ ${seed?.name?.replace(' Seed','')||'Crop'} — Ready!</div>
-            <div class="fp-yield-hint">Yield: ~${seed?.baseYield||3}+ ${yieldItem?.name||seed?.yield}</div>
-            <div class="fp-actions">
-              <button class="btn btn-sm" onclick="game.harvestPlot(${i});ui.renderPage('farming')">🌾 Harvest</button>
-            </div>`;
+          const estYield = seed?.baseYield || 3;
+          cardClass += ' fpc-ready';
+          cardBody = `
+            <div class="fp-crop-art fp-art-ready">🌟</div>
+            <div class="fp-crop-name">${seed?.name?.replace(' Seed','') || 'Crop'}</div>
+            <div class="fp-ready-label">Ready to harvest!</div>
+            <div class="fp-yield-hint">~${estYield}+ ${yieldItem?.name||seed?.yield||'items'} · ${seed?.xp||10} XP each</div>
+            ${compostTierLabel?`<div class="fp-badge fp-compost">${compostTierLabel} ${compostBonusText}</div>`:''}
+            <button class="btn btn-sm farm-harvest-btn" onclick="game.harvestPlot(${i});ui.renderPage('farming')">🌾 Harvest</button>`;
         } else if (plot.seed) {
-          const elapsed = Date.now() - plot.plantedAt;
+          const elapsed = Date.now() - (plot.plantedAt||Date.now());
           const pct = Math.min(100, (elapsed / plot.growTime) * 100);
           const left = Math.max(0, Math.ceil((plot.growTime - elapsed)/1000));
-          const timeStr = this.fmtTime(left);
-          plotClass += ' farm-plot-growing';
-          plotContent = `<div class="fp-state fp-growing">${seed?.name?.replace(' Seed','')||'Growing'}</div>
+          const timeStr = this.fmtTime ? this.fmtTime(left) : (Math.floor(left/60)+'m '+left%60+'s');
+          const growStage = pct < 33 ? '🌱' : pct < 66 ? '🪴' : '🌿';
+          cardClass += ' fpc-growing';
+          cardBody = `
+            <div class="fp-crop-art">${growStage}</div>
+            <div class="fp-crop-name">${seed?.name?.replace(' Seed','') || 'Growing'}</div>
             <div class="fp-grow-bar-wrap">
-              <div class="fp-grow-bar-track"><div class="fp-grow-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
-              <span class="fp-timer">${timeStr}</span>
+              <div class="fp-grow-bar-track"><div class="fp-grow-bar-fill" id="fpb-${i}" style="width:${pct.toFixed(1)}%;"></div></div>
+              <span class="fp-timer" id="fpt-${i}">${timeStr}</span>
             </div>
-            <div class="fp-badges">
-              ${plot.watered?`<span class="fp-badge fp-watered">💧 Watered +${Math.round((plot.waterBonus||0)*100)}%</span>`:''}
-              ${compostLabel?`<span class="fp-badge fp-compost">${compostLabel}</span>`:''}
-              ${plot.hasWeeds?`<span class="fp-badge fp-weeds">🌱 Weeds!</span>`:''}
+            <div class="fp-badges-row">
+              ${plot.watered?`<span class="fp-badge fp-watered">💧 +${Math.round((plot.waterBonus||0)*100)}%</span>`:''}
+              ${compostTierLabel?`<span class="fp-badge fp-compost">${compostTierLabel} ${compostBonusText}</span>`:''}
+              ${plot.hasWeeds?`<span class="fp-badge fp-weeds">🌿 Weeds!</span>`:''}
             </div>
-            <div class="fp-actions">
+            <div class="fp-actions-row">
               ${!plot.watered?`<button class="btn btn-xs" onclick="game.waterPlot(${i});ui.renderPage('farming')">💧 Water</button>`:''}
               ${plot.hasWeeds?`<button class="btn btn-xs" onclick="game.removeWeeds(${i});ui.renderPage('farming')">🌾 Rake</button>`:''}
-              <button class="btn btn-xs btn-danger" onclick="game.clearPlot(${i});ui.renderPage('farming')">✕ Clear</button>
+              <button class="btn btn-xs btn-danger" onclick="game.clearPlot(${i});ui.renderPage('farming')">✕</button>
             </div>`;
         } else {
           // Empty plot
-          const canPlant = seeds.filter(sd => (s.bank[sd.id]||0) > 0 && farmLv >= (sd.levelReq||1));
-          plotContent = `<div class="fp-state fp-empty">Empty</div>
-            ${compostLabel?`<div class="fp-badges"><span class="fp-badge fp-compost">${compostLabel}</span></div>`:''}
-            <div class="fp-actions">
-              ${!plot.compostTier?`<button class="btn btn-xs" onclick="game.compostPlot(${i});ui.renderPage('farming')" title="Apply best compost from bank">🌱 Compost</button>`:''}
-              ${canPlant.length>0?canPlant.slice(0,3).map(sd=>`<button class="btn btn-xs" onclick="game.plantSeed(${i},'${sd.id}');ui.renderPage('farming')">${sd.name.replace(' Seed','').replace(' Sapling','')} (x${s.bank[sd.id]})</button>`).join(''):`<span class="fp-no-seeds">No seeds</span>`}
-            </div>`;
+          cardClass += ' fpc-empty';
+          cardBody = `
+            <div class="fp-crop-art fp-art-empty">🪣</div>
+            <div class="fp-crop-name">Empty Plot</div>
+            ${compostTierLabel?`<div class="fp-badge fp-compost">${compostTierLabel} ${compostBonusText}</div>`:''}
+            ${canApplyCompost?`<button class="btn btn-xs fp-compost-btn" onclick="game.compostPlot(${i});ui.renderPage('farming')" title="Apply best compost from bank">🌱 Compost</button>`:''}
+            <div class="fp-seed-picker">${plantBtns}</div>`;
         }
 
-        html += `<div class="${plotClass}">
-          <div class="fp-header"><span class="fp-plot-num">Plot ${i+1}</span>${compostLabel&&!plot.seed?`<span class="fp-badge fp-compost">${compostLabel}</span>`:''}</div>
-          ${plotContent}
+        html += `<div class="${cardClass}">
+          <div class="fp-card-header">
+            <span class="fp-plot-label">Plot ${i+1}</span>
+            ${plot.compostTier&&plot.seed?`<span class="fp-badge fp-compost" style="font-size:10px">${compostTierLabel}</span>`:''}
+          </div>
+          ${cardBody}
         </div>`;
       }
-      html += '</div>';
+      html += '</div></div>';
     }
 
-    // Seed shop link + available seeds
-    html += `<h2 class="section-title">Seeds in Bank</h2><div class="actions-grid">`;
-    const allSeeds = Object.values(GAME_DATA.items).filter(i => i.type==='seed' && (s.bank[i.id]||0) > 0).sort((a,b)=>(a.levelReq||0)-(b.levelReq||0));
-    if (allSeeds.length === 0) {
-      html += `<div class="bank-empty">No seeds in bank. Buy seeds from the Shop (Farming tab) or pickpocket farmers.</div>`;
-    } else {
-      for (const seed of allSeeds) {
-        const qty = s.bank[seed.id] || 0;
-        const yieldName = GAME_DATA.items[seed.yield]?.name || seed.yield;
+    // ── ALL SEEDS REFERENCE ───────────────────────────────────
+    html += `<h2 class="section-title">Seed Reference</h2>`;
+    const allSeedTypes = [
+      {label:'Allotment',type:null,color:'#4abe6c'},
+      {label:'Herbs',type:'herb',color:'#8acc6a'},
+      {label:'Trees',type:'tree',color:'#6a9a4a'},
+      {label:'Special',type:'special',color:'#c9873e'},
+    ];
+    for (const st of allSeedTypes) {
+      const seeds = Object.values(GAME_DATA.items)
+        .filter(it => it.type==='seed' && (st.type ? it.seedType===st.type : !it.seedType||it.seedType==='allotment'))
+        .sort((a,b)=>(a.levelReq||0)-(b.levelReq||0));
+      if (!seeds.length) continue;
+      html += `<div class="farm-seed-table">
+        <div class="fst-header" style="color:${st.color}">${st.label} Seeds</div>
+        <div class="fst-grid">`;
+      for (const seed of seeds) {
+        const owned = s.bank[seed.id]||0;
         const locked = farmLv < (seed.levelReq||1);
-        html += `<div class="action-card ${locked?'locked':''}">
-          <div class="ac-header"><span class="ac-name">${seed.name}</span><span class="ac-level">x${qty}</span></div>
-          <div class="recipe-output">Yields: ${yieldName} ~x${seed.baseYield||3} base</div>
-          <div class="ac-footer"><span>${this.fmtTime(seed.growTime)}</span><span>${seed.seedType||'allotment'}</span></div>
-          ${locked?`<div class="locked-overlay">Farm Lv ${seed.levelReq}</div>`:''}
+        const yieldName = GAME_DATA.items[seed.yield]?.name || seed.yield;
+        const tStr = this.fmtTime ? this.fmtTime(seed.growTime) : Math.round(seed.growTime/60)+'m';
+        html += `<div class="fst-row ${locked?'fst-locked':''} ${owned>0?'fst-owned':''}">
+          <span class="fst-name">${seed.name.replace(' Seed','')}</span>
+          <span class="fst-level" style="color:${st.color}">Lv ${seed.levelReq||1}</span>
+          <span class="fst-yield">→ ${yieldName}</span>
+          <span class="fst-time">${tStr}</span>
+          <span class="fst-xp">${seed.xp||10} XP</span>
+          <span class="fst-owned ${owned>0?'':'fst-none'}">${owned>0?'x'+owned:'—'}</span>
         </div>`;
       }
+      html += '</div></div>';
     }
-    html += '</div>';
+
     el.innerHTML = html;
+
+    // ── LIVE GROW TIMER tick ──────────────────────────────────
+    clearInterval(window._farmTimerInterval);
+    window._farmTimerInterval = setInterval(() => {
+      plots.forEach((plot, i) => {
+        if (!plot.seed || plot.ready || plot.dead) return;
+        const elapsed = Date.now() - (plot.plantedAt||Date.now());
+        const pct = Math.min(100, (elapsed / plot.growTime) * 100);
+        const left = Math.max(0, Math.ceil((plot.growTime - elapsed)/1000));
+        const barEl = document.getElementById('fpb-'+i);
+        const timerEl = document.getElementById('fpt-'+i);
+        if (barEl) barEl.style.width = pct.toFixed(1)+'%';
+        if (timerEl) {
+          const m = Math.floor(left/60), sc = left%60;
+          timerEl.textContent = m>0 ? m+'m '+sc+'s' : sc+'s';
+        }
+        if (pct >= 100 && !plot.ready) ui.renderPage('farming');
+      });
+    }, 1000);
   }
+
+
   renderBankPage(el) {
     const s = this.engine.state;
     const entries = Object.entries(s.bank).filter(([,q])=>q>0).sort((a,b)=>a[0].localeCompare(b[0]));
