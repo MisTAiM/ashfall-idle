@@ -9599,3 +9599,43 @@ body.perf-mode .hit-splat { display:none !important; }
   .mon-hp-bar-text  { font-size: 9px; }
   .arena-mon-name   { font-size: 11px; }
 }
+
+/* ── QUEST LORE + MECHANICS HINT ────────────────────────── */
+.qcf-lore {
+  background: rgba(201,135,62,0.06);
+  border-left: 2px solid rgba(201,135,62,0.4);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin: 8px 0;
+  font-style: italic;
+}
+.qcf-lore-label {
+  font-style: normal;
+  font-weight: 600;
+  color: #c9873e;
+  margin-right: 6px;
+  font-size: 11px;
+}
+.qcf-mechanics-hint {
+  background: rgba(74,126,196,0.08);
+  border: 1px solid rgba(74,126,196,0.2);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #6a9ed4;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.qcf-mechanics-hint span {
+  font-weight: 700;
+  color: #4a8ec4;
+  margin-right: 4px;
+}
+/* Objective rows — more readable */
+.qo-row { gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.qo-label { font-size: 12px; line-height: 1.4; flex: 1; }
+.qo-done .qo-label { color: #4abe6c; }
+.qo-done { opacity: 0.8; }

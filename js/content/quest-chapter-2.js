@@ -13,113 +13,113 @@ const _q = (d) => { if (!GAME_DATA.quests.find(q=>q.id===d.id)) GAME_DATA.quests
 
 _q({id:'first_steps', name:'First Steps', type:'chain', npcId:'old_pete', qp:1, difficulty:'Novice',prereqs:[],
   desc:"Old Pete needs help getting his life back in order after the last Ashfall surge. A good introduction to the village.",
-  objectives:[{type:'kill',monster:'goblin',qty:5,desc:'Slay 5 goblins threatening the village'},{type:'gather',item:'oak_log',qty:10,desc:'Bring 10 oak logs for the fire'}],
+  objectives:[{type:'kill',monster:'goblin',qty:5,desc:'Slay 5 Goblins — Combat page → Beginner Areas → Lumbridge Fields → click Goblin'},{type:'gather',item:'oak_log',qty:10,desc:'Gather 10 Oak Logs — Woodcutting page → click Oak Tree (level 15 required)'}],
   rewards:{xp:{attack:300,woodcutting:200},gold:200,items:[{item:'iron_sword',qty:1}],qp:1}});
 
 _q({id:'the_farmers_plea', name:"The Farmer's Plea", type:'chain', npcId:'old_pete', qp:1, difficulty:'Novice',prereqs:['first_steps'],
   desc:"Crops are failing. Investigate whether the cursed soil or something worse is to blame.",
-  objectives:[{type:'gather',item:'wheat',qty:20,desc:'Collect 20 wheat'},{type:'kill',monster:'moss_snake',qty:5,desc:'Clear snake infestation from the fields'}],
+  objectives:[{type:'gather',item:'wheat',qty:20,desc:'Collect 20 Wheat — Farming page → plant wheat seeds, or buy from Shop'},{type:'kill',monster:'moss_snake',qty:5,desc:'Slay 5 Moss Snakes — Combat page → Barbarian Village area'}],
   rewards:{xp:{farming:500,attack:200},gold:300,qp:1}});
 
 _q({id:'a_taste_of_danger', name:'A Taste of Danger', type:'chain', npcId:'old_pete', qp:2, difficulty:'Easy',prereqs:['the_farmers_plea'],
   desc:"Strange sounds from the cave east of the village. Time to investigate.",
-  objectives:[{type:'kill',monster:'barbarian',qty:10,desc:'Defeat the barbarians camping near the cave'},{type:'kill',monster:'dark_wizard',qty:3,desc:'Banish the dark wizards'}],
+  objectives:[{type:'kill',monster:'barbarian',qty:10,desc:'Slay 10 Barbarians — Combat page → Barbarian Village area'},{type:'kill',monster:'dark_wizard',qty:3,desc:'Banish the dark wizards'}],
   rewards:{xp:{attack:800,magic:400},gold:500,items:[{item:'steel_scimitar',qty:1}],qp:2}});
 
 _q({id:'miners_troubles', name:"Miner's Troubles", type:'chain', npcId:'garrick', qp:1, difficulty:'Novice',prereqs:[],
   desc:"The mine collapsed. Help recover valuable ore before it's too late.",
-  objectives:[{type:'gather',item:'iron_ore',qty:30,desc:'Recover 30 iron ore'},{type:'gather',item:'coal',qty:20,desc:'Retrieve 20 coal'}],
+  objectives:[{type:'gather',item:'iron_ore',qty:30,desc:'Mine 30 Iron Ore — Mining page → click Iron Rock (requires Mining level 15)'},{type:'gather',item:'coal',qty:20,desc:'Mine 20 Coal — Mining page → Coal Rock (level 30), or get from monster drops'}],
   rewards:{xp:{mining:600},gold:400,qp:1}});
 
 _q({id:'the_apprentice', name:'The Apprentice', type:'chain', npcId:'ilyana', qp:1, difficulty:'Novice',prereqs:[],
   desc:"Ilyana needs an apprentice to collect reagents for her spellwork. Learn the basics of magic.",
-  objectives:[{type:'gather',item:'air_rune',qty:50,desc:'Gather 50 air runes'},{type:'gather',item:'fire_rune',qty:30,desc:'Gather 30 fire runes'},{type:'skill_level',skill:'magic',level:5,qty:1,desc:'Reach level 5 Magic'}],
+  objectives:[{type:'gather',item:'air_rune',qty:50,desc:'Gather 50 Air Runes — buy from Shop (Magic supplies) or Runecrafting → Air Altar'},{type:'gather',item:'fire_rune',qty:30,desc:'Gather 30 Fire Runes — buy from Shop (Magic supplies) or craft at Fire Altar (level 14)'},{type:'skill_level',skill:'magic',level:5,qty:1,desc:'Reach level 5 Magic — set combat style to Magic on the Combat page and fight monsters'}],
   rewards:{xp:{magic:800},gold:300,items:[{item:'air_staff',qty:1}],qp:1}});
 
 _q({id:'lost_hatchet', name:'The Lost Hatchet', type:'chain', npcId:'old_pete', qp:1, difficulty:'Novice',prereqs:[],
   desc:"Pete's favourite hatchet was stolen by wolves. Track it down.",
-  objectives:[{type:'kill',monster:'wolf',qty:5,desc:'Slay the wolves and search for the hatchet'},{type:'gather',item:'bones',qty:10,desc:'Bury 10 bones as offering to the forest spirits'}],
+  objectives:[{type:'kill',monster:'wolf',qty:5,desc:'Slay 5 Wolves — Combat page → wilderness areas'},{type:'gather',item:'bones',qty:10,desc:'Bury 10 Bones — monster drops (most combat monsters drop bones). Use them from Bank → right-click Bury'}],
   rewards:{xp:{woodcutting:400,prayer:200},gold:250,qp:1}});
 
 // ═══ EASY QUESTS (Level 20-40) ════════════════════════════════
 
 _q({id:'the_dark_mine', name:'The Dark Mine', type:'chain', npcId:'garrick', qp:2, difficulty:'Easy',prereqs:['miners_troubles'],
   desc:"Something darker than goblins now inhabits the mine's lower levels. Investigate before workers return.",
-  objectives:[{type:'kill',monster:'dark_wizard',qty:8,desc:'Banish 8 dark wizards from the mine'},{type:'kill',monster:'ankou',qty:3,desc:'Destroy the Ankous guarding the deepest level'}],
+  objectives:[{type:'kill',monster:'dark_wizard',qty:8,desc:'Slay 8 Dark Wizards — Combat page → Castle Ruins or Barbarian Village areas'},{type:'kill',monster:'ankou',qty:3,desc:'Slay 3 Ankous — Combat page → Ash Graveyard area (Combat level 65+ recommended)'}],
   rewards:{xp:{attack:2000,mining:1500},gold:1500,items:[{item:'mithril_scimitar',qty:1}],qp:2}});
 
 _q({id:'smiths_secret', name:"The Smith's Secret", type:'chain', npcId:'garrick', qp:2, difficulty:'Easy',prereqs:['the_dark_mine'],
   desc:"Garrick reveals he knows the formula for runite alloy. But he needs rare components.",
-  objectives:[{type:'gather',item:'mithril_bar',qty:5,desc:'Smelt 5 mithril bars'},{type:'gather',item:'gold_bar',qty:3,desc:'Bring 3 gold bars'},{type:'skill_level',skill:'smithing',level:30,qty:1,desc:'Reach level 30 Smithing'}],
+  objectives:[{type:'gather',item:'mithril_bar',qty:5,desc:'Smelt 5 Mithril Bars — Smithing page → Mithril Bar (5 Mithril Ore + Coal, Smithing level 50)'},{type:'gather',item:'gold_bar',qty:3,desc:'Gather 3 Gold Bars — smelt at Smithing page (Gold Ore, level 40), or buy from shop'},{type:'skill_level',skill:'smithing',level:30,qty:1,desc:'Reach Smithing level 30 — smelt bars on the Smithing skill page'}],
   rewards:{xp:{smithing:3000},gold:2000,items:[{item:'rune_scimitar',qty:1}],qp:2}});
 
 _q({id:'sea_shanty', name:'Sea Shanty', type:'chain', npcId:'old_pete', qp:2, difficulty:'Easy',prereqs:['a_taste_of_danger'],
   desc:"Fishermen are going missing near the coast. Something lurks beneath.",
-  objectives:[{type:'gather',item:'raw_shark',qty:5,desc:'Fish 5 sharks from the danger zone'},{type:'kill',monster:'cave_kraken',qty:1,desc:'Destroy the cave kraken causing disappearances'}],
+  objectives:[{type:'gather',item:'raw_shark',qty:5,desc:'Fish 5 Raw Sharks — Fishing page → Deep Sea Fishing spot (Fishing level 76 required)'},{type:'kill',monster:'cave_kraken',qty:1,desc:'Slay 1 Cave Kraken — Combat page → Dagannoth Caves area (Slayer level 87 required)'}],
   rewards:{xp:{fishing:3000,attack:2500},gold:3000,items:[{item:'trident_swamp',qty:1}],qp:2}});
 
 _q({id:'thieve_guild_initiation', name:'Thieves Guild Initiation', type:'chain', npcId:'krolgar', qp:2, difficulty:'Easy',prereqs:[],
   desc:"Prove yourself to the guild by completing three contracts without getting caught.",
-  objectives:[{type:'skill_level',skill:'thieving',level:15,qty:1,desc:'Reach Thieving level 15'},{type:'gather',item:'gold_bar',qty:5,desc:'Steal 5 gold bars from the market district'}],
+  objectives:[{type:'skill_level',skill:'thieving',level:15,qty:1,desc:'Reach Thieving level 15 — Thieving page → pickpocket Farmers and Guards'},{type:'gather',item:'gold_bar',qty:5,desc:'Gather 5 Gold Bars — smelt from gold ore (Smithing 40) or buy from the Shop'}],
   rewards:{xp:{thieving:2000},gold:2500,items:[{item:'rogue_top',qty:1}],qp:2}});
 
 _q({id:'prayer_of_the_forgotten', name:'Prayer of the Forgotten', type:'chain', npcId:'old_pete', qp:2, difficulty:'Easy',prereqs:[],
   desc:"Ancient burial grounds have been disturbed. Help consecrate them before the undead become a plague.",
-  objectives:[{type:'gather',item:'dragon_bones',qty:5,desc:'Offer 5 dragon bones at the altar'},{type:'kill',monster:'ankou',qty:10,desc:'Destroy the restless Ankous'},{type:'skill_level',skill:'prayer',level:20,qty:1,desc:'Reach Prayer level 20'}],
+  objectives:[{type:'gather',item:'dragon_bones',qty:5,desc:'Gather 5 Dragon Bones — kill Steel Dragons in Dragon Lair (Combat page), then bury from Bank'},{type:'kill',monster:'ankou',qty:10,desc:'Slay 10 Ankous — Combat page → Ash Graveyard area'},{type:'skill_level',skill:'prayer',level:20,qty:1,desc:'Reach Prayer level 20 — bury bones from your Bank. Dragon bones give the most XP'}],
   rewards:{xp:{prayer:5000},gold:2000,items:[{item:'prayer_potion',qty:5}],qp:2}});
 
 _q({id:'enchanted_armour', name:'The Enchanted Armour', type:'chain', npcId:'ilyana', qp:2, difficulty:'Easy',prereqs:['the_apprentice'],
   desc:"Ilyana wants to enchant a set of armour but needs you to gather the components and defeat the golem she created.",
-  objectives:[{type:'gather',item:'sapphire',qty:3,desc:'Bring 3 sapphires for the enchantment matrix'},{type:'kill',monster:'ash_golem',qty:5,desc:'Test the enchantment on 5 ash golems'}],
+  objectives:[{type:'gather',item:'sapphire',qty:3,desc:'Gather 3 Sapphires — mine gem rocks (Mining page) or get from monster drops'},{type:'kill',monster:'ash_golem',qty:5,desc:'Slay 5 Ash Golems — Combat page → search Advanced areas for Ash Golem (Combat 50+ recommended)'}],
   rewards:{xp:{magic:3000,crafting:2000},gold:2500,qp:2}});
 
 // ═══ MEDIUM QUESTS (Level 40-60) ══════════════════════════════
 
 _q({id:'giant_slayer', name:'Giant Slayer', type:'chain', npcId:'dorn', qp:3, difficulty:'Medium',prereqs:['the_dark_mine'],
   desc:"A clan of giants has declared war on the northern settlements. End their warlord.",
-  objectives:[{type:'kill',monster:'hill_giant',qty:30,desc:'Slay 30 Hill Giants'},{type:'kill',monster:'moss_giant',qty:15,desc:'Slay 15 Moss Giants'},{type:'kill',monster:'fire_giant',qty:5,desc:'Slay 5 Fire Giants as a statement'}],
+  objectives:[{type:'kill',monster:'hill_giant',qty:30,desc:'Slay 30 Hill Giants — Combat page → Giant Stronghold area (Combat level 30+)'},{type:'kill',monster:'moss_giant',qty:15,desc:'Slay 15 Moss Giants — Combat page → Giant Stronghold area (Combat level 40+)'},{type:'kill',monster:'fire_giant',qty:5,desc:'Slay 5 Fire Giants — Combat page → Demon Ruins area (Combat level 60+ recommended)'}],
   rewards:{xp:{attack:8000,strength:8000,slayer:5000},gold:8000,items:[{item:'rune_battleaxe',qty:1}],qp:3}});
 
 _q({id:'demon_realm_incursion', name:'Demon Realm Incursion', type:'chain', npcId:'dorn', qp:3, difficulty:'Medium',prereqs:['blood_moon_rising'],
   desc:"A permanent rift to the demon realm has opened in the mountains. Seal it.",
-  objectives:[{type:'kill',monster:'lesser_demon',qty:50,desc:'Slay 50 Lesser Demons'},{type:'gather',item:'death_rune',qty:100,desc:'Collect 100 Death Runes for the sealing ritual'},{type:'skill_level',skill:'magic',level:55,qty:1,desc:'Reach Magic level 55'}],
+  objectives:[{type:'kill',monster:'lesser_demon',qty:50,desc:'Slay 50 Lesser Demons — Combat page → Lesser Abyss or Demon Ruins areas'},{type:'gather',item:'death_rune',qty:100,desc:'Gather 100 Death Runes — buy from Magic Shop, or get from Ankous/Dark Wizards as drops'},{type:'skill_level',skill:'magic',level:55,qty:1,desc:'Reach Magic level 55 — set combat style to Magic and fight monsters, or cast spells on the Magic page'}],
   rewards:{xp:{magic:12000,attack:8000},gold:12000,items:[{item:'occult_necklace',qty:1}],qp:3}});
 
 _q({id:'masters_of_craft', name:'Masters of Craft', type:'chain', npcId:'garrick', qp:3, difficulty:'Medium',prereqs:['smiths_secret'],
   desc:"Garrick challenges you to master multiple crafting disciplines. A true artisan knows all trades.",
-  objectives:[{type:'skill_level',skill:'smithing',level:50,qty:1,desc:'Reach Smithing 50'},{type:'skill_level',skill:'crafting',level:40,qty:1,desc:'Reach Crafting 40'},{type:'skill_level',skill:'fletching',level:35,qty:1,desc:'Reach Fletching 35'},{type:'gather',item:'dragon_bones',qty:10,desc:'Bring 10 dragon bones for the masterwork project'}],
+  objectives:[{type:'skill_level',skill:'smithing',level:50,qty:1,desc:'Reach Smithing level 50 — smelt bars on the Smithing page'},{type:'skill_level',skill:'crafting',level:40,qty:1,desc:'Reach Crafting 40 — cut gems and craft jewelry on the Crafting skill page'},{type:'skill_level',skill:'fletching',level:35,qty:1,desc:'Reach Fletching 35 — fletch bows and arrows on the Fletching skill page'},{type:'gather',item:'dragon_bones',qty:10,desc:'Gather 10 Dragon Bones — kill Steel Dragons or higher in the Dragon Lair combat area'}],
   rewards:{xp:{smithing:10000,crafting:8000,fletching:6000},gold:15000,items:[{item:'amulet_of_glory',qty:1}],qp:3}});
 
 _q({id:'forbidden_spellbook', name:'The Forbidden Spellbook', type:'chain', npcId:'ilyana', qp:3, difficulty:'Medium',prereqs:['enchanted_armour'],
   desc:"A dark spellbook has surfaced. Study it, master its contents, and keep it from the wrong hands.",
-  objectives:[{type:'skill_level',skill:'magic',level:60,qty:1,desc:'Reach Magic level 60'},{type:'kill',monster:'dark_wizard',qty:20,desc:'Slay 20 dark wizards testing the spells'},{type:'gather',item:'soul_rune',qty:20,desc:'Obtain 20 soul runes'}],
+  objectives:[{type:'skill_level',skill:'magic',level:60,qty:1,desc:'Reach Magic level 60 — fight monsters with Magic style set on the Combat page'},{type:'kill',monster:'dark_wizard',qty:20,desc:'Slay 20 Dark Wizards — Combat page → Barbarian Village or Castle Ruins areas'},{type:'gather',item:'soul_rune',qty:20,desc:'Gather 20 Soul Runes — buy from Magic Shop, or found rarely from Ankous and Aberrant Spectres'}],
   rewards:{xp:{magic:15000},gold:12000,items:[{item:'ancient_staff',qty:1}],qp:3}});
 
 _q({id:'swamp_stalker', name:'Swamp Stalker', type:'chain', npcId:'grey', qp:3, difficulty:'Medium',prereqs:[],
   desc:"Grey's contact was last seen heading into the toxic swamps. Find them — alive or otherwise.",
-  objectives:[{type:'kill',monster:'moss_snake',qty:30,desc:'Clear the path through the swamp'},{type:'kill',monster:'moss_giant',qty:10,desc:'Deal with the giant guarding the deep swamp'},{type:'gather',item:'antipoison',qty:5,desc:'Bring antipoison for the journey'}],
+  objectives:[{type:'kill',monster:'moss_snake',qty:30,desc:'Slay 30 Moss Snakes — Combat page → Barbarian Village or wilderness areas'},{type:'kill',monster:'moss_giant',qty:10,desc:'Slay 10 Moss Giants — Combat page → Giant Stronghold area'},{type:'gather',item:'antipoison',qty:5,desc:'Gather 5 Antipoison — buy from the Shop (Potions section) or brew with Herblore (Marrentill + Unicorn Horn Dust, level 5)'}],
   rewards:{xp:{attack:8000,ranged:5000},gold:10000,items:[{item:'blowpipe',qty:1}],qp:3}});
 
 _q({id:'the_banshee_cry', name:'The Banshee Cry', type:'chain', npcId:'grey', qp:2, difficulty:'Medium',prereqs:['prayer_of_the_forgotten'],
   desc:"Banshee wails are driving the nearby village mad. Find their source and silence it.",
-  objectives:[{type:'kill',monster:'banshee',qty:25,desc:'Slay 25 Banshees'},{type:'kill',monster:'aberrant_spectre',qty:5,desc:'Destroy the Aberrant Spectres commanding them'},{type:'skill_level',skill:'slayer',level:15,qty:1,desc:'Reach Slayer level 15'}],
+  objectives:[{type:'kill',monster:'banshee',qty:25,desc:'Slay 25 Banshees — Combat page → Slayer Dungeons (Slayer level 15 required)'},{type:'kill',monster:'aberrant_spectre',qty:5,desc:'Slay 5 Aberrant Spectres — Combat page → Slayer Dungeons (Slayer level 60 required, bring nosepeg)'},{type:'skill_level',skill:'slayer',level:15,qty:1,desc:'Reach Slayer level 15 — get assignments from the Slayer page and complete them'}],
   rewards:{xp:{slayer:8000,prayer:5000},gold:10000,items:[{item:'slayer_helm',qty:1}],qp:2}});
 
 _q({id:'rangers_secret', name:"Ranger's Secret", type:'chain', npcId:'grey', qp:3, difficulty:'Medium',prereqs:['frozen_in_time'],
   desc:"Grey's sister teaches you the art of advanced archery — techniques lost for decades.",
-  objectives:[{type:'skill_level',skill:'ranged',level:50,qty:1,desc:'Reach Ranged level 50'},{type:'kill',monster:'steel_dragon',qty:1,desc:'Slay a Steel Dragon using only ranged'},{type:'gather',item:'rune_bolt',qty:500,desc:'Purchase 500 rune bolts'}],
+  objectives:[{type:'skill_level',skill:'ranged',level:50,qty:1,desc:'Reach Ranged level 50 — set combat style to Ranged on the Combat page and fight monsters'},{type:'kill',monster:'steel_dragon',qty:1,desc:'Slay a Steel Dragon using only ranged'},{type:'gather',item:'rune_bolt',qty:500,desc:'Purchase 500 rune bolts'}],
   rewards:{xp:{ranged:15000},gold:12000,items:[{item:'armadyl_crossbow_weapon',qty:1}],qp:3}});
 
 _q({id:'nightmare_beast', name:'The Nightmare Beast', type:'chain', npcId:'vex', qp:3, difficulty:'Medium',prereqs:[],
   desc:"A dream-devouring entity has been fragmenting people's sleep across the region. Enter the dreamscape and destroy it.",
-  objectives:[{type:'kill',monster:'ankou',qty:20,desc:'Slay 20 Ankous to weaken the dream barrier'},{type:'kill',monster:'aberrant_spectre',qty:10,desc:'Destroy 10 Aberrant Spectres'},{type:'gather',item:'blood_rune',qty:50,desc:'Bring 50 blood runes for the dream portal'}],
+  objectives:[{type:'kill',monster:'ankou',qty:20,desc:'Slay 20 Ankous — Combat page → Ash Graveyard area'},{type:'kill',monster:'aberrant_spectre',qty:10,desc:'Destroy 10 Aberrant Spectres'},{type:'gather',item:'blood_rune',qty:50,desc:'Bring 50 blood runes for the dream portal'}],
   rewards:{xp:{magic:12000,hitpoints:5000},gold:12000,items:[{item:'nightmare_staff',qty:1}],qp:3}});
 
 // ═══ HARD QUESTS (Level 60-80) ════════════════════════════════
 
 _q({id:'slayer_master', name:'Path of the Slayer Master', type:'chain', npcId:'dorn', qp:4, difficulty:'Hard',prereqs:['giant_slayer','the_banshee_cry'],
   desc:"Dorn grants you the title of Slayer Master. But first, prove yourself against the hardest tasks.",
-  objectives:[{type:'skill_level',skill:'slayer',level:70,qty:1,desc:'Reach Slayer level 70'},{type:'kill',monster:'hellhound',qty:20,desc:'Slay 20 Hellhounds'},{type:'kill',monster:'gargoyle',qty:15,desc:'Slay 15 Gargoyles'},{type:'kill',monster:'dark_beast',qty:5,desc:'Slay 5 Dark Beasts'}],
+  objectives:[{type:'skill_level',skill:'slayer',level:70,qty:1,desc:'Dorn has watched you work for long enough. \'You kill things,\' he says. \'Most people kill things. Not everyone knows how to kill the right things the right way.\' The Slayer Master title isn\'t given. It\'s proven, monster by monster, through the hardest assignments the guild has.'},{type:'kill',monster:'hellhound',qty:20,desc:'Slay 20 Hellhounds'},{type:'kill',monster:'gargoyle',qty:15,desc:'Slay 15 Gargoyles'},{type:'kill',monster:'dark_beast',qty:5,desc:'Slay 5 Dark Beasts'}],
   rewards:{xp:{slayer:30000,attack:15000},gold:25000,items:[{item:'slayer_helm_i',qty:1}],qp:4}});
 
 _q({id:'dragonkin_blood', name:'Dragonkin Blood', type:'chain', npcId:'dorn', qp:4, difficulty:'Hard',prereqs:['giant_slayer','demon_realm_incursion'],
@@ -154,7 +154,7 @@ _q({id:'wilderness_warrior', name:'Wilderness Warrior', type:'chain', npcId:'dor
 
 _q({id:'unholy_path', name:'The Unholy Path', type:'chain', npcId:'vex', qp:3, difficulty:'Hard',prereqs:['forbidden_spellbook','prayer_of_the_forgotten'],
   desc:"Vex reveals an ancient and dangerous prayer book. Study it, but know the risks.",
-  objectives:[{type:'skill_level',skill:'prayer',level:55,qty:1,desc:'Reach Prayer level 55'},{type:'gather',item:'ash_infused_bones',qty:10,desc:'Offer 10 Ash-Infused Bones at the dark altar'},{type:'kill',monster:'ankou',qty:30,desc:'Commune with 30 Ankous in the death realm'}],
+  objectives:[{type:'skill_level',skill:'prayer',level:55,qty:1,desc:'Vex found something in the ruins beneath the settlement — a second prayer book, bound in black leather, written in a script that predates the Order of Dawn. The prayers inside are powerful. They\'re also deeply, deliberately dangerous. \'Knowledge isn\'t evil,\' Vex says. \'Intent is.\''},{type:'gather',item:'ash_infused_bones',qty:10,desc:'Gather 10 Ash-Infused Bones — rare drop from high-level Ashfall monsters. Bury them from Bank'},{type:'kill',monster:'ankou',qty:30,desc:'Slay 30 Ankous — Combat page → Ash Graveyard area (Combat level 75+ recommended)'}],
   rewards:{xp:{prayer:30000},gold:25000,items:[{item:'salve_amulet',qty:1}],qp:3,unlocks:'Unholy Prayer Book — access to dark prayers'}});
 
 _q({id:'master_of_shadows', name:'Master of Shadows', type:'chain', npcId:'krolgar', qp:4, difficulty:'Hard',prereqs:['thieve_guild_initiation'],
@@ -188,17 +188,17 @@ _q({id:'archmage_tasks', name:'The Archmage Tasks', type:'chain', npcId:'ilyana'
 
 _q({id:'woodcutting_mastery', name:'The Ancient Woodsman', type:'chain', npcId:'old_pete', qp:2, difficulty:'Medium',prereqs:[],
   desc:"An ancient woodsman spirit will teach you lost techniques — if you prove worthy.",
-  objectives:[{type:'skill_level',skill:'woodcutting',level:60,qty:1,desc:'Reach Woodcutting level 60'},{type:'gather',item:'magic_log',qty:50,desc:'Chop 50 magic logs'},{type:'gather',item:'yew_log',qty:100,desc:'Chop 100 yew logs'}],
+  objectives:[{type:'skill_level',skill:'woodcutting',level:60,qty:1,desc:'Reach Woodcutting level 60 — chop trees on the Woodcutting page. Willow→Maple→Yew'},{type:'gather',item:'magic_log',qty:50,desc:'Chop 50 Magic Logs — Woodcutting page → Magic Tree (level 75 required). These are the top-tier logs'},{type:'gather',item:'yew_log',qty:100,desc:'Chop 100 Yew Logs — Woodcutting page → Yew Tree (level 60 required)'}],
   rewards:{xp:{woodcutting:20000},gold:8000,items:[{item:'dragon_axe',qty:1}],qp:2}});
 
 _q({id:'master_miner', name:'Heart of the Mountain', type:'chain', npcId:'garrick', qp:2, difficulty:'Medium',prereqs:['miners_troubles'],
   desc:"Deep within the mountain lies a vein of legendary ore. Only a master miner can reach it.",
-  objectives:[{type:'skill_level',skill:'mining',level:70,qty:1,desc:'Reach Mining level 70'},{type:'gather',item:'runite_ore',qty:10,desc:'Mine 10 runite ores'},{type:'gather',item:'dragon_ore',qty:5,desc:'Mine 5 legendary dragon ore veins'}],
+  objectives:[{type:'skill_level',skill:'mining',level:70,qty:1,desc:'Reach Mining level 70 — mine rocks on the Mining page. Mithril and Adamant give best XP'},{type:'gather',item:'runite_ore',qty:10,desc:'Mine 10 Runite Ore — Mining page → Runite Rock (level 85 required). These are rare and valuable'},{type:'gather',item:'dragon_ore',qty:5,desc:'Mine 5 Dragon Ore — Mining page → Dragon Rock (level 85 required). Even rarer than runite'}],
   rewards:{xp:{mining:25000},gold:10000,items:[{item:'dragon_pickaxe',qty:1}],qp:2}});
 
 _q({id:'grandmaster_chef', name:'The Grand Feast', type:'chain', npcId:'old_pete', qp:2, difficulty:'Medium',prereqs:[],
   desc:"The village needs a feast to lift morale. Cook the finest meal ever seen.",
-  objectives:[{type:'skill_level',skill:'cooking',level:70,qty:1,desc:'Reach Cooking level 70'},{type:'gather',item:'cooked_shark',qty:20,desc:'Cook 20 sharks'},{type:'gather',item:'cooked_anglerfish',qty:10,desc:'Cook 10 anglerfish'}],
+  objectives:[{type:'skill_level',skill:'cooking',level:70,qty:1,desc:'Reach Cooking level 70 — cook food on the Cooking page. Lobster→Swordfish→Shark'},{type:'gather',item:'cooked_shark',qty:20,desc:'Cook 20 Raw Sharks — buy Raw Sharks from the Shop or fish them (Fishing level 76). Cook on Cooking page'},{type:'gather',item:'cooked_anglerfish',qty:10,desc:'Cook 10 Raw Anglerfish — buy from Shop or fish at level 82. Cook on Cooking page (level 84 required)'}],
   rewards:{xp:{cooking:20000},gold:8000,items:[{item:'chef_hat',qty:1}],qp:2}});
 
 _q({id:'farming_secrets', name:"Farmer's Almanac", type:'chain', npcId:'old_pete', qp:2, difficulty:'Medium',prereqs:['the_farmers_plea'],

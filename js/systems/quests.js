@@ -664,7 +664,9 @@ U._renderActiveQuestCard = function(q, s) {
     </div>
     ${journalText?`<div class="qcf-journal">${journalText}</div>`:
       `<div class="qcf-desc">${q.desc}</div>`}
+    ${q.lore?`<div class="qcf-lore"><span class="qcf-lore-label">📖 Lore</span> ${q.lore}</div>`:''}
     <div class="qcf-objectives">${objectivesHtml}</div>
+    ${q.mechanicsHint?`<div class="qcf-mechanics-hint"><span>💡 How to complete:</span> ${q.mechanicsHint}</div>`:''}
     <div class="qcf-rewards-block">
       <div class="qcf-rewards-label">Rewards:</div>
       ${rewHtml}
