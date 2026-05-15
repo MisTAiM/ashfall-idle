@@ -415,7 +415,7 @@ GameEngine.prototype.voidGauntletNextWave = function() {
     vg.active=false;vg.completed=true;
     this.emit('notification',{type:'success',text:'VOID GAUNTLET COMPLETE! You defeated the Void Emperor!'});
     const loot=GAME_DATA.monsters.void_emperor?.drops||[];
-    for(const d of loot)this.addToBank(d.item,d.qty);
+    for(const d of loot)this.addItem(d.item,d.qty);
     return;
   }
   const wd=GAME_DATA.voidGauntlet.waves[vg.wave-1];

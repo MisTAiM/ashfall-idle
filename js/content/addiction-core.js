@@ -515,7 +515,7 @@ if (typeof GameEngine !== 'undefined') {
     // Find reward tier
     const dayKey = [30,14,7].find(d=>streak.count%30===0||(d===7&&streak.count%7===0)||(d===14&&streak.count%14===0)) || streak.count;
     const reward = GAME_DATA.loginRewards.find(r=>r.day===dayKey) || GAME_DATA.loginRewards[0];
-    if (reward.items) reward.items.forEach(drop=>this.addToBank(drop.item, drop.qty));
+    if (reward.items) reward.items.forEach(drop=>this.addItem(drop.item, drop.qty));
     if (reward.gold) this.state.gold = (this.state.gold||0) + reward.gold;
     this.emit('notification',{type:'achievement',text:`🎁 Day ${streak.count} Login Reward claimed! Check your bank.`});
     this.emit('loginRewardClaimed',{streak:streak.count, reward});
@@ -543,7 +543,7 @@ if (typeof GameEngine !== 'undefined') {
         });
         if (allDone && !dp[key+'_complete']) {
           dp[key+'_complete'] = true;
-          if (data.reward) this.addToBank(data.reward.item, data.reward.qty);
+          if (data.reward) this.addItem(data.reward.item, data.reward.qty);
           this.emit('notification',{type:'achievement',text:`🏆 ${diary.name} ${data.name} complete! Reward added to bank.`});
         }
       }
