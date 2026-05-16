@@ -82,11 +82,12 @@ html, body {
   flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--border-light) transparent;
+  scrollbar-color: transparent transparent;
 }
 
-#main-area::-webkit-scrollbar { width: 6px; }
-#main-area::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+#main-area::-webkit-scrollbar { width: 4px; }
+#main-area::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+#main-area:hover::-webkit-scrollbar-thumb { background: var(--border-light); }
 
 #main-content {
   max-width: 900px;
@@ -3709,11 +3710,13 @@ html, body {
   opacity: 0.6;
 }
 
-/* ── SCROLLBAR STYLING ────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-deep); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+/* ── SCROLLBAR STYLING — thin, only visible on hover ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; transition: background 0.2s; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+*:hover { scrollbar-color: var(--border-light) transparent; }
 
 /* ── AREA CARD IMPROVEMENTS ───────────────────────────── */
 .area-card-v2 {
@@ -8201,9 +8204,9 @@ body.perf-mode .hit-splat { display:none !important; }
 
 .cv3-page { display:grid; grid-template-columns:1fr 300px; gap:14px; align-items:start; padding-bottom:40px; }
 .cv3-main  { min-width:0; }
-.cv3-sidebar { display:flex; flex-direction:column; gap:10px; position:sticky; top:0; max-height:100vh; overflow-y:auto; scrollbar-width:thin; }
-.cv3-sidebar::-webkit-scrollbar { width:4px; }
-.cv3-sidebar::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.cv3-sidebar { display:flex; flex-direction:column; gap:10px; position:sticky; top:0; max-height:100vh; overflow-y:auto; scrollbar-width:none; }
+.cv3-sidebar::-webkit-scrollbar { width:0px; display:none; }
+.cv3-sidebar::-webkit-scrollbar-thumb { display:none; }
 
 /* ── SIDEBAR CARD BASE ──────────────────────────────────────── */
 .cv3s-card { background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
@@ -8690,8 +8693,8 @@ body.perf-mode .hit-splat { display:none !important; }
   top: 8px;
   max-height: calc(100vh - 100px);
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
   display: flex;
   flex-direction: column;
   gap: 8px;
