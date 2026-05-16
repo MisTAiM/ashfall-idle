@@ -660,27 +660,128 @@ class UI {
     }
 
     // Fishing Zones (zone-based random catch pools)
+
+      // Fish SVG helper — inline SVGs for rods and fish
+      const _fishSVG = (id, color='#4a8ec4') => {
+        const c = color;
+        const svgs = {
+          rod: `<svg viewBox="0 0 24 24" width="18" height="18"><path d="M2 22 L20 4" stroke="#8a6a3a" stroke-width="2.5" stroke-linecap="round"/><circle cx="20" cy="4" r="2" fill="#c9873e"/><path d="M2 22 Q8 16 14 12" stroke="#c8a870" stroke-width="1" fill="none" stroke-dasharray="2,2"/><circle cx="2" cy="22" r="2" fill="#4a7ec4"/></svg>`,
+          // Zone icons
+          shore_pond:`<svg viewBox="0 0 32 24" width="32" height="24"><path d="M0 16 Q8 10 16 16 Q24 22 32 16 L32 24 L0 24Z" fill="#1a4a7a" opacity=".7"/><path d="M0 18 Q8 12 16 18 Q24 24 32 18" stroke="#4a9ac4" stroke-width="1.5" fill="none"/><circle cx="8" cy="12" r="1.5" fill="${c}" opacity=".7"/><circle cx="22" cy="14" r="1" fill="${c}" opacity=".5"/></svg>`,
+          river_bend:`<svg viewBox="0 0 32 24" width="32" height="24"><path d="M0 12 Q8 6 16 14 Q24 22 32 12 L32 24 L0 24Z" fill="#1a5a4a" opacity=".7"/><path d="M2 12 Q10 4 18 14 Q26 24 32 14" stroke="#4ac4a4" stroke-width="1.5" fill="none"/><path d="M4 10 Q8 8 12 10" stroke="#8adcc4" stroke-width="1" fill="none"/></svg>`,
+          lake_crossing:`<svg viewBox="0 0 32 24" width="32" height="24"><ellipse cx="16" cy="16" rx="14" ry="8" fill="#1a3a6a" opacity=".8"/><ellipse cx="16" cy="14" rx="14" ry="8" fill="none" stroke="#4a8ac4" stroke-width="1.5"/><path d="M8 14 Q16 10 24 14" stroke="#88ccff" stroke-width="1" fill="none"/></svg>`,
+          coastal_reef:`<svg viewBox="0 0 32 24" width="32" height="24"><path d="M0 18 L32 18 L32 24 L0 24Z" fill="#1a3a5a" opacity=".7"/><path d="M4 18 L6 12 L8 18 M12 18 L14 10 L16 18 M20 18 L22 14 L24 18" stroke="#4a8ac4" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="8" r="3" fill="#c9873e" opacity=".6"/></svg>`,
+          deep_ocean:`<svg viewBox="0 0 32 24" width="32" height="24"><rect x="0" y="0" width="32" height="24" fill="#0a1a3a" rx="3"/><path d="M0 8 Q8 4 16 8 Q24 12 32 8" stroke="#1a3a6a" stroke-width="3" fill="none"/><circle cx="24" cy="16" r="4" fill="none" stroke="#4a8ac4" stroke-width="1.5"/><path d="M6 16 L10 12 L14 16" fill="none" stroke="#4a8ac4" stroke-width="1.5"/></svg>`,
+          sunken_cavern:`<svg viewBox="0 0 32 24" width="32" height="24"><path d="M0 0 L12 8 L20 4 L32 0 L32 24 L0 24Z" fill="#2a1a3a"/><path d="M6 8 L8 16 M16 6 L18 18 M24 4 L26 14" stroke="#6a4a8a" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="16" r="5" fill="#1a0a2a" stroke="#8a5ac4" stroke-width="1"/></svg>`,
+          frozen_trawl:`<svg viewBox="0 0 32 24" width="32" height="24"><rect x="0" y="0" width="32" height="24" fill="#1a2a4a" rx="3"/><path d="M0 10 Q8 6 16 10 Q24 14 32 10" stroke="#8ac4ff" stroke-width="2" fill="none"/><path d="M4 6 L6 4 L8 6 M14 4 L16 2 L18 4" stroke="#c8e8ff" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          volcanic_pools:`<svg viewBox="0 0 32 24" width="32" height="24"><rect x="0" y="0" width="32" height="24" fill="#2a0a0a" rx="3"/><circle cx="10" cy="14" r="6" fill="#8a2a00" opacity=".8"/><circle cx="22" cy="12" r="5" fill="#aa3a00" opacity=".7"/><path d="M8 12 Q10 8 12 12" stroke="#ff6020" stroke-width="1.5" fill="none"/><path d="M20 10 Q22 6 24 10" stroke="#ff8040" stroke-width="1.5" fill="none"/></svg>`,
+          abyssal_depths:`<svg viewBox="0 0 32 24" width="32" height="24"><rect x="0" y="0" width="32" height="24" fill="#050510" rx="3"/><circle cx="16" cy="12" r="8" fill="none" stroke="#4a2a8a" stroke-width="1.5" stroke-dasharray="3,2"/><circle cx="16" cy="12" r="3" fill="#8a2ae0" opacity=".6"/><path d="M8 8 L12 10 M20 8 L16 10 M8 16 L12 14 M20 16 L16 14" stroke="#6a4ac4" stroke-width="1"/></svg>`,
+          // Generic fish shape for unknowns
+          default:`<svg viewBox="0 0 24 16" width="24" height="16"><path d="M18 8 L12 4 L2 8 L12 12Z" fill="${c}" opacity=".9"/><path d="M18 8 L22 4 L22 12Z" fill="${c}" opacity=".7"/><circle cx="5" cy="8" r="1.5" fill="rgba(255,255,255,0.8)"/></svg>`,
+        };
+        // Fish-specific overrides using hue shifts
+        const fishColors = {raw_shrimp:'#e8a870',raw_sardine:'#8ab4d4',raw_salmon:'#e06040',raw_trout:'#4a8a5a',raw_lobster:'#d45030',raw_shark:'#5a7090',raw_tuna:'#4060a0',raw_swordfish:'#3050a0',raw_anglerfish:'#a06030',raw_void_fish:'#8a2ae0',raw_golden_tench:'#d4a83a',raw_lava_eel:'#c44020',raw_manta:'#304060'};
+        if (fishColors[id]) { return svgs[id] || `<svg viewBox="0 0 24 16" width="22" height="14"><path d="M18 8 L12 4 L2 8 L12 12Z" fill="${fishColors[id]}"/><path d="M18 8 L22 4 L22 12Z" fill="${fishColors[id]}" opacity=".7"/><circle cx="5" cy="8" r="1.5" fill="rgba(255,255,255,0.7)"/></svg>`; }
+        return svgs[id] || svgs.default.replace('${c}', c);
+      };
     if (sId === 'fishing' && GAME_DATA.fishingZones) {
-      html += '<h2 class="section-title">Fishing Zones</h2><p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Each zone has a pool of fish. You catch different fish each time based on weighted rarity. XP varies per catch.</p><div class="actions-grid">';
+      // ── EQUIPPED ROD ─────────────────────────────────────────
+      const _rodId = s.equipment?.weapon;
+      const _rod = _rodId ? GAME_DATA.items[_rodId] : null;
+      const _isRod = _rod?.subtype === 'fishing_rod';
+      const _rodSpeed = _isRod ? (_rod.toolSpeed?.fishing || 0) : 0;
+      const _bestRod = Object.values(GAME_DATA.items).filter(i=>i.subtype==='fishing_rod'&&(s.bank[i.id]||0)>0)
+        .sort((a,b)=>(b.toolSpeed?.fishing||0)-(a.toolSpeed?.fishing||0))[0];
+
+      html += `<div class="fish-rod-strip">`;
+      if (_isRod) {
+        html += `<div class="frs-equipped">
+          <span class="frs-icon">${_fishSVG('rod')}</span>
+          <div><div class="frs-name">${_rod.name}</div><div class="frs-bonus">-${_rodSpeed}% catch time</div></div>
+        </div>`;
+      } else if (_bestRod) {
+        html += `<div class="frs-hint">⚠ Equip <strong>${_bestRod.name}</strong> from bank for -${_bestRod.toolSpeed?.fishing||0}% catch time</div>`;
+      } else {
+        html += `<div class="frs-hint">No fishing rod equipped or in bank. <button class="btn btn-xs" onclick="ui.renderPage('shop')">Buy Rod →</button></div>`;
+      }
+      html += `</div>`;
+
+      // ── FISHING ZONES ─────────────────────────────────────────
+      html += '<h2 class="section-title">Fishing Zones</h2><div class="fish-zones-grid">';
       for (const zone of GAME_DATA.fishingZones) {
-        const locked = s.skills.fishing.level < zone.level;
+        const fishLv = s.skills.fishing.level;
+        const locked = fishLv < zone.level;
         const isActive = s.activeSkill === 'fishing' && s.activeAction === 'zone_' + zone.id;
-        html += `<div class="action-card ${locked?'locked':''} ${isActive?'active':''}" ${locked?'':`onclick="ui.startAction('fishing','zone_${zone.id}')"`}>
-          <div class="ac-header"><span class="ac-name">${zone.name}</span><span class="ac-level">Lv ${zone.level}</span></div>
-          <p class="area-desc">${zone.desc}</p>
-          <div class="fz-pool">`;
-        const totalW = zone.fish.reduce((s,x)=>s+x.weight,0);
+        const totalW = zone.fish.reduce((sum,x)=>sum+x.weight, 0);
+        const catchTime = _isRod ? (zone.time * (1 - _rodSpeed/100)).toFixed(1) : zone.time;
+        const topFish = zone.fish.slice().sort((a,b)=>b.weight-a.weight)[0];
+        const topItem = GAME_DATA.items[topFish?.item];
+
+        html += `<div class="fish-zone-card ${locked?'fzc-locked':''} ${isActive?'fzc-active':''}"
+          ${locked?'':`onclick="ui.startAction('fishing','zone_${zone.id}')"`}>
+          <div class="fzc-header">
+            <div class="fzc-art">${_fishSVG(zone.id)}</div>
+            <div class="fzc-info">
+              <div class="fzc-name">${zone.name}</div>
+              <div class="fzc-desc">${zone.desc}</div>
+            </div>
+            <div class="fzc-level ${locked?'fzc-lv-locked':'fzc-lv-ok'}">Lv ${zone.level}</div>
+          </div>
+          <div class="fzc-fish-list">`;
+
         for (const f of zone.fish) {
-          const pct = (f.weight / totalW * 100).toFixed(0);
           const item = GAME_DATA.items[f.item];
-          html += `<span class="fz-fish" title="${pct}% chance, ${f.xp} XP">${item?.name||f.item} <small>${pct}% ${f.xp}xp</small></span>`;
+          const pct = (f.weight / totalW * 100).toFixed(0);
+          const owned = s.bank[f.item] || 0;
+          const cooked = s.bank[f.item?.replace('raw_','')]||0;
+          const rarity = pct>=25?'common':pct>=10?'uncommon':pct>=5?'rare':'very-rare';
+          const rarityColor = {common:'#888',uncommon:'#4abe6c',rare:'#4a8ec4','very-rare':'#c9873e'}[rarity];
+          html += `<div class="fzc-fish-row" id="ffr-${f.item}">
+            <div class="fzc-fr-left">
+              <span class="fzc-fish-icon">${_fishSVG(f.item, rarityColor)}</span>
+              <div>
+                <div class="fzc-fish-name">${item?.name||f.item.replace('raw_','').replace(/_/g,' ')}</div>
+                <div class="fzc-fish-meta">${f.xp} XP · ${pct}% chance</div>
+              </div>
+            </div>
+            <div class="fzc-fr-right">
+              <span class="fzc-fish-own" id="fown-${f.item}" style="color:${owned>0?'#4abe6c':'var(--text-dim)'}">x${owned}</span>
+              ${cooked>0?`<span class="fzc-fish-cooked">(${cooked} cooked)</span>`:''}
+            </div>
+          </div>`;
         }
+
+        const baseXpMin = Math.min(...zone.fish.map(f=>f.xp));
+        const baseXpMax = Math.max(...zone.fish.map(f=>f.xp));
         html += `</div>
-          <div class="ac-footer"><span class="ac-time">${zone.time}s</span></div>
-          ${locked?`<div class="locked-overlay">Level ${zone.level}</div>`:''}
+          <div class="fzc-footer">
+            <span class="fzc-time">⏱ ${catchTime}s/cast</span>
+            <span class="fzc-xp">${baseXpMin}–${baseXpMax} XP</span>
+            ${isActive?'<span class="fzc-fishing-badge">🎣 FISHING HERE</span>':''}
+          </div>
+          ${locked?`<div class="locked-overlay">Fishing Lv ${zone.level}</div>`:''}
         </div>`;
       }
       html += '</div>';
+
+      // ── FISH IN BANK ──────────────────────────────────────────
+      const _allFish = GAME_DATA.fishingZones.flatMap(z=>z.fish).map(f=>f.item);
+      const _ownedFish = [...new Set(_allFish)].filter(id=>(s.bank[id]||0)>0);
+      if (_ownedFish.length > 0) {
+        html += `<h2 class="section-title">Fish in Bank</h2><div class="fish-bank-grid">`;
+        for (const id of _ownedFish) {
+          const item = GAME_DATA.items[id];
+          const cookedId = id.replace('raw_','');
+          const cooked = s.bank[cookedId]||0;
+          html += `<div class="fish-bank-card">
+            <div class="fbc-art">${_fishSVG(id,'#c9873e')}</div>
+            <div class="fbc-name">${item?.name||id.replace('raw_','').replace(/_/g,' ')}</div>
+            <div class="fbc-qty" id="fbq-${id}">x${s.bank[id]||0} raw</div>
+            ${cooked>0?`<div class="fbc-cooked" id="fbc-${cookedId}">x${cooked} cooked</div>`:''}
+          </div>`;
+        }
+        html += '</div>';
+      }
     }
 
     el.innerHTML = html;
@@ -7217,6 +7318,22 @@ class UI {
     // ── SIDEBAR gold (always visible) ──
     const gv = document.querySelector('.gold-val');
     if (gv) gv.textContent = this.fmt(s.gold);
+
+    // ── FISHING — live fish count updates ──────────────────
+    if (s.activeSkill === 'fishing' && GAME_DATA.fishingZones) {
+      GAME_DATA.fishingZones.forEach(zone => {
+        zone.fish.forEach(f => {
+          const ownEl = document.getElementById('fown-' + f.item);
+          const bankEl = document.getElementById('fbq-' + f.item);
+          const qty = s.bank[f.item] || 0;
+          if (ownEl) {
+            ownEl.textContent = 'x' + qty;
+            ownEl.style.color = qty > 0 ? '#4abe6c' : 'var(--text-dim)';
+          }
+          if (bankEl) bankEl.textContent = 'x' + qty + ' raw';
+        });
+      });
+    }
 
     // ── FORGE HEAT BAR (smithing page) ──────────────────────────
     if (s.activeSkill === 'smithing' && GAME_DATA.smeltingHeat?.enabled) {

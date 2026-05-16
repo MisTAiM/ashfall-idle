@@ -9832,3 +9832,68 @@ body.perf-mode .hit-splat { display:none !important; }
 .arena-tele-btn:hover:not(:disabled) { background:rgba(74,126,196,0.3) !important; }
 .arena-tele-blocked { background:rgba(100,40,40,0.2) !important; border-color:rgba(196,64,64,0.3) !important; color:#c44040 !important; cursor:not-allowed !important; }
 .arena-skull-badge { font-size:10px; color:#c44040; font-family:'Cinzel',serif; font-weight:700; animation:skullPulse 1.5s ease-in-out infinite; letter-spacing:0.5px; }
+
+/* ════════════════════════════════════════════════════════════
+   FISHING PAGE — Complete visual overhaul
+   ════════════════════════════════════════════════════════════ */
+
+/* ── ROD STRIP ───────────────────────────────────────────── */
+.fish-rod-strip { display:flex; align-items:center; gap:10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:14px; }
+.frs-equipped { display:flex; align-items:center; gap:10px; }
+.frs-icon { opacity:.9; }
+.frs-name { font-family:'Cinzel',serif; font-size:12px; color:var(--text); }
+.frs-bonus { font-size:10px; color:#4abe6c; margin-top:1px; }
+.frs-hint { font-size:11px; color:var(--text-dim); }
+
+/* ── ZONE GRID ───────────────────────────────────────────── */
+.fish-zones-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; margin-bottom:24px; }
+
+/* ── ZONE CARD ───────────────────────────────────────────── */
+.fish-zone-card {
+  background:var(--bg-mid); border:1px solid var(--border); border-radius:10px;
+  overflow:hidden; cursor:pointer; transition:all 0.15s; position:relative;
+}
+.fish-zone-card:hover:not(.fzc-locked) { border-color:rgba(74,142,196,0.4); transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,0.3); }
+.fzc-active { border-color:rgba(74,190,108,0.5) !important; background:rgba(74,190,108,0.04) !important; }
+.fzc-locked { opacity:0.55; cursor:default; }
+
+.fzc-header { display:flex; align-items:center; gap:10px; padding:12px 14px 8px; }
+.fzc-art { flex-shrink:0; opacity:.9; border-radius:4px; overflow:hidden; }
+.fzc-info { flex:1; min-width:0; }
+.fzc-name { font-family:'Cinzel',serif; font-size:13px; color:var(--text); font-weight:600; }
+.fzc-desc { font-size:10px; color:var(--text-dim); margin-top:2px; font-style:italic; }
+.fzc-level { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; flex-shrink:0; padding:2px 7px; border-radius:4px; }
+.fzc-lv-ok { color:#4abe6c; background:rgba(74,190,108,0.1); }
+.fzc-lv-locked { color:var(--text-dim); background:rgba(255,255,255,0.05); }
+
+/* Fish list */
+.fzc-fish-list { padding:0 14px 8px; display:flex; flex-direction:column; gap:4px; }
+.fzc-fish-row { display:flex; align-items:center; justify-content:space-between; padding:5px 6px; border-radius:5px; transition:background 0.1s; }
+.fzc-fish-row:hover { background:rgba(255,255,255,0.03); }
+.fzc-fr-left { display:flex; align-items:center; gap:8px; }
+.fzc-fish-icon { opacity:.9; }
+.fzc-fish-name { font-size:12px; color:var(--text); font-weight:500; text-transform:capitalize; }
+.fzc-fish-meta { font-size:9px; color:var(--text-dim); margin-top:1px; }
+.fzc-fr-right { display:flex; flex-direction:column; align-items:flex-end; gap:1px; }
+.fzc-fish-own { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; transition:color 0.3s; }
+.fzc-fish-cooked { font-size:9px; color:#c9873e; }
+
+/* Footer */
+.fzc-footer { display:flex; align-items:center; gap:10px; padding:8px 14px; border-top:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.15); font-size:10px; color:var(--text-dim); flex-wrap:wrap; }
+.fzc-fishing-badge { color:#4abe6c; font-weight:700; font-family:'Cinzel',serif; font-size:10px; letter-spacing:0.5px; animation:fishPulse 1.5s ease-in-out infinite; margin-left:auto; }
+@keyframes fishPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* ── FISH BANK GRID ──────────────────────────────────────── */
+.fish-bank-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:8px; margin-bottom:24px; }
+.fish-bank-card { background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; padding:10px 8px; text-align:center; transition:border-color 0.2s; }
+.fish-bank-card:hover { border-color:rgba(74,142,196,0.3); }
+.fbc-art { margin:0 auto 6px; display:flex; justify-content:center; }
+.fbc-name { font-size:10px; color:var(--text); font-weight:500; text-transform:capitalize; line-height:1.3; margin-bottom:3px; }
+.fbc-qty { font-family:'JetBrains Mono',monospace; font-size:13px; color:#4abe6c; font-weight:700; }
+.fbc-cooked { font-size:10px; color:#c9873e; margin-top:1px; }
+
+/* Mobile */
+@media (max-width:768px) {
+  .fish-zones-grid { grid-template-columns:1fr; }
+  .fish-bank-grid { grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); }
+}
