@@ -2097,3 +2097,143 @@ Object.assign(GAME_DATA.monsterArt, {
 });
 
 console.log('[Ashfall] Monster Art Expansion loaded:', Object.keys(GAME_DATA.monsterArt).length, 'total monster arts');
+
+// ── WOODCUTTING TREE ART EXPANSION ──────────────────────────────
+Object.assign(GAME_DATA.actionArt, {
+
+  chop_teak: `<svg viewBox="0 0 48 48">
+    <rect x="22" y="28" width="4" height="16" rx="1" fill="#8a5a2a"/>
+    <ellipse cx="24" cy="21" rx="14" ry="11" fill="#7a9a3a"/>
+    <ellipse cx="19" cy="17" rx="7" ry="7" fill="#8aaa4a"/>
+    <ellipse cx="31" cy="22" rx="6" ry="5" fill="#6a8a2a"/>
+    <ellipse cx="24" cy="15" rx="5" ry="4" fill="#9aba5a"/>
+    <circle cx="15" cy="13" r="2" fill="#aaca6a" opacity="0.6"/>
+  </svg>`,
+
+  chop_mahogany: `<svg viewBox="0 0 48 48">
+    <rect x="21" y="27" width="6" height="17" rx="2" fill="#5a2a0a"/>
+    <path d="M24 27 L19 22 L14 18 M24 27 L29 22 L34 18" stroke="#5a2a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="24" cy="19" rx="15" ry="12" fill="#8a3a1a"/>
+    <ellipse cx="18" cy="14" rx="7" ry="6" fill="#9a4a2a"/>
+    <ellipse cx="32" cy="18" rx="6" ry="5" fill="#7a2a0a"/>
+    <circle cx="12" cy="11" r="2.5" fill="#aa5a3a" opacity="0.7"/>
+    <circle cx="36" cy="14" r="2" fill="#aa5a3a" opacity="0.5"/>
+  </svg>`,
+
+  chop_arctic: `<svg viewBox="0 0 48 48">
+    <rect x="22" y="26" width="4" height="18" rx="1" fill="#6a6a7a"/>
+    <polygon points="24,8 18,20 30,20" fill="#aabaca"/>
+    <polygon points="24,14 16,28 32,28" fill="#8aaaba"/>
+    <polygon points="24,20 14,36 34,36" fill="#6a8aaa"/>
+    <rect x="23" y="36" width="2" height="2" fill="#aabaca"/>
+    <circle cx="16" cy="18" r="1.5" fill="#ccddee" opacity="0.7"/>
+    <circle cx="32" cy="24" r="1" fill="#ccddee" opacity="0.6"/>
+    <path d="M18 14 L16 10 M20 12 L19 8 M28 12 L29 8 M30 14 L32 10" stroke="#aabaca" stroke-width="1" stroke-linecap="round"/>
+  </svg>`,
+
+  chop_blister: `<svg viewBox="0 0 48 48">
+    <rect x="21" y="24" width="6" height="20" rx="2" fill="#4a3020"/>
+    <ellipse cx="24" cy="18" rx="14" ry="12" fill="#2a4a1a"/>
+    <ellipse cx="19" cy="13" rx="7" ry="6" fill="#3a5a2a"/>
+    <ellipse cx="31" cy="18" rx="6" ry="5" fill="#2a4a1a"/>
+    <circle cx="18" cy="16" r="3" fill="#ff6020" opacity="0.8"/>
+    <circle cx="28" cy="11" r="2.5" fill="#ff8040" opacity="0.7"/>
+    <circle cx="22" cy="22" r="2" fill="#ff4000" opacity="0.6"/>
+    <circle cx="30" cy="20" r="1.5" fill="#ffaa40" opacity="0.8"/>
+    <path d="M16 20 Q18 16 20 20" stroke="#ff6020" stroke-width="1" fill="none" opacity="0.5"/>
+  </svg>`,
+
+  chop_magic: `<svg viewBox="0 0 48 48">
+    <rect x="21" y="22" width="6" height="22" rx="2" fill="#3a2060"/>
+    <ellipse cx="24" cy="15" rx="15" ry="13" fill="#4a30a0"/>
+    <ellipse cx="18" cy="10" rx="7" ry="6" fill="#6a40c0"/>
+    <ellipse cx="32" cy="14" rx="6" ry="6" fill="#3a2080"/>
+    <ellipse cx="24" cy="8" rx="5" ry="4" fill="#8a60e0"/>
+    <circle cx="14" cy="7" r="2" fill="#aa80ff" opacity="0.9"/>
+    <circle cx="34" cy="10" r="2" fill="#aa80ff" opacity="0.7"/>
+    <circle cx="24" cy="4" r="1.5" fill="#ccaaff" opacity="0.8"/>
+    <path d="M24 22 L22 30 M24 22 L26 30 M24 22 L18 26 M24 22 L30 26" stroke="#8a60e0" stroke-width="1" fill="none" opacity="0.5" stroke-linecap="round"/>
+    <circle cx="12" cy="18" r="1" fill="#cc88ff" opacity="0.6"/>
+    <circle cx="36" cy="16" r="1" fill="#cc88ff" opacity="0.6"/>
+  </svg>`,
+
+  chop_ashwood: `<svg viewBox="0 0 48 48">
+    <rect x="20" y="20" width="8" height="24" rx="3" fill="#1a1a1a"/>
+    <ellipse cx="24" cy="14" rx="16" ry="12" fill="#2a2a2a"/>
+    <ellipse cx="17" cy="9" rx="7" ry="6" fill="#3a3a3a"/>
+    <ellipse cx="32" cy="13" rx="6" ry="5" fill="#222"/>
+    <circle cx="24" cy="14" r="3" fill="#c94000" opacity="0.5"/>
+    <circle cx="14" cy="8" r="2" fill="#ff6020" opacity="0.6"/>
+    <circle cx="34" cy="10" r="1.5" fill="#ff4000" opacity="0.4"/>
+    <path d="M20 20 L16 30 M20 20 L14 24 M28 20 L32 30 M28 20 L34 24" stroke="#1a1a1a" stroke-width="1" opacity="0.8" stroke-linecap="round"/>
+    <path d="M16 12 Q18 8 20 12 M28 10 Q30 6 32 10" stroke="#c94000" stroke-width="1" fill="none" opacity="0.4"/>
+  </svg>`,
+
+  chop_redwood: `<svg viewBox="0 0 48 48">
+    <rect x="20" y="16" width="8" height="28" rx="3" fill="#6a1a0a"/>
+    <rect x="18" y="18" width="12" height="26" rx="4" fill="#8a2a1a"/>
+    <ellipse cx="24" cy="12" rx="18" ry="14" fill="#c44030"/>
+    <ellipse cx="16" cy="7" rx="8" ry="7" fill="#d45040"/>
+    <ellipse cx="34" cy="11" rx="7" ry="6" fill="#b43020"/>
+    <ellipse cx="24" cy="5" rx="6" ry="5" fill="#d46040"/>
+    <circle cx="10" cy="5" r="2.5" fill="#e07050" opacity="0.7"/>
+    <circle cx="38" cy="8" r="2" fill="#e07050" opacity="0.6"/>
+    <path d="M22 16 L20 22 M26 16 L28 22" stroke="#6a1a0a" stroke-width="2" stroke-linecap="round"/>
+  </svg>`,
+
+  chop_spirit: `<svg viewBox="0 0 48 48">
+    <rect x="21" y="22" width="6" height="22" rx="2" fill="#5a7a5a" opacity="0.9"/>
+    <ellipse cx="24" cy="14" rx="15" ry="13" fill="#3a8a3a" opacity="0.85"/>
+    <ellipse cx="18" cy="9" rx="7" ry="6" fill="#4a9a5a"/>
+    <ellipse cx="32" cy="13" rx="6" ry="5" fill="#3a7a3a"/>
+    <circle cx="14" cy="7" r="2" fill="#8aff8a" opacity="0.8"/>
+    <circle cx="34" cy="10" r="2" fill="#8aff8a" opacity="0.7"/>
+    <circle cx="24" cy="4" r="1.5" fill="#aaffaa" opacity="0.9"/>
+    <ellipse cx="24" cy="14" rx="15" ry="13" fill="none" stroke="#4aff4a" stroke-width="1" opacity="0.3" stroke-dasharray="4,3"/>
+    <path d="M24 22 Q28 32 24 40 Q20 32 24 22" fill="#4aff4a" opacity="0.15"/>
+    <circle cx="16" cy="20" r="1" fill="#aaffaa" opacity="0.6"/>
+    <circle cx="32" cy="18" r="1" fill="#aaffaa" opacity="0.6"/>
+  </svg>`,
+
+  chop_crystal: `<svg viewBox="0 0 48 48">
+    <rect x="21" y="24" width="6" height="20" rx="2" fill="#8ab4cc"/>
+    <polygon points="24,6 16,18 32,18" fill="#aad4ee"/>
+    <polygon points="24,10 14,24 34,24" fill="#88c4e4" opacity="0.9"/>
+    <polygon points="24,8 30,14 24,22 18,14" fill="#cce8ff" opacity="0.7"/>
+    <path d="M24 6 L22 14 M24 6 L26 14" stroke="#cce8ff" stroke-width="1" fill="none"/>
+    <circle cx="16" cy="16" r="2" fill="#fff" opacity="0.8"/>
+    <circle cx="32" cy="14" r="1.5" fill="#fff" opacity="0.7"/>
+    <circle cx="24" cy="6" r="2" fill="#fff" opacity="0.9"/>
+    <path d="M14 20 L10 18 M34 20 L38 18" stroke="#aad4ee" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  </svg>`,
+
+  chop_dragonwood: `<svg viewBox="0 0 48 48">
+    <rect x="20" y="22" width="8" height="22" rx="3" fill="#3a1a00"/>
+    <ellipse cx="24" cy="15" rx="15" ry="12" fill="#4a1a00"/>
+    <ellipse cx="18" cy="10" rx="7" ry="6" fill="#5a2a00"/>
+    <ellipse cx="31" cy="14" rx="6" ry="5" fill="#3a1000"/>
+    <path d="M16 12 Q14 8 16 5 Q18 8 16 12Z" fill="#c84000" opacity="0.9"/>
+    <path d="M32 10 Q34 6 36 8 Q34 11 32 10Z" fill="#c84000" opacity="0.8"/>
+    <path d="M24 6 Q26 2 28 4 Q26 7 24 6Z" fill="#ff6020" opacity="0.9"/>
+    <circle cx="20" cy="18" r="2" fill="#ff4000" opacity="0.7"/>
+    <circle cx="30" cy="16" r="1.5" fill="#ff6020" opacity="0.6"/>
+    <path d="M20 22 Q16 30 18 36 M28 22 Q32 30 30 36" stroke="#3a1a00" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M18 15 Q20 11 22 15 M26 12 Q28 8 30 12" stroke="#ff6020" stroke-width="1" fill="none" opacity="0.5"/>
+  </svg>`,
+
+});
+
+// Wire new tree arts to their actions
+(function() {
+  const artMap = {
+    chop_teak:'chop_teak', chop_mahogany:'chop_mahogany', chop_arctic:'chop_arctic',
+    chop_blister:'chop_blister', chop_magic:'chop_magic', chop_ashwood:'chop_ashwood',
+    chop_redwood:'chop_redwood', chop_spirit:'chop_spirit', chop_crystal:'chop_crystal',
+    chop_dragonwood:'chop_dragonwood',
+  };
+  const wc = GAME_DATA.gatheringActions?.woodcutting || [];
+  for (const action of wc) {
+    if (artMap[action.id]) action._art = artMap[action.id];
+  }
+})();
+console.log('[Ashfall] Woodcutting tree art expanded:', Object.keys(GAME_DATA.actionArt).filter(k=>k.startsWith('chop_')).length, 'tree SVGs');

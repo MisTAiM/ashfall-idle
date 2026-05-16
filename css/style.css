@@ -10082,3 +10082,79 @@ body.perf-mode .hit-splat { display:none !important; }
   border-radius: 3px;
   padding: 1px 5px;
 }
+
+/* ════════════════════════════════════════════════════════════
+   WOODCUTTING PAGE — Full polish
+   ════════════════════════════════════════════════════════════ */
+
+/* ── SKILL HEADER ─────────────────────────────────────────── */
+.wc-skill-header { display:flex; align-items:center; gap:14px; background:var(--bg-mid); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:14px; }
+.wcsh-left { text-align:center; }
+.wcsh-level { font-family:'Cinzel',serif; font-size:32px; color:#6aaa3a; font-weight:700; line-height:1; }
+.wcsh-label { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
+.wcsh-center { flex:1; }
+.wcsh-xp-bar { height:10px; background:rgba(0,0,0,0.4); border-radius:5px; overflow:hidden; border:1px solid rgba(106,170,58,0.2); margin-bottom:5px; }
+.wcsh-xp-fill { height:100%; background:linear-gradient(90deg,#2a5a1a,#6aaa3a); border-radius:4px; transition:width 0.5s; box-shadow:0 0 8px rgba(106,170,58,0.3); }
+.wcsh-xp-text { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.wcsh-stats { display:flex; gap:16px; }
+.wcsh-stat { text-align:center; }
+.wcsh-val { font-family:'Cinzel',serif; font-size:18px; font-weight:700; color:#6aaa3a; display:block; }
+.wcsh-lbl { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; }
+
+/* ── AXE STRIP ───────────────────────────────────────────── */
+.wc-axe-strip { display:flex; align-items:center; gap:10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:14px; }
+.wca-equipped { display:flex; align-items:center; gap:10px; }
+.wca-name { font-family:'Cinzel',serif; font-size:12px; color:var(--text); }
+.wca-bonus { font-size:10px; color:#6aaa3a; }
+.wca-hint { font-size:11px; color:var(--text-dim); }
+.wca-active { margin-left:auto; font-size:11px; color:#6aaa3a; font-weight:600; }
+
+/* ── CATEGORY TABS ───────────────────────────────────────── */
+.wc-cat-tabs { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+.wc-cat { padding:6px 16px; border-radius:20px; border:1px solid var(--border); background:var(--bg-mid); color:var(--text-dim); font-size:12px; cursor:pointer; transition:all 0.15s; font-family:'Cinzel',serif; }
+.wc-cat:hover { border-color:rgba(106,170,58,0.4); color:var(--text); }
+.wc-cat.active { background:rgba(106,170,58,0.12); border-color:rgba(106,170,58,0.4); color:#6aaa3a; }
+.wc-cat-title { font-family:'Cinzel',serif; font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; padding:4px 0 10px; margin-bottom:8px; border-bottom:1px solid var(--border); }
+
+/* ── TREE GRID ───────────────────────────────────────────── */
+.wc-tree-section { margin-bottom:24px; }
+.wc-tree-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+
+/* ── TREE CARD ───────────────────────────────────────────── */
+.wc-tree-card { display:flex; align-items:flex-start; gap:10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.15s; position:relative; overflow:hidden; }
+.wc-tree-card:hover:not(.wct-locked) { border-color:rgba(106,170,58,0.35); transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+.wct-active { border-color:rgba(106,170,58,0.5) !important; background:rgba(106,170,58,0.05) !important; }
+.wct-locked { opacity:0.5; cursor:default; }
+
+.wct-art { flex-shrink:0; width:48px; height:48px; }
+.wct-art svg { width:48px; height:48px; }
+.wct-body { flex:1; min-width:0; }
+.wct-name { font-family:'Cinzel',serif; font-size:12px; color:var(--text); font-weight:600; margin-bottom:2px; }
+.wct-desc { font-size:10px; color:var(--text-dim); line-height:1.4; margin-bottom:5px; font-style:italic; }
+.wct-stats { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:3px; }
+.wct-xp   { font-size:10px; color:#c9873e; font-weight:600; }
+.wct-time { font-size:10px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.wct-mastery { font-size:9px; color:#8a5ec4; background:rgba(138,94,196,0.1); border-radius:3px; padding:1px 4px; }
+.wct-log-row { display:flex; align-items:center; justify-content:space-between; }
+.wct-log-name { font-size:10px; color:var(--text-dim); }
+.wct-log-own { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); }
+.wct-own-yes { color:#6aaa3a !important; font-weight:700; }
+.wct-active-badge { font-size:9px; font-weight:700; margin-top:3px; }
+
+.wct-level-badge { position:absolute; top:8px; right:8px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; }
+.wctlb-locked { color:var(--text-dim); }
+.wctlb-ok { }
+
+/* ── LOGS IN BANK ─────────────────────────────────────────── */
+.wc-logs-grid { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:24px; }
+.wc-log-chip { display:flex; align-items:center; gap:6px; padding:6px 10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:20px; font-size:12px; }
+.wc-lc-name { color:var(--text-dim); }
+.wc-lc-qty { font-family:'JetBrains Mono',monospace; color:#6aaa3a; font-weight:700; }
+
+/* Mobile */
+@media (max-width:768px) {
+  .wc-tree-grid { grid-template-columns:1fr 1fr; }
+  .wct-art { width:36px; height:36px; }
+  .wct-art svg { width:36px; height:36px; }
+  .wcsh-stats { gap:10px; }
+}

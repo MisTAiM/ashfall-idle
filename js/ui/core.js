@@ -691,7 +691,140 @@ class UI {
         if (fishColors[id]) { return svgs[id] || `<svg viewBox="0 0 24 16" width="22" height="14"><path d="M18 8 L12 4 L2 8 L12 12Z" fill="${fishColors[id]}"/><path d="M18 8 L22 4 L22 12Z" fill="${fishColors[id]}" opacity=".7"/><circle cx="5" cy="8" r="1.5" fill="rgba(255,255,255,0.7)"/></svg>`; }
         return svgs[id] || svgs.default.replace('${c}', c);
       };
-    if (sId === 'fishing' && GAME_DATA.fishingZones) {
+    if (sId === 'woodcutting') {
+      const wcLv  = s.skills.woodcutting?.level || 1;
+      const wcXp  = s.skills.woodcutting?.xp || 0;
+      const wcProg = this.engine.getXpProgress?.('woodcutting') || 0;
+      const wcXpNext = this.engine.getXpToNextLevel?.('woodcutting') || 0;
+
+      // ── SKILL HEADER ─────────────────────────────────────────
+      html += `<div class="wc-skill-header">
+        <div class="wcsh-left">
+          <div class="wcsh-level">${wcLv}</div>
+          <div class="wcsh-label">WC<br>Level</div>
+        </div>
+        <div class="wcsh-center">
+          <div class="wcsh-xp-bar"><div class="wcsh-xp-fill" style="width:${(wcProg*100).toFixed(1)}%"></div></div>
+          <div class="wcsh-xp-text">${this.fmt(wcXp)} XP · ${wcXpNext>0?this.fmt(wcXpNext)+' to next':'MAX'}</div>
+        </div>
+        <div class="wcsh-stats">
+          <div class="wcsh-stat"><span class="wcsh-val">${this.fmt(s.stats?.logsChopped||0)}</span><span class="wcsh-lbl">Logs</span></div>
+          <div class="wcsh-stat"><span class="wcsh-val">${this.fmt(s.stats?.birdsNests||0)}</span><span class="wcsh-lbl">Nests</span></div>
+        </div>
+      </div>`;
+
+      // ── EQUIPPED AXE ─────────────────────────────────────────
+      const _axeId  = s.equipment?.weapon;
+      const _axe    = _axeId ? GAME_DATA.items[_axeId] : null;
+      const _isAxe  = _axe?.subtype === 'hatchet';
+      const _axeSpd = _isAxe ? (_axe.toolSpeed?.woodcutting || 0) : 0;
+      const _bestAxe= Object.values(GAME_DATA.items).filter(i=>i.subtype==='hatchet'&&(s.bank[i.id]||0)>0)
+        .sort((a,b)=>(b.toolSpeed?.woodcutting||0)-(a.toolSpeed?.woodcutting||0))[0];
+      html += `<div class="wc-axe-strip">
+        <svg viewBox="0 0 20 20" width="20" height="20" style="flex-shrink:0">
+          <path d="M3 17 L14 6" stroke="#c9873e" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M14 6 Q18 2 18 8 Q12 8 14 6Z" fill="#c9873e"/>
+          <path d="M11 9 L9 11" stroke="#8a6a3a" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        ${_isAxe
+          ? `<div class="wca-equipped"><span class="wca-name">${_axe.name}</span><span class="wca-bonus">-${_axeSpd}% chop time</span></div>`
+          : _bestAxe
+            ? `<div class="wca-hint">Equip <strong>${_bestAxe.name}</strong> (-${_bestAxe.toolSpeed?.woodcutting||0}% chop time)</div>`
+            : `<div class="wca-hint">No axe. <button class="btn btn-xs" onclick="ui.renderPage('shop')">Buy Axe →</button></div>`
+        }
+        ${s.activeSkill==='woodcutting' ? `<div class="wca-active">🪓 Chopping</div>` : ''}
+      </div>`;
+
+      // ── CATEGORY FILTER ───────────────────────────────────────
+      const _cats = ['Regular','Special','Rare'];
+      html += `<div class="wc-cat-tabs">
+        <button class="wc-cat active" onclick="document.querySelectorAll('.wc-tree-section').forEach(el=>el.style.display='');document.querySelectorAll('.wc-cat').forEach(b=>{b.classList.remove('active')});this.classList.add('active')">All</button>
+        ${_cats.map(c=>`<button class="wc-cat" onclick="document.querySelectorAll('.wc-tree-section').forEach(el=>el.style.display=el.dataset.cat==='${c}'?'':'none');document.querySelectorAll('.wc-cat').forEach(b=>{b.classList.remove('active')});this.classList.add('active')">${c}</button>`).join('')}
+      </div>`;
+
+      // ── TREE CARDS ────────────────────────────────────────────
+      const _wcActions = GAME_DATA.gatheringActions?.woodcutting || [];
+      const _axeTime = (t) => _isAxe ? (t*(1-_axeSpd/100)).toFixed(1) : t.toFixed(1);
+
+      for (const cat of _cats) {
+        const catTrees = _wcActions.filter(a=>(a.category||'Regular')===cat);
+        if (!catTrees.length) continue;
+        const catColor = {Regular:'#4abe6c',Special:'#d4a83a',Rare:'#8a5ec4'}[cat]||'#c9873e';
+        html += `<div class="wc-tree-section" data-cat="${cat}">
+          <h2 class="wc-cat-title" style="color:${catColor}">
+            ${{Regular:'🌲',Special:'❄️',Rare:'✨'}[cat]||'🌳'} ${cat} Trees
+          </h2>
+          <div class="wc-tree-grid">`;
+
+        for (const action of catTrees) {
+          const locked = wcLv < action.level;
+          const isActive = s.activeSkill==='woodcutting' && s.activeAction===action.id;
+          const logId = action.loot?.[0]?.item;
+          const logItem = logId ? GAME_DATA.items[logId] : null;
+          const owned = logId ? (s.bank[logId]||0) : 0;
+          const art = action._art && GAME_DATA.actionArt?.[action._art]
+            ? GAME_DATA.actionArt[action._art]
+            : `<svg viewBox="0 0 48 48"><rect x="22" y="28" width="4" height="16" rx="1" fill="#6a4a2a"/><ellipse cx="24" cy="20" rx="14" ry="13" fill="#3a6a2a"/></svg>`;
+          const masteryLv = this.engine.getMasteryLevel?.('woodcutting', action.masteryId||action.id) || 0;
+
+          html += `<div class="wc-tree-card ${locked?'wct-locked':''} ${isActive?'wct-active':''}"
+            ${locked?'':`onclick="ui.startAction('woodcutting','${action.id}')"`}
+            style="${isActive?`border-color:${catColor}40;`:locked?'':''}"
+          >
+            <div class="wct-art">${art}</div>
+            <div class="wct-body">
+              <div class="wct-name">${action.name}</div>
+              <div class="wct-desc">${action.desc||''}</div>
+              <div class="wct-stats">
+                <span class="wct-xp">+${action.xp} XP</span>
+                <span class="wct-time">⏱ ${_axeTime(action.time)}s</span>
+                ${masteryLv>0?`<span class="wct-mastery">M${masteryLv}</span>`:''}
+              </div>
+              <div class="wct-log-row">
+                ${logItem?`<span class="wct-log-name">${logItem.name}</span>`:'' }
+                <span class="wct-log-own ${owned>0?'wct-own-yes':''}" id="wco-${logId}">${owned>0?'x'+this.fmt(owned):'—'}</span>
+              </div>
+              ${isActive?`<div class="wct-active-badge" style="color:${catColor}">🪓 Chopping</div>`:''}
+            </div>
+            <div class="wct-level-badge ${locked?'wctlb-locked':wcLv>=action.level?'wctlb-ok':''}" style="${!locked?`color:${catColor}`:''}">${action.level}</div>
+            ${locked?`<div class="locked-overlay">Level ${action.level}</div>`:''}
+          </div>`;
+        }
+        html += '</div></div>';
+      }
+
+      // ── LOGS IN BANK ─────────────────────────────────────────
+      const _allLogs = _wcActions.flatMap(a=>a.loot||[]).map(l=>l.item);
+      const _ownedLogs = [...new Set(_allLogs)].filter(id=>(s.bank[id]||0)>0);
+      if (_ownedLogs.length) {
+        html += `<h2 class="section-title">Logs in Bank</h2><div class="wc-logs-grid">`;
+        for (const id of _ownedLogs) {
+          const it = GAME_DATA.items[id];
+          html += `<div class="wc-log-chip">
+            <svg viewBox="0 0 20 12" width="20" height="12"><ellipse cx="10" cy="6" rx="9" ry="5" fill="${it?.sprite?.includes('black')?'#222':it?.sprite?.includes('gold')?'#c9873e':it?.sprite?.includes('pale')?'#c8d4a0':it?.sprite?.includes('red')?'#c44040':'#8a5a2a'}"/><path d="M1 6 Q10 2 19 6" stroke="rgba(255,255,255,0.2)" stroke-width="1" fill="none"/></svg>
+            <span class="wc-lc-name">${it?.name||id}</span>
+            <span class="wc-lc-qty" id="wco-${id}">${this.fmt(s.bank[id]||0)}</span>
+          </div>`;
+        }
+        html += '</div>';
+      }
+
+      el.innerHTML = html;
+
+      // Live log count update
+      clearInterval(window._wcTimerInterval);
+      window._wcTimerInterval = setInterval(() => {
+        _allLogs.forEach(id => {
+          ['wco-'+id].forEach(elId => {
+            const el2 = document.getElementById(elId);
+            if (el2) el2.textContent = 'x'+(s.bank[id]||0).toLocaleString();
+          });
+        });
+      }, 500);
+      return;
+    }
+
+        if (sId === 'fishing' && GAME_DATA.fishingZones) {
       // ── EQUIPPED ROD ─────────────────────────────────────────
       const _rodId = s.equipment?.weapon;
       const _rod = _rodId ? GAME_DATA.items[_rodId] : null;

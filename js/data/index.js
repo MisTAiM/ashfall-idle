@@ -335,12 +335,21 @@ const GAME_DATA = {
 
   gatheringActions: {
     woodcutting: [
-      {id:'chop_oak',    name:'Oak Tree',    level:1, xp:40, time:3.0, loot:[{item:'oak_log',qty:1}],    masteryId:'oak'},
-      {id:'chop_willow', name:'Willow Tree', level:15,xp:100, time:3.5, loot:[{item:'willow_log',qty:1}], masteryId:'willow'},
-      {id:'chop_maple',  name:'Maple Tree',  level:30,xp:220, time:4.0, loot:[{item:'maple_log',qty:1}],  masteryId:'maple'},
-      {id:'chop_yew',    name:'Yew Tree',    level:45,xp:400,time:5.0, loot:[{item:'yew_log',qty:1}],    masteryId:'yew'},
-      {id:'chop_elder',  name:'Elder Tree',  level:60,xp:720,time:6.0, loot:[{item:'elder_log',qty:1}],  masteryId:'elder'},
-      {id:'chop_ashwood',name:'Ashwood Tree',level:75,xp:1200,time:7.0, loot:[{item:'ash_log',qty:1}],    masteryId:'ashwood'},
+      {id:'chop_oak',      name:'Oak Tree',         level:1,  xp:40,   time:3.0,  loot:[{item:'oak_log',qty:1}],        masteryId:'oak',      category:'Regular',  desc:'Common oak. Good starter XP.'},
+      {id:'chop_willow',   name:'Willow Tree',      level:15, xp:100,  time:3.5,  loot:[{item:'willow_log',qty:1}],     masteryId:'willow',   category:'Regular',  desc:'Flexible willow by rivers and lakes.'},
+      {id:'chop_teak',     name:'Teak Tree',        level:35, xp:175,  time:4.0,  loot:[{item:'teak_log',qty:1}],       masteryId:'teak',     category:'Regular',  desc:'Dense tropical hardwood. Used in crafting.'},
+      {id:'chop_maple',    name:'Maple Tree',       level:45, xp:220,  time:4.5,  loot:[{item:'maple_log',qty:1}],      masteryId:'maple',    category:'Regular',  desc:'Found in temperate forests. Autumn-red crown.'},
+      {id:'chop_mahogany', name:'Mahogany Tree',    level:50, xp:325,  time:5.0,  loot:[{item:'mahogany_log',qty:1}],   masteryId:'mahogany', category:'Regular',  desc:'Rich reddish-brown wood. High crafting value.'},
+      {id:'chop_arctic',   name:'Arctic Pine',      level:54, xp:365,  time:5.0,  loot:[{item:'arctic_log',qty:1}],     masteryId:'arctic',   category:'Special',  desc:'Frost-resistant pine from the frozen north.'},
+      {id:'chop_yew',      name:'Yew Tree',         level:60, xp:480,  time:5.5,  loot:[{item:'yew_log',qty:1}],        masteryId:'yew',      category:'Regular',  desc:'Sacred yew. Slow to chop, excellent XP.'},
+      {id:'chop_blister',  name:'Blisterwood Tree', level:62, xp:520,  time:5.5,  loot:[{item:'blister_log',qty:1}],    masteryId:'blister',  category:'Special',  desc:'Bark blisters with stored heat. Damages the chopper.'},
+      {id:'chop_magic',    name:'Magic Tree',       level:75, xp:1000, time:7.0,  loot:[{item:'magic_log',qty:1}],      masteryId:'magic',    category:'Rare',     desc:'Ancient tree suffused with arcane energy. Glows at night.'},
+      {id:'chop_elder',    name:'Elder Tree',       level:75, xp:1200, time:7.0,  loot:[{item:'elder_log',qty:1}],      masteryId:'elder',    category:'Rare',     desc:'One of the oldest trees in the Ashfall. Twisted purple bark.'},
+      {id:'chop_ashwood',  name:'Ashwood Tree',     level:80, xp:1400, time:7.5,  loot:[{item:'ash_log',qty:1}],        masteryId:'ashwood',  category:'Rare',     desc:'Born in volcanic soil. Bark flakes like black snow.'},
+      {id:'chop_redwood',  name:'Redwood Tree',     level:90, xp:1750, time:8.5,  loot:[{item:'redwood_log',qty:1}],    masteryId:'redwood',  category:'Rare',     desc:'Towering ancient giant. Requires a team to fell.'},
+      {id:'chop_spirit',   name:'Spirit Tree',      level:92, xp:2000, time:9.0,  loot:[{item:'spirit_log',qty:1}],     masteryId:'spirit',   category:'Rare',     desc:'Sentient. Allows itself to be cut only once per day.'},
+      {id:'chop_crystal',  name:'Crystal Tree',     level:94, xp:2400, time:10.0, loot:[{item:'crystal_shard',qty:1},{item:'crystal_log',qty:1}], masteryId:'crystal', category:'Rare', desc:'Petrified crystal tree from before the Ashfall.'},
+      {id:'chop_dragonwood',name:'Dragonwood Tree', level:96, xp:3000, time:11.0, loot:[{item:'dragon_log',qty:1}],      masteryId:'dragonwood',category:'Rare',   desc:'Scales instead of bark. Extremely rare. Burns eternally.'},
     ],
     mining: [
       {id:'mine_copper', name:'Copper Rock', level:1, xp:32,  time:3.0,loot:[{item:'copper_ore',qty:1}], masteryId:'copper',gemChance:0.01},
@@ -1104,6 +1113,18 @@ GAME_DATA.items.celestial_herb = {id:'celestial_herb',name:'Celestial Herb',type
 
 // New logs
 GAME_DATA.items.spirit_log = {id:'spirit_log',name:'Spirit Log',type:'resource',subtype:'log',sellPrice:500,sprite:'log-pale',desc:'Log from a spirit tree. Glows faintly.'};
+// ── WOODCUTTING LOGS — items for all trees ────────────────────
+(function() {
+const _log = (id, name, sell, desc) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = {id, name, type:'resource', subtype:'log', sellPrice:sell, sprite:'log-brown', desc}; };
+_log('teak_log',      'Teak Log',       50,  'Dense tropical hardwood. Used in high-level crafting.');
+_log('mahogany_log',  'Mahogany Log',   100, 'Rich reddish wood. Premium crafting material.');
+_log('arctic_log',    'Arctic Pine Log',80,  'Frost-resistant pine. Stays cold to the touch.');
+_log('blister_log',   'Blisterwood Log',120, 'Faintly warm. Effective against vampyric creatures.');
+_log('redwood_log',   'Redwood Log',    380, 'Massive log from an ancient giant tree.');
+_log('crystal_log',   'Crystal Log',    800, 'Petrified crystal wood. Extremely rare.');
+_log('crystal_shard', 'Crystal Shard',  400, 'Fragment of a crystal tree.');
+_log('dragon_log',    'Dragonwood Log', 1500,'Scaled wood from a dragonwood tree. Burns eternal.');
+})();
 
 // ── ENCHANTING RECIPES ───────────────────────────────────
 GAME_DATA.recipes.enchanting = [
@@ -1162,9 +1183,7 @@ GAME_DATA.gatheringActions.mining.push(
   {id:'mine_ashsteel',name:'Ashsteel Vein', level:90,xp:1800,time:12.0,loot:[{item:'ashsteel_ore',qty:1}],masteryId:'ashsteel',gemChance:0.08},
 );
 // New woodcutting
-GAME_DATA.gatheringActions.woodcutting.push(
-  {id:'chop_spirit', name:'Spirit Tree', level:85,xp:1600,time:8.0,loot:[{item:'spirit_log',qty:1}],masteryId:'spirit'},
-);
+// Spirit tree moved to main woodcutting array
 // New foraging
 GAME_DATA.gatheringActions.foraging.push(
   {id:'forage_dragon',name:'Dragonbloom Fields',level:85,xp:1400,time:9.0,loot:[{item:'dragonbloom',qty:1}],masteryId:'dragonbloom'},
