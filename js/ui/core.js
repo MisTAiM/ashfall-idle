@@ -1717,15 +1717,48 @@ class UI {
       if (s.slayerTask) {
         const _st = s.slayerTask;
         const _stMon = GAME_DATA.monsters[_st.monster];
-        const _stPct = Math.round((_st.killed||0)/(_st.qty||1)*100);
+        const _stAmt = _st.amount || _st.qty || 1; // field is `amount` not `qty`
+        const _stKilled = _st.killed || 0;
+        const _stPct = Math.min(100, Math.round(_stKilled / _stAmt * 100));
+        const _stLeft = Math.max(0, _stAmt - _stKilled);
         const _stColor = _stPct>=75?'#4abe6c':_stPct>=40?'#d4a83a':'#c9873e';
-        html += `<div class="slayer-task-strip">
-          <div class="sts-header">
-            <span class="sts-label">⚔ Slayer Task</span>
-            <span class="sts-monster">${_stMon?.name||_st.monster}</span>
-            <span class="sts-progress" style="color:${_stColor}">${_st.killed||0}/${_st.qty} killed</span>
+        const _stArt = GAME_DATA.monsterArt?.[_st.monster] || '';
+        const _isOnTask = c.active && c.monster === _st.monster;
+        html += `<div class="slayer-task-card ${_isOnTask?'stc-active':''}">
+          <div class="stc-top">
+            <div class="stc-icon-wrap">
+              <svg class="stc-sword" viewBox="0 0 24 24" width="20" height="20">
+                <path d="M14.5 2L22 9.5 10 21.5 2.5 22 2 14.5Z" fill="none" stroke="#c9873e" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M14 3L20.5 9.5" stroke="#e4a840" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M2 22L6 18" stroke="#c9873e" stroke-width="2" stroke-linecap="round"/>
+                <path d="M9 5L5 9" stroke="#c9873e" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              ${_isOnTask ? '<div class="stc-active-dot"></div>' : ''}
+            </div>
+            <div class="stc-info">
+              <div class="stc-label">Slayer Task</div>
+              <div class="stc-monster">${_stMon?.name||_st.monster}</div>
+            </div>
+            ${_stArt ? `<div class="stc-art">${_stArt}</div>` : ''}
           </div>
-          <div class="sts-bar"><div class="sts-fill" id="sts-fill" style="width:${_stPct}%;background:${_stColor}"></div></div>
+          <div class="stc-bar-row">
+            <div class="stc-bar-track">
+              <div class="stc-bar-fill" id="sts-fill" style="width:${_stPct}%;background:${_stColor}">
+                <div class="stc-bar-shine"></div>
+              </div>
+              <div class="stc-bar-segments">${Array.from({length:9},(_,i)=>`<div class="stc-seg"></div>`).join('')}</div>
+            </div>
+            <div class="stc-counts">
+              <span class="stc-killed" id="sts-killed" style="color:${_stColor}">${_stKilled}</span>
+              <span class="stc-sep">/</span>
+              <span class="stc-total">${_stAmt}</span>
+            </div>
+          </div>
+          <div class="stc-bottom">
+            <span class="stc-pct" id="sts-pct" style="color:${_stColor}">${_stPct}%</span>
+            <span class="stc-left" id="sts-left">${_stLeft} remaining</span>
+            <span class="stc-tier">${_st.tier||''}</span>
+          </div>
         </div>`;
       }
 
@@ -7415,11 +7448,21 @@ class UI {
           // Cannon balls live update
           const _cbEl = document.getElementById('cannon-balls');
           if (_cbEl) _cbEl.textContent = (s.bank['cannonball']||0).toLocaleString();
-          // Slayer task progress
+          // Slayer task progress — live update (uses `amount` not `qty`)
           if (s.slayerTask) {
-            const _stsFill = document.getElementById('sts-fill');
-            const _stsPct  = Math.round((s.slayerTask.killed||0)/(s.slayerTask.qty||1)*100);
-            if (_stsFill) { _stsFill.style.width = _stsPct+'%'; }
+            const _stAmt    = s.slayerTask.amount || s.slayerTask.qty || 1;
+            const _stKilled = s.slayerTask.killed || 0;
+            const _stPct    = Math.min(100, Math.round(_stKilled / _stAmt * 100));
+            const _stLeft   = Math.max(0, _stAmt - _stKilled);
+            const _stColor  = _stPct>=75?'#4abe6c':_stPct>=40?'#d4a83a':'#c9873e';
+            const fillEl    = document.getElementById('sts-fill');
+            const killedEl  = document.getElementById('sts-killed');
+            const pctEl     = document.getElementById('sts-pct');
+            const leftEl    = document.getElementById('sts-left');
+            if (fillEl)   { fillEl.style.width = _stPct+'%'; fillEl.style.background = _stColor; }
+            if (killedEl) { killedEl.textContent = _stKilled; killedEl.style.color = _stColor; }
+            if (pctEl)    { pctEl.textContent = _stPct+'%'; pctEl.style.color = _stColor; }
+            if (leftEl)   { leftEl.textContent = _stLeft+' remaining'; }
           }
           // Mana live update
           const mBarEl = document.getElementById('mana-bar');
