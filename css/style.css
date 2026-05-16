@@ -9825,3 +9825,10 @@ body.perf-mode .hit-splat { display:none !important; }
   .wild-two-col { grid-template-columns:1fr; }
   .wild-rules-strip { grid-template-columns:1fr; }
 }
+
+/* ── WILDERNESS COMBAT CONTROLS ──────────────────────────── */
+.arena-wild-controls { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.arena-tele-btn { background:rgba(74,126,196,0.15) !important; border-color:rgba(74,126,196,0.4) !important; color:#6a9ed4 !important; font-size:10px !important; padding:4px 8px !important; }
+.arena-tele-btn:hover:not(:disabled) { background:rgba(74,126,196,0.3) !important; }
+.arena-tele-blocked { background:rgba(100,40,40,0.2) !important; border-color:rgba(196,64,64,0.3) !important; color:#c44040 !important; cursor:not-allowed !important; }
+.arena-skull-badge { font-size:10px; color:#c44040; font-family:'Cinzel',serif; font-weight:700; animation:skullPulse 1.5s ease-in-out infinite; letter-spacing:0.5px; }

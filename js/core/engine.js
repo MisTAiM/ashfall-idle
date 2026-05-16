@@ -304,6 +304,8 @@ class GameEngine {
     const now = Date.now();
     const dt = (now - this.lastTick) / 1000;
     this.lastTick = now;
+    // Decrement TeleBlock counter each tick
+    if (this.state.combat._teleBlocked > 0) this.state.combat._teleBlocked = Math.max(0, this.state.combat._teleBlocked - 1);
     // Anti-cheat: cap dt to prevent time manipulation
     const safeDt = Math.min(dt, 1.0); // max 1 second per tick
     this.state.stats.totalPlayTime += safeDt;
@@ -1555,31 +1557,6 @@ class GameEngine {
       }
     }
 
-    // PvP Arena victory
-    // PvP kill in wilderness — stat tracking + skull clear
-    if (mId === 'pvp_opponent' && this.state.combat._isWilderness) {
-      this.state.stats.pvpKills = (this.state.stats.pvpKills||0) + 1;
-      this.state.stats.pvpStreak = (this.state.stats.pvpStreak||0) + 1;
-      if ((this.state.stats.pvpStreak||0) > (this.state.stats.pvpBestStreak||0)) {
-        this.state.stats.pvpBestStreak = this.state.stats.pvpStreak;
-      }
-      // Roll PvP loot
-      const loot = (GAME_DATA.pvpLoot||[]).filter(e => Math.random() < e.chance);
-      let goldLoot = 50 + this.state.combat.monster ? (GAME_DATA.monsters[this.state.combat.monster]?.combatLevel||1)*20 : 100;
-      for (const l of loot) {
-        this.addItem(l.item, l.qty);
-        const name = GAME_DATA.items[l.item]?.name || l.item;
-        this.emit('notification',{type:'rare',text:`PvP Drop: ${name} x${l.qty}!`});
-      }
-      goldLoot += Math.floor(Math.random() * goldLoot);
-      this.state.gold += goldLoot;
-      this.state.stats.pvpGoldLooted = (this.state.stats.pvpGoldLooted||0) + goldLoot;
-      this.emit('notification',{type:'success',text:`⚔ PvP Kill! +${this.fmt(goldLoot)} gold looted.`});
-      if (typeof online !== 'undefined' && online.isOnline) {
-        const pName = this.state.combat._pvpRealPlayer || 'a wanderer';
-        online.sendSystemMessage(`⚔ ${online.displayName} slew ${pName} in the Wilderness! (+${this.fmt(goldLoot)} gp)`);
-      }
-    }
     if (this.state.combat._pvpArena && mId === 'pvp_arena_opponent') {
       const opp = this.state.combat._pvpOpponent;
       if (opp && typeof online !== 'undefined') {
@@ -1606,6 +1583,8 @@ class GameEngine {
       if (typeof realAdminPanel !== 'undefined' && realAdminPanel.multipliers?.gold) {
         g = Math.floor(g * realAdminPanel.multipliers.gold);
       }
+      // Wilderness gold bonus: +50%
+      if (this.state.combat._isWilderness) g = Math.floor(g * 1.5);
       this.state.gold += g; this.state.stats.goldEarned += g;
       _goldEarned = g;
     }
@@ -1809,7 +1788,7 @@ class GameEngine {
     if (this.state.combat._isWilderness) {
       this.state.stats.pvpDeaths = (this.state.stats.pvpDeaths || 0) + 1;
       this.state.stats.pvpStreak = 0;
-      const skulled = !!(this.state.combat._skull && this.state.combat._skull.expiresAt > Date.now());
+      const skulled = !!(this.state._wildSkull && this.state._wildSkull.expiresAt > Date.now());
 
       if (skulled) {
         // Skulled: lose EVERYTHING
@@ -1819,7 +1798,7 @@ class GameEngine {
         this.state.bank = {};
         // Unequip all
         for (const slot of Object.keys(this.state.equipment)) this.state.equipment[slot] = null;
-        this.state.combat._skull = null;
+        this.state._wildSkull = null;
         this.emit('notification', { type:'danger', text:`💀 SKULLED DEATH — Lost everything! ${this.fmt(lostGold)} gold and ${lostItems} item stacks gone.` });
       } else {
         // Unskulled: keep 3 most valuable items, lose the rest
@@ -1941,7 +1920,7 @@ class GameEngine {
           this.state.combat._pvpRealPlayer = opponent.name;
           // If WE attacked them (they didn't attack us first), skull us
           if (!this.state.combat._skull) {
-            this.state.combat._skull = { expiresAt: Date.now() + 20*60*1000 }; // 20min skull
+            this.state._wildSkull = { expiresAt: Date.now() + 20*60*1000 }; // 20min skull, survives between fights
             this.emit('notification',{type:'danger',text:'💀 You are now SKULLED! You will lose all items on death for 20 minutes.'});
           }
           return;
@@ -1952,10 +1931,15 @@ class GameEngine {
     // Normal PvP chance (simulated opponent)
     if (Math.random() < zone.pvpChance) {
       this.emit('notification',{type:'danger',text:'A hostile player attacks you in the Wilderness!'});
+      // TeleBlock: 25% chance PKer casts it on entry
+      if (Math.random() < 0.25) {
+        this.state.combat._teleBlocked = 10; // 10 combat rounds
+        this.emit('notification',{type:'danger',text:'The PKer casts TeleBlock! You cannot TeleHome for 10 rounds.'});
+      }
       const fakeMonster = {
         id:'pvp_opponent', name:'Wilderness PKer', hp: Math.floor(this.getMaxHp() * 0.9),
         maxHit: Math.floor(this.state.skills.strength.level * 0.8),
-        attackSpeed: 2.0, combatLevel: cb + Math.floor(Math.random()*10) - 5,
+        attackSpeed: 2.0, combatLevel: Math.max(3, cb + Math.floor(Math.random()*15)), // ±15 cb bracket, weighted higher
         style: ['melee','ranged','magic'][Math.floor(Math.random()*3)],
         evasion:{melee:cb,ranged:cb,magic:cb},
         xp: cb * 50, gold:{min:50,max:cb*10}, alignment:'CE',

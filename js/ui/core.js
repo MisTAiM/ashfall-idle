@@ -1222,6 +1222,13 @@ class UI {
             ${weakness ? `<div class="arena-weakness">⚠ Weak: ${weakness.weak} +${weakness.bonus}%</div>` : ''}
             ${mon.desc ? `<div class="arena-mon-desc">${mon.desc}</div>` : ''}
             <button class="arena-flee-btn" onclick="game.stopCombat()">Flee</button>
+            ${s.combat._isWilderness ? `<div class="arena-wild-controls">
+              ${s.combat._teleBlocked > 0
+                ? `<button class="btn btn-xs arena-tele-btn arena-tele-blocked" disabled title="TeleBlocked for ${s.combat._teleBlocked} more rounds">🔒 TeleBlocked (${s.combat._teleBlocked})</button>`
+                : `<button class="btn btn-xs arena-tele-btn" onclick="game.castTeleHome()" title="Escape wilderness (3 Fire + 5 Air runes)">🌀 TeleHome</button>`
+              }
+              ${(s._wildSkull && s._wildSkull.expiresAt > Date.now()) ? `<div class="arena-skull-badge">💀 SKULLED</div>` : ''}
+            </div>` : ''}
           </div>
 
           <!-- MONSTER ──────────────────────────────────────────── -->
@@ -5869,8 +5876,8 @@ class UI {
   renderWildernessPage(el) {
     const s = this.engine.state;
     const cb = this.engine.getCombatLevel();
-    const skull = s.combat._skull || null;
-    const skullTimeLeft = skull ? Math.max(0, Math.ceil((skull.expiresAt - Date.now())/1000)) : 0;
+    const skull = s._wildSkull || null;
+    const skullTimeLeft = skull && skull.expiresAt > Date.now() ? Math.max(0, Math.ceil((skull.expiresAt - Date.now())/1000)) : 0;
     const isInWild = s.combat.active && s.combat._isWilderness;
     const isSkullied = skullTimeLeft > 0;
 
