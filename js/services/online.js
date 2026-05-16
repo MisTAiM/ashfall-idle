@@ -919,6 +919,24 @@ class OnlineManager {
     } catch(e) { console.error('Store PvP result error:', e); }
   }
 
+  awardPKerLoot(pkerName, skulled) {
+    // Called when OUR player dies — give loot credit to the PKer
+    // In a real multiplayer game this would update the PKer's game state via Firestore
+    // For now we track it as a message + store in Firestore for their next login
+    if (!this.isOnline || !this.user || !this.firestore) return;
+    try {
+      const goldDropped = skulled ? Math.floor((game?.state?.gold || 0) * 0.5) : Math.floor((game?.state?.gold || 0) * 0.1);
+      this.firestore.collection('pvp_loot_drops').add({
+        pkerName,
+        victimName: this.displayName,
+        victimUid: this.user.uid,
+        goldAmount: goldDropped,
+        skulled,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch(e) { console.warn('awardPKerLoot failed:', e); }
+  }
+
   rollPvPLoot(opponentLevel) {
     const loot = [];
     const table = GAME_DATA.pvpLoot || [];

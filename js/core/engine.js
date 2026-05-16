@@ -1556,6 +1556,30 @@ class GameEngine {
     }
 
     // PvP Arena victory
+    // PvP kill in wilderness — stat tracking + skull clear
+    if (mId === 'pvp_opponent' && this.state.combat._isWilderness) {
+      this.state.stats.pvpKills = (this.state.stats.pvpKills||0) + 1;
+      this.state.stats.pvpStreak = (this.state.stats.pvpStreak||0) + 1;
+      if ((this.state.stats.pvpStreak||0) > (this.state.stats.pvpBestStreak||0)) {
+        this.state.stats.pvpBestStreak = this.state.stats.pvpStreak;
+      }
+      // Roll PvP loot
+      const loot = (GAME_DATA.pvpLoot||[]).filter(e => Math.random() < e.chance);
+      let goldLoot = 50 + this.state.combat.monster ? (GAME_DATA.monsters[this.state.combat.monster]?.combatLevel||1)*20 : 100;
+      for (const l of loot) {
+        this.addItem(l.item, l.qty);
+        const name = GAME_DATA.items[l.item]?.name || l.item;
+        this.emit('notification',{type:'rare',text:`PvP Drop: ${name} x${l.qty}!`});
+      }
+      goldLoot += Math.floor(Math.random() * goldLoot);
+      this.state.gold += goldLoot;
+      this.state.stats.pvpGoldLooted = (this.state.stats.pvpGoldLooted||0) + goldLoot;
+      this.emit('notification',{type:'success',text:`⚔ PvP Kill! +${this.fmt(goldLoot)} gold looted.`});
+      if (typeof online !== 'undefined' && online.isOnline) {
+        const pName = this.state.combat._pvpRealPlayer || 'a wanderer';
+        online.sendSystemMessage(`⚔ ${online.displayName} slew ${pName} in the Wilderness! (+${this.fmt(goldLoot)} gp)`);
+      }
+    }
     if (this.state.combat._pvpArena && mId === 'pvp_arena_opponent') {
       const opp = this.state.combat._pvpOpponent;
       if (opp && typeof online !== 'undefined') {
@@ -1781,15 +1805,53 @@ class GameEngine {
 
     this.state.stats.deaths = (this.state.stats.deaths || 0) + 1;
 
-    // Wilderness PvP death
+    // Wilderness PvP death — full risk/reward
     if (this.state.combat._isWilderness) {
       this.state.stats.pvpDeaths = (this.state.stats.pvpDeaths || 0) + 1;
       this.state.stats.pvpStreak = 0;
-      const lostGold = Math.floor(this.state.gold * 0.05);
-      this.state.gold = Math.max(0, this.state.gold - lostGold);
-      this.emit('notification', { type:'danger', text:`Killed in the Wilderness! Lost ${lostGold} gold.` });
-      if (typeof online !== 'undefined' && online.isOnline) {
-        online.sendSystemMessage(`[PVP] ${online.displayName} was slain in the Wilderness!`);
+      const skulled = !!(this.state.combat._skull && this.state.combat._skull.expiresAt > Date.now());
+
+      if (skulled) {
+        // Skulled: lose EVERYTHING
+        const lostGold = this.state.gold;
+        this.state.gold = 0;
+        const lostItems = Object.entries(this.state.bank).filter(([,q])=>q>0).length;
+        this.state.bank = {};
+        // Unequip all
+        for (const slot of Object.keys(this.state.equipment)) this.state.equipment[slot] = null;
+        this.state.combat._skull = null;
+        this.emit('notification', { type:'danger', text:`💀 SKULLED DEATH — Lost everything! ${this.fmt(lostGold)} gold and ${lostItems} item stacks gone.` });
+      } else {
+        // Unskulled: keep 3 most valuable items, lose the rest
+        const allItems = [];
+        for (const [id, qty] of Object.entries(this.state.bank)) {
+          if (qty > 0) { const it = GAME_DATA.items[id]; allItems.push({id, val:(it?.sellPrice||0)*qty, qty}); }
+        }
+        for (const [slot, id] of Object.entries(this.state.equipment)) {
+          if (id) { const it = GAME_DATA.items[id]; allItems.push({id, val:it?.sellPrice||0, qty:1, slot}); }
+        }
+        allItems.sort((a,b) => b.val - a.val);
+        const keep = new Set(allItems.slice(0,3).map(i=>i.id));
+        // Remove bank items not kept
+        for (const id of Object.keys(this.state.bank)) {
+          if (!keep.has(id)) this.state.bank[id] = 0;
+        }
+        // Unequip items not kept
+        for (const [slot, id] of Object.entries(this.state.equipment)) {
+          if (id && !keep.has(id)) this.state.equipment[slot] = null;
+        }
+        const lostGold = Math.floor(this.state.gold * 0.5);
+        this.state.gold = Math.max(0, this.state.gold - lostGold);
+        this.emit('notification', { type:'danger', text:`Killed in the Wilderness! Lost most items and ${this.fmt(lostGold)} gold. You kept your 3 most valuable items.` });
+      }
+
+      // Give PKer their loot
+      const pker = this.state.combat._pvpRealPlayer;
+      if (pker && typeof online !== 'undefined' && online.isOnline) {
+        online.sendSystemMessage(`💀 ${online.displayName} was slain by ${pker} in the Wilderness!`);
+        online.awardPKerLoot(pker, skulled);
+      } else if (typeof online !== 'undefined' && online.isOnline) {
+        online.sendSystemMessage(`💀 ${online.displayName} was slain in the Wilderness!`);
       }
     } else if (this.state.combat._pvpArena) {
       // PvP Arena defeat
@@ -1877,6 +1939,11 @@ class GameEngine {
           this.startCombat(null, 'pvp_opponent');
           this.state.combat._isWilderness = true;
           this.state.combat._pvpRealPlayer = opponent.name;
+          // If WE attacked them (they didn't attack us first), skull us
+          if (!this.state.combat._skull) {
+            this.state.combat._skull = { expiresAt: Date.now() + 20*60*1000 }; // 20min skull
+            this.emit('notification',{type:'danger',text:'💀 You are now SKULLED! You will lose all items on death for 20 minutes.'});
+          }
           return;
         }
       }

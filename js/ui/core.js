@@ -5866,6 +5866,199 @@ class UI {
   }
 
   // ── PVP ARENA PAGE ─────────────────────────────────────
+  renderWildernessPage(el) {
+    const s = this.engine.state;
+    const cb = this.engine.getCombatLevel();
+    const skull = s.combat._skull || null;
+    const skullTimeLeft = skull ? Math.max(0, Math.ceil((skull.expiresAt - Date.now())/1000)) : 0;
+    const isInWild = s.combat.active && s.combat._isWilderness;
+    const isSkullied = skullTimeLeft > 0;
+
+    let html = this.header('Wilderness','skull','The lawless zone north of the settlement. High risk, high reward. Real players hunt here.','wilderness');
+
+    // ── SKULL STATUS BANNER ───────────────────────────────────
+    if (isSkullied) {
+      const m = Math.floor(skullTimeLeft/60), sc = skullTimeLeft%60;
+      html += `<div class="wild-skull-banner">
+        <span class="wsb-icon">💀</span>
+        <div>
+          <div class="wsb-title">YOU ARE SKULLED</div>
+          <div class="wsb-desc">If you die, you lose all items. ${m}m ${sc}s remaining.</div>
+        </div>
+        <div class="wsb-timer" id="skull-timer">${m}m ${sc}s</div>
+      </div>`;
+    }
+
+    // ── WILDERNESS RULES ──────────────────────────────────────
+    html += `<div class="wild-rules-strip">
+      <div class="wrs-rule"><span class="wrs-icon">⚔</span><div><strong>PvP Risk</strong><div class="wrs-desc">Other players can attack you in wilderness zones. Combat level bracket limits who can attack you (±15 cb).</div></div></div>
+      <div class="wrs-rule"><span class="wrs-icon">💀</span><div><strong>Death Penalty</strong><div class="wrs-desc">Unskulled: keep 3 most valuable items. Skulled: lose everything. Your killer loots what you drop.</div></div></div>
+      <div class="wrs-rule"><span class="wrs-icon">📦</span><div><strong>High Rewards</strong><div class="wrs-desc">Wilderness monsters drop rare loot and more gold. The deeper you go, the better the rewards.</div></div></div>
+      <div class="wrs-rule"><span class="wrs-icon">🏃</span><div><strong>Escape Options</strong><div class="wrs-desc">TeleHome spell (3 Fire + 5 Air runes) or run to safety. PKers can cast TeleBlock to stop you.</div></div></div>
+    </div>`;
+
+    // ── WHAT I KEEP ON DEATH ──────────────────────────────────
+    if (!isSkullied) {
+      // Calculate 3 most valuable items player keeps
+      const allItems = [];
+      // Equipped items
+      for (const [slot, id] of Object.entries(s.equipment || {})) {
+        if (id) { const it = GAME_DATA.items[id]; if (it) allItems.push({id, name:it.name, val:it.sellPrice||0, slot}); }
+      }
+      // Bank items (top by value)
+      for (const [id, qty] of Object.entries(s.bank || {})) {
+        if (qty > 0) { const it = GAME_DATA.items[id]; if (it && it.sellPrice > 100) allItems.push({id, name:it.name, val:(it.sellPrice||0)*qty, slot:'bank', qty}); }
+      }
+      allItems.sort((a,b) => b.val - a.val);
+      const keeping = allItems.slice(0,3);
+      if (keeping.length > 0) {
+        html += `<div class="wild-keep-strip">
+          <div class="wks-title">If you die (unskulled) you keep:</div>
+          <div class="wks-items">${keeping.map(it=>`<span class="wks-item">${it.name}${it.qty>1?' x'+it.qty:''}</span>`).join('')}</div>
+        </div>`;
+      }
+    }
+
+    // ── SUPPLIES CHECK ────────────────────────────────────────
+    const runes = { fire: s.bank.fire_rune||0, air: s.bank.air_rune||0 };
+    const canTeleHome = runes.fire >= 3 && runes.air >= 5;
+    html += `<div class="wild-supplies-strip">
+      <div class="wss-item ${canTeleHome?'wss-ok':'wss-warn'}">
+        ${canTeleHome?'✓':'⚠'} TeleHome: ${runes.fire} Fire + ${runes.air} Air runes ${canTeleHome?'(Ready)':'(Need 3 Fire + 5 Air)'}
+      </div>
+      <div class="wss-item ${(s.bank.antipoison||0)>0?'wss-ok':'wss-dim'}">
+        ${(s.bank.antipoison||0)>0?'✓':'—'} Antipoison: x${s.bank.antipoison||0}
+      </div>
+      <div class="wss-item ${(s.bank.cooked_shark||0)>0||(s.bank.cooked_lobster||0)>0?'wss-ok':'wss-dim'}">
+        ${(s.bank.cooked_shark||0)+(s.bank.cooked_lobster||0)>0?'✓':'—'} Food: ${(s.bank.cooked_shark||0)+(s.bank.cooked_lobster||0)} pieces
+      </div>
+      <div class="wss-item ${(s.bank.prayer_potion||0)>0?'wss-ok':'wss-dim'}">
+        ${(s.bank.prayer_potion||0)>0?'✓':'—'} Prayer pots: x${s.bank.prayer_potion||0}
+      </div>
+    </div>`;
+
+    // ── WILDERNESS ZONES ──────────────────────────────────────
+    html += `<h2 class="section-title">Wilderness Zones</h2>`;
+    html += `<div class="wild-zones-grid">`;
+
+    const zoneData = [
+      { id:'wild_1', name:'The Wastes', level:'1-10', subtitle:'Scorched grasslands north of the settlement wall.',
+        monsters:[{id:'bandit',name:'Bandit',cb:12},{id:'wolf',name:'Dire Wolf',cb:18},{id:'skeleton',name:'Skeleton Warrior',cb:14}],
+        drops:'Bones, basic potions, steel gear', pvpRisk:'Low (5%)', color:'#4a8a3e', icon:'🌾',
+        rewards:'150-400 gp/kill', minCb:1 },
+      { id:'wild_2', name:'Ashfall Corridor', level:'10-25', subtitle:'A cracked road through toxic ashfall debris.',
+        monsters:[{id:'dark_wizard',name:'Dark Wizard',cb:22},{id:'hill_giant',name:'Hill Giant',cb:28},{id:'moss_giant',name:'Moss Giant',cb:42}],
+        drops:'Death runes, mithril bars, gems', pvpRisk:'Medium (8%)', color:'#d4a83a', icon:'🌋',
+        rewards:'400-900 gp/kill', minCb:10 },
+      { id:'wild_3', name:'The Demon Roads', level:'25-45', subtitle:'Ancient trade routes now patrolled by demon scouts.',
+        monsters:[{id:'lesser_demon',name:'Lesser Demon',cb:48},{id:'hellhound',name:'Hellhound',cb:62},{id:'gargoyle',name:'Gargoyle',cb:75}],
+        drops:'Adamant bars, dragon bones, rune items', pvpRisk:'High (10%)', color:'#c44040', icon:'🔥',
+        rewards:'800-2000 gp/kill', minCb:25 },
+      { id:'wild_4', name:'The Void Breach', level:'45-65', subtitle:'Where the Ashfall first cracked the world open. The void bleeds through here.',
+        monsters:[{id:'gargoyle',name:'Gargoyle',cb:75},{id:'steel_dragon',name:'Steel Dragon',cb:95},{id:'void_titan',name:'Void Titan',cb:100}],
+        drops:'Rune items, void crystals, draconic visage', pvpRisk:'Very High (12%)', color:'#8a2ae0', icon:'⚡',
+        rewards:'1500-5000 gp/kill', minCb:45 },
+      { id:'wild_5', name:'Deep Wilderness', level:'65+', subtitle:'No one comes back from here the same. Most never return.',
+        monsters:[{id:'demon_lord',name:'Demon Lord',cb:120},{id:'ash_titan',name:'Ash Titan',cb:135},{id:'void_emperor_spawn',name:'Void Emperor Spawn',cb:160}],
+        drops:'Elder cores, titan shards, void emperor gear', pvpRisk:'Extreme (15%)', color:'#ff2a2a', icon:'💀',
+        rewards:'3000-12000 gp/kill', minCb:65 },
+    ];
+
+    for (const zone of zoneData) {
+      const locked = cb < zone.minCb;
+      const monsterBtns = zone.monsters.map(m => {
+        if (locked) return '';
+        return `<button class="wild-mon-btn" onclick="game.startWildernessCombat('${zone.id}','${m.id}')" title="Combat Level ${m.cb}">
+          <span>${m.name}</span><span class="wmb-cb">Cb ${m.cb}</span>
+        </button>`;
+      }).join('');
+
+      html += `<div class="wild-zone-card ${locked?'wzc-locked':''}" style="--zone-color:${zone.color}">
+        <div class="wzc-header">
+          <div class="wzc-icon">${zone.icon}</div>
+          <div class="wzc-info">
+            <div class="wzc-name">${zone.name}</div>
+            <div class="wzc-sub">${zone.subtitle}</div>
+          </div>
+          <div class="wzc-level">Lv ${zone.level}</div>
+        </div>
+        <div class="wzc-stats">
+          <div class="wzc-stat"><span class="wzcs-label">PvP Risk</span><span class="wzcs-val" style="color:${zone.color}">${zone.pvpRisk}</span></div>
+          <div class="wzc-stat"><span class="wzcs-label">Rewards</span><span class="wzcs-val" style="color:#c9873e">${zone.rewards}</span></div>
+          <div class="wzc-stat"><span class="wzcs-label">Drops</span><span class="wzcs-val">${zone.drops}</span></div>
+        </div>
+        ${!locked ? `<div class="wzc-monsters">${monsterBtns}</div>` : `<div class="wzc-lock">Combat ${zone.minCb}+ required</div>`}
+      </div>`;
+    }
+    html += '</div>';
+
+    // ── PvP KILLS LEADERBOARD ─────────────────────────────────
+    html += `<div class="wild-two-col">`;
+
+    // My stats
+    html += `<div class="wild-stat-box">
+      <div class="wsb-header">Your Wilderness Record</div>
+      <div class="wsb-row"><span>PvP Kills</span><span style="color:#c44040;font-weight:700">${s.stats.pvpKills||0}</span></div>
+      <div class="wsb-row"><span>Deaths</span><span>${s.stats.pvpDeaths||0}</span></div>
+      <div class="wsb-row"><span>K/D Ratio</span><span>${(s.stats.pvpDeaths||0)>0?((s.stats.pvpKills||0)/(s.stats.pvpDeaths)).toFixed(2):'—'}</span></div>
+      <div class="wsb-row"><span>Kill Streak</span><span style="color:#c9873e">${s.stats.pvpStreak||0}</span></div>
+      <div class="wsb-row"><span>Best Streak</span><span>${s.stats.pvpBestStreak||0}</span></div>
+      <div class="wsb-row"><span>Gold Looted</span><span style="color:#d4a83a">${this.fmt(s.stats.pvpGoldLooted||0)}</span></div>
+    </div>`;
+
+    // Loot table
+    html += `<div class="wild-stat-box">
+      <div class="wsb-header">PvP Loot Table (on kill)</div>
+      ${(GAME_DATA.pvpLoot||[]).map(entry => {
+        const it = GAME_DATA.items[entry.item];
+        return `<div class="wsb-row">
+          <span>${it?.name||entry.item} x${entry.qty}</span>
+          <span style="color:#c9873e">${(entry.chance*100).toFixed(0)}%</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+    html += '</div>';
+
+    // ── ACTIVE PLAYERS IN WILDERNESS ──────────────────────────
+    html += `<h2 class="section-title">Players Online in Wilderness</h2>
+      <div id="wild-players-list"><div class="bank-empty">Scanning wilderness...</div></div>`;
+
+    el.innerHTML = html;
+
+    // Load active players async
+    if (typeof online !== 'undefined' && online.isOnline) {
+      Promise.all(zoneData.map(z => online.getPlayersInZone(z.id))).then(results => {
+        const all = results.flat();
+        const container = document.getElementById('wild-players-list');
+        if (!container) return;
+        if (all.length === 0) {
+          container.innerHTML = '<div class="bank-empty">No players currently in the wilderness.</div>';
+          return;
+        }
+        container.innerHTML = `<div class="wild-players-grid">${all.map(p =>
+          `<div class="wild-player-chip">
+            <span class="wpc-name">${this.escHtml(p.name||'Unknown')}</span>
+            <span class="wpc-cb">Cb ${p.combatLevel||'?'}</span>
+            <span class="wpc-zone">${zoneData.find(z=>z.id===p.zone)?.name||p.zone||'Unknown zone'}</span>
+          </div>`
+        ).join('')}</div>`;
+      });
+    } else {
+      const c = document.getElementById('wild-players-list');
+      if (c) c.innerHTML = '<div class="bank-empty">Sign in to see other players in the wilderness.</div>';
+    }
+
+    // Skull countdown
+    if (isSkullied) {
+      const _skullInterval = setInterval(() => {
+        const left = Math.max(0, Math.ceil(((s.combat._skull?.expiresAt||0) - Date.now())/1000));
+        const el2 = document.getElementById('skull-timer');
+        if (el2) el2.textContent = Math.floor(left/60)+'m '+left%60+'s';
+        if (left <= 0) { clearInterval(_skullInterval); ui.renderPage('wilderness'); }
+      }, 1000);
+    }
+  }
+
   renderPvPPage(el) {
     const isOnline = typeof online !== 'undefined' && online.isOnline;
     const s = this.engine.state;

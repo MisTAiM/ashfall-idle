@@ -9748,3 +9748,80 @@ body.perf-mode .hit-splat { display:none !important; }
   .fsh-stats { gap:10px; }
   .fst-time,.fst-xp { display:none; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   WILDERNESS PAGE — Complete PvP risk/reward UI
+   ════════════════════════════════════════════════════════════ */
+
+/* ── SKULL BANNER ────────────────────────────────────────── */
+.wild-skull-banner {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(196,64,64,0.12); border: 2px solid rgba(196,64,64,0.5);
+  border-radius: 10px; padding: 14px 18px; margin-bottom: 14px;
+  animation: skullPulse 1.5s ease-in-out infinite;
+}
+@keyframes skullPulse { 0%,100%{box-shadow:0 0 8px rgba(196,64,64,0.3)} 50%{box-shadow:0 0 20px rgba(196,64,64,0.6)} }
+.wsb-icon { font-size: 36px; flex-shrink: 0; }
+.wsb-title { font-family:'Cinzel',serif; font-size:15px; color:#c44040; font-weight:700; letter-spacing:1px; }
+.wsb-desc { font-size:11px; color:var(--text-dim); margin-top:3px; }
+.wsb-timer { font-family:'JetBrains Mono',monospace; font-size:18px; color:#c44040; font-weight:700; margin-left:auto; }
+
+/* ── RULES STRIP ─────────────────────────────────────────── */
+.wild-rules-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; margin-bottom:16px; }
+.wrs-rule { display:flex; align-items:flex-start; gap:10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.wrs-icon { font-size:20px; flex-shrink:0; margin-top:1px; }
+.wrs-rule strong { font-family:'Cinzel',serif; font-size:11px; display:block; color:var(--text); margin-bottom:3px; }
+.wrs-desc { font-size:10px; color:var(--text-dim); line-height:1.5; }
+
+/* ── KEEP ON DEATH STRIP ─────────────────────────────────── */
+.wild-keep-strip { background:rgba(74,190,108,0.06); border:1px solid rgba(74,190,108,0.2); border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.wks-title { font-size:11px; color:var(--text-dim); }
+.wks-items { display:flex; gap:6px; flex-wrap:wrap; }
+.wks-item { font-size:11px; background:rgba(74,190,108,0.1); border:1px solid rgba(74,190,108,0.3); border-radius:4px; padding:2px 8px; color:#4abe6c; }
+
+/* ── SUPPLIES STRIP ──────────────────────────────────────── */
+.wild-supplies-strip { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; padding:10px 14px; background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; }
+.wss-item { font-size:11px; padding:3px 8px; border-radius:4px; }
+.wss-ok   { color:#4abe6c; }
+.wss-warn { color:#c44040; }
+.wss-dim  { color:var(--text-dim); }
+
+/* ── ZONES GRID ──────────────────────────────────────────── */
+.wild-zones-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+.wild-zone-card { background:var(--bg-mid); border:1px solid var(--border); border-left:3px solid var(--zone-color,#c9873e); border-radius:10px; padding:14px 16px; transition:border-color 0.2s; }
+.wild-zone-card:hover:not(.wzc-locked) { border-color:var(--zone-color,#c9873e); }
+.wzc-locked { opacity:0.5; }
+.wzc-header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.wzc-icon { font-size:28px; flex-shrink:0; }
+.wzc-name { font-family:'Cinzel',serif; font-size:14px; color:var(--text); font-weight:600; }
+.wzc-sub  { font-size:11px; color:var(--text-dim); margin-top:2px; font-style:italic; }
+.wzc-level { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--zone-color,#c9873e); font-weight:700; margin-left:auto; flex-shrink:0; }
+.wzc-stats { display:flex; gap:16px; margin-bottom:10px; flex-wrap:wrap; }
+.wzc-stat { display:flex; flex-direction:column; }
+.wzcs-label { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; }
+.wzcs-val   { font-size:12px; font-weight:600; color:var(--text); }
+.wzc-monsters { display:flex; gap:6px; flex-wrap:wrap; }
+.wild-mon-btn { display:flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:var(--text); font-size:12px; cursor:pointer; transition:all 0.15s; }
+.wild-mon-btn:hover { border-color:var(--zone-color,#c9873e); background:rgba(201,135,62,0.08); }
+.wmb-cb { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-dim); }
+.wzc-lock { font-size:11px; color:var(--text-dim); padding:4px 0; font-style:italic; }
+
+/* ── STATS + LOOT TABLE ──────────────────────────────────── */
+.wild-two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+.wild-stat-box { background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:14px; }
+.wsb-header { font-family:'Cinzel',serif; font-size:12px; color:var(--text); font-weight:600; text-transform:uppercase; letter-spacing:1px; padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:8px; }
+.wsb-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:12px; color:var(--text-dim); border-bottom:1px solid rgba(255,255,255,0.03); }
+.wsb-row:last-child { border-bottom:none; }
+
+/* ── ACTIVE PLAYERS ──────────────────────────────────────── */
+.wild-players-grid { display:flex; gap:6px; flex-wrap:wrap; }
+.wild-player-chip { display:flex; align-items:center; gap:6px; padding:5px 10px; background:rgba(196,64,64,0.08); border:1px solid rgba(196,64,64,0.2); border-radius:6px; font-size:11px; }
+.wpc-name { color:#c44040; font-weight:600; }
+.wpc-cb   { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-dim); }
+.wpc-zone { color:var(--text-dim); font-size:10px; }
+
+/* Mobile */
+@media (max-width:768px) {
+  .wild-two-col { grid-template-columns:1fr; }
+  .wild-rules-strip { grid-template-columns:1fr; }
+}
