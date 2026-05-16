@@ -182,11 +182,18 @@ class UI {
       }
 
       // Create the ability animation overlay on the arena
+      // Purge any stuck ability overlays first
+      document.querySelectorAll('.ability-anim-overlay').forEach(el => el.remove());
       const overlay = document.createElement('div');
       overlay.className = 'ability-anim-overlay';
       overlay.innerHTML = this._getAbilityAnimSvg(ab.id, ab.effect?.type);
+      // Force all SVG animations to use fill=remove (no freeze)
+      overlay.querySelectorAll('animate, animateTransform, animateMotion').forEach(a => {
+        a.setAttribute('fill', 'remove');
+      });
       arena.appendChild(overlay);
-      setTimeout(() => overlay.remove(), 1000);
+      // Remove at exactly 900ms (matches abilityFadeOut CSS duration)
+      setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 900);
 
       // Also shake/flash the monster art for damage abilities
       const damagingTypes = ['buff','combat_buff','spell_burst','nuke','multi'];
@@ -7855,14 +7862,14 @@ class UI {
       </svg>`,
 
       rapid_shot: `<svg viewBox="0 0 160 80" class="ab-anim-svg ab-anim-wide"><g>
-        <!-- 3 arrows rapid fire -->
-        <line x1="0" y1="15" x2="150" y2="20" stroke="#4a9ed4" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" fill="remove"/></line>
+        <!-- 3 arrows rapid fire — opacity fades prevent static line after animation -->
+        <line x1="0" y1="15" x2="150" y2="20" stroke="#4a9ed4" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.06s" begin="0.22s" fill="remove"/></line>
         <polygon points="148,16 158,20 148,24" fill="#4a9ed4"><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.2s" fill="remove"/></polygon>
 
-        <line x1="0" y1="40" x2="150" y2="40" stroke="#6ab4e8" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" begin="0.08s" fill="remove"/></line>
+        <line x1="0" y1="40" x2="150" y2="40" stroke="#6ab4e8" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" begin="0.08s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.06s" begin="0.30s" fill="remove"/></line>
         <polygon points="148,36 158,40 148,44" fill="#6ab4e8"><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.28s" fill="remove"/></polygon>
 
-        <line x1="0" y1="65" x2="150" y2="60" stroke="#4a9ed4" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" begin="0.16s" fill="remove"/></line>
+        <line x1="0" y1="65" x2="150" y2="60" stroke="#4a9ed4" stroke-width="2.5"><animate attributeName="x1" from="-30" to="155" dur="0.22s" begin="0.16s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.06s" begin="0.38s" fill="remove"/></line>
         <polygon points="148,56 158,60 148,64" fill="#4a9ed4"><animate attributeName="opacity" from="1" to="0" dur="0.1s" begin="0.36s" fill="remove"/></polygon>
 
         <!-- Impact burst at target -->
