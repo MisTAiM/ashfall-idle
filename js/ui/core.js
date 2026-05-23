@@ -8786,7 +8786,7 @@ class UI {
         <circle cx="80" cy="80" r="0" fill="none" stroke="#c44040" stroke-width="5"><animate attributeName="r" from="0" to="75" dur="0.45s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.45s" fill="remove"/></circle>
         <circle cx="80" cy="80" r="0" fill="none" stroke="#ff6040" stroke-width="3"><animate attributeName="r" from="0" to="55" dur="0.32s" fill="remove"/><animate attributeName="opacity" from="0.8" to="0" dur="0.32s" fill="remove"/></circle>
         <!-- Burst lines outward -->
-        <line x1="80" y1="80" x2="80" y2="10"><animate attributeName="y2" from="80" to="8" dur="0.3s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="remove"/> stroke="#c44040" stroke-width="2.5"/></line>
+        <line x1="80" y1="80" x2="80" y2="10" stroke="#c44040" stroke-width="2.5"><animate attributeName="y2" from="80" to="8" dur="0.3s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="remove"/></line>
         <line x1="80" y1="80" x2="150" y2="80" stroke="#c44040" stroke-width="2.5"><animate attributeName="x2" from="80" to="152" dur="0.3s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="remove"/></line>
         <line x1="80" y1="80" x2="80" y2="150" stroke="#c44040" stroke-width="2.5"><animate attributeName="y2" from="80" to="152" dur="0.3s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="remove"/></line>
         <line x1="80" y1="80" x2="10" y2="80" stroke="#c44040" stroke-width="2.5"><animate attributeName="x2" from="80" to="8" dur="0.3s" fill="remove"/><animate attributeName="opacity" from="1" to="0" dur="0.35s" fill="remove"/></line>
