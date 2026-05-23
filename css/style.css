@@ -3688,13 +3688,17 @@ html, body {
   opacity: 0.6;
 }
 
-/* ── SCROLLBAR STYLING — thin, only visible on hover ─── */
+/* ── SCROLLBAR STYLING — invisible by default, subtle on hover ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; transition: background 0.2s; }
-::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
-* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
-*:hover { scrollbar-color: var(--border-light) transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+/* NO hover rule on * — it caused a colored stripe on every scrollable element */
+* { scrollbar-width: none; scrollbar-color: transparent transparent; }
+/* Only specific containers get visible scrollbars */
+#main-area { scrollbar-width: thin; }
+#main-area::-webkit-scrollbar { width: 4px; }
+#main-area::-webkit-scrollbar-thumb { background: transparent; }
+#sidebar { scrollbar-width: thin; }
 
 /* ── AREA CARD IMPROVEMENTS ───────────────────────────── */
 .area-card-v2 {
