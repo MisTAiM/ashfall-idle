@@ -724,8 +724,14 @@ class GameEngine {
     // Live server XP multiplier (admin-controlled)
     const xpMult = this._liveFlags?.xp_multiplier || 1;
     if (xpMult !== 1) amount = Math.floor(amount * xpMult);
-    // 5% XP reduction for levels 10+ (slows mid-late game progression)
-    if (this.state.skills[skillId].level >= 10) amount = Math.floor(amount * 0.95);
+    // ── GLOBAL PROGRESSION TUNING ───────────────────────────────────
+    // XP is divided to ensure each skill takes significant real time.
+    // Gathering/combat XP: base rate = 0.5x → skill 1-99 ≈ 500+ hours total across skills
+    // Artisan XP: 0.55x (slightly faster as it requires materials)
+    // This is tuned for a multi-year playthrough with content continuously expanding.
+    const _isArtisan = skill?.type === 'artisan' || skill?.type === 'crafting';
+    const _globalXpMult = _isArtisan ? 0.55 : 0.50;
+    amount = Math.max(1, Math.floor(amount * _globalXpMult));
     // ── PRESTIGE XP BONUS ──────────────────────────────────
     const prestigeRank = this.state._prestigeRank || 0;
     if (prestigeRank > 0 && GAME_DATA.prestige?.ranks?.[prestigeRank - 1]) {
@@ -940,7 +946,7 @@ class GameEngine {
     if (!monsterStunned && mShock && mShock.stacks > 0 && Math.random() < 0.05 * mShock.stacks) monsterStunned = true;
     if (c.monsterAttackTimer >= monsterSpeed && !monsterStunned) { c.monsterAttackTimer = Math.max(0, c.monsterAttackTimer - monsterSpeed); this.monsterAttack(monster); }
     // Auto-eat AFTER monster attack (critical - eat before death check)
-    if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.4 && Array.isArray(this.state.foodBag) && this.state.foodBag.length > 0) this.eatFood();
+    if (c.autoEat && c.playerHp > 0 && c.playerHp < this.getMaxHp() * 0.55 && Array.isArray(this.state.foodBag) && this.state.foodBag.length > 0) this.eatFood();
 
     // ── CANNON TICK ───────────────────────────────────────────────
     if (!c.cannon) c.cannon = { active:false, timer:0 };
@@ -1417,7 +1423,15 @@ class GameEngine {
 
     const ev = (dL + 8) * (dB + 64);
     const ac = (monster.combatLevel + 8) * 64;
-    const ch = Math.min(0.95, Math.max(0.05, ac / (ac + ev)));
+    // Base hit chance — properly tuned so monsters hit ~30-50% at appropriate level
+    // Raw formula hits too hard early; apply a scaling factor based on level difference
+    const _rawCh = ac / (ac + ev);
+    // Monsters are harder to hit when player is appropriate level (0.8x mult at parity)
+    // Monsters below player level get accuracy penalty
+    const _playerCb = this.getCombatLevel ? this.getCombatLevel() : Math.floor((dL*2 + (this.state.skills?.attack?.level||1) + (this.state.skills?.strength?.level||1)) / 4);
+    const _levDiff = monster.combatLevel - _playerCb;
+    const _lvMult = _levDiff > 20 ? 1.1 : _levDiff > 0 ? 1.0 : _levDiff > -20 ? 0.85 : 0.70;
+    const ch = Math.min(0.88, Math.max(0.04, _rawCh * _lvMult));
     if (Math.random() < ch) {
       let dmg = this.randInt(1, monster.maxHit);
       // Boss enrage multiplier

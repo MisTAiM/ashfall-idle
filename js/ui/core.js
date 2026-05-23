@@ -3873,12 +3873,15 @@ class UI {
     const s = this.engine.state;
     const align = GAME_DATA.alignments[s.alignment];
     let html = this.header('Alignment','alignment','Your moral compass shifts based on your actions and grants unique bonuses.',null);
+    const _ap = s.alignmentPoints || {moral:0, order:0};
+    const _moral = _ap.moral || 0;
+    const _order = _ap.order || 0;
     html += `<div class="alignment-display">
       <div class="al-current">Current: <strong>${align.name}</strong> (${align.axis})</div>
       <div class="al-desc">${align.desc}</div>
       <div class="al-points">
-        <div>Good ${s.alignmentPoints.good.toFixed(0)} &middot; Evil ${s.alignmentPoints.evil.toFixed(0)}</div>
-        <div>Lawful ${s.alignmentPoints.lawful.toFixed(0)} &middot; Chaotic ${s.alignmentPoints.chaotic.toFixed(0)}</div>
+        <div>Moral: ${_moral > 0 ? '+'+_moral.toFixed(1)+' Good' : _moral < 0 ? _moral.toFixed(1)+' Evil' : 'Neutral'}</div>
+        <div>Order: ${_order > 0 ? '+'+_order.toFixed(1)+' Lawful' : _order < 0 ? _order.toFixed(1)+' Chaotic' : 'Neutral'}</div>
       </div>
     </div>`;
     html += '<h2 class="section-title">Alignment Grid</h2><div class="alignment-grid">';
