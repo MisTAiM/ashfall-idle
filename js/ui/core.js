@@ -527,7 +527,15 @@ class UI {
     }
     // Decorative divider SVG
     const divider = `<svg class="header-divider" viewBox="0 0 400 8" preserveAspectRatio="none"><path d="M0 4 Q100 0 200 4 Q300 8 400 4" stroke="rgba(201,135,62,0.3)" stroke-width="1" fill="none"/></svg>`;
-    let oreBagHtml = '';
+    return `<div class="page-header skill-header"><div class="ph-icon">${icon(ic,32)}</div><div class="ph-info"><h1>${title}</h1><p>${desc}</p></div></div>${bar}${divider}`;
+  }
+
+  renderSkillPage(el, sId, skill) {
+    const s = this.engine.state;
+    const actions = skill.type === 'gathering' ? (GAME_DATA.gatheringActions[sId]||[]) : (GAME_DATA.recipes[sId]||[]);
+    let html = this.header(skill.name, skill.icon, skill.desc, sId);
+
+    // ── MINING CUSTOM PAGE ───────────────────────────────────
     if (sId === 'mining') {
       const minLv = s.skills.mining?.level || 1;
       const minProg = this.engine.getXpProgress?.('mining') || 0;
@@ -591,13 +599,7 @@ class UI {
       return;
     }
 
-    return `<div class="page-header skill-header"><div class="ph-icon">${icon(ic,32)}</div><div class="ph-info"><h1>${title}</h1><p>${desc}</p></div></div>${bar}${oreBagHtml}${divider}`;
-  }
 
-  renderSkillPage(el, sId, skill) {
-    const s = this.engine.state;
-    const actions = skill.type === 'gathering' ? (GAME_DATA.gatheringActions[sId]||[]) : (GAME_DATA.recipes[sId]||[]);
-    let html = this.header(skill.name, skill.icon, skill.desc, sId);
     if (s.activeSkill === sId && s.activeAction) {
       const action = actions.find(a => a.id === s.activeAction);
       if (action) {
