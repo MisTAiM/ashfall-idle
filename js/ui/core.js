@@ -1008,6 +1008,67 @@ class UI {
       return;
     }
 
+        if (sId === 'runecrafting') {
+      const _rcLv = s.skills.runecrafting?.level || 1;
+      const _rcProg = this.engine.getXpProgress?.('runecrafting') || 0;
+      const _rcActions = GAME_DATA.gatheringActions?.runecrafting || [];
+      const _essOwned = s.bank.rune_essence || 0;
+      const _rcActive = s.activeSkill === 'runecrafting';
+      const _rcColors = {Elemental:'#4a9ed4',Catalytic:'#c9873e',Powerful:'#8a5ec4'};
+      const _rcXpNext = this.engine.getXpToNextLevel?.('runecrafting') || 0;
+
+      html += '<div class="rc-header-strip">'
+        + '<div class="rc-hs-left"><div class="rc-hs-level">'+_rcLv+'</div><div class="rc-hs-label">Runecrafting</div></div>'
+        + '<div class="rc-hs-center"><div class="rc-xp-bar"><div class="rc-xp-fill" style="width:'+(_rcProg*100).toFixed(1)+'%"></div></div>'
+        + '<div class="rc-xp-text">'+this.fmt(s.skills.runecrafting?.xp||0)+' XP &middot; '+(_rcXpNext>0?this.fmt(_rcXpNext)+' to next':'MAX')+'</div></div>'
+        + '<div class="rc-essence-strip"><svg viewBox="0 0 16 16" width="16" height="16"><polygon points="8,2 14,6 14,10 8,14 2,10 2,6" fill="#c0b080" opacity="0.9"/></svg>'
+        + '<span class="rc-ess-count '+(_essOwned>0?'rc-ess-ok':'')+'">'+(_essOwned>0?'x'+_essOwned:'No essence')+'</span>'
+        + (_essOwned===0?'<button class=\"btn btn-xs\" onclick=\"ui.renderPage(\'mining\')\">Mine Essence \u2192</button>':'')
+        + '</div></div>';
+
+      ['Elemental','Catalytic','Powerful'].forEach(function(cat) {
+        const _catAltars = _rcActions.filter(function(a){return (a.category||'Elemental')===cat;});
+        if (!_catAltars.length) return;
+        const _catCol = _rcColors[cat];
+        html += '<h2 class="section-title rc-cat-title" style="color:'+_catCol+'">'+cat+' Altars</h2><div class="rc-altar-grid">';
+        _catAltars.forEach(function(altar) {
+          const _locked = _rcLv < altar.level;
+          const _isAct = _rcActive && s.activeAction === altar.id;
+          const _runeId = altar.loot && altar.loot[0] ? altar.loot[0].item : null;
+          const _rune = _runeId ? GAME_DATA.items[_runeId] : null;
+          const _owned = _runeId ? (s.bank[_runeId]||0) : 0;
+          const _col = _rune && _rune.color ? _rune.color : _catCol;
+          const _runeQty = altar.loot && altar.loot[0] ? altar.loot[0].qty : 1;
+          const _click = _locked ? '' : 'onclick="ui.startAction(\'runecrafting\',\''+altar.id+'\''+')"';
+
+          html += '<div class="rc-altar-card '+(_locked?'rc-locked':'')+' '+(_isAct?'rc-active':'')+'" '+_click+'>'
+            + '<div class="rc-altar-art"><svg viewBox="0 0 48 48" width="44" height="44">'
+            + '<polygon points="24,4 40,14 40,34 24,44 8,34 8,14" fill="'+_col+'" opacity="0.12"/>'
+            + '<polygon points="24,4 40,14 40,34 24,44 8,34 8,14" fill="none" stroke="'+_col+'" stroke-width="1.5"/>'
+            + '<polygon points="24,12 33,18 33,30 24,36 15,30 15,18" fill="'+_col+'" opacity="0.25"/>'
+            + '<circle cx="24" cy="24" r="6" fill="'+_col+'" opacity="0.8"/>'
+            + '<circle cx="24" cy="24" r="3" fill="rgba(255,255,255,0.6)"/>'
+            + '</svg></div>'
+            + '<div class="rc-altar-body">'
+            + '<div class="rc-altar-name">'+altar.name+'</div>'
+            + '<div class="rc-altar-desc">'+altar.desc+'</div>'
+            + '<div class="rc-altar-meta"><span class="rc-xp">+'+altar.xp+' XP</span>'
+            + '<span class="rc-yields">&rarr; x'+_runeQty+' '+(_rune?_rune.name:_runeId)+'</span>'
+            + '<span class="rc-time">\u23f1 '+altar.time+'s</span></div>'
+            + '<div class="rc-rune-count"><span class="rc-rune-name">'+(_rune?_rune.name:'')+'</span>'
+            + '<span class="rc-rune-own '+(_owned>0?'rc-own-yes':'')+'">'+(_owned>0?'x'+_owned:'\u2014')+'</span></div>'
+            + (_isAct?'<div class="rc-active-badge">\u2b21 Crafting</div>':'')
+            + '</div>'
+            + '<div class="rc-lv '+(_locked?'rc-lv-lock':'')+'">'+altar.level+'</div>'
+            + (_locked?'<div class="locked-overlay">Level '+altar.level+'</div>':'')
+            + '</div>';
+        });
+        html += '</div>';
+      });
+      el.innerHTML = html;
+      return;
+    }
+
         if (sId === 'fishing' && GAME_DATA.fishingZones) {
       // ── EQUIPPED ROD ─────────────────────────────────────────
       const _rodId = s.equipment?.weapon;

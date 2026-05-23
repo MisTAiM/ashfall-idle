@@ -3831,3 +3831,45 @@ _qi2('adamant_battleaxe', {name:'Adamant Battleaxe',    type:'weapon',slot:'weap
 
 console.log('[Ashfall] Extended item/skill patch loaded');
 })();
+
+// ── RUNECRAFTING ACTIONS ──────────────────────────────────────────
+(function() {
+if (!GAME_DATA.gatheringActions.runecrafting) GAME_DATA.gatheringActions.runecrafting = [];
+if (GAME_DATA.gatheringActions.runecrafting.length > 0) return; // already loaded
+
+const altars = [
+  {id:'rc_air',    name:'Air Altar',    rune:'air_rune',    level:1,  xp:5,   time:4, baseQty:10, ess:1, desc:'Craft air runes. Beginner altar.'},
+  {id:'rc_mind',   name:'Mind Altar',   rune:'mind_rune',   level:1,  xp:5.5, time:4, baseQty:10, ess:1, desc:'Craft mind runes for combat spells.'},
+  {id:'rc_water',  name:'Water Altar',  rune:'water_rune',  level:5,  xp:6,   time:5, baseQty:7,  ess:1, desc:'Craft water runes.'},
+  {id:'rc_earth',  name:'Earth Altar',  rune:'earth_rune',  level:9,  xp:6.5, time:5, baseQty:7,  ess:1, desc:'Craft earth runes.'},
+  {id:'rc_fire',   name:'Fire Altar',   rune:'fire_rune',   level:14, xp:7,   time:5, baseQty:5,  ess:1, desc:'Craft fire runes. Used in TeleHome.'},
+  {id:'rc_body',   name:'Body Altar',   rune:'body_rune',   level:20, xp:7.5, time:6, baseQty:4,  ess:1, desc:'Craft body runes.'},
+  {id:'rc_cosmic', name:'Cosmic Altar', rune:'cosmic_rune', level:27, xp:8,   time:6, baseQty:2,  ess:1, desc:'Craft cosmic runes. Used in enchanting.'},
+  {id:'rc_nature', name:'Nature Altar', rune:'nature_rune', level:44, xp:9,   time:7, baseQty:1,  ess:1, desc:'Craft nature runes. Used in alchemy spells.'},
+  {id:'rc_law',    name:'Law Altar',    rune:'law_rune',    level:54, xp:9.5, time:7, baseQty:1,  ess:1, desc:'Craft law runes. Used in teleportation.'},
+  {id:'rc_death',  name:'Death Altar',  rune:'death_rune',  level:65, xp:10,  time:8, baseQty:1,  ess:1, desc:'Craft death runes. High level spells.'},
+  {id:'rc_blood',  name:'Blood Altar',  rune:'blood_rune',  level:77, xp:10.5,time:8, baseQty:1,  ess:1, desc:'Craft blood runes. Extremely valuable.'},
+  {id:'rc_wrath',  name:'Wrath Altar',  rune:'wrath_rune',  level:90, xp:12,  time:9, baseQty:1,  ess:1, desc:'Craft wrath runes. Endgame magic.'},
+  {id:'rc_void',   name:'Void Altar',   rune:'void_rune',   level:95, xp:16,  time:10,baseQty:1,  ess:2, desc:'Craft void runes. Requires double essence.'},
+];
+
+// Ensure rune items exist
+const _runeNames = {air_rune:'Air Rune',mind_rune:'Mind Rune',water_rune:'Water Rune',earth_rune:'Earth Rune',fire_rune:'Fire Rune',body_rune:'Body Rune',cosmic_rune:'Cosmic Rune',nature_rune:'Nature Rune',law_rune:'Law Rune',death_rune:'Death Rune',blood_rune:'Blood Rune',wrath_rune:'Wrath Rune',void_rune:'Void Rune'};
+const _runeColors = {air_rune:'#c0c8d0',mind_rune:'#c0a0c0',water_rune:'#4090c0',earth_rune:'#708040',fire_rune:'#c04020',body_rune:'#a06040',cosmic_rune:'#a060d0',nature_rune:'#40a040',law_rune:'#a0a020',death_rune:'#606060',blood_rune:'#c02020',wrath_rune:'#ff4040',void_rune:'#8020c0'};
+Object.entries(_runeNames).forEach(([id,name])=>{
+  if (!GAME_DATA.items[id]) GAME_DATA.items[id]={id,name,type:'rune',stackable:true,sellPrice:id==='blood_rune'?300:id==='death_rune'?200:id==='nature_rune'?150:id==='law_rune'?120:id==='cosmic_rune'?100:id==='body_rune'?8:id==='fire_rune'?4:id==='earth_rune'?3:id==='water_rune'?3:id==='mind_rune'?3:2,color:_runeColors[id],desc:name+' for spellcasting.'};
+});
+
+altars.forEach(a => {
+  if (!GAME_DATA.items[a.rune]) return;
+  GAME_DATA.gatheringActions.runecrafting.push({
+    id: a.id, name: a.name, level: a.level, xp: a.xp, time: a.time,
+    desc: a.desc, category: a.level<=20?'Elemental':a.level<=50?'Catalytic':'Powerful',
+    input: [{item:'rune_essence',qty:a.ess}],
+    loot: [{item:a.rune, qty:a.baseQty, chance:1}],
+    masteryId: a.rune,
+  });
+});
+
+console.log('[Ashfall] Runecrafting loaded:', GAME_DATA.gatheringActions.runecrafting.length, 'altars');
+})();

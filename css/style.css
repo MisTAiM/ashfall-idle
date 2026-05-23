@@ -3428,20 +3428,10 @@ html, body {
 .monster-art svg {
   animation: monsterIdle 4s ease-in-out infinite;
 }
-@keyframes monsterIdle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-
 /* Level up flash */
 .level-up-flash {
   animation: levelFlash 0.8s ease-out;
 }
-@keyframes levelFlash {
-  0% { background: rgba(201,135,62,0.3); }
-  100% { background: transparent; }
-}
-
 /* XP gain text float */
 .xp-gain-float {
   position: fixed;
@@ -5340,11 +5330,6 @@ html, body {
 .lf-icon svg { width: 16px; height: 16px; }
 .lf-qty  { font-weight: 700; }
 .lf-name { color: inherit; }
-@keyframes legendaryPulse {
-  0%,100% { box-shadow: 0 0 4px rgba(212,168,58,0.3); }
-  50%      { box-shadow: 0 0 12px rgba(212,168,58,0.6); }
-}
-
 /* ══════════════════════════════════════════════════════════════
    SESSION LOOT PANEL — cumulative session tracking
    ══════════════════════════════════════════════════════════════ */
@@ -8453,12 +8438,6 @@ body.perf-mode .hit-splat { display:none !important; }
   z-index: 100;
   white-space: nowrap;
 }
-@keyframes splatRise {
-  0%   { transform:translate(-50%,-50%) scale(0.5); opacity:1; }
-  20%  { transform:translate(-50%,-70%) scale(1.2); opacity:1; }
-  60%  { transform:translate(-50%,-120%) scale(1.0); opacity:1; }
-  100% { transform:translate(-50%,-160%) scale(0.8); opacity:0; }
-}
 .splat-melee  { color:#f04050; }
 .splat-ranged { color:#50c860; }
 .splat-magic  { color:#7060f0; }
@@ -9075,13 +9054,6 @@ body.perf-mode .hit-splat { display:none !important; }
   white-space: nowrap !important;
   transform: translateX(-50%) !important;
 }
-@keyframes splatRise {
-  0%   { transform: translateX(-50%) translateY(0)    scale(0.7); opacity: 1; }
-  20%  { transform: translateX(-50%) translateY(-20px) scale(1.2); opacity: 1; }
-  70%  { transform: translateX(-50%) translateY(-55px) scale(1.0); opacity: 0.9; }
-  100% { transform: translateX(-50%) translateY(-90px) scale(0.8); opacity: 0; }
-}
-
 /* ── Arena top bar: HP % always visible ────────────────────── */
 .atb-pct {
   font-family: 'JetBrains Mono', monospace;
@@ -9701,8 +9673,6 @@ body.perf-mode .hit-splat { display:none !important; }
 .fp-watered { color:#4a7ec4; border-color:rgba(74,126,196,0.3); background:rgba(74,126,196,0.08); }
 .fp-compost { color:#8a6a3a; border-color:rgba(138,106,58,0.3); background:rgba(138,106,58,0.08); }
 .fp-weeds   { color:#d4a83a; border-color:rgba(212,168,58,0.3); background:rgba(212,168,58,0.08); animation:weedsPulse 2s ease-in-out infinite; }
-@keyframes weedsPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
 /* Action buttons */
 .fp-actions-row { display:flex; gap:4px; flex-wrap:wrap; margin-top:2px; }
 .farm-harvest-btn { width:100%; font-family:'Cinzel',serif; background:linear-gradient(135deg,#2a6a3a,#4abe6c) !important; border:none !important; color:#fff !important; font-size:12px !important; margin-top:4px; }
@@ -10490,3 +10460,37 @@ body.perf-mode .hit-splat { display:none !important; }
   color: rgba(255,255,255,0.2);
   font-family: 'JetBrains Mono', monospace;
 }
+
+/* ── RUNECRAFTING PAGE ───────────────────────────────────── */
+.rc-header-strip { display:flex; align-items:center; gap:14px; background:var(--bg-mid); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:14px; flex-wrap:wrap; }
+.rc-hs-left { text-align:center; }
+.rc-hs-level { font-family:'Cinzel',serif; font-size:32px; color:#c0b080; font-weight:700; line-height:1; }
+.rc-hs-label { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
+.rc-hs-center { flex:1; min-width:160px; }
+.rc-xp-bar { height:10px; background:rgba(0,0,0,0.4); border-radius:5px; overflow:hidden; border:1px solid rgba(192,176,128,0.2); margin-bottom:5px; }
+.rc-xp-fill { height:100%; background:linear-gradient(90deg,#6a5a30,#c0b080); border-radius:4px; transition:width 0.5s; }
+.rc-xp-text { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.rc-essence-strip { display:flex; align-items:center; gap:6px; font-size:11px; }
+.rc-ess-count { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); }
+.rc-ess-ok { color:#c0b080 !important; font-weight:700; }
+.rc-cat-title { font-size:12px; letter-spacing:1.5px; text-transform:uppercase; padding:6px 0 10px; margin-bottom:8px; border-bottom:1px solid var(--border); }
+.rc-altar-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-bottom:20px; }
+.rc-altar-card { display:flex; align-items:flex-start; gap:10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:10px 12px; cursor:pointer; transition:all 0.15s; position:relative; overflow:hidden; }
+.rc-altar-card:hover:not(.rc-locked) { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.3); border-color:rgba(192,176,128,0.3); }
+.rc-active { border-color:rgba(192,176,128,0.5) !important; background:rgba(192,176,128,0.05) !important; }
+.rc-locked { opacity:0.5; cursor:default; }
+.rc-altar-art { flex-shrink:0; }
+.rc-altar-body { flex:1; min-width:0; }
+.rc-altar-name { font-family:'Cinzel',serif; font-size:12px; color:var(--text); font-weight:600; margin-bottom:2px; }
+.rc-altar-desc { font-size:10px; color:var(--text-dim); font-style:italic; margin-bottom:5px; line-height:1.4; }
+.rc-altar-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:10px; margin-bottom:3px; }
+.rc-xp { color:#c9873e; font-weight:600; }
+.rc-yields { color:#c0b080; }
+.rc-time { color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.rc-rune-count { display:flex; justify-content:space-between; font-size:10px; }
+.rc-rune-name { color:var(--text-dim); }
+.rc-rune-own { font-family:'JetBrains Mono',monospace; color:var(--text-dim); }
+.rc-own-yes { color:#c0b080 !important; font-weight:700; }
+.rc-active-badge { font-size:9px; color:#c0b080; font-weight:700; margin-top:3px; }
+.rc-lv { position:absolute; top:7px; right:8px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#c0b080; }
+.rc-lv-lock { color:var(--text-dim) !important; }
