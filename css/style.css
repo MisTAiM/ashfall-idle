@@ -10611,3 +10611,37 @@ body.perf-mode .hit-splat { display:none !important; }
 
 /* Story consequence banner */
 .story-consequence { padding:8px 10px; background:rgba(74,190,108,0.06); border:1px solid rgba(74,190,108,0.2); border-radius:6px; font-size:11px; color:#4abe6c; margin-top:6px; }
+
+/* ════════════════════════════════════════════════════════════
+   PUBLIC PLAYER PROFILE PAGE
+   ════════════════════════════════════════════════════════════ */
+.pp-hero { display:flex; gap:20px; background:var(--bg-mid); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:20px; flex-wrap:wrap; }
+.pp-avatar-wrap { position:relative; flex-shrink:0; }
+.pp-avatar { border-radius:8px; display:block; }
+.pp-avatar-frame { position:absolute; inset:-3px; border-radius:10px; border:2px solid var(--frame-color); box-shadow:0 0 12px var(--frame-color); pointer-events:none; }
+.pp-info { flex:1; min-width:200px; display:flex; flex-direction:column; gap:8px; }
+.pp-name { font-family:'Cinzel',serif; font-size:22px; color:var(--text); font-weight:700; }
+.pp-title { font-size:12px; color:#c9873e; font-family:'Cinzel',serif; letter-spacing:1px; }
+.pp-align-chip { font-size:11px; color:var(--text-dim); }
+.pp-bio { font-size:12px; color:var(--text-dim); line-height:1.6; font-style:italic; padding:8px; background:rgba(0,0,0,0.2); border-radius:6px; }
+.pp-kpis { display:flex; gap:12px; flex-wrap:wrap; }
+.pp-kpi { text-align:center; }
+.pp-kv { font-family:'Cinzel',serif; font-size:16px; font-weight:700; color:var(--text); display:block; }
+.pp-kl { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; }
+.pp-actions { display:flex; flex-direction:column; gap:8px; margin-left:auto; }
+
+.pp-skills-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(52px,1fr)); gap:4px; margin-bottom:20px; }
+.pp-skill-chip { display:flex; align-items:center; gap:3px; background:var(--bg-mid); border:1px solid var(--border); border-radius:6px; padding:4px 6px; font-size:11px; }
+.pp-sc-icon { font-size:11px; opacity:0.7; }
+.pp-sc-lv { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; }
+
+.pp-activity { background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:14px; }
+.pp-act-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12px; }
+.pp-act-row:last-child { border-bottom:none; }
+.pp-act-row span:first-child { color:var(--text-dim); }
+.pp-act-row span:last-child { font-family:'JetBrains Mono',monospace; color:var(--text); }
+
+.pp-loading { text-align:center; padding:40px; color:var(--text-dim); font-style:italic; }
+
+/* Avatar frame on character page */
+.char-avatar-frame { transition:border-color 0.3s, box-shadow 0.3s; border-radius:12px; overflow:visible; }

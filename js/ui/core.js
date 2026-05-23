@@ -343,7 +343,7 @@ class UI {
     const align = GAME_DATA.alignments[s.alignment] || GAME_DATA.alignments['true_neutral'] || { axis:'NN', name:'Neutral' };
     const _prof = s.profile || {};
     const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
-    const _avUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(_seed)}&hair=${_prof.hair||'short04'}&skinColor=${_prof.skinColor||'c68642'}&hairColor=${_prof.hairColor||'2c1b18'}&eyes=${_prof.eyes||'variant04'}&mouth=${_prof.mouth||'happy01'}&clothing=${_prof.clothing||'variant04'}&clothingColor=${_prof.clothingColor||'4a90d4'}${_prof.accessory?'&accessories='+_prof.accessory:''}&size=32`;
+    const _avUrl = this.getAvatarUrl(32);  // always uses current profile settings
     let html = `<div class="sidebar-header">
       <img src="logo.png" alt="Ashfall Idle" class="sidebar-logo-img">
     </div>
@@ -497,6 +497,7 @@ class UI {
     else if (pageId === 'upgrades') this.renderUpgradesPage(main);
     else if (pageId === 'activity') this.renderActivityPage(main);
     else if (pageId === 'character') this.renderCharacterPage(main);
+    else if (pageId === 'profile') { const uid = this._viewProfileUid || (typeof online !== 'undefined' ? online.user?.uid : null); if (uid) this.renderPlayerProfilePage(main, uid); else this.renderCharacterPage(main); }
     else if (pageId === 'prestige') this.renderPrestigePage(main);
     else if (pageId === 'guilds') this.renderGuildsPage(main);
     else if (pageId === 'party') this.renderPartyPage(main);
@@ -1620,13 +1621,7 @@ class UI {
     // Player avatar
     const _pName   = (typeof online!=='undefined'&&online.displayName) ? online.displayName : 'You';
     const _styleIcon = {melee:'⚔',ranged:'🏹',magic:'🔮'}[combatStyle]||'⚔';
-    let _playerAvatar = 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Morpheus&backgroundColor=0a0b0f';
-    if (s.profile) {
-      try {
-        const getAvatarUrl = window.getAvatarUrl;
-        if (typeof getAvatarUrl === 'function') _playerAvatar = getAvatarUrl(s.profile);
-      } catch(e){}
-    }
+    let _playerAvatar = this.getAvatarUrl(56);  // always use player's actual customized avatar
 
     // Session loot
     const sl   = c._sessionLoot || {};
@@ -4758,7 +4753,7 @@ class UI {
     // ── TOP HERO CARD ─────────────────────────────────────
     html += `<div class="char-hero-card">
       <div class="char-avatar-zone">
-        <div class="char-avatar-frame">
+        <div class="char-avatar-frame" style="--frame-color:${({bronze:'#c9873e',silver:'#c8d4e0',gold:'#d4a83a',void:'#8a5ec4',flame:'#c44040',none:'transparent'}[p.frameStyle||'none'])||'transparent'};border:2px solid var(--frame-color);box-shadow:0 0 12px var(--frame-color)">
           <img src="${avatarUrl}" alt="Avatar" id="char-avatar-img" width="160" height="160">
           ${pRank > 0 ? `<div class="char-prestige-ring" style="border-color:${prestigeData?.color||'#c9873e'}" title="Prestige ${pRank}">
             <span class="char-prestige-icon">${prestigeData?.icon||'⭐'}</span>
@@ -4864,8 +4859,32 @@ class UI {
           <div class="char-opt-row">
             <label class="char-opt-label">Accessory</label>
             <div class="char-select-grid">
-              ${[{v:'',l:'None'},{v:'variant01',l:'A1'},{v:'variant02',l:'A2'},{v:'variant03',l:'A3'},{v:'variant04',l:'A4'}].map(({v,l}) =>
+              ${[{v:'',l:'None'},{v:'variant01',l:'Hat1'},{v:'variant02',l:'Hat2'},{v:'variant03',l:'Cap'},{v:'variant04',l:'Crown'}].map(({v,l}) =>
                 `<button class="char-opt-btn ${(p.accessory||'')===v?'opt-active':''}" data-charkey="accessory" data-charval="${v}" onclick="ui._previewChar('accessory','${v}')">${l}</button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Beard / Facial</label>
+            <div class="char-select-grid">
+              ${[{v:'',l:'None'},{v:'variant01',l:'Stubble'},{v:'variant02',l:'Short'},{v:'variant03',l:'Full'},{v:'variant04',l:'Goatee'},{v:'variant05',l:'Viking'}].map(({v,l}) =>
+                `<button class="char-opt-btn ${(p.beard||'')===v?'opt-active':''}" data-charkey="beard" data-charval="${v}" onclick="ui._previewChar('beard','${v}')">${l}</button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Frame Style</label>
+            <div class="char-select-grid">
+              ${[{v:'none',l:'None',c:'transparent'},{v:'bronze',l:'Bronze',c:'#c9873e'},{v:'silver',l:'Silver',c:'#c8d4e0'},{v:'gold',l:'Gold',c:'#d4a83a'},{v:'void',l:'Void',c:'#8a5ec4'},{v:'flame',l:'Flame',c:'#c44040'}].map(({v,l,c}) =>
+                `<button class="char-opt-btn ${(p.frameStyle||'none')===v?'opt-active':''}" data-charkey="frameStyle" data-charval="${v}" onclick="ui._previewChar('frameStyle','${v}')" style="border-color:${c};color:${c}">${l}</button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="char-opt-row">
+            <label class="char-opt-label">Frame Glow</label>
+            <div class="char-swatches">
+              ${['none','#4abe6c','#c9873e','#4a7ec4','#c44040','#8a5ec4','#d4a83a','#ffffff'].map(c =>
+                `<button class="char-swatch ${(p.frameGlow||'none')===c?'swatch-active':''}" style="background:${c==='none'?'#333':c};border:2px solid ${c==='none'?'#555':c}" data-charkey="frameGlow" data-charval="${c}" onclick="ui._previewChar('frameGlow','${c}')" title="${c}"></button>`
               ).join('')}
             </div>
           </div>
@@ -5012,7 +5031,8 @@ class UI {
     const displayName = (typeof online !== 'undefined' && online.displayName) || p.displayName || 'Survivor';
     const seed = p.avatarSeed || displayName;
     const bg = p.bgColor && p.bgColor !== 'transparent' ? `&backgroundColor=${p.bgColor}` : '&backgroundColor=0a0b0f';
-    return `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair||'short04'}&skinColor=${p.skinColor||'c68642'}&hairColor=${p.hairColor||'2c1b18'}&eyes=${p.eyes||'variant04'}&mouth=${p.mouth||'happy01'}&clothing=${p.clothing||'variant04'}&clothingColor=${p.clothingColor||'4a90d4'}${p.accessory?'&accessories='+p.accessory:''}${bg}&size=${size}`;
+    const beard = p.beard ? `&beard=${p.beard}` : '';
+    return `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair||'short04'}&skinColor=${p.skinColor||'c68642'}&hairColor=${p.hairColor||'2c1b18'}&eyes=${p.eyes||'variant04'}&mouth=${p.mouth||'happy01'}&clothing=${p.clothing||'variant04'}&clothingColor=${p.clothingColor||'4a90d4'}${p.accessory?'&accessories='+p.accessory:''}${beard}${bg}&size=${size}`;
   }
 
   _getUnlockedTitles(s) {
@@ -6611,6 +6631,99 @@ class UI {
       overlay.classList.add('dso-fadeout');
       setTimeout(() => overlay.remove(), 600);
     }, 6000);
+  }
+
+
+  async renderPlayerProfilePage(el, uid) {
+    let html = this.header('Player Profile','character','View this player\u2019s character, stats, and achievements.',null);
+    html += '<div class="pp-loading">Loading profile...</div>';
+    el.innerHTML = html;
+
+    if (typeof online === 'undefined' || !online.isOnline) {
+      el.innerHTML = this.header('Player Profile','character','',null) + '<div class="bank-empty">Sign in to view player profiles.</div>';
+      return;
+    }
+
+    try {
+      const doc = await online.firestore.collection('players').doc(uid).get();
+      if (!doc.exists) {
+        el.innerHTML = this.header('Player Profile','character','',null) + '<div class="bank-empty">Profile not found.</div>';
+        return;
+      }
+
+      const d = doc.data();
+      const p = d.profile || {};
+      const seed = p.avatarSeed || d.displayName || 'Survivor';
+      const avUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&hair=${p.hair||'short04'}&skinColor=${p.skinColor||'c68642'}&hairColor=${p.hairColor||'2c1b18'}&eyes=${p.eyes||'variant04'}&mouth=${p.mouth||'happy01'}&clothing=${p.clothing||'variant04'}&clothingColor=${p.clothingColor||'4a90d4'}&size=120`;
+      const align = GAME_DATA.alignments[d.alignment] || GAME_DATA.alignments['true_neutral'];
+      const frameStyle = p.frameStyle || 'none';
+      const frameGlow = p.frameGlow || 'none';
+      const frameColor = {bronze:'#c9873e',silver:'#c8d4e0',gold:'#d4a83a',void:'#8a5ec4',flame:'#c44040',none:'transparent'}[frameStyle]||'transparent';
+      const isMe = online.user?.uid === uid;
+
+      html = this.header('Player Profile','character',`${d.displayName}'s character and achievements.`,null);
+
+      // Hero card
+      html += `<div class="pp-hero">
+        <div class="pp-avatar-wrap" style="--frame-color:${frameColor};--frame-glow:${frameGlow==='none'?'transparent':frameGlow}">
+          <img src="${avUrl}" class="pp-avatar" width="120" height="120" alt="${this.escHtml(d.displayName)}">
+          ${frameStyle!=='none'?`<div class="pp-avatar-frame"></div>`:''}
+        </div>
+        <div class="pp-info">
+          <div class="pp-name">${this.escHtml(d.displayName||'Unknown')}</div>
+          ${d.title?`<div class="pp-title">${this.escHtml(d.title)}</div>`:''}
+          <div class="pp-align-chip" style="color:${align.color||'#c9873e'}">${align.name} · ${align.axis}</div>
+          ${p.bio?`<div class="pp-bio">${this.escHtml(p.bio)}</div>`:''}
+          <div class="pp-kpis">
+            <div class="pp-kpi"><span class="pp-kv">${d.combatLevel||'?'}</span><span class="pp-kl">Combat</span></div>
+            <div class="pp-kpi"><span class="pp-kv">${(d.totalLevel||0).toLocaleString()}</span><span class="pp-kl">Total Lv</span></div>
+            <div class="pp-kpi"><span class="pp-kv">${d.questsCompleted||0}</span><span class="pp-kl">Quests</span></div>
+            <div class="pp-kpi"><span class="pp-kv">${this.fmt(d.kills||0)}</span><span class="pp-kl">Kills</span></div>
+            <div class="pp-kpi"><span class="pp-kv">${d.pvpRating||1000}</span><span class="pp-kl">PvP</span></div>
+            <div class="pp-kpi"><span class="pp-kv">${d.prestigeRank||0}</span><span class="pp-kl">Prestige</span></div>
+          </div>
+        </div>
+        <div class="pp-actions">
+          ${isMe?`<button class="btn btn-sm" onclick="ui.renderPage('character')">Edit Profile</button>`:''}
+          ${!isMe&&online.isOnline?`<button class="btn btn-sm" onclick="ui.renderPage('wilderness')">Challenge to PvP</button>`:''}
+        </div>
+      </div>`;
+
+      // Skills grid
+      if (d.skills && Object.keys(d.skills).length > 0) {
+        html += '<h2 class="section-title">Skill Levels</h2><div class="pp-skills-grid">';
+        const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','woodcutting','mining','fishing','crafting','smithing','cooking','herblore','agility','thieving','farming','runecrafting','construction','fletching'];
+        for (const sk of skillOrder) {
+          if (d.skills[sk] === undefined) continue;
+          const lv = d.skills[sk];
+          const skData = GAME_DATA.skills[sk];
+          const col = lv>=99?'#d4a83a':lv>=70?'#4abe6c':lv>=50?'#4a7ec4':'var(--text-dim)';
+          html += `<div class="pp-skill-chip" title="${skData?.name||sk}: ${lv}">
+            <span class="pp-sc-icon">${skData?.icon?icon(skData.icon,12):sk[0].toUpperCase()}</span>
+            <span class="pp-sc-lv" style="color:${col}">${lv}</span>
+          </div>`;
+        }
+        html += '</div>';
+      }
+
+      // Activity
+      html += `<div class="pp-activity">
+        <div class="pp-act-row"><span>Playtime</span><span>${Math.floor((d.playTime||0)/3600)}h ${Math.floor((d.playTime||0)%3600/60)}m</span></div>
+        <div class="pp-act-row"><span>Gold Earned</span><span>${this.fmt(d.goldEarned||0)}</span></div>
+        <div class="pp-act-row"><span>Dungeon Clears</span><span>${d.dungeonClears||0}</span></div>
+        <div class="pp-act-row"><span>PvP Record</span><span>${d.pvpWins||0}W / ${d.pvpLosses||0}L</span></div>
+        <div class="pp-act-row"><span>Last Seen</span><span>${d.lastSeen?.toDate?(new Date(d.lastSeen.toDate()).toLocaleDateString()):'Unknown'}</span></div>
+      </div>`;
+
+      el.innerHTML = html;
+    } catch(e) {
+      el.innerHTML = this.header('Player Profile','character','',null) + `<div class="bank-empty">Error loading profile: ${e.message}</div>`;
+    }
+  }
+
+  viewProfile(uid) {
+    this._viewProfileUid = uid;
+    this.renderPage('profile');
   }
 
   escHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
