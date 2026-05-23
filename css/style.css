@@ -1214,9 +1214,7 @@ html, body {
   margin-bottom: 6px;
 }
 .combat-arena {
-  display: flex;
-  gap: 14px;
-  align-items: center;
+  /* display:flex removed — arena-v3.combat-arena is block, not flex row */
   margin: 16px 0;
 }
 .combat-vs {
@@ -10714,4 +10712,22 @@ body.perf-mode .hit-splat { display:none !important; }
   .shop-items-grid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
   .shop-tabs { gap:2px; }
   .shop-tab { padding:5px 8px; font-size:10px; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DEFINITIVE FIX: vertical line caused by display:flex on
+   .combat-arena making arena-top-bar and arena-main lay out
+   in a ROW (flex-direction:row default) instead of a COLUMN.
+   This creates a visible gap/boundary between them at x≈240px
+   from the arena's left edge, appearing as the grey vertical line.
+   ═══════════════════════════════════════════════════════════ */
+.arena-v3.combat-arena {
+  display: block !important;  /* never flex — children stack vertically */
+}
+.arena-v3 > .arena-top-bar {
+  display: flex;  /* the top-bar itself is still a flex row internally */
+  width: 100%;
+}
+.arena-v3 > .arena-main {
+  width: 100%;
 }
