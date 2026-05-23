@@ -696,6 +696,9 @@ class GameEngine {
     if (amount <= 0 || !isFinite(amount)) return;
     const skill = GAME_DATA.skills[skillId];
     const align = GAME_DATA.alignments[this.state.alignment];
+    // Emit for floating XP counter in UI
+    this._xpDropQueue = this._xpDropQueue || [];
+    this._xpDropQueue.push({ skill: skillId, xp: amount });
     if (align?.bonus) {
       if (align.bonus.gatherXp && skill?.type === 'gathering') amount = Math.floor(amount * (1 + align.bonus.gatherXp/100));
       if (align.bonus.diplomacyXp && skillId === 'diplomacy') amount = Math.floor(amount * (1 + align.bonus.diplomacyXp/100));

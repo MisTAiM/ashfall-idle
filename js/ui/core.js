@@ -6118,6 +6118,73 @@ class UI {
     }
   }
 
+
+  renderChambersOfAshPage(el) {
+    const s = this.engine.state;
+    el.innerHTML = this.header('Chambers of Ash','chambers','An ancient ritual chamber. Under construction.','chambers') + `
+      <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
+        <div style="font-size:48px;margin-bottom:16px">🏛</div>
+        <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--text);margin-bottom:8px">Chambers of Ash</div>
+        <div style="font-size:13px;max-width:400px;margin:0 auto">An ancient ritual chamber. Under construction.</div>
+        <div style="margin-top:20px;font-size:11px;color:rgba(201,135,62,0.6);font-family:'Cinzel',serif;letter-spacing:1px">COMING SOON</div>
+      </div>`;
+  }
+
+  renderAshenCryptsPage(el) {
+    const s = this.engine.state;
+    el.innerHTML = this.header('Ashen Crypts','ashen_crypts','The crypts beneath the Ashfall. Under construction.','ashen_crypts') + `
+      <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
+        <div style="font-size:48px;margin-bottom:16px">⚰</div>
+        <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--text);margin-bottom:8px">Ashen Crypts</div>
+        <div style="font-size:13px;max-width:400px;margin:0 auto">The crypts beneath the Ashfall. Under construction.</div>
+        <div style="margin-top:20px;font-size:11px;color:rgba(201,135,62,0.6);font-family:'Cinzel',serif;letter-spacing:1px">COMING SOON</div>
+      </div>`;
+  }
+
+  renderGauntletPage(el) {
+    const s = this.engine.state;
+    el.innerHTML = this.header('The Gauntlet','gauntlet','A solo endgame challenge. Under construction.','gauntlet') + `
+      <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
+        <div style="font-size:48px;margin-bottom:16px">⚔</div>
+        <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--text);margin-bottom:8px">The Gauntlet</div>
+        <div style="font-size:13px;max-width:400px;margin:0 auto">A solo endgame challenge. Under construction.</div>
+        <div style="margin-top:20px;font-size:11px;color:rgba(201,135,62,0.6);font-family:'Cinzel',serif;letter-spacing:1px">COMING SOON</div>
+      </div>`;
+  }
+
+  renderInfernoPage(el) {
+    const s = this.engine.state;
+    el.innerHTML = this.header('The Inferno','inferno','Harder than the Fight Cave. Under construction.','inferno') + `
+      <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
+        <div style="font-size:48px;margin-bottom:16px">🔥</div>
+        <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--text);margin-bottom:8px">The Inferno</div>
+        <div style="font-size:13px;max-width:400px;margin:0 auto">Harder than the Fight Cave. Under construction.</div>
+        <div style="margin-top:20px;font-size:11px;color:rgba(201,135,62,0.6);font-family:'Cinzel',serif;letter-spacing:1px">COMING SOON</div>
+      </div>`;
+  }
+
+  renderSlayerBossesPage(el) {
+    const s = this.engine.state;
+    el.innerHTML = this.header('Slayer Bosses','slayer_bosses','Elite slayer boss encounters.','slayer_bosses') + `
+      <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
+        <div style="font-size:48px;margin-bottom:16px">💀</div>
+        <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--text);margin-bottom:8px">Slayer Bosses</div>
+        <div style="font-size:13px;max-width:400px;margin:0 auto">Elite slayer boss encounters.</div>
+        <div style="margin-top:20px;font-size:11px;color:rgba(201,135,62,0.6);font-family:'Cinzel',serif;letter-spacing:1px">COMING SOON</div>
+      </div>`;
+  }
+
+  renderPartyPage(el) {
+    const s = this.engine.state;
+    el.innerHTML = this.header('Party System','party','Group up with other players for dungeons.','party') + `
+      <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
+        <div style="font-size:48px;margin-bottom:16px">⚔</div>
+        <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--text);margin-bottom:8px">Party System</div>
+        <div style="font-size:13px;max-width:400px;margin:0 auto">Group up with other players for dungeons.</div>
+        <div style="margin-top:20px;font-size:11px;color:rgba(201,135,62,0.6);font-family:'Cinzel',serif;letter-spacing:1px">COMING SOON</div>
+      </div>`;
+  }
+
   escHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
   filterSkillCat(cat, btn) {
@@ -7491,6 +7558,24 @@ class UI {
     // ── SIDEBAR gold (always visible) ──
     const gv = document.querySelector('.gold-val');
     if (gv) gv.textContent = this.fmt(s.gold);
+
+    // ── FLOATING XP DROPS ─────────────────────────────────────
+    const _xpQ = this.engine._xpDropQueue;
+    if (_xpQ && _xpQ.length > 0) {
+      const drops = _xpQ.splice(0, 3); // max 3 per tick
+      drops.forEach((drop, i) => {
+        const el = document.createElement('div');
+        el.className = 'xp-drop' + (drop.xp >= 1000 ? ' xp-drop-large' : '') + (drop.skill === 'attack' || drop.skill === 'strength' || drop.skill === 'defence' || drop.skill === 'magic' || drop.skill === 'ranged' ? ' xp-drop-combat' : '');
+        el.textContent = '+' + this.fmt(drop.xp) + ' ' + (GAME_DATA.skills[drop.skill]?.name || drop.skill) + ' XP';
+        // Position near the training bar or random
+        const tb = document.querySelector('.tb-content');
+        const rect = tb ? tb.getBoundingClientRect() : null;
+        el.style.left = (rect ? rect.left + 20 + i * 120 : 200 + i * 100) + 'px';
+        el.style.top = (rect ? rect.bottom + 8 : 80) + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1500);
+      });
+    }
 
     // ── FISHING — live fish count updates ──────────────────
     if (s.activeSkill === 'fishing' && GAME_DATA.fishingZones) {
