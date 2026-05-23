@@ -1732,24 +1732,50 @@ class GameEngine {
       this.state.combat.dungeonWave++;
       if (this.state.combat.dungeonWave >= d.waves.length) {
         this.state.stats.dungeonsCompleted++;
-        for (const r of d.rewards) {
-          if (Math.random() < r.chance) {
-            this.addItem(r.item, r.qty);
-            this.emit('notification', { type:'rare', text:`Dungeon reward: ${GAME_DATA.items[r.item]?.name}!` });
+        // Handle both array format and object format {xp:{}, gold:{}, items:[]}
+        const _rw = d.rewards;
+        if (Array.isArray(_rw)) {
+          for (const r of _rw) {
+            if (Math.random() < (r.chance||1)) {
+              this.addItem(r.item, r.qty||1);
+              this.emit('notification', { type:'rare', text:`Dungeon reward: ${GAME_DATA.items[r.item]?.name}!` });
+            }
+          }
+        } else if (_rw) {
+          // XP rewards
+          if (_rw.xp) for (const [skill, xp] of Object.entries(_rw.xp)) this.addXp(skill, xp);
+          // Gold rewards
+          if (_rw.gold) {
+            const goldAmt = this.randInt(_rw.gold.min||0, _rw.gold.max||0);
+            this.state.gold += goldAmt;
+            this.state.stats.goldEarned = (this.state.stats.goldEarned||0) + goldAmt;
+            this.emit('notification', { type:'success', text:`Dungeon gold: ${this.fmt(goldAmt)}!` });
+          }
+          // Item rewards
+          if (_rw.items) for (const r of _rw.items) {
+            if (Math.random() < (r.chance||1)) {
+              this.addItem(r.item, r.qty||1);
+              this.emit('notification', { type:'rare', text:`Dungeon drop: ${GAME_DATA.items[r.item]?.name||r.item}!` });
+            }
           }
         }
         this.emit('notification', { type:'success', text:`Completed ${d.name}!` });
         this.trackQuestProgress('dungeon', { dungeon:d.id });
         this.stopCombat(); return;
       } else {
-        const nextId = d.waves[this.state.combat.dungeonWave];
-        const next = GAME_DATA.monsters[nextId];
+        const _nextWave = d.waves[this.state.combat.dungeonWave];
+        // Support both old string format and new {enemies:[{id,qty}]} format
+        const nextId = typeof _nextWave === 'string'
+          ? _nextWave
+          : (_nextWave.enemies?.[0]?.id || _nextWave.monsters?.[0]?.id);
+        const next = nextId ? GAME_DATA.monsters[nextId] : null;
         if (!next) { this.emit('notification',{type:'warn',text:'Dungeon error: missing monster data.'}); this.stopCombat(); return; }
         this.state.combat.monster = nextId;
         this.state.combat.monsterHp = next.hp;
         this.state.combat.monsterAttackTimer = 0;
         this.state.combat.statusEffects.monster = {};
-        this.emit('notification',{type:'info',text:`Wave ${this.state.combat.dungeonWave+1}/${d.waves.length}: ${next.name}!`});
+        const _waveBossName = typeof _nextWave === 'object' ? (_nextWave.bossName||'') : '';
+        this.emit('notification',{type:'info',text:`Wave ${this.state.combat.dungeonWave+1}/${d.waves.length}: ${_waveBossName||next.name}!`});
         this.emit('combatStart', { dungeon:this.state.combat.dungeon, wave:this.state.combat.dungeonWave });
       }
     } else {

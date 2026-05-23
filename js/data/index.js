@@ -3552,3 +3552,154 @@ _farmShop.forEach(entry=>{
 
 console.log('[Ashfall] Farming expansion loaded:', ['ranarr_seed','torstol_seed','magic_sapling','ultracompost','rake','spade'].filter(id=>GAME_DATA.items[id]).length, 'key items confirmed');
 })();
+
+// ================================================================
+// DUNGEON MONSTER PATCH — all 13 monsters missing from dungeons
+// ================================================================
+(function() {
+const _dm = (id, d) => { if (!GAME_DATA.monsters[id]) GAME_DATA.monsters[id] = Object.assign({id}, d); };
+
+// ── THEATRE OF BLOOD BOSSES ────────────────────────────────────
+_dm('the_maiden', {
+  name:'The Maiden of Sugadinti', combatLevel:940, hp:2000, maxHit:58,
+  style:'magic', attackSpeed:2.4, evasion:{melee:260,ranged:260,magic:180},
+  xp:1500, gold:{min:8000,max:20000},
+  desc:'Blood-soaked maiden. Spawns blood blobs and freezes.',
+  drops:[{item:'blood_rune',qty:300,chance:1},{item:'death_rune',qty:200,chance:0.8}]
+});
+_dm('the_bloat', {
+  name:'The Pestilent Bloat', combatLevel:870, hp:2600, maxHit:72,
+  style:'melee', attackSpeed:3.6, evasion:{melee:200,ranged:200,magic:200},
+  xp:1800, gold:{min:10000,max:25000},
+  desc:'Bloated corpse walker. Stomps deal massive AoE damage.',
+  drops:[{item:'cooked_shark',qty:10,chance:0.5}]
+});
+_dm('nylocas_vasilias', {
+  name:'Nylocas Vasilias', combatLevel:800, hp:1800, maxHit:65,
+  style:'melee', attackSpeed:2.0, evasion:{melee:220,ranged:220,magic:220},
+  xp:1600, gold:{min:6000,max:15000},
+  desc:'Giant spider. Changes combat style. Match your attack to its colour.',
+  drops:[{item:'death_rune',qty:100,chance:0.6}]
+});
+_dm('sotetseg', {
+  name:'Sotetseg', combatLevel:995, hp:2400, maxHit:78,
+  style:'ranged', attackSpeed:2.4, evasion:{melee:280,ranged:230,magic:280},
+  xp:2000, gold:{min:12000,max:30000},
+  desc:'Maze guardian. Navigate the death maze or take massive damage.',
+  drops:[{item:'blood_rune',qty:500,chance:1}]
+});
+_dm('xarpus', {
+  name:'Xarpus', combatLevel:960, hp:2200, maxHit:55,
+  style:'magic', attackSpeed:2.0, evasion:{melee:240,ranged:240,magic:180},
+  xp:1900, gold:{min:10000,max:24000},
+  desc:'Undead experiment. Poisons the floor. Use pillars as cover.',
+  drops:[{item:'antipoison',qty:4,chance:0.8},{item:'death_rune',qty:300,chance:0.7}]
+});
+_dm('verzik_vitur', {
+  name:'Verzik Vitur', combatLevel:1040, hp:3200, maxHit:85,
+  style:'magic', attackSpeed:1.8, evasion:{melee:300,ranged:300,magic:220},
+  xp:2800, gold:{min:20000,max:60000},
+  desc:'The final boss. Three phases. Brings her full power to bear.',
+  drops:[{item:'blood_rune',qty:800,chance:1},{item:'death_rune',qty:400,chance:0.8}]
+});
+
+// ── CHAMBERS OF SHADOW BOSSES ──────────────────────────────────
+_dm('shadow_beast', {
+  name:'Shadow Beast', combatLevel:220, hp:400, maxHit:32,
+  style:'magic', attackSpeed:2.4, evasion:{melee:180,ranged:180,magic:120},
+  xp:280, gold:{min:200,max:600},
+  desc:'Phase-shifting void creature. Switch style to pierce its defences.',
+  drops:[{item:'shadow_ore',qty:1,chance:0.1},{item:'void_essence',qty:1,chance:0.05}]
+});
+_dm('shadow_warden', {
+  name:'Shadow Warden', combatLevel:580, hp:1400, maxHit:62,
+  style:'melee', attackSpeed:2.4, evasion:{melee:260,ranged:200,magic:260},
+  xp:1100, gold:{min:4000,max:12000},
+  desc:'The guardian of the shadow realm. Cycles all three combat styles.',
+  drops:[{item:'shadow_blade',qty:1,chance:0.02},{item:'shadow_helm',qty:1,chance:0.05}]
+});
+
+// ── VOID SANCTUM BOSSES ────────────────────────────────────────
+_dm('void_warden', {
+  name:'Void Warden', combatLevel:750, hp:2000, maxHit:70,
+  style:'magic', attackSpeed:2.0, evasion:{melee:250,ranged:250,magic:180},
+  xp:1600, gold:{min:8000,max:20000},
+  desc:'Ancient guardian of the void sanctum. Commands void energy.',
+  drops:[{item:'void_essence',qty:5,chance:0.5},{item:'wrath_rune',qty:200,chance:0.4}]
+});
+
+// ── GENERIC DUNGEON MONSTERS ───────────────────────────────────
+_dm('demon', {
+  name:'Demon', combatLevel:100, hp:300, maxHit:28,
+  style:'melee', attackSpeed:2.0, evasion:{melee:120,ranged:100,magic:120},
+  xp:180, gold:{min:200,max:500},
+  desc:'A mid-tier demon. Hits hard in melee.',
+  drops:[{item:'death_rune',qty:15,chance:0.4},{item:'coins',qty:200,chance:0.9}]
+});
+_dm('dark_beast', {
+  name:'Dark Beast', combatLevel:182, hp:350, maxHit:35,
+  style:'melee', attackSpeed:2.4, evasion:{melee:155,ranged:140,magic:155},
+  xp:225, gold:{min:300,max:800},
+  desc:'Large and aggressive. Slayer level 90 required.',
+  slayerReq:90,
+  drops:[{item:'death_rune',qty:20,chance:0.6},{item:'dark_bow',qty:1,chance:0.003}]
+});
+_dm('aberrant_spectre', {
+  name:'Aberrant Spectre', combatLevel:96, hp:200, maxHit:22,
+  style:'magic', attackSpeed:2.4, evasion:{melee:80,ranged:80,magic:60},
+  xp:155, gold:{min:150,max:400},
+  desc:'Undead spirit. Reduces stats. Slayer level 60 required. Use nosepeg.',
+  slayerReq:60,
+  drops:[{item:'ranarr_seed',qty:1,chance:0.05},{item:'death_rune',qty:10,chance:0.3}]
+});
+_dm('adamant_dragon', {
+  name:'Adamant Dragon', combatLevel:338, hp:700, maxHit:56,
+  style:'melee', attackSpeed:3.0, evasion:{melee:200,ranged:180,magic:200},
+  xp:495, gold:{min:1000,max:3000},
+  desc:'Metallic dragon. Breathes adamant dragonfire. Bring super antifire.',
+  drops:[{item:'adamant_ore',qty:10,chance:0.7},{item:'dragon_bones',qty:1,chance:1},{item:'draconic_visage',qty:1,chance:0.002}]
+});
+// void_emperor_spawn and elder_ash_golem and demon_lord are already defined via sprites-art
+// but just in case:
+if (!GAME_DATA.monsters['void_emperor_spawn']) {
+  _dm('void_emperor_spawn', {
+    name:'Void Emperor Spawn', combatLevel:400, hp:900, maxHit:58,
+    style:'magic', attackSpeed:2.0, evasion:{melee:220,ranged:220,magic:160},
+    xp:650, gold:{min:2000,max:6000},
+    desc:'A fragment of the Void Emperor consciousness.',
+    drops:[{item:'void_essence',qty:3,chance:0.4},{item:'wrath_rune',qty:50,chance:0.3}]
+  });
+}
+if (!GAME_DATA.monsters['elder_ash_golem']) {
+  _dm('elder_ash_golem', {
+    name:'Elder Ash Golem', combatLevel:320, hp:650, maxHit:48,
+    style:'melee', attackSpeed:3.2, evasion:{melee:180,ranged:160,magic:180},
+    xp:480, gold:{min:1200,max:3500},
+    desc:'Ancient construct of hardened ashfall rock.',
+    drops:[{item:'celestial_ingot',qty:1,chance:0.05},{item:'elder_core',qty:1,chance:0.1}]
+  });
+}
+if (!GAME_DATA.monsters['demon_lord']) {
+  _dm('demon_lord', {
+    name:'Demon Lord', combatLevel:500, hp:1200, maxHit:68,
+    style:'melee', attackSpeed:2.4, evasion:{melee:240,ranged:200,magic:240},
+    xp:900, gold:{min:3000,max:8000},
+    desc:'An archon of the demon hierarchy. Commands lesser demons.',
+    drops:[{item:'death_rune',qty:100,chance:0.7},{item:'infernal_bar',qty:1,chance:0.1}]
+  });
+}
+
+// Assign art where it exists
+['the_maiden','the_bloat','nylocas_vasilias','sotetseg','xarpus','verzik_vitur',
+ 'shadow_beast','shadow_warden','void_warden','demon','dark_beast','aberrant_spectre',
+ 'adamant_dragon'].forEach(id => {
+  if (GAME_DATA.monsterArt?.[id] && GAME_DATA.monsters[id]) {
+    GAME_DATA.monsters[id]._art = id;
+  }
+});
+
+console.log('[Ashfall] Dungeon monster patch loaded:',
+  ['the_maiden','the_bloat','nylocas_vasilias','sotetseg','xarpus','verzik_vitur',
+   'shadow_beast','shadow_warden','void_warden','dark_beast','aberrant_spectre','adamant_dragon']
+  .filter(id=>GAME_DATA.monsters[id]).length, '/ 12 dungeon bosses confirmed');
+})();
