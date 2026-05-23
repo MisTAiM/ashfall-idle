@@ -628,18 +628,29 @@ class UI {
         const m = this.engine.getMasteryLevel(sId, action.masteryId||action.id);
         let inputHtml = '';
         if (action.input) {
+          const _canCraft = action.input.every(inp=>(s.bank[inp.item]||0)>=inp.qty);
           inputHtml = '<div class="recipe-inputs">' + action.input.map(inp => {
             const it = GAME_DATA.items[inp.item];
             const have = s.bank[inp.item] || 0;
-            return `<span class="recipe-mat ${have>=inp.qty?'':'mat-missing'}" data-mat="${inp.item}" data-need="${inp.qty}">${it?.name||inp.item} x${inp.qty} <small data-item-qty="${inp.item}">(${have})</small></span>`;
+            const ok = have >= inp.qty;
+            return `<span class="recipe-mat ${ok?'mat-ok':'mat-missing'}" title="${ok?'In bank':'Need more'}">${it?.name||inp.item} <strong>${have}/${inp.qty}</strong></span>`;
           }).join('') + '</div>';
+          if (!_canCraft && !action._canCraftWarned) {
+            // Visual only - card gets dimmer if can't craft
+          }
         }
         let outputHtml = '';
         if (action.output) {
           const o = GAME_DATA.items[action.output.item];
           const oDesc = o?.desc ? `<span class="ac-output-desc">${o.desc}</span>` : '';
           const oIcon = window.renderItemSprite ? renderItemSprite(action.output.item, 16) : '';
-          outputHtml = `<div class="recipe-output">${oIcon}<span class="ac-output-name">${o?.name||action.output.item}${action.output.qty>1?' ×'+action.output.qty:''}</span><small class="ac-have" data-item-qty="${action.output.item}">(${s.bank[action.output.item]||0})</small>${oDesc}</div>`;
+          const oOwned = s.bank[action.output.item]||0;
+          outputHtml = `<div class="recipe-output">
+            ${oIcon}
+            <span class="ac-output-name">${o?.name||action.output.item}${action.output.qty>1?' ×'+action.output.qty:''}</span>
+            <span class="ac-have-count ${oOwned>0?'ac-have-yes':''}" data-item-qty="${action.output.item}">${oOwned>0?'x'+oOwned:''}</span>
+            ${oDesc}
+          </div>`;
         }
         if (action.loot) {
           outputHtml = `<div class="recipe-output loot-output">${action.loot.slice(0,3).map(l=>{const i=GAME_DATA.items[l.item]; return `${window.renderItemSprite?renderItemSprite(l.item,14):''}<span>${(i?.name||l.item)}${l.qty>1?' ×'+l.qty:''}</span>`;}).join(' ')}</div>`;
@@ -821,6 +832,137 @@ class UI {
           });
         });
       }, 500);
+      return;
+    }
+
+        if (sId === 'thieving' && GAME_DATA.thievingTargets) {
+      const thLv = s.skills.thieving?.level || 1;
+      const thXp = s.skills.thieving?.xp || 0;
+      const thProg = this.engine.getXpProgress?.('thieving') || 0;
+      const thXpNext = this.engine.getXpToNextLevel?.('thieving') || 0;
+      const anger = s.thievingAnger || {};
+      const isActive = s.activeSkill === 'thieving';
+      const thHp = s.thievingHp || this.engine.getMaxHp();
+      const maxHp = this.engine.getMaxHp();
+
+      html += `<div class="th-skill-header">
+        <div class="thsh-left">
+          <div class="thsh-level">${thLv}</div>
+          <div class="thsh-label">Thieving</div>
+        </div>
+        <div class="thsh-center">
+          <div class="thsh-xp-bar"><div class="thsh-xp-fill" style="width:${(thProg*100).toFixed(1)}%"></div></div>
+          <div class="thsh-xp-text">${this.fmt(thXp)} XP · ${thXpNext>0?this.fmt(thXpNext)+' to next':'MAX'}</div>
+        </div>
+        <div class="thsh-right">
+          <div class="thsh-hp-wrap">
+            <svg viewBox="0 0 14 14" width="14" height="14"><path d="M7 12 C7 12 1 8 1 4.5 A3 3 0 0 1 7 3.2 A3 3 0 0 1 13 4.5 C13 8 7 12 7 12Z" fill="#c44040"/></svg>
+            <div class="thsh-hp-bar"><div class="thsh-hp-fill" id="th-hp-fill" style="width:${Math.round(thHp/maxHp*100)}%"></div></div>
+            <span class="thsh-hp-text" id="th-hp-text">${Math.floor(thHp)}/${maxHp}</span>
+          </div>
+          <div class="thsh-stats">
+            <span>${this.fmt(s.stats?.thievingAttempts||0)} attempts</span>
+            <span style="color:#4abe6c">${this.fmt(s.stats?.thievingSuccess||0)} success</span>
+          </div>
+        </div>
+      </div>`;
+
+      if (isActive && s.activeAction) {
+        const cur = GAME_DATA.thievingTargets.find(t=>t.id===s.activeAction);
+        if (cur) {
+          const ang = Math.round((anger[cur.id]||0)*100);
+          const angColor = ang>60?'#c44040':ang>30?'#d4a83a':'#4abe6c';
+          html += `<div class="th-active-card">
+            <div class="thac-left">
+              <div class="thac-label">PICKPOCKETING</div>
+              <div class="thac-name">${cur.name}</div>
+              <div class="thac-progress"><div class="thac-fill" id="thac-fill" style="width:${(Math.min(1,s.actionProgress/cur.time)*100).toFixed(0)}%"></div></div>
+            </div>
+            <div class="thac-anger-wrap">
+              <div class="thac-anger-label">Suspicion</div>
+              <div class="thac-anger-bar"><div class="thac-anger-fill" id="th-anger" style="width:${ang}%;background:${angColor}"></div></div>
+              <div class="thac-anger-val" id="th-anger-val" style="color:${angColor}">${ang}%</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="ui.stopAction()">Stop</button>
+          </div>`;
+        }
+      }
+
+      html += `<h2 class="section-title">Targets</h2><div class="th-targets-grid">`;
+      for (const target of GAME_DATA.thievingTargets) {
+        const locked = thLv < target.level;
+        const isActiveTarget = isActive && s.activeAction === target.id;
+        const ang = Math.round((anger[target.id]||0)*100);
+        const angColor = ang>60?'#c44040':ang>30?'#d4a83a':'#4abe6c';
+        const lootStr = target.loot?.map(l=>{const it=GAME_DATA.items[l.item];return (it?.name||l.item)+'('+(l.chance*100).toFixed(0)+'%)';}).join(', ')||'';
+        
+        html += `<div class="th-target-card ${locked?'th-locked':''} ${isActiveTarget?'th-active':''}"
+          ${locked?'':`onclick="ui.startAction('thieving','${target.id}')"`}>
+          <div class="th-tc-art">
+            <svg viewBox="0 0 48 48" width="48" height="48">
+              <rect x="18" y="20" width="12" height="22" rx="4" fill="#8a6a4a"/>
+              <ellipse cx="24" cy="18" rx="10" ry="10" fill="#c8a870"/>
+              <circle cx="20" cy="14" r="3" fill="#b8986a"/><circle cx="28" cy="14" r="3" fill="#b8986a"/>
+              <ellipse cx="20" cy="14" rx="1.5" ry="2" fill="#3a2a1a"/><ellipse cx="28" cy="14" rx="1.5" ry="2" fill="#3a2a1a"/>
+              <path d="M20 20 Q24 22 28 20" stroke="#9a7850" stroke-width="1.5" fill="none"/>
+              <rect x="14" y="28" width="6" height="14" rx="2" fill="#8a6a4a"/>
+              <rect x="28" y="28" width="6" height="14" rx="2" fill="#8a6a4a"/>
+              <rect x="30" y="22" width="10" height="8" rx="3" fill="#6a4a2a"/>
+            </svg>
+          </div>
+          <div class="th-tc-body">
+            <div class="th-tc-name">${target.name}</div>
+            <div class="th-tc-meta">
+              <span class="th-xp">+${target.xp} XP</span>
+              <span class="th-gold">+${target.gold.min}–${target.gold.max}g</span>
+              <span class="th-time">⏱ ${target.time}s</span>
+            </div>
+            <div class="th-tc-risk">
+              <span class="th-stun-chance" style="color:${target.stunChance>0.35?'#c44040':target.stunChance>0.25?'#d4a83a':'#4abe6c'}">
+                ${Math.round(target.stunChance*100)}% stun risk
+              </span>
+            </div>
+            ${ang>0?`<div class="th-tc-anger"><div class="thta-bar"><div class="thta-fill" style="width:${ang}%;background:${angColor}"></div></div><span style="color:${angColor};font-size:9px">${ang}% suspicion</span></div>`:''}
+            ${lootStr?`<div class="th-loot">${lootStr}</div>`:''}
+            ${isActiveTarget?'<div class="th-active-badge">🤚 Pickpocketing</div>':''}
+          </div>
+          <div class="th-lv-badge ${locked?'th-lv-lock':'th-lv-ok'}">${target.level}</div>
+          ${locked?`<div class="locked-overlay">Level ${target.level}</div>`:''}
+        </div>`;
+      }
+      html += '</div>';
+
+      // Rogues outfit check
+      const rogueItems = ['rogue_mask','rogue_top','rogue_trousers','rogue_gloves','rogue_boots'];
+      const rogueOwned = rogueItems.filter(id=>(s.bank[id]||0)>0||(Object.values(s.equipment||{}).includes(id)));
+      if (rogueOwned.length > 0) {
+        html += `<div class="th-rogue-strip">
+          <span>🎭 Rogues Outfit: ${rogueOwned.length}/5 pieces</span>
+          <span style="color:${rogueOwned.length>=5?'#4abe6c':'#d4a83a'}">${rogueOwned.length>=5?'Full set — DOUBLE loot!':rogueOwned.length+' of 5 equipped'}</span>
+        </div>`;
+      }
+
+      el.innerHTML = html;
+      // Live HP + anger update
+      clearInterval(window._thTimerInterval);
+      window._thTimerInterval = setInterval(() => {
+        const _thHp = this.engine.state.thievingHp || this.engine.getMaxHp();
+        const _maxHp = this.engine.getMaxHp();
+        const hpFill = document.getElementById('th-hp-fill');
+        const hpText = document.getElementById('th-hp-text');
+        if (hpFill) hpFill.style.width = Math.round(_thHp/_maxHp*100)+'%';
+        if (hpText) hpText.textContent = Math.floor(_thHp)+'/'+_maxHp;
+        const _ang = this.engine.state.thievingAnger || {};
+        const _act = this.engine.state.activeAction;
+        if (_act && _ang[_act] !== undefined) {
+          const pct = Math.round(_ang[_act]*100);
+          const col = pct>60?'#c44040':pct>30?'#d4a83a':'#4abe6c';
+          const angEl = document.getElementById('th-anger');
+          const angVal = document.getElementById('th-anger-val');
+          if (angEl) { angEl.style.width = pct+'%'; angEl.style.background = col; }
+          if (angVal) { angVal.textContent = pct+'%'; angVal.style.color = col; }
+        }
+      }, 250);
       return;
     }
 

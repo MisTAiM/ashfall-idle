@@ -4413,3 +4413,54 @@ game.useSpecial = function() { return this.useSpecialAttack ? this.useSpecialAtt
 // Convenience aliases
 game.startSkillAction   = (skill, action) => game.startSkill(skill, action);
 // _calcThievingFightChance is defined as a class method at line ~2140 — alias removed to prevent infinite recursion
+
+// ── STUB FUNCTIONS — referenced in UI but not yet implemented ──
+GameEngine.prototype.claimLoginReward = function(day) {
+  const rewards = GAME_DATA.loginRewards;
+  if (!rewards) return;
+  const r = rewards[day-1] || rewards[0];
+  if (!r) return;
+  if (r.gold) { this.state.gold += r.gold; }
+  if (r.xp) for (const [sk,xp] of Object.entries(r.xp)) this.addXp(sk, xp);
+  if (r.items) r.items.forEach(i => this.addItem(i.item, i.qty||1));
+  this.state.lastLoginReward = day;
+  this.emit('notification',{type:'achievement',text:`Day ${day} login reward claimed!`});
+  this.emit('loginRewardClaimed', {day});
+};
+GameEngine.prototype.createParty = function() {
+  this.emit('notification',{type:'info',text:'Party system coming soon!'});
+};
+GameEngine.prototype.joinParty = function(code) {
+  this.emit('notification',{type:'info',text:'Party system coming soon!'});
+};
+GameEngine.prototype.leaveParty = function() {
+  this.state.party = null;
+  this.emit('notification',{type:'info',text:'Left the party.'});
+};
+GameEngine.prototype.inviteToParty = function(uid) {
+  this.emit('notification',{type:'info',text:'Invite sent!'});
+};
+GameEngine.prototype.launchPartyRaid = function(dungeonId) {
+  this.startDungeon(dungeonId);
+};
+GameEngine.prototype.joinActiveRaid = function(raidId) {
+  this.emit('notification',{type:'info',text:'Live raid joining coming soon!'});
+};
+GameEngine.prototype.addNpcCompanion = function(npcId) {
+  if (!this.state.companions) this.state.companions = [];
+  const npc = GAME_DATA.npcs?.find(n=>n.id===npcId);
+  if (!npc) return;
+  if (!this.state.companions.includes(npcId)) {
+    this.state.companions.push(npcId);
+    this.emit('notification',{type:'success',text:`${npc.name} joined your party!`});
+  }
+};
+GameEngine.prototype.abandonClueScroll = function() {
+  this.state.activeClueScroll = null;
+  this.emit('notification',{type:'info',text:'Clue scroll abandoned.'});
+  this.emit('clueScrollUpdated');
+};
+GameEngine.prototype.leaveChambers = function() { this.stopCombat(); };
+GameEngine.prototype.leaveAshenCrypts = function() { this.stopCombat(); };
+GameEngine.prototype.leaveGauntlet = function() { this.stopCombat(); };
+GameEngine.prototype.leaveInferno = function() { this.stopCombat(); };
