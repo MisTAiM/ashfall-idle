@@ -1257,7 +1257,6 @@ for (const [mId, mon] of Object.entries(GAME_DATA.monsters)) {
 
 // ── EXPANDED SHOP ────────────────────────────────────────
 GAME_DATA.shop.push(
-  {item:'enchant_scroll',price:500,category:'special'},
   {item:'enchant_dust',price:30,category:'materials'},
   {item:'prayer_potion',price:400,category:'potions'},
   {item:'super_strength',price:250,category:'potions'},
@@ -2632,8 +2631,6 @@ for (const [bossId, drops] of Object.entries(_wbDropPatches)) {
 // ── SHOP ADDITIONS ────────────────────────────────────────────────
 GAME_DATA.shop.push(
   {item:'amulet_of_strength',  price:6000,  category:'equipment'},
-  {item:'amulet_of_fury',      price:50000, category:'equipment'},
-  {item:'ring_of_wealth',      price:20000, category:'equipment'},
   {item:'obsidian_cape',       price:15000, category:'equipment'},
   {item:'magic_shortbow',      price:8000,  category:'weapons'},
   {item:'master_wand',         price:25000, category:'weapons'},
@@ -3536,15 +3533,9 @@ _crops.forEach(([id,name,sell,type,heal])=>{
 // Shop entries for farming
 if (!GAME_DATA.shop) GAME_DATA.shop = [];
 const _farmShop = [
-  {item:'potato_seed',price:3,category:'seeds'},{item:'onion_seed',price:5,category:'seeds'},
   {item:'cabbage_seed',price:5,category:'seeds'},{item:'garlic_seed',price:10,category:'seeds'},
   {item:'guam_seed',price:20,category:'seeds'},{item:'marrentill_seed',price:25,category:'seeds'},
   {item:'tarromin_seed',price:35,category:'seeds'},{item:'harralander_seed',price:50,category:'seeds'},
-  {item:'ranarr_seed',price:200,category:'seeds'},{item:'snapdragon_seed',price:300,category:'seeds'},
-  {item:'rake',price:10,category:'farming'},{item:'spade',price:10,category:'farming'},
-  {item:'watering_can',price:25,category:'farming'},{item:'watering_can_iron',price:100,category:'farming'},
-  {item:'compost_bin',price:50,category:'farming'},{item:'supercompost',price:200,category:'farming'},
-  {item:'ultracompost',price:1000,category:'farming'},
 ];
 _farmShop.forEach(entry=>{
   if (!GAME_DATA.shop.find(s=>s.item===entry.item)) GAME_DATA.shop.push(entry);
@@ -3966,4 +3957,281 @@ GAME_DATA.storyChoices['ms_2_3'] = {
 console.log('[Ashfall] Story content patch loaded — monsters:', 
   ['krolgar','ashfall_titan','dragon','hollow_knight','bandit_guard'].filter(id=>GAME_DATA.monsters[id]).length,
   'items:', ['ashen_tablet','void_crystal','ashen_script'].filter(id=>GAME_DATA.items[id]).length);
+})();
+
+
+// ================================================================
+// SHOP OVERHAUL — clean progression items, proper categories
+// ================================================================
+(function() {
+const _shop = (item, price, category, levelReq) => {
+  if (!GAME_DATA.items[item]) return; // skip if item doesn't exist
+  // Don't add if already in shop
+  if (GAME_DATA.shop.find(s => s.item === item && s.category === category)) return;
+  GAME_DATA.shop.push({item, price, category, levelReq: levelReq || 0});
+};
+
+// ── FOOD & SUPPLIES ──────────────────────────────────────────────
+_shop('bread',          35,    'food',         1);
+_shop('cooked_shrimp',  25,    'food',         1);
+_shop('cooked_trout',   60,    'food',         20);
+_shop('cooked_salmon',  100,   'food',         30);
+_shop('cooked_lobster', 200,   'food',         40);
+_shop('cooked_swordfish',350,  'food',         50);
+_shop('cooked_shark',   500,   'food',         60);
+
+// ── POTIONS ───────────────────────────────────────────────────────
+_shop('antipoison',     150,   'potions',      1);
+_shop('energy_potion',  200,   'potions',      1);
+_shop('restore_potion', 300,   'potions',      30);
+
+// ── WEAPONS (progression tiers) ──────────────────────────────────
+_shop('bronze_sword',   50,    'weapons',      1);
+_shop('iron_sword',     300,   'weapons',      10);
+_shop('steel_sword',    800,   'weapons',      20);
+_shop('mithril_sword',  2500,  'weapons',      40);
+_shop('adamant_sword',  5000,  'weapons',      50);
+_shop('rune_sword',     12000, 'weapons',      60);
+_shop('magic_shortbow', 8000,  'weapons',      40);
+
+// ── ARMOR (progression tiers) ────────────────────────────────────
+_shop('leather_body',   200,   'armor',        1);
+_shop('leather_legs',   150,   'armor',        1);
+_shop('leather_gloves', 80,    'armor',        1);
+_shop('iron_platebody', 1200,  'armor',        10);
+_shop('steel_platebody',3000,  'armor',        20);
+_shop('mithril_platebody',8000,'armor',        40);
+
+// ── TOOLS (pickaxes, hatchets, fishing rods) ──────────────────────
+_shop('bronze_pickaxe', 100,   'tools',        1);
+_shop('iron_pickaxe',   500,   'tools',        10);
+_shop('steel_pickaxe',  1500,  'tools',        20);
+_shop('mithril_pickaxe',5000,  'tools',        40);
+_shop('bronze_axe',     100,   'tools',        1);
+_shop('iron_axe',       500,   'tools',        10);
+_shop('steel_axe',      1500,  'tools',        20);
+_shop('mithril_axe',    5000,  'tools',        40);
+_shop('oak_rod',        500,   'tools',        15);
+_shop('willow_rod',     2000,  'tools',        30);
+_shop('teak_rod',       5000,  'tools',        45);
+
+// ── MATERIALS ────────────────────────────────────────────────────
+_shop('coal_ore',       80,    'materials',    1);
+_shop('iron_bar',       250,   'materials',    1);
+_shop('steel_bar',      600,   'materials',    1);
+
+// Ensure category labels are title-cased
+GAME_DATA.shopCategoryOrder = [
+  {id:'food',      label:'🍖 Food & Supplies', desc:'Consumables for combat survival'},
+  {id:'potions',   label:'⚗️ Potions',         desc:'Stat boosts and utility potions'},
+  {id:'weapons',   label:'⚔ Weapons',           desc:'Swords, bows, staves and special weapons'},
+  {id:'armor',     label:'🛡 Armor',             desc:'Protective equipment for combat'},
+  {id:'tools',     label:'⛏ Tools',             desc:'Pickaxes, hatchets, fishing rods'},
+  {id:'runes',     label:'🔮 Runes',             desc:'Magical runes for spellcasting'},
+  {id:'materials', label:'⚙ Materials',          desc:'Crafting and smithing resources'},
+  {id:'seeds',     label:'🌱 Seeds',             desc:'Farming seeds for herb and crop patches'},
+  {id:'farming',   label:'🌾 Farming',           desc:'Farming tools and compost'},
+  {id:'thieving',  label:'🎭 Thieving',          desc:'Tools for the thieving skill'},
+  {id:'equipment', label:'💍 Accessories',        desc:'Rings, amulets, and capes'},
+  {id:'magic',     label:'📖 Spellbooks',        desc:'Magic tomes and grimoires'},
+  {id:'upgrades',  label:'⬆ Upgrades',           desc:'Permanent upgrades for your account'},
+  {id:'special',   label:'✨ Special',            desc:'Rare and unique items'},
+];
+
+// ENDGAME ITEMS → Raid/Boss drop only (NOT in shop)
+// These items must be earned, never bought:
+GAME_DATA.raidOnlyItems = new Set([
+  'amulet_of_fury', 'fury_amulet', 'ring_of_wealth', 'berserker_ring',
+  'archers_ring', 'seers_ring', 'crypts_gloves', 'occult_necklace',
+  'ember_cape', 'ascendant_bow', 'ascendant_staff', 'ascendant_plate',
+  'ascendant_crown', 'abyssal_whip', 'armadyl_godsword', 'armadyl_crossbow',
+  'armadyl_chestplate', 'armadyl_chainskirt', 'armadyl_helmet',
+  'codex_of_the_void', 'necromantic_tome', 'grimoire_of_blood',
+  'void_crystal', 'celestial_essence', 'ashen_crown_shard',
+  'draconic_visage', 'dark_bow', 'dragon_bones', 'onyx',
+  // Theatre of Blood drops
+  'blood_rune', 'verzik_scythe', 'sang_staff', 'justiciar_helm',
+  // Ashfall bosses
+  'ashfall_titan', 'void_essence', 'elder_core',
+]);
+
+// Make sure raidOnly items have a special flag
+GAME_DATA.raidOnlyItems.forEach(id => {
+  if (GAME_DATA.items[id]) {
+    GAME_DATA.items[id].raidOnly = true;
+    GAME_DATA.items[id].shopBanned = true;
+  }
+});
+
+console.log('[Ashfall] Shop overhaul loaded:',
+  GAME_DATA.shop.length, 'items,',
+  GAME_DATA.raidOnlyItems?.size || 0, 'raid-only items protected');
+})();
+
+// ================================================================
+// ENDGAME DROP TABLES — items removed from shop must drop from content
+// ================================================================
+(function() {
+// ── THEATRE OF BLOOD DROPS ────────────────────────────────────────
+const _tobDrops = [
+  {item:'amulet_of_fury',    chance:0.015, qty:1, rarity:'legendary', source:'Verzik Vitur'},
+  {item:'berserker_ring',    chance:0.020, qty:1, rarity:'legendary', source:'Theatre of Blood'},
+  {item:'archers_ring',      chance:0.020, qty:1, rarity:'legendary', source:'Theatre of Blood'},
+  {item:'seers_ring',        chance:0.020, qty:1, rarity:'legendary', source:'Theatre of Blood'},
+  {item:'blood_rune',        chance:0.80,  qty:300, rarity:'common',  source:'Theatre of Blood'},
+  {item:'death_rune',        chance:0.70,  qty:200, rarity:'common',  source:'Theatre of Blood'},
+  {item:'ashen_crown_shard', chance:0.025, qty:1, rarity:'legendary', source:'Verzik Vitur'},
+];
+
+// ── WORLD BOSS DROPS ──────────────────────────────────────────────
+if (GAME_DATA.worldBosses) {
+  GAME_DATA.worldBosses.forEach(boss => {
+    if (!boss.drops) boss.drops = [];
+    if (boss.id === 'ashfall_overlord' || boss.id === 'void_emperor') {
+      boss.drops.push(
+        {item:'ascendant_bow',   chance:0.01, qty:1, rarity:'mythic'},
+        {item:'ascendant_staff', chance:0.01, qty:1, rarity:'mythic'},
+        {item:'ascendant_plate', chance:0.01, qty:1, rarity:'mythic'},
+        {item:'ascendant_crown', chance:0.01, qty:1, rarity:'mythic'},
+        {item:'celestial_essence', chance:0.30, qty:5, rarity:'rare'},
+        {item:'void_crystal',    chance:0.25, qty:3, rarity:'rare'},
+        {item:'ancient_artifact',chance:0.15, qty:1, rarity:'epic'},
+      );
+    } else if (boss.drops.length === 0) {
+      boss.drops.push(
+        {item:'void_crystal',    chance:0.10, qty:1, rarity:'rare'},
+        {item:'celestial_essence',chance:0.08, qty:2, rarity:'rare'},
+        {item:'ancient_artifact',chance:0.05, qty:1, rarity:'epic'},
+      );
+    }
+  });
+}
+
+// ── DUNGEON LOOT EXPANSION ────────────────────────────────────────
+if (GAME_DATA.dungeons) {
+  GAME_DATA.dungeons.forEach(dungeon => {
+    if (!dungeon.rewards) dungeon.rewards = {};
+    if (!dungeon.rewards.items) dungeon.rewards.items = [];
+
+    // Add grimoires to magic dungeons
+    if (dungeon.id === 'chambers_of_shadow') {
+      dungeon.rewards.items.push(
+        {item:'necromantic_tome', chance:0.03, qty:1},
+        {item:'grimoire_of_blood',chance:0.05, qty:1},
+        {item:'occult_necklace',  chance:0.04, qty:1},
+      );
+    }
+    if (dungeon.id === 'void_sanctum') {
+      dungeon.rewards.items.push(
+        {item:'codex_of_the_void', chance:0.02, qty:1},
+        {item:'ascendant_staff',   chance:0.01, qty:1},
+        {item:'void_crystal',      chance:0.25, qty:3},
+      );
+    }
+    if (dungeon.id === 'theatre_of_blood_advanced') {
+      _tobDrops.forEach(drop => {
+        if (!dungeon.rewards.items.find(d=>d.item===drop.item)) {
+          dungeon.rewards.items.push({item:drop.item, chance:drop.chance, qty:drop.qty});
+        }
+      });
+    }
+    if (dungeon.id === 'slayer_dungeon_advanced') {
+      dungeon.rewards.items.push(
+        {item:'abyssal_whip',    chance:0.008, qty:1},
+        {item:'berserker_ring',  chance:0.015, qty:1},
+        {item:'dark_bow',        chance:0.003, qty:1},
+      );
+    }
+  });
+}
+
+// ── MONSTER DROP TABLE ADDITIONS ──────────────────────────────────
+// abyssal_whip — from Abyssal Demons (slayer 85+)
+if (!GAME_DATA.monsters.abyssal_demon) {
+  GAME_DATA.monsters.abyssal_demon = {
+    id:'abyssal_demon', name:'Abyssal Demon', combatLevel:124, hp:150, maxHit:8,
+    style:'melee', attackSpeed:1.8, evasion:{melee:60,ranged:60,magic:60},
+    xp:294, gold:{min:150,max:400}, slayerReq:85, alignment:'CE',
+    drops:[
+      {item:'abyssal_whip',  qty:1, chance:0.002, rarity:'legendary'},
+      {item:'rune_sword',    qty:1, chance:0.04},
+      {item:'death_rune',    qty:30,chance:0.35},
+      {item:'bones',         qty:1, chance:1.0},
+    ],
+    desc:'A horrifying creature from the Abyss. 85 Slayer required. Drops the famous whip.',
+  };
+}
+
+// Armadyl set — from God Wars Dungeon variant monsters  
+if (!GAME_DATA.monsters.armadyl_commander) {
+  GAME_DATA.monsters.armadyl_commander = {
+    id:'armadyl_commander', name:'Armadyl Commander', combatLevel:280, hp:900, maxHit:52,
+    style:'ranged', attackSpeed:2.2, evasion:{melee:100,ranged:200,magic:100},
+    xp:820, gold:{min:1500,max:4000}, alignment:'LG',
+    drops:[
+      {item:'armadyl_chestplate', qty:1, chance:0.016, rarity:'legendary'},
+      {item:'armadyl_chainskirt', qty:1, chance:0.016, rarity:'legendary'},
+      {item:'armadyl_helmet',     qty:1, chance:0.016, rarity:'legendary'},
+      {item:'armadyl_crossbow',   qty:1, chance:0.016, rarity:'legendary'},
+      {item:'death_rune',         qty:50,chance:0.60},
+    ],
+    desc:'Commander of the Armadyl forces. Full god wars difficulty. Drops the blessed armor set.',
+    isBoss:true,
+  };
+}
+
+// Ring of wealth — from high-level slayer monsters
+if (GAME_DATA.monsters.gargoyle) {
+  if (!GAME_DATA.monsters.gargoyle.drops) GAME_DATA.monsters.gargoyle.drops = [];
+  if (!GAME_DATA.monsters.gargoyle.drops.find(d=>d.item==='ring_of_wealth')) {
+    GAME_DATA.monsters.gargoyle.drops.push({item:'ring_of_wealth', qty:1, chance:0.008, rarity:'legendary'});
+  }
+}
+
+// Fury amulet — from Tormented demons / Dragon slayer content
+if (!GAME_DATA.monsters.tormented_demon) {
+  GAME_DATA.monsters.tormented_demon = {
+    id:'tormented_demon', name:'Tormented Demon', combatLevel:450, hp:2000, maxHit:65,
+    style:'melee', attackSpeed:2.4, evasion:{melee:200,ranged:180,magic:200},
+    xp:1800, gold:{min:3000,max:8000}, alignment:'CE',
+    drops:[
+      {item:'amulet_of_fury',  qty:1, chance:0.004, rarity:'legendary'},
+      {item:'fury_amulet',     qty:1, chance:0.004, rarity:'legendary'},
+      {item:'onyx',            qty:1, chance:0.02,  rarity:'epic'},
+      {item:'dragon_bones',    qty:1, chance:1.0},
+      {item:'celestial_essence',qty:2,chance:0.10, rarity:'rare'},
+    ],
+    desc:'A demon wracked with eternal agony. One of the most dangerous creatures in the Ashfall.',
+    isBoss:false,
+  };
+}
+
+// Add these monsters to endgame combat areas
+if (GAME_DATA.combatAreas) {
+  const abyssal = GAME_DATA.combatAreas.find(a=>a.id==='abyssal_depths'||a.name?.includes('Abyssal'));
+  if (abyssal) {
+    if (!abyssal.monsters.includes('abyssal_demon')) abyssal.monsters.push('abyssal_demon');
+  } else {
+    GAME_DATA.combatAreas.push({
+      id:'abyssal_rift', name:'Abyssal Rift', levelReq:85,
+      desc:'A crack in reality. Abyssal demons pour through seeking souls. 85 Slayer required.',
+      monsters:['abyssal_demon','void_warden'],
+      slayerArea:true,
+    });
+  }
+  GAME_DATA.combatAreas.push({
+    id:'god_wars_outpost', name:'God Wars Outpost', levelReq:70,
+    desc:'A frozen fortress where the armies of Armadyl and Zamorak clash. Extremely dangerous.',
+    monsters:['armadyl_commander','shadow_warden'],
+    slayerArea:false,
+  });
+  GAME_DATA.combatAreas.push({
+    id:'tormented_sanctum', name:'Tormented Sanctum', levelReq:85,
+    desc:'Where the Void Emperor imprisons its most powerful servants.',
+    monsters:['tormented_demon','void_emperor_spawn'],
+    slayerArea:false,
+  });
+}
+
+console.log('[Ashfall] Endgame drop tables loaded — raid-only items properly gated');
 })();

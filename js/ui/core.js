@@ -2998,37 +2998,154 @@ class UI {
     }
   }
 
-  renderShopPage(el) {
+  renderShopPage(el, _activeTab, _searchQuery) {
     const s = this.engine.state;
-    let html = this.header('Shop','shop','Buy supplies and equipment.',null);
-    html += `<div class="bank-gold">${icon('coin',20)} <span id="shop-gold">${this.fmt(s.gold)}</span> Gold</div>`;
-    const cats = [...new Set(GAME_DATA.shop.map(i=>i.category).filter(Boolean))];
-    for (const cat of cats) {
-      html += `<h2 class="section-title">${cat[0].toUpperCase()+cat.slice(1)}</h2><div class="actions-grid">`;
-      for (let i = 0; i < GAME_DATA.shop.length; i++) {
-        const si = GAME_DATA.shop[i]; if (si.category !== cat) continue;
-        const item = GAME_DATA.items[si.item]; if (!item) continue;
-        const al = GAME_DATA.alignments[s.alignment];
-        const discount = al?.bonus?.shopDiscount || 0;
-        const price = Math.floor(si.price * (1 - discount/100));
-        const can = s.gold >= price;
-        const rarCol = this.getRarityColor(si.item);
-        html += `<div class="action-card shop-card ${can?'':'locked'}">
-          <div class="ac-header"><span class="ac-name" style="${rarCol?'color:'+rarCol:''}">${item.name}</span><span class="ac-level">${price}g${discount>0?' <small>(-'+discount+'%)</small>':''}</span></div>
-          ${this.getRarityTag(si.item)}
-          <p class="area-desc">${item.desc}</p>
-          <div class="shop-btns">
-            <button class="btn btn-xs" ${can?'':'disabled'} onclick="game.buyItem(${i},1)">1</button>
-            <button class="btn btn-xs" ${s.gold>=price*5?'':'disabled'} onclick="game.buyItem(${i},5)">5</button>
-            <button class="btn btn-xs" ${s.gold>=price*10?'':'disabled'} onclick="game.buyItem(${i},10)">10</button>
-            <input type="number" class="qty-input" min="1" value="1" id="shop-qty-${i}" style="width:50px">
-            <button class="btn btn-xs" onclick="game.buyItem(${i},parseInt(document.getElementById('shop-qty-${i}').value)||1)">Buy</button>
-          </div>
-        </div>`;
+    const al = GAME_DATA.alignments[s.alignment];
+    const discount = al?.bonus?.shopDiscount || 0;
+    const activeTab = _activeTab || this._shopTab || 'food';
+    const searchQuery = (_searchQuery !== undefined ? _searchQuery : this._shopSearch || '').toLowerCase();
+    this._shopTab = activeTab;
+    this._shopSearch = searchQuery;
+
+    let html = this.header('Shop','shop','Buy supplies, gear, tools and materials. Endgame items drop from raids only.',null);
+
+    // ── GOLD BAR ─────────────────────────────────────────────────
+    html += `<div class="shop-top-bar">
+      <div class="shop-gold-display">
+        <svg viewBox="0 0 16 16" width="18" height="18"><circle cx="8" cy="8" r="7" fill="#d4a83a"/><circle cx="8" cy="8" r="5" fill="#e4c040" opacity="0.8"/><text x="8" y="12" text-anchor="middle" font-size="8" fill="#7a5a00" font-weight="bold">G</text></svg>
+        <span id="shop-gold" class="shop-gold-val">${this.fmt(s.gold)}</span>
+        <span class="shop-gold-label">Gold${discount>0?` <span class="shop-discount-badge">-${discount}% All</span>`:''}</span>
+      </div>
+      <div class="shop-search-wrap">
+        <input type="text" class="shop-search" placeholder="Search items..." value="${this.escHtml(searchQuery)}"
+          oninput="ui._shopSearch=this.value;ui.renderShopPage(document.getElementById('main-content'),ui._shopTab,this.value)"
+          id="shop-search-input">
+        ${searchQuery ? `<button class="shop-search-clear" onclick="ui._shopSearch='';ui.renderShopPage(document.getElementById('main-content'),ui._shopTab,'')">✕</button>` : ''}
+      </div>
+    </div>`;
+
+    // ── CATEGORY TABS ─────────────────────────────────────────────
+    const catOrder = GAME_DATA.shopCategoryOrder || [];
+    const allCats = [...new Set(GAME_DATA.shop.map(i=>i.category).filter(Boolean))];
+    const orderedCats = [
+      ...catOrder.filter(c => allCats.includes(c.id)),
+      ...allCats.filter(c => !catOrder.find(co=>co.id===c)).map(c=>({id:c,label:c}))
+    ];
+
+    if (!searchQuery) {
+      html += '<div class="shop-tabs">';
+      for (const cat of orderedCats) {
+        const catItems = GAME_DATA.shop.filter(si=>si.category===cat.id && GAME_DATA.items[si.item]);
+        if (!catItems.length) continue;
+        const canAffordSome = catItems.some(si=>s.gold >= Math.floor(si.price*(1-discount/100)));
+        html += `<button class="shop-tab ${activeTab===cat.id?'shop-tab-active':''} ${canAffordSome?'shop-tab-affordable':''}"
+          onclick="ui.renderShopPage(document.getElementById('main-content'),'${cat.id}')">
+          ${cat.label||cat.id}
+          <span class="shop-tab-count">${catItems.length}</span>
+        </button>`;
       }
       html += '</div>';
     }
+
+    // ── ITEMS GRID ────────────────────────────────────────────────
+    const showCats = searchQuery
+      ? orderedCats
+      : orderedCats.filter(c => c.id === activeTab);
+
+    // Raid-only teaser panel
+    if (!searchQuery && activeTab === 'food') {
+      html += `<div class="shop-raid-teaser">
+        <span class="srt-icon">🏆</span>
+        <div>
+          <div class="srt-title">Endgame Items are Raid-Only Drops</div>
+          <div class="srt-desc">Amulet of Fury, Berserker Ring, Armadyl Crossbow, Ascendant gear and all Theatre of Ash drops cannot be purchased — they only drop from raids, bosses, and dungeons. Earn them.</div>
+        </div>
+      </div>`;
+    }
+
+    let totalShown = 0;
+    for (const cat of showCats) {
+      const catDef = catOrder.find(c=>c.id===cat.id) || {label:cat.id};
+      const catItems = GAME_DATA.shop
+        .map((si,i)=>({...si,_idx:i}))
+        .filter(si => {
+          if (si.category !== cat.id) return false;
+          const item = GAME_DATA.items[si.item];
+          if (!item) return false;
+          if (searchQuery && !item.name.toLowerCase().includes(searchQuery) && !(item.desc||'').toLowerCase().includes(searchQuery)) return false;
+          return true;
+        });
+      if (!catItems.length) continue;
+
+      if (searchQuery) {
+        html += `<div class="shop-search-cat-label">${catDef.label||cat.id}</div>`;
+      } else if (catDef.desc) {
+        html += `<div class="shop-cat-desc">${catDef.desc}</div>`;
+      }
+
+      html += '<div class="shop-items-grid">';
+      for (const si of catItems) {
+        const item = GAME_DATA.items[si.item];
+        const price = Math.floor(si.price * (1 - discount/100));
+        const owned = s.bank[si.item] || 0;
+        const can = s.gold >= price;
+        const can5 = s.gold >= price * 5;
+        const can10 = s.gold >= price * 10;
+        const rarCol = this.getRarityColor(si.item) || '';
+        const lvReq = si.levelReq || 0;
+        const meetsLvl = !lvReq || (s.skills?.attack?.level||0) >= lvReq || (s.skills?.woodcutting?.level||0) >= lvReq;
+
+        html += `<div class="shop-item-card ${can?'':'sic-broke'} ${!meetsLvl?'sic-locked':''}">
+          <div class="sic-header">
+            <span class="sic-name" style="${rarCol?'color:'+rarCol:''}">${item.name}</span>
+            <span class="sic-price ${can?'sic-can-afford':'sic-cant-afford'}">
+              <svg viewBox="0 0 10 10" width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="#d4a83a"/></svg>
+              ${this.fmt(price)}${discount>0?`<span class="sic-disc"> (-${discount}%)</span>`:''}
+            </span>
+          </div>
+          ${this.getRarityTag(si.item)||''}
+          ${item.heals?`<div class="sic-heal-badge">+${item.heals} HP</div>`:''}
+          ${item.stats?`<div class="sic-stats">${Object.entries(item.stats).filter(([,v])=>v>0).slice(0,3).map(([k,v])=>`<span>+${v} ${k.replace('Bonus','').replace(/([A-Z])/g,' $1').trim()}</span>`).join('')}</div>`:''}
+          <div class="sic-desc">${(item.desc||'').slice(0,60)}${(item.desc||'').length>60?'…':''}</div>
+          ${owned>0?`<div class="sic-owned">Owned: ${this.fmt(owned)}</div>`:''}
+          ${lvReq&&!meetsLvl?`<div class="sic-lvreq">Requires level ${lvReq}</div>`:''}
+          <div class="sic-btns">
+            <button class="btn btn-xs sic-buy" ${can?'':'disabled'} onclick="game.buyItem(${si._idx},1);ui._refreshShopGold()">×1</button>
+            <button class="btn btn-xs sic-buy" ${can5?'':'disabled'} onclick="game.buyItem(${si._idx},5);ui._refreshShopGold()">×5</button>
+            <button class="btn btn-xs sic-buy" ${can10?'':'disabled'} onclick="game.buyItem(${si._idx},10);ui._refreshShopGold()">×10</button>
+            <button class="btn btn-xs sic-buy-max" ${can?'':'disabled'} onclick="const _max=Math.floor(game.state.gold/Math.max(1,${price}));if(_max>0){game.buyItem(${si._idx},_max);ui._refreshShopGold()}">Max</button>
+          </div>
+        </div>`;
+        totalShown++;
+      }
+      html += '</div>';
+    }
+
+    if (totalShown === 0 && searchQuery) {
+      html += `<div class="bank-empty">No items match "${this.escHtml(searchQuery)}"</div>`;
+    }
+
     el.innerHTML = html;
+    // Restore search focus
+    if (searchQuery) {
+      const inp = document.getElementById('shop-search-input');
+      if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+    }
+  }
+
+  _refreshShopGold() {
+    const s = game.state;
+    const el = document.getElementById('shop-gold');
+    if (el) el.textContent = this.fmt(s.gold);
+    // Re-enable/disable buy buttons based on new gold amount
+    document.querySelectorAll('.shop-item-card').forEach(card => {
+      const priceEl = card.querySelector('.sic-price');
+      if (!priceEl) return;
+      const price = parseInt(priceEl.textContent.replace(/[^0-9]/g,''))||0;
+      const can = s.gold >= price;
+      card.classList.toggle('sic-broke', !can);
+      card.querySelectorAll('.sic-buy, .sic-buy-max').forEach(btn => btn.disabled = !can);
+    });
   }
 
   renderEquipmentPage(el) {
