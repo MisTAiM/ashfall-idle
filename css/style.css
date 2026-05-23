@@ -10334,3 +10334,50 @@ body.perf-mode .hit-splat { display:none !important; }
 .recipe-mat strong { font-family:'JetBrains Mono',monospace; font-size:10px; }
 .ac-have-count { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); margin-left:auto; }
 .ac-have-yes { color:#4abe6c !important; font-weight:700; }
+
+/* ── MINING PAGE ─────────────────────────────────────────── */
+.mine-skill-header { display:flex; align-items:center; gap:14px; background:var(--bg-mid); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:14px; flex-wrap:wrap; }
+.msh-left { text-align:center; }
+.msh-level { font-family:'Cinzel',serif; font-size:32px; color:#c9873e; font-weight:700; line-height:1; }
+.msh-label { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
+.msh-center { flex:1; min-width:160px; }
+.msh-xp-bar { height:10px; background:rgba(0,0,0,0.4); border-radius:5px; overflow:hidden; border:1px solid rgba(201,135,62,0.2); margin-bottom:5px; }
+.msh-xp-fill { height:100%; background:linear-gradient(90deg,#7a4a00,#c9873e); border-radius:4px; transition:width 0.5s; }
+.msh-xp-text { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.msh-stats { display:flex; gap:14px; }
+.msh-stat { text-align:center; }
+.msh-val { font-family:'Cinzel',serif; font-size:18px; font-weight:700; display:block; }
+.msh-lbl { font-size:9px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; }
+
+.mine-pick-strip { display:flex; align-items:center; gap:10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:14px; }
+.mine-pick-name { font-family:'Cinzel',serif; font-size:12px; color:var(--text); }
+.mine-pick-bonus { font-size:10px; color:#4abe6c; }
+.mine-active-badge { margin-left:auto; font-size:11px; color:#c9873e; font-weight:700; }
+
+.mine-rocks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; margin-bottom:20px; }
+.mine-rock-card { display:flex; align-items:flex-start; gap:10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:10px; padding:10px 12px; cursor:pointer; transition:all 0.15s; position:relative; overflow:hidden; }
+.mine-rock-card:hover:not(.mrc-locked) { border-color:rgba(201,135,62,0.35); transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+.mrc-active { border-color:rgba(201,135,62,0.5) !important; background:rgba(201,135,62,0.04) !important; }
+.mrc-locked { opacity:0.5; cursor:default; }
+.mrc-art { flex-shrink:0; }
+.mrc-body { flex:1; min-width:0; }
+.mrc-name { font-family:'Cinzel',serif; font-size:11px; color:var(--text); font-weight:600; margin-bottom:3px; }
+.mrc-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:3px; font-size:10px; }
+.mrc-xp   { color:#c9873e; font-weight:600; }
+.mrc-time { color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.mrc-gem  { color:#88ccff; }
+.mrc-ore-row { display:flex; justify-content:space-between; font-size:10px; }
+.mrc-ore-name { color:var(--text-dim); }
+.mrc-ore-own { font-family:'JetBrains Mono',monospace; color:var(--text-dim); }
+.mrc-own-yes { color:#c9873e !important; font-weight:700; }
+.mrc-active-badge { font-size:9px; color:#c9873e; font-weight:700; margin-top:3px; }
+.mrc-lv { position:absolute; top:7px; right:8px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:#c9873e; }
+.mrc-lv-lock { color:var(--text-dim) !important; }
+.mine-bank-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+.mine-ore-chip { display:flex; align-items:center; gap:6px; padding:5px 10px; background:var(--bg-mid); border:1px solid var(--border); border-radius:20px; font-size:11px; }
+
+/* ── AGILITY PAGE USES GENERIC BUT ADD CATEGORY COLORS ──── */
+[data-cat="Beginner"] .cat-header { color:#4abe6c; }
+[data-cat="Intermediate"] .cat-header { color:#d4a83a; }
+[data-cat="Advanced"] .cat-header { color:#c9873e; }
+[data-cat="Elite"] .cat-header { color:#c44040; }

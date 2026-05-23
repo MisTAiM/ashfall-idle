@@ -3703,3 +3703,131 @@ console.log('[Ashfall] Dungeon monster patch loaded:',
    'shadow_beast','shadow_warden','void_warden','dark_beast','aberrant_spectre','adamant_dragon']
   .filter(id=>GAME_DATA.monsters[id]).length, '/ 12 dungeon bosses confirmed');
 })();
+
+// ── AGILITY COURSES ───────────────────────────────────────────
+GAME_DATA.gatheringActions.agility = [
+  {id:'agility_gnome',      name:'Gnome Stronghold',  level:1,  xp:133,  time:45,  laps:1, lapXp:133,  desc:'Beginner course. 6 obstacles through the gnome stronghold.',     category:'Beginner'},
+  {id:'agility_draynor',    name:'Draynor Village',   level:10, xp:120,  time:40,  laps:1, lapXp:120,  desc:'Short rooftop course through Draynor Village.',                  category:'Beginner'},
+  {id:'agility_al_kharid',  name:'Al Kharid',         level:20, xp:180,  time:45,  laps:1, lapXp:180,  desc:'Desert rooftop course. Watch the heat.',                        category:'Beginner'},
+  {id:'agility_varrock',    name:'Varrock Rooftop',   level:30, xp:238,  time:50,  laps:1, lapXp:238,  desc:'Urban parkour across Varrock\'s rooftops.',                      category:'Intermediate'},
+  {id:'agility_barbarian',  name:'Barbarian Outpost', level:35, xp:552,  time:60,  laps:1, lapXp:552,  desc:'Challenging barbarian agility course.',                          category:'Intermediate'},
+  {id:'agility_canifis',    name:'Canifis Rooftop',   level:40, xp:240,  time:45,  laps:1, lapXp:240,  desc:'Spooky rooftop course in the werewolf town.',                   category:'Intermediate'},
+  {id:'agility_ape_atoll',  name:'Ape Atoll',         level:48, xp:580,  time:65,  laps:1, lapXp:580,  desc:'Monkey island gauntlet. High fail chance.',                     category:'Intermediate'},
+  {id:'agility_pollnivneach',name:'Pollnivneach',     level:70, xp:890,  time:70,  laps:1, lapXp:890,  desc:'Desert rooftop. Marks of grace spawn frequently.',               category:'Advanced'},
+  {id:'agility_seers',      name:'Seers Village',     level:60, xp:570,  time:55,  laps:1, lapXp:570,  desc:'Village rooftop. Teleport trick doubles efficiency.',             category:'Advanced'},
+  {id:'agility_rellekka',   name:'Rellekka Rooftop',  level:80, xp:780,  time:65,  laps:1, lapXp:780,  desc:'Viking town parkour. Brutal fail rate.',                         category:'Advanced'},
+  {id:'agility_ardougne',   name:'Ardougne Rooftop',  level:90, xp:793,  time:60,  laps:1, lapXp:793,  desc:'Best marks of grace rate. The elite course.',                   category:'Elite'},
+  {id:'agility_ashfall',    name:'Ashfall Ruins',     level:95, xp:1200, time:75,  laps:1, lapXp:1200, desc:'Ancient Ashfall obstacle course. Unique cosmetic rewards.',       category:'Elite'},
+];
+
+// Agility loot (marks of grace)
+if (!GAME_DATA.items.mark_of_grace) {
+  GAME_DATA.items.mark_of_grace = {id:'mark_of_grace',name:'Mark of Grace',type:'currency',sellPrice:0,desc:'Exchange for graceful outfit pieces at the Agility Arena.'};
+}
+
+// Add marks of grace as loot to agility actions
+GAME_DATA.gatheringActions.agility.forEach(a => {
+  a.loot = [{item:'mark_of_grace',qty:1,chance:a.level>=40?0.12:0.08}];
+  a.passiveBonus = `+${Math.round(a.level*0.1+1)}% run energy regen`;
+});
+
+// ── CONSTRUCTION RECIPES ──────────────────────────────────────
+if (!GAME_DATA.recipes.construction) GAME_DATA.recipes.construction = [];
+const _cRecipes = [
+  // Furniture - requires planks
+  {id:'build_crude_chair',   name:'Crude Chair',      level:1,  xp:58,  time:5,  input:[{item:'oak_log',qty:2}],            output:{item:'crude_chair',qty:1},         category:'Furniture', desc:'A rough seat. Better than the floor.'},
+  {id:'build_wooden_chair',  name:'Wooden Chair',     level:10, xp:117, time:6,  input:[{item:'oak_log',qty:3}],            output:{item:'wooden_chair',qty:1},        category:'Furniture', desc:'A sturdy oak chair.'},
+  {id:'build_rocking_chair', name:'Rocking Chair',    level:14, xp:147, time:7,  input:[{item:'oak_log',qty:3}],            output:{item:'rocking_chair',qty:1},       category:'Furniture', desc:'Comfortable. For villagers who\'ve earned it.'},
+  {id:'build_oak_chair',     name:'Oak Armchair',     level:22, xp:180, time:8,  input:[{item:'oak_log',qty:4}],            output:{item:'oak_chair',qty:1},           category:'Furniture', desc:'Quality armchair. Impresses guests.'},
+  {id:'build_teak_chair',    name:'Teak Armchair',    level:35, xp:330, time:9,  input:[{item:'teak_log',qty:3}],           output:{item:'teak_chair',qty:1},          category:'Furniture', desc:'Polished teak. Very comfortable.'},
+  {id:'build_mahog_chair',   name:'Gilded Chair',     level:60, xp:640, time:12, input:[{item:'mahogany_log',qty:4},{item:'gold_bar',qty:2}], output:{item:'gilded_chair',qty:1}, category:'Furniture', desc:'Gold-trimmed mahogany. Extremely prestigious.'},
+  
+  // Shelving / Storage
+  {id:'build_wooden_shelf',  name:'Wooden Shelves',   level:20, xp:173, time:7,  input:[{item:'oak_log',qty:4}],            output:{item:'wooden_shelf',qty:1},        category:'Storage', desc:'+50 bank space.'},
+  {id:'build_oak_shelf',     name:'Oak Shelves',      level:40, xp:370, time:8,  input:[{item:'oak_log',qty:6}],            output:{item:'oak_shelf',qty:1},           category:'Storage', desc:'+100 bank space.'},
+  {id:'build_teak_shelf',    name:'Teak Shelves',     level:60, xp:720, time:10, input:[{item:'teak_log',qty:6}],           output:{item:'teak_shelf',qty:1},          category:'Storage', desc:'+200 bank space.'},
+  {id:'build_mahog_shelf',   name:'Mahogany Shelves', level:80, xp:1400,time:14, input:[{item:'mahogany_log',qty:6}],       output:{item:'mahog_shelf',qty:1},         category:'Storage', desc:'+400 bank space.'},
+
+  // Crafting tables
+  {id:'build_workbench',     name:'Workbench',        level:5,  xp:87,  time:6,  input:[{item:'oak_log',qty:3},{item:'iron_bar',qty:1}], output:{item:'workbench',qty:1}, category:'Workshop', desc:'Craft furniture and tools.'},
+  {id:'build_oak_table',     name:'Oak Kitchen Table',level:15, xp:180, time:7,  input:[{item:'oak_log',qty:4}],            output:{item:'oak_table',qty:1},           category:'Workshop', desc:'Unlocks better cooking options.'},
+  {id:'build_teak_table',    name:'Teak Table',       level:38, xp:360, time:9,  input:[{item:'teak_log',qty:4}],           output:{item:'teak_table',qty:1},          category:'Workshop', desc:'High-quality dining. +5% cooking XP.'},
+  {id:'build_anvil',         name:'Smithing Anvil',   level:30, xp:400, time:12, input:[{item:'iron_bar',qty:10},{item:'steel_bar',qty:5}], output:{item:'home_anvil',qty:1}, category:'Workshop', desc:'-10% smithing time when working at home anvil.'},
+  {id:'build_altar',         name:'Prayer Altar',     level:45, xp:600, time:15, input:[{item:'oak_log',qty:8},{item:'marble_block',qty:1}], output:{item:'prayer_altar',qty:1}, category:'Workshop', desc:'Pray at home altar for +2.5x bone XP.'},
+  {id:'build_mahog_table',   name:'Mahogany Table',   level:52, xp:840, time:12, input:[{item:'mahogany_log',qty:6}],       output:{item:'mahog_table',qty:1},         category:'Workshop', desc:'Best cooking table. +10% cooking XP.'},
+  {id:'build_trophy_case',   name:'Trophy Case',      level:25, xp:230, time:8,  input:[{item:'oak_log',qty:4},{item:'glass',qty:2}], output:{item:'trophy_case',qty:1}, category:'Workshop', desc:'Display rare drops and achievement items.'},
+  
+  // Walls & Doors  
+  {id:'build_oak_door',      name:'Oak Door',         level:20, xp:156, time:6,  input:[{item:'oak_log',qty:4}],            output:{item:'oak_door',qty:1},            category:'Structural', desc:'A solid oak door for your home.'},
+  {id:'build_teak_door',     name:'Teak Door',        level:40, xp:360, time:8,  input:[{item:'teak_log',qty:4}],           output:{item:'teak_door',qty:1},           category:'Structural', desc:'Elegant teak door.'},
+  {id:'build_stone_wall',    name:'Stone Wall',       level:8,  xp:100, time:5,  input:[{item:'iron_ore',qty:5}],           output:{item:'stone_wall',qty:1},          category:'Structural', desc:'Thick stone. Good insulation.'},
+
+  // Decorations
+  {id:'build_mounted_fish',  name:'Mounted Fish',     level:56, xp:300, time:8,  input:[{item:'raw_shark',qty:1},{item:'oak_log',qty:2}], output:{item:'mounted_fish',qty:1}, category:'Decoration', desc:'Trophy wall display for your biggest catch.'},
+  {id:'build_weapon_rack',   name:'Weapon Rack',      level:35, xp:400, time:10, input:[{item:'oak_log',qty:4},{item:'steel_bar',qty:2}], output:{item:'weapon_rack',qty:1},  category:'Decoration', desc:'Display your best weapons.'},
+  {id:'build_garden',        name:'Garden Patch',     level:10, xp:150, time:7,  input:[{item:'oak_log',qty:2},{item:'potato_seed',qty:3}], output:{item:'garden_patch',qty:1}, category:'Decoration', desc:'Adds a small farming plot to your home.'},
+];
+
+_cRecipes.forEach(r => {
+  if (!GAME_DATA.recipes.construction.find(x=>x.id===r.id)) {
+    GAME_DATA.recipes.construction.push(r);
+  }
+  // Add output items if missing
+  if (!GAME_DATA.items[r.output.item]) {
+    GAME_DATA.items[r.output.item] = {
+      id:r.output.item, name:r.name, type:'furniture',
+      sellPrice:Math.floor(r.xp*2), desc:r.desc
+    };
+  }
+});
+
+// ── MISSING CRITICAL ITEMS (from 317 undefined) ───────────────
+(function() {
+const _qi2 = (id,d) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = Object.assign({id},d); };
+
+// Weapons  
+_qi2('abyssal_whip',      {name:'Abyssal Whip',       type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.4,stats:{attackBonus:82,strengthBonus:82},levelReq:{attack:70},sellPrice:0,desc:'Fast melee weapon. 70 attack. Dropped by Abyssal Demons.'});
+_qi2('armadyl_godsword',  {name:'Armadyl Godsword',   type:'weapon',slot:'weapon',style:'melee',attackSpeed:3.0,stats:{attackBonus:132,strengthBonus:132},levelReq:{attack:75},sellPrice:0,desc:'Powerful godsword. Special: doubles accuracy and damage.'});
+_qi2('armadyl_crossbow',  {name:'Armadyl Crossbow',   type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6,stats:{rangedBonus:100},levelReq:{ranged:70},sellPrice:0,desc:'Blessed crossbow. Pearl bolt special.'});
+_qi2('ashen_rapier',      {name:'Ashen Rapier',        type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.8,stats:{attackBonus:88,strengthBonus:72},levelReq:{attack:80},sellPrice:0,desc:'Fast lightweight rapier forged in volcanic ash.'});
+_qi2('ashen_overlord_blade',{name:"Ashen Overlord's Blade",type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.2,stats:{attackBonus:120,strengthBonus:120},levelReq:{attack:90},sellPrice:0,desc:'The weapon of the Ashen Overlord.'});
+_qi2('ascendant_bow',     {name:'Ascendant Bow',       type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.0,stats:{rangedBonus:130},levelReq:{ranged:90},sellPrice:0,desc:'Endgame ranged weapon. Fires ascendant arrows.'});
+_qi2('ascendant_staff',   {name:'Ascendant Staff',     type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.2,stats:{magicBonus:125},levelReq:{magic:90},sellPrice:0,desc:'Endgame magic weapon. Casts ascendant spells.'});
+
+// Armour
+_qi2('armadyl_chestplate',{name:'Armadyl Chestplate',  type:'armor',slot:'body', stats:{defenceBonus:65,rangedBonus:33},levelReq:{defence:70,ranged:70},sellPrice:0,desc:'God Wars ranged body.'});
+_qi2('armadyl_chainskirt',{name:'Armadyl Chainskirt',  type:'armor',slot:'legs', stats:{defenceBonus:55,rangedBonus:20},levelReq:{defence:70,ranged:70},sellPrice:0,desc:'God Wars ranged legs.'});
+_qi2('armadyl_helmet',    {name:'Armadyl Helmet',       type:'armor',slot:'head', stats:{defenceBonus:30,rangedBonus:10},levelReq:{defence:70,ranged:70},sellPrice:0,desc:'God Wars ranged helm.'});
+_qi2('ascendant_crown',   {name:'Ascendant Crown',      type:'armor',slot:'head', stats:{defenceBonus:45,magicBonus:20,rangedBonus:20,strengthBonus:10},levelReq:{defence:90},sellPrice:0,desc:'Crown of the ascendant realm.'});
+_qi2('ascendant_plate',   {name:'Ascendant Platebody',  type:'armor',slot:'body', stats:{defenceBonus:110,strengthBonus:20},levelReq:{defence:90},sellPrice:0,desc:'The ultimate defensive armour.'});
+_qi2('adamant_platebody', {name:'Adamant Platebody',    type:'armor',slot:'body', stats:{defenceBonus:65},levelReq:{defence:40},sellPrice:0,desc:'Adamant full plate body.'});
+_qi2('adamant_plate',     {name:'Adamant Platebody',    type:'armor',slot:'body', stats:{defenceBonus:65},levelReq:{defence:40},sellPrice:0,desc:'Adamant plate armour.'});
+_qi2('adamant_helm',      {name:'Adamant Full Helm',    type:'armor',slot:'head', stats:{defenceBonus:28},levelReq:{defence:40},sellPrice:0,desc:'Adamant full helmet.'});
+_qi2('adamant_legs',      {name:'Adamant Platelegs',    type:'armor',slot:'legs', stats:{defenceBonus:52},levelReq:{defence:40},sellPrice:0,desc:'Adamant platelegs.'});
+
+// Resources
+_qi2('marble_block',      {name:'Marble Block',         type:'resource',sellPrice:1000,desc:'Heavy carved marble. Used in high-level construction.'});
+_qi2('glass',             {name:'Glass',                type:'resource',sellPrice:50,desc:'Blown glass for windows and cases.'});
+_qi2('arrowheads_rune',   {name:'Rune Arrowheads',      type:'resource',stackable:true,sellPrice:25,desc:'Rune-grade arrowheads. Attach to arrow shafts.'});
+_qi2('ancient_artifact',  {name:'Ancient Artifact',     type:'resource',sellPrice:20000,desc:'A pre-Ashfall artifact of significant historical value.'});
+_qi2('ancient_essence',   {name:'Ancient Essence',      type:'resource',sellPrice:5000,desc:'Concentrated energy from ancient ruins.'});
+_qi2('arcane_scroll',     {name:'Arcane Scroll',        type:'resource',sellPrice:3000,desc:'Scroll of ancient magical knowledge.'});
+_qi2('arcane_sigil',      {name:'Arcane Sigil',         type:'resource',sellPrice:8000,desc:'Crystallized arcane power. Used in high-level crafting.'});
+
+// Quest/rare drops
+_qi2('ancient_lamp',      {name:'Ancient Lamp',         type:'lamp',sellPrice:0,xpGain:5000,desc:'Rub to gain 5,000 XP in a skill of your choice.'});
+_qi2('_unique_roll',      {name:'Unique Drop',          type:'resource',sellPrice:0,desc:'A rare unique item.'});
+_qi2('ashen_crown_shard', {name:'Ashen Crown Shard',    type:'resource',sellPrice:10000,desc:'A fragment of the Ashen Crown. Collect all 4 to reconstruct it.'});
+_qi2('arcane_sigil',      {name:'Arcane Sigil',         type:'resource',sellPrice:8000,desc:'Rare sigil from arcane creatures.'});
+
+// Smithed items
+_qi2('adamant_battleaxe', {name:'Adamant Battleaxe',    type:'weapon',slot:'weapon',style:'melee',attackSpeed:3.0,stats:{attackBonus:72,strengthBonus:90},levelReq:{attack:40},sellPrice:12000,desc:'Heavy adamant battleaxe.'});
+
+// Graceful outfit
+['mask','top','trousers','gloves','boots','cape'].forEach(piece => {
+  _qi2(`graceful_${piece}`, {name:`Graceful ${piece.charAt(0).toUpperCase()+piece.slice(1)}`,type:'armor',slot:piece==='top'?'body':piece==='trousers'?'legs':piece==='mask'?'head':piece,stats:{agilityBonus:4},sellPrice:0,desc:'Reduces weight. Faster run energy restore.'});
+  _qi2(`rogue_${piece}`, {name:`Rogue ${piece.charAt(0).toUpperCase()+piece.slice(1)}`,type:'armor',slot:piece==='top'?'body':piece==='trousers'?'legs':piece==='mask'?'head':piece,stats:{thievingBonus:20},sellPrice:0,desc:'Doubles loot from pickpocketing when wearing full set.'});
+});
+
+console.log('[Ashfall] Extended item/skill patch loaded');
+})();

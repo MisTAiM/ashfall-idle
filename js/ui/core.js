@@ -528,29 +528,68 @@ class UI {
     const divider = `<svg class="header-divider" viewBox="0 0 400 8" preserveAspectRatio="none"><path d="M0 4 Q100 0 200 4 Q300 8 400 4" stroke="rgba(201,135,62,0.3)" stroke-width="1" fill="none"/></svg>`;
     let oreBagHtml = '';
     if (sId === 'mining') {
-      const ob = this.engine.state.oreBag || {capacity:100,contents:{}};
-      const totalInBag = Object.values(ob.contents).reduce((s,e) => s + (e.qty||0), 0);
-      oreBagHtml = `<div class="ore-bag-section">
-        <div class="ob-header">
-          <span class="ob-title">${icon('pickaxe',14)} Ore Bag</span>
-          <span class="ob-capacity">${totalInBag} / ${ob.capacity}</span>
-          <button class="btn btn-xs" onclick="game.collectOreBag();ui.renderPage('mining')">Collect All</button>
-        </div>
-        <div class="ob-bar"><div class="ob-fill" style="width:${Math.min(100,totalInBag/ob.capacity*100).toFixed(0)}%"></div></div>
-        <div class="ob-contents">`;
-      for (const [oreId, entry] of Object.entries(ob.contents)) {
-        if (entry.qty <= 0) continue;
-        const ore = GAME_DATA.items[oreId];
-        oreBagHtml += `<div class="ob-ore"><span class="ob-ore-name">${ore?.name||oreId}</span><span class="ob-ore-qty">x${entry.qty}</span></div>`;
+      const minLv = s.skills.mining?.level || 1;
+      const minProg = this.engine.getXpProgress?.('mining') || 0;
+      const minXpNext = this.engine.getXpToNextLevel?.('mining') || 0;
+      const _mineActions = GAME_DATA.gatheringActions?.mining || [];
+      const _mineActive = s.activeSkill === 'mining';
+      const _mPickId = s.equipment?.weapon;
+      const _mPick = _mPickId ? GAME_DATA.items[_mPickId] : null;
+      const _mIsPick = _mPick?.subtype === 'pickaxe';
+      const _mPickSpd = _mIsPick ? (_mPick.toolSpeed?.mining || 0) : 0;
+      const _rockCol = {copper_ore:'#c87840',tin_ore:'#a0a0a0',iron_ore:'#a86040',coal_ore:'#505050',gold_ore:'#d4a83a',mithril_ore:'#4a8ec4',adamant_ore:'#4a8a4a',runite_ore:'#4a6aaa',obsidian_ore:'#3a2a4a',dragon_ore:'#c84000',rune_essence:'#c0b080'};
+      html += '<div class="mine-skill-header">'
+        + '<div class="msh-left"><div class="msh-level">'+minLv+'</div><div class="msh-label">Mining</div></div>'
+        + '<div class="msh-center"><div class="msh-xp-bar"><div class="msh-xp-fill" style="width:'+(minProg*100).toFixed(1)+'%"></div></div>'
+        + '<div class="msh-xp-text">'+this.fmt(s.skills.mining?.xp||0)+' XP &middot; '+(minXpNext>0?this.fmt(minXpNext)+' to next':'MAX')+'</div></div>'
+        + '<div class="msh-stats"><div class="msh-stat"><span class="msh-val" style="color:#c9873e">'+this.fmt(s.stats?.oresMined||0)+'</span><span class="msh-lbl">Ores</span></div>'
+        + '<div class="msh-stat"><span class="msh-val" style="color:#88ccff">'+this.fmt(s.stats?.gemsFound||0)+'</span><span class="msh-lbl">Gems</span></div></div></div>';
+      html += '<div class="mine-pick-strip">'
+        + '<svg viewBox="0 0 22 22" width="20" height="20" style="flex-shrink:0"><path d="M2 20 L16 6" stroke="#c9873e" stroke-width="2.5" stroke-linecap="round"/><path d="M16 6 Q22 0 20 8 Q14 6 16 6Z" fill="#c9873e"/></svg>'
+        + (_mIsPick ? '<span class="mine-pick-name">'+_mPick.name+'</span><span class="mine-pick-bonus"> &middot; -'+_mPickSpd+'% time</span>' : '<span style="color:var(--text-dim);font-size:11px">No pickaxe equipped. <button class=\"btn btn-xs\" onclick=\"ui.renderPage(\x27shop\x27)\">Buy \u2192</button></span>')
+        + (_mineActive ? '<span class="mine-active-badge">\u26cf Mining</span>' : '')
+        + '</div>';
+      html += '<div class="mine-rocks-grid">';
+      for (const _ma of _mineActions) {
+        const _ml = minLv < _ma.level;
+        const _mi = _mineActive && s.activeAction === _ma.id;
+        const _mOreId = _ma.loot?.[0]?.item;
+        const _mOwned = _mOreId ? (s.bank[_mOreId]||0) : 0;
+        const _mc = _rockCol[_mOreId] || '#888';
+        const _mAdj = _mIsPick ? (_ma.time*(1-_mPickSpd/100)).toFixed(1) : _ma.time;
+        const _mClick = _ml ? '' : ('onclick="ui.startAction(\'mining\',\'' + _ma.id + '\')"');
+        html += '<div class="mine-rock-card '+(_ml?'mrc-locked':'')+' '+(_mi?'mrc-active':'')+'" '+_mClick+'>'
+          + '<div class="mrc-art"><svg viewBox="0 0 48 48" width="44" height="44">'
+          + '<polygon points="8,38 14,20 28,16 40,22 42,36 32,44 14,44" fill="'+_mc+'" opacity="0.9"/>'
+          + '<polygon points="14,20 22,14 28,16" fill="'+_mc+'"/>'
+          + '<polygon points="8,38 14,20 12,32" fill="rgba(0,0,0,0.2)"/>'
+          + '<polygon points="40,22 42,36 36,28" fill="rgba(255,255,255,0.12)"/>'
+          + (_ma.gemChance>0?'<polygon points="24,26 28,22 32,26 28,30" fill="#88ccff" opacity="0.8"/>':'')
+          + '</svg></div>'
+          + '<div class="mrc-body">'
+          + '<div class="mrc-name">'+_ma.name+'</div>'
+          + '<div class="mrc-meta"><span class="mrc-xp">+'+_ma.xp+' XP</span><span class="mrc-time">\u23f1 '+_mAdj+'s</span>'+((_ma.gemChance||0)>0?'<span class="mrc-gem">'+(_ma.gemChance*100).toFixed(0)+'% \uD83D\uDC8E</span>':'')+'</div>'
+          + '<div class="mrc-ore-row"><span class="mrc-ore-name">'+(GAME_DATA.items[_mOreId]?.name||_mOreId||'')+'</span>'
+          + '<span class="mrc-ore-own '+(_mOwned>0?'mrc-own-yes':'')+'" id="mro-'+_mOreId+'">'  +(_mOwned>0?'x'+this.fmt(_mOwned):'\u2014')+'</span></div>'
+          + (_mi?'<div class="mrc-active-badge">\u26cf Mining</div>':'')
+          + '</div>'
+          + '<div class="mrc-lv '+(_ml?'mrc-lv-lock':'')+'">' + _ma.level+'</div>'
+          + (_ml?'<div class="locked-overlay">Level '+_ma.level+'</div>':'')
+          + '</div>';
       }
-      if (totalInBag === 0) oreBagHtml += '<div class="ob-empty">Empty - mine ores to fill</div>';
-      oreBagHtml += `</div>
-        <div class="ob-stats">
-          <span>Total Mined: ${this.fmt(this.engine.state.miningStats?.totalMined||0)}</span>
-          <span>Events: ${this.engine.state.miningStats?.eventsTriggered||0}</span>
-        </div>
-      </div>`;
+      html += '</div>';
+      const _mAllOres = [...new Set(_mineActions.flatMap(a=>a.loot||[]).map(l=>l.item))].filter(id=>(s.bank[id]||0)>0);
+      if (_mAllOres.length) {
+        html += '<h2 class="section-title">Ores in Bank</h2><div class="mine-bank-row">';
+        _mAllOres.forEach(id=>{const it=GAME_DATA.items[id];const c=_rockCol[id]||'#888';html+='<div class="mine-ore-chip"><svg viewBox="0 0 16 12" width="16" height="12"><polygon points="2,10 4,3 10,2 14,5 13,10 9,12 3,12" fill="'+c+'"/></svg><span>'+(it?.name||id)+'</span><span class="mrc-own-yes" id="mro-'+id+'">'+this.fmt(s.bank[id]||0)+'</span></div>';});
+        html += '</div>';
+      }
+      el.innerHTML = html;
+      clearInterval(window._mineTimerInterval);
+      window._mineTimerInterval = setInterval(()=>{_mineActions.flatMap(a=>a.loot||[]).map(l=>l.item).forEach(id=>{const e=document.getElementById('mro-'+id);if(e){const q=s.bank[id]||0;e.textContent=q>0?'x'+q.toLocaleString():'—';e.className=q>0?'mrc-ore-own mrc-own-yes':'mrc-ore-own';}});},500);
+      return;
     }
+
     return `<div class="page-header skill-header"><div class="ph-icon">${icon(ic,32)}</div><div class="ph-info"><h1>${title}</h1><p>${desc}</p></div></div>${bar}${oreBagHtml}${divider}`;
   }
 
