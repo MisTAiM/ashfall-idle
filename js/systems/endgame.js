@@ -1526,12 +1526,15 @@ GameEngine.prototype.tickTheatre = function(dt) {
   // ── PLAYER DEATH ─────────────────────────────────────────────
   if (c.playerHp <= 0) {
     t.performance.deaths++;
-    c.playerHp = Math.floor(this.getMaxHp() * 0.3); // partial HP restore on death
-    this.emit('notification',{type:'danger',text:`You died in the Theatre! Death ${t.performance.deaths}.`});
-    this.emit('theatreDeath', {deaths:t.performance.deaths, room:t.room});
+    c.playerHp = Math.max(1, Math.floor(this.getMaxHp() * 0.3)); // 30% restore, never stuck at 0
     t.mechanic = null; t.mechanicTimer = 0; t._mechCooldown = 0;
-    // Optional: quit if too many deaths
-    if (t.performance.deaths >= 5) { this._endTheatre(false); return; }
+    this.emit('notification',{type:'danger',text:`☠ Died in Room ${t.room+1}! Death ${t.performance.deaths} — restored to 30% HP.`});
+    this.emit('theatreDeath', {deaths:t.performance.deaths, room:t.room});
+    if (t.performance.deaths >= 5) {
+      this.emit('notification',{type:'danger',text:'5 deaths reached — removed from the Theatre.'});
+      this._endTheatre(false);
+      return;
+    }
   }
 
   // ── BOSS DEATH ───────────────────────────────────────────────
@@ -1701,7 +1704,9 @@ GameEngine.prototype._endTheatre = function(completed) {
   if (!this.state.theatre) return;
   if (!completed) this.emit('notification',{type:'warn',text:'You flee the Theatre of Ash.'});
   this.state.theatre = { active:false };
-  this.state.combat.active = false;
+  // stopCombat resets playerHp to max, clears all combat state, emits combatStop
+  // combatStop triggers UI re-render which unstrands the player
+  this.stopCombat();
   this.emit('theatreEnd');
 };
 

@@ -165,6 +165,7 @@ class UI {
     this.engine.on('skillStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
     this.engine.on('combatStart', () => { this.currentPage = 'combat'; this.renderTrainingBar(); this.renderSidebar(); this.renderPage('combat'); });
     this.engine.on('combatStop', () => { this.renderTrainingBar(); this.renderPage(this.currentPage); });
+    this.engine.on('playerDied', (ctx) => { this._showDeathScreen(ctx); });
     this._initTheatreListeners();
 
     // ── ABILITY ANIMATIONS ──────────────────────────────────────
@@ -1644,6 +1645,10 @@ class UI {
             ${weakness ? `<div class="arena-weakness">⚠ Weak: ${weakness.weak} +${weakness.bonus}%</div>` : ''}
             ${mon.desc ? `<div class="arena-mon-desc">${mon.desc}</div>` : ''}
             <button class="arena-flee-btn" onclick="game.stopCombat()">Flee</button>
+            ${(c.playerHp <= 0 || (c.active && this.engine.getMaxHp && c.playerHp < 1)) ? `
+              <button class="btn btn-danger arena-force-stop" onclick="game.forceStopCombat()" title="Emergency escape if stuck at 0 HP">
+                ☠ Force Escape
+              </button>` : ''}
             ${s.combat._isWilderness ? `<div class="arena-wild-controls">
               ${s.combat._teleBlocked > 0
                 ? `<button class="btn btn-xs arena-tele-btn arena-tele-blocked" disabled title="TeleBlocked for ${s.combat._teleBlocked} more rounds">🔒 TeleBlocked (${s.combat._teleBlocked})</button>`
@@ -6364,6 +6369,54 @@ class UI {
         <div style="font-size:13px;max-width:400px;margin:0 auto">Group up with other players for dungeons.</div>
         <div style="margin-top:20px;font-size:11px;color:rgba(201,135,62,0.6);font-family:'Cinzel',serif;letter-spacing:1px">COMING SOON</div>
       </div>`;
+  }
+
+
+  _showDeathScreen(ctx) {
+    // Remove any existing death screen
+    document.getElementById('death-screen-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'death-screen-overlay';
+    overlay.className = 'death-screen-overlay';
+
+    const wasWild = ctx?.wasWilderness;
+    const wasDungeon = ctx?.wasDungeon;
+    const wasTheatre = ctx?.wasTheatre;
+
+    let location = 'in combat';
+    let subtext = 'Your equipment is intact. You respawn at the settlement.';
+    if (wasWild) { location = 'in the Wilderness'; subtext = 'You lost items. The wilderness claimed its price.'; }
+    else if (wasTheatre) { location = 'in the Theatre of Ash'; subtext = 'The Theatre spat you out. Your items are safe.'; }
+    else if (wasDungeon) { location = 'in the dungeon'; subtext = 'The dungeon claimed you. Your items are safe.'; }
+
+    overlay.innerHTML = `
+      <div class="dso-backdrop"></div>
+      <div class="dso-card">
+        <div class="dso-skull">💀</div>
+        <div class="dso-title">YOU DIED</div>
+        <div class="dso-location">${location}</div>
+        <div class="dso-subtext">${subtext}</div>
+        <div class="dso-hp-restore">HP fully restored</div>
+        <div class="dso-actions">
+          <button class="btn dso-btn-respawn" onclick="document.getElementById('death-screen-overlay')?.remove(); ui.renderPage('combat')">
+            ⚔ Continue
+          </button>
+          ${wasTheatre ? '' : `<button class="btn dso-btn-bank" onclick="document.getElementById('death-screen-overlay')?.remove(); ui.renderPage('bank')">
+            🎒 Check Bank
+          </button>`}
+        </div>
+        <div class="dso-stats">
+          <span>Deaths: ${this.engine.state.stats?.deaths || 0}</span>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    // Auto-dismiss after 6s
+    setTimeout(() => {
+      overlay.classList.add('dso-fadeout');
+      setTimeout(() => overlay.remove(), 600);
+    }, 6000);
   }
 
   escHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }

@@ -1874,7 +1874,24 @@ class GameEngine {
     } else {
       this.emit('notification', { type:'danger', text:'You have been defeated!' });
     }
+    this.emit('playerDied', {
+      wasWilderness: this.state.combat._isWilderness,
+      wasDungeon: !!this.state.combat.dungeon,
+      wasTheatre: !!this.state.theatre?.active,
+    });
     this.stopCombat();
+  }
+
+  // Force-stop combat for stuck players - bypasses all checks
+  forceStopCombat() {
+    const c = this.state.combat;
+    c.active = false; c.monster = null; c.area = null; c.dungeon = null;
+    c.worldBoss = null; c._isWilderness = false; c._multiMobMode = false;
+    c.playerHp = this.getMaxHp();
+    if (this.state.theatre?.active) this.state.theatre = { active: false };
+    if (this.state.fightCave?.active) this.state.fightCave.active = false;
+    this.emit('notification', {type:'warn', text:'Combat force-stopped. HP restored.'});
+    this.emit('combatStop');
   }
 
   getLevelForXp(xp) {
