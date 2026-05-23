@@ -3863,19 +3863,48 @@ class GameEngine {
     if (!cur) return false;
     const obj = cur.step.objective;
     const s = this.state;
-    if (obj.type === 'kill') return (s.stats.uniqueKills?.[obj.monster]||0) >= obj.qty;
-    if (obj.type === 'collect') return (s.bank[obj.item]||0) >= obj.qty;
-    if (obj.type === 'gold') return s.gold >= obj.amount;
-    if (obj.type === 'skill') return s.skills[obj.skill]?.level >= obj.level;
-    if (obj.type === 'choice') return false; // Requires manual selection
+    if (obj.type === 'kill') {
+      // Check total kills (not just unique) for common monsters
+      const totalKills = s.stats.monstersKilled || 0;
+      const specificKills = s.stats.killLog?.[obj.monster] || s.stats.uniqueKills?.[obj.monster] || 0;
+      return specificKills >= obj.qty;
+    }
+    if (obj.type === 'collect' || obj.type === 'item') return (s.bank[obj.item]||0) >= obj.qty;
+    if (obj.type === 'gold') return s.gold >= (obj.amount||obj.qty||0);
+    if (obj.type === 'skill') return (s.skills[obj.skill]?.level||0) >= obj.level;
+    if (obj.type === 'quest') return (s.quests?.completed||[]).includes(obj.questId);
+    if (obj.type === 'choice') {
+      // Choice steps show options — never auto-complete
+      return false;
+    }
     return false;
   }
 
-  completeStoryStep(storyId, choiceIdx) {
+  completeStoryStep(storyId, choiceKey) {
     const cur = this.getCurrentStoryStep(storyId);
     if (!cur) return;
     const step = cur.step;
-    const rew = step.reward;
+    let rew = step.reward || {};
+
+    // Handle branching choices
+    if (step.objective?.type === 'choice') {
+      const choiceDef = GAME_DATA.storyChoices?.[step.id];
+      if (choiceDef && choiceKey) {
+        const chosen = choiceDef.options.find(o=>o.id===choiceKey);
+        if (!chosen) { this.emit('notification',{type:'warn',text:'Unknown choice: '+choiceKey}); return; }
+        // Apply choice-specific reward + alignment
+        rew = chosen.reward || {};
+        if (chosen.alignShift) this.shiftAlignment(chosen.alignShift.direction, chosen.alignShift.amount);
+        // Record the choice
+        if (!this.state.storyChoices) this.state.storyChoices = {};
+        this.state.storyChoices[step.id] = choiceKey;
+        // Unlock alternate path if needed
+        if (chosen.unlocks) {
+          if (!this.state.storyline[chosen.unlocks]) this.state.storyline[chosen.unlocks] = {chapter:0,step:0,completed:false};
+        }
+        this.emit('notification', {type:'achievement', text:`Choice made: "${chosen.label}" — ${chosen.consequence}`});
+      }
+    }
 
     // Grant rewards
     if (rew.gold) { this.state.gold += rew.gold; this.state.stats.goldEarned += rew.gold; }

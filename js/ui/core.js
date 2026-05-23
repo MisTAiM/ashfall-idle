@@ -3638,9 +3638,34 @@ class UI {
                     html += '</div>';
                   }
 
-                  html += canComplete
-                    ? `<button class="btn story-complete-btn" onclick="game.completeStoryStep('${story.id}');ui.renderPage('storyline')">✓ Complete Step</button>`
-                    : `<div class="so-incomplete">Complete the objective above to continue</div>`;
+                  if (obj.type === 'choice') {
+                    // Choice step - render branching options
+                    const choiceDef = GAME_DATA.storyChoices?.[step.id];
+                    if (choiceDef) {
+                      html += '<div class="story-choice-block">';
+                      html += '<div class="scb-prompt">' + choiceDef.prompt + '</div>';
+                      html += '<div class="scb-options">';
+                      for (const opt of choiceDef.options) {
+                        const alStr = opt.alignShift ? (opt.alignShift.direction === 'good' ? '⬆ Good' : opt.alignShift.direction === 'evil' ? '⬇ Evil' : opt.alignShift.direction === 'lawful' ? '⬆ Lawful' : '⬇ Chaotic') : '';
+                        html += '<div class="scb-option" onclick="game.completeStoryStep(\'' + story.id + '\',\'' + opt.id + '\');ui.renderPage(\'storyline\')">'
+                          + '<div class="scb-opt-header"><span class="scb-opt-icon">' + opt.icon + '</span><strong class="scb-opt-label">' + opt.label + '</strong>' + (alStr ? '<span class="scb-opt-align">' + alStr + '</span>' : '') + '</div>'
+                          + '<div class="scb-opt-desc">' + opt.desc + '</div>'
+                          + '<div class="scb-opt-rewards">'
+                          + (opt.reward?.gold ? '<span class="sr-chip sr-gold">🪙 +' + opt.reward.gold + 'g</span>' : '')
+                          + (opt.reward?.xp ? Object.entries(opt.reward.xp).map(([k,v]) => '<span class="sr-chip">+' + v + ' ' + k + '</span>').join('') : '')
+                          + (opt.reward?.items ? opt.reward.items.map(it => '<span class="sr-chip sr-item">' + (GAME_DATA.items[it.item]?.name||it.item) + '</span>').join('') : '')
+                          + '</div>'
+                          + '</div>';
+                      }
+                      html += '</div></div>';
+                    } else {
+                      html += '<div class="so-incomplete">A choice is required to continue. (Choice data loading...)</div>';
+                    }
+                  } else {
+                    html += canComplete
+                      ? '<button class="btn story-complete-btn" onclick="game.completeStoryStep(\'' + story.id + '\');ui.renderPage(\'storyline\')">✓ Complete Step</button>'
+                      : '<div class="so-incomplete">Complete the objective above to continue</div>';
+                  }
                 }
                 html += '</div></div>';
               }

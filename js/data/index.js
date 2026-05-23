@@ -3873,3 +3873,97 @@ altars.forEach(a => {
 
 console.log('[Ashfall] Runecrafting loaded:', GAME_DATA.gatheringActions.runecrafting.length, 'altars');
 })();
+
+
+// ================================================================
+// STORY CONTENT PATCH — all missing monsters, items, areas & NPCs
+// referenced by storylines but not previously defined
+// ================================================================
+(function() {
+const _si = (id,d) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = Object.assign({id},d); };
+const _sm = (id,d) => { if (!GAME_DATA.monsters[id]) GAME_DATA.monsters[id] = Object.assign({id},d); };
+
+// ── STORY ITEMS ───────────────────────────────────────────
+_si('ashen_tablet',    {name:'Ashen Tablet',    type:'quest_item',sellPrice:0, desc:'An obsidian tablet carved with the Ashen Script — the language of the first fall. Warm to the touch.'});
+_si('ashen_script',    {name:'Ashen Script Fragment', type:'quest_item',sellPrice:0, desc:'A fragment of decoded Ashen Script text. Ancient and unsettling.'});
+_si('rune_carved_bone',{name:'Rune-Carved Bone', type:'quest_item',sellPrice:0, desc:'An animal bone etched with glowing runes. Old Pete says it came from the Darkwood.'});
+_si('dark_artifact',   {name:'Dark Artifact',   type:'quest_item',sellPrice:0, desc:"Krolgar's trophy from the old world. Pulses with contained energy."});
+_si('void_crystal',    {name:'Void Crystal',    type:'resource',   sellPrice:5000, desc:'Crystallized void energy. Used in the highest-level enchanting.'});
+_si('celestial_essence',{name:'Celestial Essence',type:'resource', sellPrice:8000, desc:'The essence of the celestial realm. Extremely rare.'});
+_si('ashsteel_bar',    {name:'Ashsteel Bar',    type:'resource',   sellPrice:2000, desc:'An alloy forged from volcanic ore and void essence. Required for endgame smithing.'});
+_si('enchant_scroll',  {name:'Enchant Scroll',  type:'resource',   sellPrice:500,  desc:'A scroll of enchanting magic. Used to imbue equipment.'});
+_si('enchant_dust',    {name:'Enchant Dust',    type:'resource',   sellPrice:200,  desc:'Fine magical dust used in crafting and enchanting.'});
+_si('arcane_shard',    {name:'Arcane Shard',    type:'resource',   sellPrice:1000, desc:'A shard of concentrated arcane power.'});
+_si('dragonite',       {name:'Dragonite',       type:'resource',   sellPrice:3000, desc:'Refined dragon material. Extremely durable.'});
+_si('dragon_scale',    {name:'Dragon Scale',    type:'resource',   sellPrice:1500, desc:'A shed dragon scale. Useful in crafting.'});
+_si('dragon_seed',     {name:'Dragon Seed',     type:'seed',       sellPrice:500,  seedType:'special', desc:'A seed that only grows in volcanic soil.'});
+_si('lockpick',        {name:'Lockpick',        type:'tool',       sellPrice:50,   desc:'Used to pick locks on chests and doors.'});
+_si('poison_vial',     {name:'Poison Vial',     type:'consumable', sellPrice:200,  desc:'A vial of concentrated poison. Apply to weapons or use in crafting.'});
+_si('steel_sword',     {name:'Steel Sword',     type:'weapon',slot:'weapon',style:'melee',attackSpeed:2.4,stats:{attackBonus:24,strengthBonus:18},levelReq:{attack:20},sellPrice:1500,desc:'A dependable steel blade.'});
+_si('enchant_scroll',  {name:'Enchant Scroll',  type:'resource',   sellPrice:500,  desc:'Used to enchant equipment.'});
+
+// ── STORY MONSTERS ────────────────────────────────────────
+// Krolgar's guards
+_sm('bandit_guard',{name:"Krolgar's Guard",combatLevel:28,hp:200,maxHit:22,style:'melee',attackSpeed:2.4,evasion:{melee:30,ranged:25,magic:15},xp:120,gold:{min:10,max:40},alignment:'CE',drops:[{item:'bones',qty:1,chance:1},{item:'iron_ore',qty:2,chance:0.3},{item:'leather',qty:1,chance:0.4}],desc:"A loyal thug in Krolgar's employ."});
+_sm('krolgar',{name:'Krolgar the Butcher',combatLevel:80,hp:800,maxHit:48,style:'melee',attackSpeed:2.8,evasion:{melee:80,ranged:65,magic:70},xp:600,gold:{min:500,max:2000},alignment:'CE',drops:[{item:'dark_artifact',qty:1,chance:1},{item:'ashen_tablet',qty:1,chance:1},{item:'big_bones',qty:1,chance:1}],desc:"Leader of the Bloodfang. Immense and dangerous. Will fight if cornered.",isBoss:true});
+
+// The Ashfall Titan
+_sm('ashfall_titan',{name:'Ashfall Titan',combatLevel:400,hp:8000,maxHit:120,style:'melee',attackSpeed:3.6,evasion:{melee:200,ranged:200,magic:200},xp:10000,gold:{min:20000,max:50000},alignment:'CE',drops:[{item:'celestial_essence',qty:5,chance:1},{item:'void_crystal',qty:3,chance:0.8},{item:'ashsteel_bar',qty:10,chance:1}],desc:'The ancient destroyer. The source of the Ashfall. Immeasurable power.',isBoss:true,phased:true});
+
+// Silver Order patrol
+_sm('silver_order_patrol',{name:'Silver Order Patrol',combatLevel:35,hp:220,maxHit:20,style:'melee',attackSpeed:2.2,evasion:{melee:35,ranged:30,magic:20},xp:140,gold:{min:15,max:50},alignment:'LG',drops:[{item:'prayer_potion',qty:1,chance:0.1},{item:'bones',qty:1,chance:1}],desc:'A patrol of Silver Order knights maintaining order on the roads.'});
+
+// Dragon (for chapter 4)
+_sm('dragon',{name:'Elder Dragon',combatLevel:280,hp:2400,maxHit:78,style:'melee',attackSpeed:3.2,evasion:{melee:160,ranged:160,magic:160},xp:2200,gold:{min:2000,max:6000},alignment:'CE',drops:[{item:'dragon_bones',qty:1,chance:1},{item:'dragon_scale',qty:2,chance:0.8},{item:'void_crystal',qty:1,chance:0.1}],desc:'A beast of flame and scale. Ancient and merciless.',isBoss:false});
+
+// Misc story monsters
+_sm('hollow_soldier',{name:'Hollow Soldier',combatLevel:42,hp:280,maxHit:28,style:'melee',attackSpeed:2.4,evasion:{melee:40,ranged:35,magic:25},xp:180,gold:{min:20,max:70},alignment:'NE',drops:[{item:'bones',qty:1,chance:1},{item:'iron_ore',qty:1,chance:0.25}],desc:'A soul-drained husk still wearing its armour.'});
+_sm('hollow_knight',{name:'Hollow Knight',combatLevel:95,hp:500,maxHit:54,style:'melee',attackSpeed:2.6,evasion:{melee:90,ranged:80,magic:75},xp:350,gold:{min:80,max:300},alignment:'NE',drops:[{item:'dragon_bones',qty:1,chance:0.3},{item:'steel_sword',qty:1,chance:0.05}],desc:'A powerful hollow warrior preserved in ancient plate.'});
+_sm('hollow_lord',{name:'Hollow Lord',combatLevel:160,hp:1200,maxHit:72,style:'melee',attackSpeed:2.8,evasion:{melee:140,ranged:130,magic:120},xp:800,gold:{min:500,max:1500},alignment:'CE',drops:[{item:'onyx',qty:1,chance:0.08},{item:'celestial_essence',qty:1,chance:0.05}],desc:'An ancient lord hollowed by the Ashfall. Commands lesser hollows.',isBoss:true});
+_sm('guard',{name:'Town Guard',combatLevel:32,hp:200,maxHit:22,style:'melee',attackSpeed:2.2,evasion:{melee:32,ranged:28,magic:18},xp:110,gold:{min:10,max:40},alignment:'LN',drops:[{item:'bones',qty:1,chance:0.8}],desc:'A municipal guard doing their rounds.'});
+_sm('shadow_archer',{name:'Shadow Archer',combatLevel:55,hp:300,maxHit:38,style:'ranged',attackSpeed:2.2,evasion:{melee:30,ranged:60,magic:45},xp:220,gold:{min:25,max:90},alignment:'CE',drops:[{item:'death_rune',qty:5,chance:0.3},{item:'bones',qty:1,chance:1}],desc:'A rogue assassin who fires from the shadows.'});
+_sm('black_knight',{name:'Black Knight',combatLevel:65,hp:380,maxHit:42,style:'melee',attackSpeed:2.4,evasion:{melee:65,ranged:55,magic:50},xp:280,gold:{min:40,max:120},alignment:'LE',drops:[{item:'death_rune',qty:3,chance:0.3},{item:'dragon_bones',qty:1,chance:0.05}],desc:"A knight in black plate who serves darkness."});
+
+// ── STORY AREAS ───────────────────────────────────────────
+if (GAME_DATA.combatAreas) {
+  const _addArea = (area) => { if (!GAME_DATA.combatAreas.find(a=>a.id===area.id)) GAME_DATA.combatAreas.push(area); };
+  _addArea({id:'bloodfang_hideout',name:"Bloodfang Hideout",levelReq:25,desc:"Krolgar's base of operations. Dark and smells of blood.",monsters:['bandit_guard','bandit','krolgar'],slayerArea:false,wilderness:false});
+  _addArea({id:'silver_order_post',name:'Silver Order Post',levelReq:20,desc:'An outpost of the Silver Order. Disciplined and dangerous.',monsters:['silver_order_patrol','hollow_soldier'],slayerArea:false});
+  _addArea({id:'ashen_peaks',name:'The Ashen Peaks',levelReq:80,desc:'Where the Titan sleeps. Dragons circle above volcanic peaks.',monsters:['dragon','ash_guardian','ashfall_warden'],slayerArea:false});
+  _addArea({id:'darkwood',name:'The Darkwood',levelReq:1,desc:"Old Pete's mysterious forest. Strange lights appear at night.",monsters:['rat','wolf','hollow_soldier'],slayerArea:false});
+  _addArea({id:'ashfall_titan_lair',name:"Titan's Lair",levelReq:90,desc:'The chamber where the Ashfall Titan slumbers. Do not enter unprepared.',monsters:['ashfall_titan'],slayerArea:false});
+}
+
+// ── STORY CHOICE DEFINITIONS ──────────────────────────────
+// These are the branching outcomes for choice objectives
+GAME_DATA.storyChoices = GAME_DATA.storyChoices || {};
+GAME_DATA.storyChoices['ms_2_3'] = {
+  prompt: "Krolgar corners you with the Ashen Tablet in hand. His guards block the exits.",
+  options: [
+    {
+      id: 'join_krolgar',
+      label: 'Accept the deal',
+      icon: '🤝',
+      desc: 'Work for Krolgar. Gain access to the Bloodfang network and their contacts. Lose favor with the Silver Order.',
+      alignShift: {direction:'chaotic', amount:10},
+      consequence: "You join the Bloodfang Clan. Krolgar becomes an uneasy ally.",
+      reward: {gold:2000, xp:{thieving:800}, rep:{bloodfang_clan:1000, silver_order:-800}},
+      unlocks: 'dark_path',
+    },
+    {
+      id: 'fight_krolgar',
+      label: 'Fight your way out',
+      icon: '⚔',
+      desc: 'Defeat Krolgar and his guards. Take the tablet by force. Respect from the Silver Order.',
+      alignShift: {direction:'lawful', amount:8},
+      consequence: "You defeat Krolgar. He escapes, but you keep the tablet and your integrity.",
+      reward: {gold:1500, xp:{attack:1000, strength:800}, rep:{silver_order:600, bloodfang_clan:-500}, items:[{item:'dark_artifact',qty:1}]},
+      unlocks: null,
+    }
+  ]
+};
+
+console.log('[Ashfall] Story content patch loaded — monsters:', 
+  ['krolgar','ashfall_titan','dragon','hollow_knight','bandit_guard'].filter(id=>GAME_DATA.monsters[id]).length,
+  'items:', ['ashen_tablet','void_crystal','ashen_script'].filter(id=>GAME_DATA.items[id]).length);
+})();
