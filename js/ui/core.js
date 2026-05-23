@@ -745,6 +745,8 @@ class UI {
         return svgs[id] || svgs.default.replace('${c}', c);
       };
     if (sId === 'woodcutting') {
+      // Rebuild html without the generic skill-header-bar (custom header replaces it)
+      html = this.header(skill.name, skill.icon, skill.desc, null);
       const wcLv  = s.skills.woodcutting?.level || 1;
       const wcXp  = s.skills.woodcutting?.xp || 0;
       const wcProg = this.engine.getXpProgress?.('woodcutting') || 0;
@@ -3454,102 +3456,206 @@ class UI {
   // ── STORYLINE PAGE ──────────────────────────────────────
   renderStorylinePage(el) {
     const s = this.engine.state;
-    const al = GAME_DATA.alignments[s.alignment];
+    const al = GAME_DATA.alignments[s.alignment] || GAME_DATA.alignments['true_neutral'];
     const ap = s.alignmentPoints || { moral:0, order:0 };
-    let html = this.header('Storyline','book','Follow branching quest chains that shape your destiny and alignment.',null);
+    let html = this.header('Storyline','book','Your deeds shape your destiny. Every choice, every kill, every quest shifts who you become.',null);
 
-    // Alignment display
-    html += `<div class="story-alignment">
-      <div class="sa-title">Current Alignment: <strong>${al.name}</strong> (${al.axis})</div>
-      <div class="sa-desc">${al.desc}</div>
-      <div class="sa-meters">
-        <div class="sa-meter"><span class="sa-label">Moral</span><div class="sa-bar"><div class="sa-fill-good" style="width:${Math.min(100,Math.max(0,(ap.moral+50)))}%"></div></div><span class="sa-val">${ap.moral > 0 ? '+'+ap.moral+' Good' : ap.moral < 0 ? ap.moral+' Evil' : 'Neutral'}</span></div>
-        <div class="sa-meter"><span class="sa-label">Order</span><div class="sa-bar"><div class="sa-fill-order" style="width:${Math.min(100,Math.max(0,(ap.order+50)))}%"></div></div><span class="sa-val">${ap.order > 0 ? '+'+ap.order+' Lawful' : ap.order < 0 ? ap.order+' Chaotic' : 'Neutral'}</span></div>
+    // ── ALIGNMENT COMPASS ─────────────────────────────────────
+    const moral = ap.moral || 0;
+    const order = ap.order || 0;
+    const moralPct  = ((moral  + 100) / 200 * 100).toFixed(1); // 0-100%
+    const orderPct  = ((order  + 100) / 200 * 100).toFixed(1);
+    const moralLabel = moral > 20 ? `Good (+${moral.toFixed(0)})` : moral < -20 ? `Evil (${moral.toFixed(0)})` : `Neutral (${moral.toFixed(0)})`;
+    const orderLabel = order > 20 ? `Lawful (+${order.toFixed(0)})` : order < -20 ? `Chaotic (${order.toFixed(0)})` : `Neutral (${order.toFixed(0)})`;
+    const moralColor = moral > 20 ? '#4abe6c' : moral < -20 ? '#c44040' : '#c9873e';
+    const orderColor = order > 20 ? '#4a7ec4' : order < -20 ? '#8a5ec4' : '#c9873e';
+
+    // Compass dot position: moral = horizontal (left=evil, right=good), order = vertical (top=chaotic, bottom=lawful)
+    const dotX = ((moral + 100) / 200 * 100).toFixed(1);
+    const dotY = (100 - (order + 100) / 200 * 100).toFixed(1);
+
+    html += `<div class="align-panel">
+      <div class="align-compass-wrap">
+        <svg class="align-compass" viewBox="0 0 200 200" width="180" height="180">
+          <!-- Grid -->
+          <line x1="100" y1="0" x2="100" y2="200" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <line x1="0" y1="100" x2="200" y2="100" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <!-- Quadrant fills -->
+          <rect x="0"   y="0"   width="100" height="100" fill="rgba(138,94,196,0.06)" rx="0"/>
+          <rect x="100" y="0"   width="100" height="100" fill="rgba(74,190,108,0.06)" rx="0"/>
+          <rect x="0"   y="100" width="100" height="100" fill="rgba(196,64,64,0.06)" rx="0"/>
+          <rect x="100" y="100" width="100" height="100" fill="rgba(74,126,196,0.06)" rx="0"/>
+          <!-- Labels -->
+          <text x="50"  y="16"  text-anchor="middle" fill="rgba(138,94,196,0.5)" font-size="9" font-family="Cinzel,serif">CHAOTIC</text>
+          <text x="150" y="16"  text-anchor="middle" fill="rgba(74,190,108,0.4)" font-size="9" font-family="Cinzel,serif">CHAOTIC</text>
+          <text x="50"  y="196" text-anchor="middle" fill="rgba(196,64,64,0.4)"  font-size="9" font-family="Cinzel,serif">LAWFUL</text>
+          <text x="150" y="196" text-anchor="middle" fill="rgba(74,126,196,0.4)" font-size="9" font-family="Cinzel,serif">LAWFUL</text>
+          <text x="8"   y="100" text-anchor="start"  fill="rgba(196,64,64,0.5)"  font-size="9" font-family="Cinzel,serif" transform="rotate(-90,8,100)">EVIL</text>
+          <text x="192" y="100" text-anchor="end"    fill="rgba(74,190,108,0.5)" font-size="9" font-family="Cinzel,serif" transform="rotate(-90,192,100)">GOOD</text>
+          <!-- Outer border -->
+          <rect x="1" y="1" width="198" height="198" fill="none" stroke="rgba(201,135,62,0.2)" stroke-width="1" rx="4"/>
+          <!-- Player dot -->
+          <circle cx="${dotX}" cy="${dotY}" r="8" fill="${moralColor}" opacity="0.9"/>
+          <circle cx="${dotX}" cy="${dotY}" r="4" fill="white" opacity="0.9"/>
+          <circle cx="${dotX}" cy="${dotY}" r="12" fill="none" stroke="${moralColor}" stroke-width="1.5" opacity="0.5"/>
+        </svg>
       </div>
-      <div class="sa-hint">Your alignment shifts based on your actions. Killing evil creatures shifts you toward Good. Killing innocents shifts toward Evil. Quest choices also affect alignment.</div>
+      <div class="align-info">
+        <div class="align-name" style="color:${al.color||moralColor}">${al.icon||'⚖'} ${al.name}</div>
+        <div class="align-axis">${al.axis} — ${al.desc}</div>
+        <div class="align-meters">
+          <div class="alm-row">
+            <span class="alm-label">Moral</span>
+            <div class="alm-track">
+              <div class="alm-fill-neutral" style="left:50%;width:${Math.abs(moral)/2}%;${moral<0?'transform:translateX(-100%)':''}; background:${moralColor}"></div>
+              <div class="alm-center-line"></div>
+            </div>
+            <span class="alm-val" style="color:${moralColor}">${moralLabel}</span>
+          </div>
+          <div class="alm-row">
+            <span class="alm-label">Order</span>
+            <div class="alm-track">
+              <div class="alm-fill-neutral" style="left:50%;width:${Math.abs(order)/2}%;${order<0?'transform:translateX(-100%)':''}; background:${orderColor}"></div>
+              <div class="alm-center-line"></div>
+            </div>
+            <span class="alm-val" style="color:${orderColor}">${orderLabel}</span>
+          </div>
+        </div>
+        <div class="align-bonus-strip">
+          ${Object.entries(al.bonus||{}).map(([k,v])=>`<div class="abs-chip"><span class="abs-key">${k.replace(/([A-Z])/g,' $1').replace('Bonus','').replace('Drop','').trim()}</span><span class="abs-val">+${v}%</span></div>`).join('')}
+        </div>
+        <div class="align-how">
+          <div class="align-how-title">How alignment shifts</div>
+          <div class="align-how-list">
+            <div class="ah-row ah-good">⚔ Kill evil monsters → Good (max ±100)</div>
+            <div class="ah-row ah-evil">💀 Kill good creatures or PvP → Evil</div>
+            <div class="ah-row ah-neutral">🦊 Neutral monsters → No shift</div>
+            <div class="ah-row ah-note">📈 Shifts slow near extremes (diminishing returns)</div>
+          </div>
+        </div>
+      </div>
     </div>`;
 
-    // Storyline chains
-    for (const story of (GAME_DATA.storylines || [])) {
-      const prog = this.engine.getStoryProgress(story.id);
-      const cur = this.engine.getCurrentStoryStep(story.id);
-      const canComplete = cur ? this.engine.checkStoryObjective(story.id) : false;
-
-      html += `<div class="story-chain ${prog.completed?'story-done':''}">
-        <div class="sc-header">
-          <span class="sc-name">${story.name}</span>
-          ${prog.completed ? '<span class="sc-badge sc-complete">COMPLETED</span>' : cur ? `<span class="sc-badge sc-active">Chapter ${prog.chapter+1}</span>` : ''}
+    // ── STORYLINE CHAINS ──────────────────────────────────────
+    const storylines = GAME_DATA.storylines || [];
+    if (!storylines.length) {
+      html += `<div class="story-empty">
+        <div style="text-align:center;padding:40px;color:var(--text-dim)">
+          <div style="font-size:40px;margin-bottom:12px">📜</div>
+          <div style="font-family:'Cinzel',serif;font-size:16px;color:var(--text);margin-bottom:8px">Storylines Loading</div>
+          <div style="font-size:12px">Complete quests to unlock story chapters. The Ashfall has a history — discover it.</div>
         </div>
-        <div class="sc-desc">${story.desc}</div>`;
+      </div>`;
+    } else {
+      for (const story of storylines) {
+        let prog = {chapter:0,step:0,completed:false};
+        try { prog = this.engine.getStoryProgress(story.id); } catch(e) {}
+        let cur = null;
+        try { cur = this.engine.getCurrentStoryStep(story.id); } catch(e) {}
+        let canComplete = false;
+        try { canComplete = cur ? this.engine.checkStoryObjective(story.id) : false; } catch(e) {}
+        const totalChapters = story.chapters?.length || 0;
+        const donePct = prog.completed ? 100 : Math.round(prog.chapter / Math.max(1,totalChapters) * 100);
 
-      // Show chapters
-      for (let ci = 0; ci < story.chapters.length; ci++) {
-        const ch = story.chapters[ci];
-        const isCurrentChapter = !prog.completed && prog.chapter === ci;
-        const isPast = ci < prog.chapter;
-        const isFuture = ci > prog.chapter && !prog.completed;
+        html += `<div class="story-chain ${prog.completed?'story-done':''}">
+          <div class="sc-header">
+            <div class="sc-title-wrap">
+              <div class="sc-name">${story.name}</div>
+              <div class="sc-desc">${story.desc}</div>
+            </div>
+            <div class="sc-progress-wrap">
+              ${prog.completed
+                ? `<span class="sc-badge sc-complete">✓ COMPLETE</span>`
+                : `<span class="sc-badge sc-active">Ch ${prog.chapter+1}/${totalChapters}</span>`}
+              <div class="sc-prog-bar"><div class="sc-prog-fill" style="width:${donePct}%"></div></div>
+            </div>
+          </div>`;
 
-        html += `<div class="sc-chapter ${isPast?'ch-done':''} ${isCurrentChapter?'ch-active':''} ${isFuture?'ch-locked':''}">
-          <div class="ch-title">${isPast?'&#x2714; ':''}${ch.name}${isFuture?' (Locked)':''}</div>`;
+        if (story.chapters) {
+          for (let ci = 0; ci < story.chapters.length; ci++) {
+            const ch = story.chapters[ci];
+            const isCur = !prog.completed && prog.chapter === ci;
+            const isPast = ci < prog.chapter || prog.completed;
+            const isFuture = !prog.completed && ci > prog.chapter;
 
-        if (isCurrentChapter || isPast) {
-          for (let si = 0; si < ch.steps.length; si++) {
-            const step = ch.steps[si];
-            const isCurrentStep = isCurrentChapter && prog.step === si;
-            const isPastStep = isPast || (isCurrentChapter && si < prog.step);
-            const isFutureStep = isCurrentChapter && si > prog.step;
-
-            if (isFutureStep) continue; // Don't show future steps
-
-            html += `<div class="ch-step ${isPastStep?'step-done':''} ${isCurrentStep?'step-active':''}">
-              <div class="step-text">${isPastStep?'<s>':''}${step.text}${isPastStep?'</s>':''}</div>`;
-
-            if (isCurrentStep) {
-              const obj = step.objective;
-              let objText = '';
-              let progress = '';
-              if (obj.type === 'kill') {
-                const kills = s.stats.uniqueKills?.[obj.monster] || 0;
-                objText = `Kill ${obj.qty} ${GAME_DATA.monsters[obj.monster]?.name || obj.monster}`;
-                progress = `${Math.min(kills, obj.qty)} / ${obj.qty}`;
-              } else if (obj.type === 'collect') {
-                const have = s.bank[obj.item] || 0;
-                objText = `Collect ${obj.qty} ${GAME_DATA.items[obj.item]?.name || obj.item}`;
-                progress = `${Math.min(have, obj.qty)} / ${obj.qty}`;
-              } else if (obj.type === 'gold') {
-                objText = `Have ${obj.amount} gold`;
-                progress = `${Math.min(s.gold, obj.amount)} / ${obj.amount}`;
-              } else if (obj.type === 'skill') {
-                const lvl = s.skills[obj.skill]?.level || 1;
-                objText = `Reach ${GAME_DATA.skills[obj.skill]?.name || obj.skill} level ${obj.level}`;
-                progress = `${lvl} / ${obj.level}`;
-              }
-              html += `<div class="step-objective">
-                <span class="so-text">${objText}</span>
-                <span class="so-progress">${progress}</span>
+            html += `<div class="sc-chapter ${isPast?'ch-done':''} ${isCur?'ch-active':''} ${isFuture?'ch-locked':''}">
+              <div class="ch-header">
+                <span class="ch-num">${isPast?'✓':isCur?'▶':'○'}</span>
+                <span class="ch-name">${ch.name}</span>
+                ${isFuture?'<span class="ch-lock-badge">Locked</span>':''}
               </div>`;
-              // Rewards preview
-              const rew = step.reward;
-              html += '<div class="step-rewards">';
-              if (rew.gold) html += `<span class="sr-chip sr-gold">+${rew.gold}g</span>`;
-              if (rew.xp) for (const [k,v] of Object.entries(rew.xp)) html += `<span class="sr-chip">+${v} ${k}</span>`;
-              if (rew.items) for (const it of rew.items) html += `<span class="sr-chip sr-item">${it.qty}x ${GAME_DATA.items[it.item]?.name||it.item}</span>`;
-              if (step.alignShift) html += `<span class="sr-chip sr-align">${step.alignShift.direction} +${step.alignShift.amount}</span>`;
-              html += '</div>';
 
-              if (canComplete) {
-                html += `<button class="btn" onclick="game.completeStoryStep('${story.id}');ui.renderPage('storyline')">Complete Step</button>`;
+            if ((isCur || isPast) && ch.steps) {
+              html += '<div class="ch-steps">';
+              for (let si = 0; si < ch.steps.length; si++) {
+                const step = ch.steps[si];
+                const isCurStep = isCur && prog.step === si;
+                const isPastStep = isPast || (isCur && si < prog.step);
+                if (!isPast && !isCur) break;
+                if (!isPastStep && !isCurStep) continue;
+
+                html += `<div class="ch-step ${isPastStep?'step-done':''} ${isCurStep?'step-active':''}">
+                  <div class="step-dot">${isPastStep?'✓':isCurStep?'►':'·'}</div>
+                  <div class="step-content">
+                    <div class="step-text">${step.text}</div>`;
+
+                if (isCurStep && step.objective) {
+                  const obj = step.objective;
+                  let objDesc = '', prog2 = '', pct = 0;
+                  if (obj.type==='kill') {
+                    const kills = s.stats.uniqueKills?.[obj.monster]||0;
+                    const nm = GAME_DATA.monsters[obj.monster]?.name||obj.monster;
+                    objDesc=`Kill ${obj.qty}× ${nm}`;
+                    pct=Math.min(100,kills/obj.qty*100); prog2=`${Math.min(kills,obj.qty)}/${obj.qty}`;
+                  } else if (obj.type==='collect'||obj.type==='item') {
+                    const have=s.bank[obj.item]||0;
+                    objDesc=`Collect ${obj.qty}× ${GAME_DATA.items[obj.item]?.name||obj.item}`;
+                    pct=Math.min(100,have/obj.qty*100); prog2=`${Math.min(have,obj.qty)}/${obj.qty}`;
+                  } else if (obj.type==='gold') {
+                    objDesc=`Have ${this.fmt(obj.amount)} gold`;
+                    pct=Math.min(100,s.gold/obj.amount*100); prog2=`${this.fmt(Math.min(s.gold,obj.amount))}/${this.fmt(obj.amount)}`;
+                  } else if (obj.type==='skill') {
+                    const lvl=s.skills[obj.skill]?.level||1;
+                    objDesc=`Reach ${GAME_DATA.skills[obj.skill]?.name||obj.skill} level ${obj.level}`;
+                    pct=Math.min(100,lvl/obj.level*100); prog2=`${lvl}/${obj.level}`;
+                  }
+
+                  html += `<div class="step-obj">
+                    <div class="so-desc">${objDesc}</div>
+                    <div class="so-bar-wrap">
+                      <div class="so-bar"><div class="so-fill" style="width:${pct.toFixed(0)}%"></div></div>
+                      <span class="so-prog">${prog2}</span>
+                    </div>
+                  </div>`;
+
+                  const rew = step.reward || {};
+                  if (rew.gold||rew.xp||rew.items||step.alignShift) {
+                    html += '<div class="step-rewards">';
+                    if (rew.gold) html += `<span class="sr-chip sr-gold">🪙 +${rew.gold}g</span>`;
+                    if (rew.xp) for (const [k,v] of Object.entries(rew.xp)) html += `<span class="sr-chip">+${v} ${k}</span>`;
+                    if (rew.items) for (const it of rew.items) html += `<span class="sr-chip sr-item">${it.qty}× ${GAME_DATA.items[it.item]?.name||it.item}</span>`;
+                    if (step.alignShift) html += `<span class="sr-chip sr-align ${step.alignShift.direction}">${step.alignShift.direction==='good'?'⬆ Good':step.alignShift.direction==='evil'?'⬇ Evil':step.alignShift.direction==='lawful'?'⬆ Lawful':'⬇ Chaotic'}</span>`;
+                    html += '</div>';
+                  }
+
+                  html += canComplete
+                    ? `<button class="btn story-complete-btn" onclick="game.completeStoryStep('${story.id}');ui.renderPage('storyline')">✓ Complete Step</button>`
+                    : `<div class="so-incomplete">Complete the objective above to continue</div>`;
+                }
+                html += '</div></div>';
               }
+              html += '</div>';
             }
             html += '</div>';
           }
         }
         html += '</div>';
       }
-      html += '</div>';
     }
+
     el.innerHTML = html;
   }
+
 
   // ── QUESTS PAGE ───────────────────────────────────────
   renderQuestsPage(el) {

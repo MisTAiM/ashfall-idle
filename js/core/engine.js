@@ -141,6 +141,20 @@ class GameEngine {
     if (!s.alignment) s.alignment = 'true_neutral';
     // alignmentPoints: migrate old {good,evil,lawful,chaotic} to new {moral,order}
     if (!s.alignmentPoints) s.alignmentPoints = { moral:0, order:0 };
+    // Clamp legacy unbounded alignment values (old system had no cap)
+    if (Math.abs(s.alignmentPoints.moral||0) > 100 || Math.abs(s.alignmentPoints.order||0) > 100) {
+      // Preserve the direction but normalize to ±100 range
+      const rawM = s.alignmentPoints.moral || 0;
+      const rawO = s.alignmentPoints.order || 0;
+      const capM = rawM !== 0 ? Math.sign(rawM) * Math.min(100, Math.abs(rawM)) : 0;
+      const capO = rawO !== 0 ? Math.sign(rawO) * Math.min(100, Math.abs(rawO)) : 0;
+      // If player is predominantly good but chaotic dragged them, preserve the good
+      s.alignmentPoints = { 
+        moral: Math.max(-100, Math.min(100, capM)), 
+        order: Math.max(-100, Math.min(100, capO))
+      };
+      console.log('[Ashfall] Alignment normalized from', {rawM,rawO}, 'to', s.alignmentPoints);
+    }
     if (s.alignmentPoints.moral === undefined) {
       // Convert old format to new
       const old = s.alignmentPoints;
@@ -1537,11 +1551,12 @@ class GameEngine {
     xpParts.push(`+${Math.floor(xp*0.33)} HP`);
     this.emit('xpGain', { text: xpParts.join(', '), total: xp });
 
-    // Alignment shifts from kills
+    // Alignment shifts from kills — neutral creatures give NO shift
     const mAlign = monster.alignment || 'NN';
-    if (mAlign.includes('E')) this.shiftAlignment('good', 1);
-    else if (mAlign.includes('G')) this.shiftAlignment('evil', 2);
-    else if (mAlign === 'NN') this.shiftAlignment('chaotic', 1);
+    if (mAlign.includes('E') && !mAlign.includes('N')) this.shiftAlignment('good', 2);   // killing evil = good
+    else if (mAlign === 'CE' || mAlign === 'NE') this.shiftAlignment('good', 1);          // killing CE/NE
+    else if (mAlign.includes('G')) this.shiftAlignment('evil', 3);                         // killing good = evil
+    // NN and CN monsters are neutral — no moral shift from grinding them
 
     // Wilderness PvP kill rewards
     if (this.state.combat._isWilderness && mId === 'pvp_opponent') {
@@ -3896,17 +3911,29 @@ class GameEngine {
   // ── ALIGNMENT SYSTEM ────────────────────────────────────
   shiftAlignment(direction, amount) {
     // direction: 'good','evil','lawful','chaotic'
-    // Accumulates moral/order points, shifts alignment when threshold reached
     if (!this.state.alignmentPoints) this.state.alignmentPoints = { moral:0, order:0 };
     const ap = this.state.alignmentPoints;
-    if (direction === 'good') ap.moral += amount;
-    else if (direction === 'evil') ap.moral -= amount;
-    else if (direction === 'lawful') ap.order += amount;
-    else if (direction === 'chaotic') ap.order -= amount;
 
-    // Determine alignment from accumulated points
-    const m = ap.moral > 25 ? 'G' : ap.moral < -25 ? 'E' : 'N';
-    const o = ap.order > 25 ? 'L' : ap.order < -25 ? 'C' : 'N';
+    // Diminishing returns: shifts slow down as you approach extremes
+    // Uses soft resistance: at ±80 it takes 4x as much to shift further
+    const _resist = (current, delta) => {
+      const abs = Math.abs(current);
+      const factor = abs > 80 ? 0.25 : abs > 60 ? 0.5 : abs > 40 ? 0.75 : 1.0;
+      return delta * factor;
+    };
+
+    if (direction === 'good')    ap.moral += _resist(ap.moral,  amount);
+    else if (direction === 'evil')    ap.moral -= _resist(ap.moral,  amount);
+    else if (direction === 'lawful')  ap.order += _resist(ap.order,  amount);
+    else if (direction === 'chaotic') ap.order -= _resist(ap.order,  amount);
+
+    // Clamp to ±100
+    ap.moral = Math.max(-100, Math.min(100, ap.moral));
+    ap.order = Math.max(-100, Math.min(100, ap.order));
+
+    // Thresholds: ±20 = aligned (wider neutral band so you don't ping-pong)
+    const m = ap.moral > 20 ? 'G' : ap.moral < -20 ? 'E' : 'N';
+    const o = ap.order > 20 ? 'L' : ap.order < -20 ? 'C' : 'N';
     const map = {
       'LG':'lawful_good','NG':'neutral_good','CG':'chaotic_good',
       'LN':'lawful_neutral','NN':'true_neutral','CN':'chaotic_neutral',
