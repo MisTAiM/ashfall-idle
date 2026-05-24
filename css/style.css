@@ -71,12 +71,12 @@ html, body {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-light) transparent;
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
 }
 
-#sidebar::-webkit-scrollbar { width: 5px; }
-#sidebar::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+#sidebar::-webkit-scrollbar { width: 0px; display: none; }
+#sidebar::-webkit-scrollbar-thumb { background: transparent; }
 
 #main-area {
   flex: 1;
@@ -1993,7 +1993,7 @@ html, body {
   pointer-events:none;
 }
 .ca-side { flex:1; text-align:center; position:relative; z-index:1; }
-.ca-player { border-right:1px solid var(--border-light); padding-right:16px; }
+.ca-player { padding-right:16px; } /* border-right removed */
 .ca-monster { padding-left:16px; }
 .ca-name { font-family:'Cinzel',serif; font-size:16px; color:var(--text-bright); margin-bottom:4px; }
 .ca-level { font-size:11px; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; }
