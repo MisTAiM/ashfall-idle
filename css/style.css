@@ -10731,3 +10731,23 @@ body.perf-mode .hit-splat { display:none !important; }
 .arena-v3 > .arena-main {
   width: 100%;
 }
+
+/* ════════════════════════════════════════════════════════════
+   VERTICAL LINE FINAL FIX — confirmed via live browser inspection
+
+   ROOT CAUSE (found by running elementFromPoint scans):
+   Two groups of buttons independently had border-right rules
+   that happened to render at x=379 (pv3-btn) and x=389 (ab3-btn)
+   — nearly the same position. Across the ability bar section
+   (y≈380-440) and prayer section (y≈440-660), this created what
+   appeared to be one continuous vertical grey line.
+
+   The arena section above them showed the same visual due to
+   the contrast between the player content column and the empty
+   center space, reinforcing the perception of a single line.
+
+   FIX: Remove border-right from these button classes only.
+   Left/top/bottom borders are preserved for visual card styling.
+   ════════════════════════════════════════════════════════════ */
+.ab3-btn { border-right: none !important; }
+.pv3-btn { border-right: none !important; }
