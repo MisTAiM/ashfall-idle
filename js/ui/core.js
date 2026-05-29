@@ -357,6 +357,8 @@ class UI {
     </div>
     <div class="level-tracker" id="level-tracker">`;
     // Compact skill level grid
+    // Combat skills shown as non-clickable display; all others are navigable
+    const _combatSkills = new Set(['attack','strength','defence','hitpoints','ranged','magic']);
     const skillOrder = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','necromancy','woodcutting','mining','fishing','foraging','hunting','agility','cooking','smithing','fletching','crafting','alchemy','enchanting','incantation','farming','thieving','tactics','trading','diplomacy','summoning'];
     for (const sId of skillOrder) {
       const sk = s.skills[sId];
@@ -364,7 +366,10 @@ class UI {
       const data = GAME_DATA.skills[sId];
       if (!data) continue;
       const abbr = data.name.substring(0, 3);
-      html += `<div class="lt-skill" id="lt-${sId}" title="${data.name}: Level ${sk.level}"><span class="lt-abbr">${abbr}</span><span class="lt-lvl">${sk.level}</span></div>`;
+      const isCombat = _combatSkills.has(sId);
+      // Combat skills navigate to combat page; others navigate to their own page
+      const clickHandler = isCombat ? `onclick="ui.renderPage('combat')" title="${data.name}: Level ${sk.level} — view on Combat page"` : `title="${data.name}: Level ${sk.level}"`;
+      html += `<div class="lt-skill ${isCombat?'lt-skill-combat':''}" id="lt-${sId}" ${clickHandler}><span class="lt-abbr">${abbr}</span><span class="lt-lvl">${sk.level}</span></div>`;
     }
     html += '</div>';
     // Collapsible nav — restore collapse state from localStorage
@@ -450,6 +455,12 @@ class UI {
     if (pageId === 'diplomacy') { this.renderDiplomacyPage(main); return; }
     if (pageId === 'tactics') { this.renderTacticsPage(main); return; }
     if (pageId === 'trading') { this.renderTradingPage(main); return; }
+    if (pageId === 'attack' || pageId === 'strength' || pageId === 'defence' ||
+        pageId === 'hitpoints' || pageId === 'ranged' || pageId === 'magic') {
+      this.renderCombatSkillPage(main, pageId); return;
+    }
+    if (pageId === 'summoning') { this.renderSummoningPage(main); return; }
+    if (pageId === 'hunting') { this.renderHuntingPage(main); return; }
     if (pageId === 'clue_scrolls') { this.renderClueScrollPage(main); return; }
     const skill = GAME_DATA.skills[pageId];
     if (skill && (skill.type === 'gathering' || skill.type === 'artisan')) this.renderSkillPage(main, pageId, skill);
@@ -533,7 +544,34 @@ class UI {
   renderSkillPage(el, sId, skill) {
     const s = this.engine.state;
     const actions = skill.type === 'gathering' ? (GAME_DATA.gatheringActions[sId]||[]) : (GAME_DATA.recipes[sId]||[]);
+    const _skLv   = s.skills[sId]?.level || 1;
+    const _skXp   = s.skills[sId]?.xp    || 0;
+    const _skProg = this.engine.getXpProgress?.(sId) || 0;
+    const _skNext = this.engine.getXpToNextLevel?.(sId) || 0;
+    const _skActive = s.activeSkill === sId;
+    const _totalActions = s.stats?.totalActions?.[sId] || 0;
     let html = this.header(skill.name, skill.icon, skill.desc, sId);
+
+    // ── Hero banner (shared across all gathering/artisan skills) ──────────
+    html += `<div class="sp-hero">
+      <div class="sp-hero-level">
+        <span class="sp-hero-num">${_skLv}</span>
+        <div class="sp-hero-lbl">${skill.name}</div>
+      </div>
+      <div class="sp-hero-center">
+        <div class="sp-hero-name">${skill.name}</div>
+        <div class="sp-hero-desc">${skill.desc}</div>
+        <div class="sp-xp-track"><div class="sp-xp-fill" style="width:${(_skProg*100).toFixed(1)}%"></div></div>
+        <div class="sp-xp-text">${this.fmt(_skXp)} XP &middot; ${_skNext>0?this.fmt(_skNext)+' to next level':'MAX LEVEL'}</div>
+      </div>
+      <div class="sp-hero-stats">
+        <div class="sp-stat">
+          <span class="sp-stat-val" style="color:#c9873e">${this.fmt(_totalActions)}</span>
+          <span class="sp-stat-lbl">Actions</span>
+        </div>
+        ${_skActive ? `<div class="sp-stat"><span class="sp-stat-val" style="color:#4dcc6a;font-size:12px">Active</span><span class="sp-stat-lbl">Training</span></div>` : ''}
+      </div>
+    </div>`;
 
     // ── MINING CUSTOM PAGE ───────────────────────────────────
     if (sId === 'mining') {
@@ -1306,14 +1344,35 @@ class UI {
     const active  = s.activeSkill === 'agility';
     const marks   = s.bank?.['mark_of_grace'] || 0;
     const curId   = s.activeAction;
+    const agilProg = this.engine.getXpProgress?.('agility') || 0;
+    const agilNext = this.engine.getXpToNextLevel?.('agility') || 0;
+    const lapsTotal = s.stats?.totalActions?.agility || 0;
 
-    let html = this.header('Agility','run',`Level ${agilLv} · ${this.fmt(agilXp)} XP · ${marks} marks`,null);
+    let html = this.header('Agility','run','Run faster, dodge better, and earn Marks of Grace for the Graceful outfit.',null);
 
-    // XP bar
+    // Hero banner
+    html += `<div class="sp-hero">
+      <div class="sp-hero-level">
+        <span class="sp-hero-num">${agilLv}</span>
+        <div class="sp-hero-lbl">Agility</div>
+      </div>
+      <div class="sp-hero-center">
+        <div class="sp-hero-name">Agile Survivor</div>
+        <div class="sp-hero-desc">Train on agility courses to boost run energy regeneration, unlock shortcuts, and collect Marks of Grace for the Graceful outfit.</div>
+        <div class="sp-xp-track"><div class="sp-xp-fill" style="width:${(agilProg*100).toFixed(1)}%"></div></div>
+        <div class="sp-xp-text">${this.fmt(agilXp)} XP &middot; ${agilNext>0?this.fmt(agilNext)+' to next level':'MAX LEVEL'}</div>
+      </div>
+      <div class="sp-hero-stats">
+        <div class="sp-stat"><span class="sp-stat-val" style="color:#f0b060">${marks}</span><span class="sp-stat-lbl">Marks</span></div>
+        <div class="sp-stat"><span class="sp-stat-val" style="color:#4dcc6a">${lapsTotal}</span><span class="sp-stat-lbl">Laps</span></div>
+        ${active ? `<div class="sp-stat"><span class="sp-stat-val" style="color:#c9873e;font-size:12px">Running</span><span class="sp-stat-lbl">Active</span></div>` : ''}
+      </div>
+    </div>`;
+
+    // XP bar (legacy — keep for compatibility but hero replaces visual)
     const xpTable = [0,83,174,276,388,512,650,801,969,1154,1358,1584,1833,2107,2411,2746,3115,3523,3973,4470,5018,5624,6291,7028,7842,8740,9730,10824,12031,13363,14833,16456,18247,20224,22406,24815,27473,30408,33648,37224,41171,45529,50339,55649,61512,68000,75127,82904,91373,100678,110745,121535,133066,145418,158806,173255,188874,205751,224002,243822,265534,289096,314891,342546,373169,406206,441533,479905,521311,566085,614334,666862,723782,785483,851704,923048,999927,1083019,1172773,1269674,1374140,1485543,1605425,1734434,1873256,2023568,2187279,2364310,2556493,2765818,3000000,3256751,3538503,3848063,4187812,4560107,4969161,5415961,5909031];
     const lvl = agilLv; const nextXp = xpTable[lvl] || xpTable[98]; const prevXp = xpTable[lvl-1] || 0;
     const pct = Math.min(100, Math.floor(((agilXp - prevXp) / Math.max(1, nextXp - prevXp)) * 100));
-    html += `<div class="skill-xp-bar-wrap"><div class="skill-xp-bar" style="width:${pct}%" title="${this.fmt(agilXp)}/${this.fmt(nextXp)} XP to level ${lvl+1}"></div><div class="skill-xp-label">${pct}% to Lv ${lvl+1}</div></div>`;
 
     // Grace shop
     html += `<div class="agil-grace-header"><span class="agil-marks-badge">🪙 ${marks} Marks of Grace</span><button class="btn btn-xs" onclick="ui._admTab='shop_mgr';ui.renderPage('admin')" style="font-size:10px">Exchange →</button></div>`;
@@ -1476,12 +1535,35 @@ class UI {
   renderThievingPage(el) {
     const s = this.engine.state;
     const thievLv = s.skills.thieving?.level || 1;
+    const thievXp = s.skills.thieving?.xp || 0;
     const maxHp   = this.engine.getMaxHp();
     const thievHp = (s.thievingHp !== null && s.thievingHp !== undefined) ? s.thievingHp : maxHp;
     const hpPct   = Math.round((thievHp / maxHp) * 100);
     const hpColor = hpPct > 60 ? '#4abe6c' : hpPct > 30 ? '#d4a83a' : '#c44040';
+    const thievProg = this.engine.getXpProgress?.('thieving') || 0;
+    const thievNext = this.engine.getXpToNextLevel?.('thieving') || 0;
+    const pickCount = s.stats?.totalActions?.thieving || 0;
+    const thievGold = s.stats?.thievingGoldEarned || 0;
 
-    let html = this.header('Thieving','mask','Pickpocket NPCs and steal from stalls. Getting caught deals damage. Anger your target enough and they will fight back.','thieving');
+    let html = this.header('Thieving','mask','Pickpocket NPCs and steal from stalls for gold and rare loot.',null);
+
+    // Hero banner
+    html += `<div class="sp-hero">
+      <div class="sp-hero-level">
+        <span class="sp-hero-num">${thievLv}</span>
+        <div class="sp-hero-lbl">Thieving</div>
+      </div>
+      <div class="sp-hero-center">
+        <div class="sp-hero-name">Shadow Hand</div>
+        <div class="sp-hero-desc">Pickpocket NPCs and loot stalls. Getting caught deals damage — keep your HP up with food. Anger management is key to survival.</div>
+        <div class="sp-xp-track"><div class="sp-xp-fill" style="width:${(thievProg*100).toFixed(1)}%"></div></div>
+        <div class="sp-xp-text">${this.fmt(thievXp)} XP &middot; ${thievNext>0?this.fmt(thievNext)+' to next level':'MAX LEVEL'}</div>
+      </div>
+      <div class="sp-hero-stats">
+        <div class="sp-stat"><span class="sp-stat-val" style="color:#9b59b6">${this.fmt(pickCount)}</span><span class="sp-stat-lbl">Pickpockets</span></div>
+        <div class="sp-stat"><span class="sp-stat-val" style="color:#f0c060">${this.fmt(thievGold)}g</span><span class="sp-stat-lbl">Stolen</span></div>
+      </div>
+    </div>`;
 
     // ── HP + FOOD BAR ──────────────────────────────────────────────
     const foodBag = s.foodBag || [];
@@ -2655,8 +2737,31 @@ class UI {
     const farmLv = s.skills.farming?.level || 1;
     const farmXp = s.skills.farming?.xp || 0;
     const farmProg = this.engine.getXpProgress?.('farming') || 0;
+    const farmNext = this.engine.getXpToNextLevel?.('farming') || 0;
+    const _heroReadyPlots = plots.filter(p=>p.ready).length;
+    const growingPlots = plots.filter(p=>p.seed && !p.ready).length;
+    const totalHarvest = s.stats?.totalHarvested || 0;
 
-    let html = this.header('Farming','seedling','Plant seeds and herbs, water and compost your crops, and harvest yields for cooking, herblore, and gold.','farming');
+    let html = this.header('Farming','seedling','Grow crops and herbs passively. Harvest for cooking, alchemy, and gold.',null);
+
+    // Hero banner
+    html += `<div class="sp-hero">
+      <div class="sp-hero-level">
+        <span class="sp-hero-num">${farmLv}</span>
+        <div class="sp-hero-lbl">Farming</div>
+      </div>
+      <div class="sp-hero-center">
+        <div class="sp-hero-name">Ashfall Cultivator</div>
+        <div class="sp-hero-desc">Plant seeds in your allotment plots. Crops grow passively over time — check back to harvest and replant for maximum yield.</div>
+        <div class="sp-xp-track"><div class="sp-xp-fill" style="width:${(farmProg*100).toFixed(1)}%"></div></div>
+        <div class="sp-xp-text">${this.fmt(farmXp)} XP &middot; ${farmNext>0?this.fmt(farmNext)+' to next level':'MAX LEVEL'}</div>
+      </div>
+      <div class="sp-hero-stats">
+        <div class="sp-stat"><span class="sp-stat-val" style="color:#4abe6c">${_heroReadyPlots}</span><span class="sp-stat-lbl">Ready</span></div>
+        <div class="sp-stat"><span class="sp-stat-val" style="color:#f0c060">${growingPlots}</span><span class="sp-stat-lbl">Growing</span></div>
+        <div class="sp-stat"><span class="sp-stat-val" style="color:#c9873e">${this.fmt(totalHarvest)}</span><span class="sp-stat-lbl">Harvested</span></div>
+      </div>
+    </div>`;
 
     // ── SKILL BAR ─────────────────────────────────────────────
     const xpToNext = this.engine.getXpToNextLevel?.('farming') || 0;
@@ -7032,7 +7137,168 @@ class UI {
     el.innerHTML = html;
   }
 
-  renderChambersOfAshPage(el) {
+  renderCombatSkillPage(el, skillId) {
+    const s = this.engine.state;
+    const sk = s.skills[skillId];
+    const data = GAME_DATA.skills[skillId];
+    if (!sk || !data) { el.innerHTML = '<div class="page-empty">Skill not found.</div>'; return; }
+    const lv   = sk.level || 1;
+    const xp   = sk.xp || 0;
+    const prog = this.engine.getXpProgress?.(skillId) || 0;
+    const next = this.engine.getXpToNextLevel?.(skillId) || 0;
+    const cb   = this.engine.getCombatLevel?.() || 1;
+
+    // Skill-specific config
+    const cfg = {
+      attack:    { color:'#e07070', stat:'Attack Bonus',    statVal: this.engine.getStatTotal?.('attackBonus') || 0,   lore:'Every point of Attack is a prayer whispered before the blade lands.',        source:'Melee combat (Accurate/Controlled style)' },
+      strength:  { color:'#cc4444', stat:'Max Melee Hit',   statVal: 0,                                                 lore:'Strength is the language of the Ashfall. Everything else is dialect.',        source:'Melee combat (Aggressive/Controlled style)' },
+      defence:   { color:'#4a7ec4', stat:'Defence Bonus',   statVal: this.engine.getStatTotal?.('defenceBonus') || 0,  lore:'A warrior who cannot be hit is worth ten who can hit back.',                  source:'Melee combat (Defensive/Controlled style)' },
+      hitpoints: { color:'#4abe6c', stat:'Max HP',          statVal: this.engine.getMaxHp?.() || 0,                    lore:'Your life is the only currency the Ashfall accepts. Spend it wisely.',       source:'Any combat (all styles grant HP XP)' },
+      ranged:    { color:'#4dcc6a', stat:'Ranged Bonus',    statVal: this.engine.getStatTotal?.('rangedBonus') || 0,   lore:'Distance is mercy. Strike before they know you are there.',                  source:'Ranged combat (any ranged style)' },
+      magic:     { color:'#8888ee', stat:'Magic Bonus',     statVal: this.engine.getStatTotal?.('magicBonus') || 0,    lore:'The ash remembers the spells that shaped it. You are learning to speak them.',source:'Magic combat (Standard/Spellbook styles)' },
+    }[skillId] || { color:'#c9873e', stat:'Bonus', statVal:0, lore:'', source:'Combat' };
+
+    let html = this.header(data.name, data.icon, `${data.desc} — train via combat.`, null);
+
+    html += `<div class="sp-hero">
+      <div class="sp-hero-level">
+        <span class="sp-hero-num" style="color:${cfg.color}">${lv}</span>
+        <div class="sp-hero-lbl">${data.name}</div>
+      </div>
+      <div class="sp-hero-center">
+        <div class="sp-hero-name" style="color:${cfg.color}">${data.name}</div>
+        <div class="sp-hero-desc" style="font-style:italic;color:var(--text-dim)">${cfg.lore}</div>
+        <div class="sp-xp-track"><div class="sp-xp-fill" style="width:${(prog*100).toFixed(1)}%;background:linear-gradient(90deg,${cfg.color}88,${cfg.color})"></div></div>
+        <div class="sp-xp-text">${this.fmt(xp)} XP &middot; ${next>0?this.fmt(next)+' to next level':'MAX LEVEL'}</div>
+      </div>
+      <div class="sp-hero-stats">
+        <div class="sp-stat">
+          <span class="sp-stat-val" style="color:${cfg.color}">${cfg.statVal}</span>
+          <span class="sp-stat-lbl">${cfg.stat}</span>
+        </div>
+        <div class="sp-stat">
+          <span class="sp-stat-val" style="color:#c9873e">${cb}</span>
+          <span class="sp-stat-lbl">Combat Lv</span>
+        </div>
+      </div>
+    </div>`;
+
+    // How to train
+    html += `<div class="trd-xp-hint">
+      <strong>How to train:</strong> ${cfg.source}. Navigate to the
+      <button class="btn btn-xs" onclick="ui.renderPage('combat')" style="display:inline;padding:2px 8px">Combat page →</button>
+      and select the appropriate combat style.
+    </div>`;
+
+    // All combat skills overview
+    const combatSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer'];
+    html += `<div class="sp-section"><div class="sp-section-head"><span class="sp-section-title">Combat Skills Overview</span><span class="sp-section-badge">Combat Level ${cb}</span></div>
+    <div class="trd-bonus-grid">`;
+    for (const csId of combatSkills) {
+      const csk = s.skills[csId]; if (!csk) continue;
+      const cdata = GAME_DATA.skills[csId]; if (!cdata) continue;
+      const cCol = {attack:'#e07070',strength:'#cc4444',defence:'#4a7ec4',hitpoints:'#4abe6c',ranged:'#4dcc6a',magic:'#8888ee',prayer:'#c9c9ff',slayer:'#f0c060'}[csId]||'#c9873e';
+      const isActive = csId === skillId;
+      html += `<div class="trd-bonus-card" style="${isActive?'border-color:'+cCol+';background:rgba(255,255,255,0.04)':''}">
+        <div class="trd-bonus-src">${cdata.name}</div>
+        <div style="font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:${cCol}">${csk.level}</div>
+      </div>`;
+    }
+    html += `</div></div>`;
+
+    // Milestone timeline
+    const milestones = [
+      {lv:1,  text:`${data.name} training begins.`},
+      {lv:10, text:`Noticeable improvement in ${skillId==='hitpoints'?'survivability':skillId==='defence'?'damage reduction':skillId+'  effectiveness'}.`},
+      {lv:30, text:`Competent ${skillId==='magic'?'spellcaster':skillId==='ranged'?'archer':skillId==='hitpoints'?'survivor':'warrior'}.`},
+      {lv:50, text:`Veteran fighter. Significant power spike.`},
+      {lv:70, text:`Elite tier. Most content accessible.`},
+      {lv:90, text:`Near-maximum power. Endgame territory.`},
+      {lv:99, text:`Level 99 — maximum ${data.name}. Respect earned.`},
+    ];
+    html += `<div class="sp-section"><div class="sp-section-head"><span class="sp-section-title">Milestones</span></div><div class="sp-milestones">`;
+    for (const m of milestones) {
+      const met = lv >= m.lv;
+      const current = met && (milestones.indexOf(m)===milestones.length-1 || lv<milestones[milestones.indexOf(m)+1].lv);
+      html += `<div class="sp-milestone">
+        <div class="sp-ms-dot ${met?(current?'current':'met'):''}" style="${met?'--pulse-color:'+cfg.color:''}">
+          ${met?'✓':m.lv}
+        </div>
+        <div class="sp-ms-body">
+          <div class="sp-ms-lv">Level ${m.lv}</div>
+          <div class="sp-ms-text">${m.text}</div>
+        </div>
+      </div>`;
+    }
+    html += '</div></div>';
+
+    html += `<div style="text-align:center;margin-top:8px">
+      <button class="btn" onclick="ui.renderPage('combat')" style="padding:10px 28px">Go to Combat →</button>
+    </div>`;
+
+    el.innerHTML = html;
+  }
+
+  renderHuntingPage(el) {
+    const s = this.engine.state;
+    const huntLv  = s.skills.hunting?.level || 1;
+    const huntXp  = s.skills.hunting?.xp || 0;
+    const huntProg = this.engine.getXpProgress?.('hunting') || 0;
+    const huntNext = this.engine.getXpToNextLevel?.('hunting') || 0;
+    const hunts   = GAME_DATA.gatheringActions?.hunting || [];
+    const active  = s.activeSkill === 'hunting';
+    const huntCount = s.stats?.totalActions?.hunting || 0;
+
+    let html = this.header('Hunting','paw','Track and trap creatures of the Ashfall for pelts, charms, and rare drops.',null);
+
+    html += `<div class="sp-hero">
+      <div class="sp-hero-level">
+        <span class="sp-hero-num">${huntLv}</span>
+        <div class="sp-hero-lbl">Hunting</div>
+      </div>
+      <div class="sp-hero-center">
+        <div class="sp-hero-name">Ashfall Tracker</div>
+        <div class="sp-hero-desc">Set traps and track creatures across the Ashfall. Higher Hunting unlocks deadlier prey and more valuable pelts and charms for Summoning.</div>
+        <div class="sp-xp-track"><div class="sp-xp-fill" style="width:${(huntProg*100).toFixed(1)}%"></div></div>
+        <div class="sp-xp-text">${this.fmt(huntXp)} XP &middot; ${huntNext>0?this.fmt(huntNext)+' to next level':'MAX LEVEL'}</div>
+      </div>
+      <div class="sp-hero-stats">
+        <div class="sp-stat"><span class="sp-stat-val" style="color:#c9873e">${huntCount}</span><span class="sp-stat-lbl">Caught</span></div>
+        ${active ? `<div class="sp-stat"><span class="sp-stat-val" style="color:#4dcc6a;font-size:12px">Hunting</span><span class="sp-stat-lbl">Active</span></div>` : ''}
+      </div>
+    </div>`;
+
+    html += `<div class="sp-section"><div class="sp-section-head"><span class="sp-section-title">Hunting Grounds</span><span class="sp-section-badge">${hunts.filter(h=>huntLv>=h.level).length} / ${hunts.length} unlocked</span></div>
+    <div class="mine-rocks-grid">`;
+    for (const h of hunts) {
+      const locked = huntLv < h.level;
+      const isActive = active && s.activeAction === h.id;
+      const loot = h.loot?.[0];
+      const lootItem = loot ? GAME_DATA.items[loot.item] : null;
+      html += `<div class="mine-rock-card ${locked?'mrc-locked':''} ${isActive?'mrc-active':''}" ${!locked?`onclick="ui.startAction('hunting','${h.id}')"`:''}>
+        <div class="mrc-art"><svg viewBox="0 0 48 48" width="44" height="44">
+          <ellipse cx="24" cy="28" rx="14" ry="10" fill="#5a3a2a" opacity="0.8"/>
+          <circle cx="24" cy="18" r="8" fill="#7a4a2a"/>
+          <circle cx="20" cy="16" r="2" fill="#1a0a00"/>
+          <circle cx="28" cy="16" r="2" fill="#1a0a00"/>
+          <path d="M18 14 Q20 8 24 10" fill="none" stroke="#5a3a2a" stroke-width="1.5"/>
+          <path d="M30 14 Q28 8 24 10" fill="none" stroke="#5a3a2a" stroke-width="1.5"/>
+        </svg></div>
+        <div class="mrc-body">
+          <div class="mrc-name">${h.name}</div>
+          <div class="mrc-meta"><span class="mrc-xp">+${h.xp} XP</span><span class="mrc-time">⏱ ${h.time}s</span></div>
+          <div class="mrc-ore-row"><span class="mrc-ore-name">${lootItem?.name||loot?.item||''}</span></div>
+          ${isActive?'<div class="mrc-active-badge">⚑ Hunting</div>':''}
+        </div>
+        <div class="mrc-lv ${locked?'mrc-lv-lock':''}">${h.level}</div>
+        ${locked?`<div class="locked-overlay">Level ${h.level}</div>`:''}
+      </div>`;
+    }
+    html += '</div></div>';
+    el.innerHTML = html;
+  }
+
+    renderChambersOfAshPage(el) {
     const s = this.engine.state;
     el.innerHTML = this.header('Chambers of Ash','chambers','An ancient ritual chamber. Under construction.','chambers') + `
       <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
