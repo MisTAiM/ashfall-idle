@@ -19,85 +19,163 @@ function applyFightCaveUI() {
     const s = this.engine.state;
     const fc = s.fightCave;
 
-    // If Fight Cave is active, redirect to combat page
-    if (fc && fc.active) {
-      this.currentPage = 'combat';
-      this.renderPage('combat');
-      return;
-    }
+    if (fc && fc.active) { this.currentPage = 'combat'; this.renderPage('combat'); return; }
 
     const combatLv = this.engine.getCombatLevel();
     const prayerLv = s.skills.prayer?.level || 1;
+    const hasFood   = s.foodBag && s.foodBag.some(f => f.qty > 0);
     const meetsReqs = combatLv >= GAME_DATA.fightCave.levelReq && prayerLv >= GAME_DATA.fightCave.prayerReq;
-    const fireCape = GAME_DATA.items.ember_cape;
+    const cape      = GAME_DATA.items.ember_cape || GAME_DATA.items.fire_cape;
+    const ownsCape  = (s.bank?.ember_cape||0) > 0 || s.equipment?.cape === 'ember_cape';
+    const attempts  = s.stats.fightCaveAttempts || 0;
+    const bestWave  = s.stats.fightCaveBestWave || 0;
+    const kills     = s.stats.jadKills || 0;
+    const jdDeaths  = s.stats.jadDeaths || 0;
+    const comps     = s.stats.fightCaveCompletions || 0;
+    const deaths    = s.stats.fightCaveDeaths || 0;
 
-    let html = `<div class="fight-cave-page">`;
-    html += `<div class="fc-header">
-      <h1 class="fc-title">${ICONS.combat || ''} The Fight Cave</h1>
-      <p class="fc-subtitle">${GAME_DATA.fightCave.desc}</p>
-    </div>`;
+    // Style colour helpers
+    const styleCol = { melee:'#e07070', ranged:'#70cc70', magic:'#8888ee' };
+    const prayCol  = { protect_ranged:'#70cc70', protect_magic:'#8888ee' };
 
-    html += `<div class="fc-requirements">
-      <h2 class="section-title">Requirements</h2>
-      <div class="fc-req-row"><span class="${combatLv >= GAME_DATA.fightCave.levelReq ? 'fc-req-met' : 'fc-req-unmet'}">Combat Level ${GAME_DATA.fightCave.levelReq} ${combatLv >= GAME_DATA.fightCave.levelReq ? '✓' : '✗'} (You: ${combatLv})</span></div>
-      <div class="fc-req-row"><span class="${prayerLv >= GAME_DATA.fightCave.prayerReq ? 'fc-req-met' : 'fc-req-unmet'}">Prayer Level ${GAME_DATA.fightCave.prayerReq} ${prayerLv >= GAME_DATA.fightCave.prayerReq ? '✓' : '✗'} (You: ${prayerLv})</span></div>
-      <div class="fc-req-row"><span class="${(s.foodBag && s.foodBag.length > 0) ? 'fc-req-met' : 'fc-req-unmet'}">Food Equipped ${(s.foodBag && s.foodBag.length > 0) ? '✓' : '✗'}</span></div>
-    </div>`;
+    let html = `<div class="fcv2-page">`;
 
-    html += `<div class="fc-reward-card">
-      <h2 class="section-title">Reward: Ember Cape</h2>
-      <div class="fc-reward-stats">Atk: +${fireCape?.stats?.attackBonus || 8} | Str: +${fireCape?.stats?.strengthBonus || 8} | Def: +${fireCape?.stats?.defenceBonus || 14} | DR: +${fireCape?.stats?.damageReduction || 5}%</div>
-      <p class="fc-reward-desc">Best-in-slot melee cape. Untradeable. Earned, never given.</p>
-    </div>`;
-
-    html += `<div class="fc-phases"><h2 class="section-title">63 Waves — Phase Breakdown</h2>`;
-    for (const phase of GAME_DATA.fightCave.phases) {
-      html += `<div class="fc-phase-row">
-        <span class="fc-phase-waves">W${phase.startWave}-${phase.endWave}</span>
-        <span class="fc-phase-name">${phase.name}</span>
-        <span class="fc-phase-tip">${phase.tip}</span>
-      </div>`;
-    }
-    html += `</div>`;
-
-    html += `<div class="fc-bestiary"><h2 class="section-title">Monsters</h2><div class="fc-monster-grid">`;
-    const fcMonsters = ['cinder_bat','magma_blob','obsidian_ranger','molten_brute','volcanic_mage','tztok_jad','yt_hurkot'];
-    for (const mId of fcMonsters) {
-      const m = GAME_DATA.monsters[mId];
-      if (!m) continue;
-      const styleColors = { melee:'#e74c3c', ranged:'#27ae60', magic:'#3498db' };
-      html += `<div class="fc-monster-card">
-        <div class="fc-mon-art">${GAME_DATA.monsterArt?.[mId] || ''}</div>
-        <div class="fc-mon-header">
-          <span class="fc-mon-name">${m.name}</span>
-          <span class="fc-mon-level" style="color:${styleColors[m.style]||'#aaa'}">Lv ${m.combatLevel} (${m.style})</span>
+    // ── HERO BANNER ───────────────────────────────────────────
+    html += `<div class="fcv2-hero">
+      <div class="fcv2-hero-bg"></div>
+      <div class="fcv2-hero-content">
+        <div class="fcv2-hero-eyebrow">63 Waves · Solo Challenge</div>
+        <div class="fcv2-hero-title">The Fight Cave</div>
+        <div class="fcv2-hero-sub">${GAME_DATA.fightCave.desc}</div>
+        <div class="fcv2-hero-stats">
+          <div class="fcv2-hstat"><span class="fcv2-hstat-n">${attempts}</span><span class="fcv2-hstat-l">Attempts</span></div>
+          <div class="fcv2-hstat"><span class="fcv2-hstat-n" style="color:#c9873e">${bestWave}/63</span><span class="fcv2-hstat-l">Best Wave</span></div>
+          <div class="fcv2-hstat"><span class="fcv2-hstat-n" style="color:#4abe6c">${comps}</span><span class="fcv2-hstat-l">Completions</span></div>
+          <div class="fcv2-hstat"><span class="fcv2-hstat-n" style="color:#e07070">${deaths}</span><span class="fcv2-hstat-l">Deaths</span></div>
+          <div class="fcv2-hstat"><span class="fcv2-hstat-n" style="color:#d4a83a">${kills}</span><span class="fcv2-hstat-l">Jad Kills</span></div>
         </div>
-        <div class="fc-mon-stats">HP: ${m.hp} | Max Hit: ${m.maxHit} | XP: ${m.xp||0}</div>
-        <p class="fc-mon-desc">${m.desc}</p>
+      </div>
+      <!-- Jad art on the right -->
+      <div class="fcv2-hero-jad">
+        ${GAME_DATA.monsterArt?.tztok_jad || ''}
+      </div>
+    </div>`;
+
+    // ── TWO-COLUMN LAYOUT ─────────────────────────────────────
+    html += `<div class="fcv2-body">`;
+
+    // LEFT COLUMN
+    html += `<div class="fcv2-left">`;
+
+    // Requirements card
+    const reqCheck = (met, label) =>
+      `<div class="fcv2-req ${met?'fcv2-req-met':'fcv2-req-fail'}">
+        <span class="fcv2-req-icon">${met?'✓':'✗'}</span>
+        <span class="fcv2-req-label">${label}</span>
+      </div>`;
+
+    html += `<div class="fcv2-card">
+      <div class="fcv2-card-title">Requirements</div>
+      ${reqCheck(combatLv >= GAME_DATA.fightCave.levelReq, `Combat Level ${GAME_DATA.fightCave.levelReq} (you: ${combatLv})`)}
+      ${reqCheck(prayerLv >= GAME_DATA.fightCave.prayerReq, `Prayer Level ${GAME_DATA.fightCave.prayerReq} (you: ${prayerLv})`)}
+      ${reqCheck(hasFood, 'Food equipped in food bag')}
+    </div>`;
+
+    // Reward card
+    html += `<div class="fcv2-card fcv2-reward-card">
+      <div class="fcv2-card-title">Reward${ownsCape?' <span class="fcv2-owned-badge">Owned</span>':''}</div>
+      <div class="fcv2-reward-row">
+        <div class="fcv2-reward-art">
+          ${GAME_DATA.monsterArt?.ember_cape_item || `<svg viewBox="0 0 48 48" width="48" height="48">
+            <defs><linearGradient id="fcg2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff4020"/><stop offset="100%" stop-color="#ffcc40"/>
+            </linearGradient></defs>
+            <path d="M14 6 L34 6 L38 44 L24 48 L10 44Z" fill="url(#fcg2)" stroke="#8a2010" stroke-width="1.5"/>
+            <path d="M24 6 L24 48" stroke="#ffcc40" stroke-width="0.8" opacity="0.5"/>
+          </svg>`}
+        </div>
+        <div class="fcv2-reward-info">
+          <div class="fcv2-reward-name">Ember Cape</div>
+          <div class="fcv2-reward-tagline">Best-in-slot melee cape. Untradeable.</div>
+          <div class="fcv2-reward-stats">
+            <span>ATK +${cape?.stats?.attackBonus||8}</span>
+            <span>STR +${cape?.stats?.strengthBonus||8}</span>
+            <span>DEF +${cape?.stats?.defenceBonus||14}</span>
+            <span>DR ${cape?.stats?.damageReduction||5}%</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    // Phase breakdown
+    html += `<div class="fcv2-card">
+      <div class="fcv2-card-title">63 Waves — Phase Guide</div>
+      <div class="fcv2-phases">`;
+    for (const phase of GAME_DATA.fightCave.phases) {
+      const pc = phase.prayer ? prayCol[phase.prayer] : '#555';
+      const isJad = phase.startWave === 63;
+      html += `<div class="fcv2-phase ${isJad?'fcv2-phase-jad':''}">
+        <div class="fcv2-phase-waves">W${phase.startWave}${phase.startWave!==phase.endWave?'–'+phase.endWave:''}</div>
+        <div class="fcv2-phase-body">
+          <div class="fcv2-phase-name">${phase.name}</div>
+          <div class="fcv2-phase-tip">${phase.tip}</div>
+        </div>
+        ${phase.prayer?`<div class="fcv2-phase-pray" style="color:${pc}" title="${phase.prayer.replace(/_/g,' ')}">🛡</div>`:''}
       </div>`;
     }
     html += `</div></div>`;
 
-    html += `<div class="fc-stats"><h2 class="section-title">Your Fight Cave Stats</h2>
-      <div class="fc-stat-row">Attempts: ${s.stats.fightCaveAttempts || 0}</div>
-      <div class="fc-stat-row">Completions: ${s.stats.fightCaveCompletions || 0}</div>
-      <div class="fc-stat-row">Deaths: ${s.stats.fightCaveDeaths || 0}</div>
-      <div class="fc-stat-row">Best Wave: ${s.stats.fightCaveBestWave || 0}/63</div>
-      <div class="fc-stat-row">Jad Kills: ${s.stats.jadKills || 0}</div>
-      <div class="fc-stat-row">Jad Deaths: ${s.stats.jadDeaths || 0}</div>
-    </div>`;
-
-    html += `<div class="fc-warning">
-      <p>Death resets all progress. Supplies consumed during the run are lost forever.</p>
-      <p>This is a safe death — no XP or equipment loss.</p>
-      <p>Equip your best gear, fill your food bag, and stock prayer potions before entering.</p>
-    </div>`;
-
-    html += `<div class="fc-enter">
-      <button class="btn btn-lg ${meetsReqs ? 'btn-danger' : ''}" ${meetsReqs ? '' : 'disabled'} data-fc-action="start">
-        ${meetsReqs ? 'Enter the Fight Cave' : 'Requirements Not Met'}
+    // Enter button
+    html += `<div class="fcv2-enter">
+      <button class="fcv2-enter-btn ${meetsReqs?'':'fcv2-enter-disabled'}"
+        ${meetsReqs?'data-fc-action="start"':'disabled'}>
+        <span class="fcv2-enter-main">${meetsReqs?'Enter the Fight Cave':'Requirements Not Met'}</span>
+        <span class="fcv2-enter-sub">Death resets all progress · Supplies are lost</span>
       </button>
-    </div></div>`;
+    </div>`;
+
+    html += `</div>`; // end left
+
+    // RIGHT COLUMN — monster bestiary
+    html += `<div class="fcv2-right">`;
+    html += `<div class="fcv2-card" style="padding:0;overflow:hidden">
+      <div class="fcv2-card-title" style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05)">Bestiary</div>`;
+
+    const fcMonsters = [
+      { id:'cinder_bat',      first:'W1', note:'Kill first always' },
+      { id:'magma_blob_small',first:'W3', note:'Low priority' },
+      { id:'magma_blob',      first:'W3', note:'Low priority' },
+      { id:'obsidian_ranger', first:'W7', note:'Kill second — ranged' },
+      { id:'molten_brute',    first:'W15',note:'Heals allies' },
+      { id:'volcanic_mage',   first:'W31',note:'Magic mandatory prayer' },
+      { id:'yt_hurkot',       first:'W63',note:'Jad healer — tag at 50%' },
+      { id:'tztok_jad',       first:'W63',note:'Prayer flick! Final boss' },
+    ];
+
+    for (const entry of fcMonsters) {
+      const m = GAME_DATA.monsters[entry.id]; if (!m) continue;
+      const art = GAME_DATA.monsterArt?.[entry.id] || '';
+      const isJad = entry.id === 'tztok_jad';
+      html += `<div class="fcv2-mob ${isJad?'fcv2-mob-jad':''}">
+        <div class="fcv2-mob-art">${art}</div>
+        <div class="fcv2-mob-info">
+          <div class="fcv2-mob-top">
+            <span class="fcv2-mob-name">${m.name}</span>
+            <span class="fcv2-mob-wave">${entry.first}</span>
+          </div>
+          <div class="fcv2-mob-row">
+            <span class="fcv2-mob-style" style="color:${styleCol[m.style]||'#aaa'}">${m.style.toUpperCase()}</span>
+            <span class="fcv2-mob-stat">Lv ${m.combatLevel}</span>
+            <span class="fcv2-mob-stat">HP ${m.hp}</span>
+            <span class="fcv2-mob-stat">Max ${m.maxHit}</span>
+          </div>
+          <div class="fcv2-mob-note">${entry.note}</div>
+        </div>
+      </div>`;
+    }
+    html += `</div></div>`; // end right + fcv2-body
+
+    html += `</div></div>`; // end fcv2-body + fcv2-page
     el.innerHTML = html;
   };
 

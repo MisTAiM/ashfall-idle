@@ -11351,3 +11351,189 @@ body.perf-mode .hit-splat { display:none !important; }
   align-items: center;
   gap: 6px;
 }
+
+/* ============================================================
+   FIGHT CAVE PAGE v2 — fcv2
+   ============================================================ */
+
+.fcv2-page { max-width: 900px; margin: 0 auto; }
+
+/* ── HERO BANNER ── */
+.fcv2-hero {
+  position: relative; overflow: hidden;
+  border-radius: 12px; margin-bottom: 14px;
+  border: 1px solid rgba(200,60,20,0.25);
+  background: linear-gradient(135deg, #0e0604 0%, #1a0a06 50%, #120806 100%);
+  display: flex; align-items: center; min-height: 160px;
+  padding: 24px 20px;
+}
+.fcv2-hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 80% 50%, rgba(180,50,10,0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 20% 80%, rgba(100,20,5,0.12) 0%, transparent 60%);
+}
+/* Lava crack line at bottom */
+.fcv2-hero::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,60,20,0.5), rgba(255,100,30,0.7), rgba(200,60,20,0.5), transparent);
+}
+.fcv2-hero-content { position: relative; z-index: 2; flex: 1; }
+.fcv2-hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 3px; text-transform: uppercase; color: rgba(200,100,40,0.6);
+  margin-bottom: 6px;
+}
+.fcv2-hero-title {
+  font-family: 'Cinzel', serif; font-size: 28px; font-weight: 700;
+  color: #e0a040; line-height: 1.1; margin-bottom: 6px;
+  text-shadow: 0 0 30px rgba(200,100,30,0.4);
+}
+.fcv2-hero-sub {
+  font-size: 12px; color: #6a4a30; max-width: 400px; line-height: 1.5; margin-bottom: 14px;
+  font-family: 'Crimson Text', serif; font-style: italic;
+}
+.fcv2-hero-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+.fcv2-hstat { text-align: center; min-width: 48px; }
+.fcv2-hstat-n {
+  font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700;
+  color: #808080; display: block; line-height: 1;
+}
+.fcv2-hstat-l {
+  font-size: 9px; color: #3a2a18; text-transform: uppercase;
+  letter-spacing: 0.5px; display: block; margin-top: 2px;
+}
+
+/* Jad art in hero — right side, big */
+.fcv2-hero-jad {
+  position: relative; z-index: 2; flex-shrink: 0;
+  width: 130px; height: 130px;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 0 20px rgba(255,60,20,0.4));
+  opacity: 0.85;
+}
+.fcv2-hero-jad svg { width: 120px !important; height: 120px !important; }
+
+/* ── BODY LAYOUT ── */
+.fcv2-body { display: grid; grid-template-columns: 320px 1fr; gap: 12px; align-items: start; }
+
+/* ── CARD ── */
+.fcv2-card {
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+}
+.fcv2-card-title {
+  font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;
+}
+
+/* ── REQUIREMENTS ── */
+.fcv2-req {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 6px; margin-bottom: 5px;
+  font-size: 12px;
+}
+.fcv2-req-met  { background: rgba(74,190,108,0.08); border: 1px solid rgba(74,190,108,0.2); color: #4abe6c; }
+.fcv2-req-fail { background: rgba(200,68,68,0.08);  border: 1px solid rgba(200,68,68,0.2);  color: #c44444; }
+.fcv2-req-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+.fcv2-req-label { font-size: 11px; }
+
+/* ── REWARD CARD ── */
+.fcv2-reward-card { border-color: rgba(200,100,30,0.25); background: rgba(180,60,10,0.05); }
+.fcv2-reward-row { display: flex; align-items: center; gap: 14px; }
+.fcv2-reward-art { flex-shrink: 0; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+.fcv2-reward-art svg { width: 48px !important; height: 48px !important; }
+.fcv2-reward-name { font-family: 'Cinzel', serif; font-size: 14px; color: #e0a040; margin-bottom: 2px; }
+.fcv2-reward-tagline { font-size: 11px; color: var(--text-dim); font-style: italic; margin-bottom: 6px; }
+.fcv2-reward-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.fcv2-reward-stats span {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: #c9873e; background: rgba(201,135,62,0.08);
+  border: 1px solid rgba(201,135,62,0.2); padding: 2px 7px; border-radius: 4px;
+}
+.fcv2-owned-badge {
+  font-size: 9px; color: #4abe6c; background: rgba(74,190,108,0.12);
+  border: 1px solid rgba(74,190,108,0.3); padding: 1px 6px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px;
+  vertical-align: middle; margin-left: 6px;
+}
+
+/* ── PHASE GUIDE ── */
+.fcv2-phases { display: flex; flex-direction: column; gap: 0; }
+.fcv2-phase {
+  display: flex; align-items: flex-start; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.fcv2-phase:last-child { border-bottom: none; }
+.fcv2-phase-jad { background: rgba(200,60,20,0.06); border-radius: 6px; padding: 8px 8px; margin: 4px -4px 0; }
+.fcv2-phase-waves {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: #c9873e; min-width: 44px; flex-shrink: 0; padding-top: 1px;
+}
+.fcv2-phase-body { flex: 1; min-width: 0; }
+.fcv2-phase-name { font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 1px; }
+.fcv2-phase-tip  { font-size: 10px; color: var(--text-dim); line-height: 1.4; }
+.fcv2-phase-pray { font-size: 16px; flex-shrink: 0; }
+
+/* ── ENTER BUTTON ── */
+.fcv2-enter { margin-bottom: 0; }
+.fcv2-enter-btn {
+  width: 100%; padding: 16px 20px;
+  background: linear-gradient(180deg, rgba(200,60,20,0.2) 0%, rgba(160,40,10,0.15) 100%);
+  border: 1px solid rgba(200,60,20,0.5);
+  border-radius: 8px; cursor: pointer;
+  font-family: 'Cinzel', serif;
+  transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.fcv2-enter-btn:hover:not([disabled]) {
+  background: linear-gradient(180deg, rgba(220,80,30,0.3) 0%, rgba(180,50,15,0.2) 100%);
+  border-color: rgba(220,80,30,0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(200,60,20,0.2);
+}
+.fcv2-enter-btn:active:not([disabled]) { transform: translateY(0); }
+.fcv2-enter-disabled { opacity: 0.5; cursor: not-allowed; border-color: var(--border); background: var(--bg-mid); }
+.fcv2-enter-main { font-size: 14px; font-weight: 700; color: #e0a040; letter-spacing: 2px; text-transform: uppercase; }
+.fcv2-enter-sub  { font-size: 10px; color: #4a2a15; font-family: 'JetBrains Mono', monospace; }
+
+/* ── BESTIARY (right column) ── */
+.fcv2-mob {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s;
+}
+.fcv2-mob:last-child { border-bottom: none; }
+.fcv2-mob:hover { background: rgba(255,255,255,0.02); }
+.fcv2-mob-jad {
+  background: rgba(200,60,20,0.05);
+  border-top: 1px solid rgba(200,60,20,0.2);
+  border-bottom: none !important;
+}
+.fcv2-mob-art {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.fcv2-mob-art svg { width: 40px !important; height: 40px !important; }
+.fcv2-mob-jad .fcv2-mob-art svg { width: 52px !important; height: 52px !important; }
+.fcv2-mob-info { flex: 1; min-width: 0; }
+.fcv2-mob-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+.fcv2-mob-name { font-family: 'Cinzel', serif; font-size: 12px; color: var(--text); font-weight: 600; }
+.fcv2-mob-wave { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(201,135,62,0.6); }
+.fcv2-mob-row { display: flex; gap: 8px; align-items: center; margin-bottom: 2px; flex-wrap: wrap; }
+.fcv2-mob-style { font-size: 9px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.fcv2-mob-stat  { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+.fcv2-mob-note  { font-size: 10px; color: #4a3a28; font-style: italic; }
+.fcv2-mob-jad .fcv2-mob-name { color: #e0a040; font-size: 13px; }
+.fcv2-mob-jad .fcv2-mob-note { color: #c44040; font-weight: 600; font-style: normal; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 700px) {
+  .fcv2-body { grid-template-columns: 1fr; }
+  .fcv2-hero { flex-direction: column; text-align: center; padding: 20px 16px; }
+  .fcv2-hero-jad { width: 90px; height: 90px; margin-top: 12px; }
+  .fcv2-hero-jad svg { width: 80px !important; height: 80px !important; }
+  .fcv2-hero-stats { justify-content: center; }
+  .fcv2-hero-sub { max-width: none; }
+}
