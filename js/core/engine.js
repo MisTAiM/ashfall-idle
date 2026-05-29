@@ -3582,7 +3582,8 @@ class GameEngine {
     if (q.rewards.gold)  { this.state.gold += q.rewards.gold; this.state.stats.goldEarned += q.rewards.gold; }
     if (q.rewards.xp)    for (const [sk,amt] of Object.entries(q.rewards.xp)) this.addXp(sk,amt);
     if (q.rewards.items) for (const it of q.rewards.items) this.addItem(it.id||it.item, it.qty);
-    if (q.rewards.qp)    { this.state.questPoints = (this.state.questPoints||0) + q.rewards.qp; }
+    // QP: always recalculate live from completed quests (never additive to avoid drift)
+    { let _qp=0; for(const _id of this.state.quests.completed){const _cq=GAME_DATA.quests.find(x=>x.id===_id);if(_cq&&_cq.qp)_qp+=_cq.qp;} this.state.questPoints=_qp; }
     if (q.rewards.rep)   for (const [fac,amt] of Object.entries(q.rewards.rep)) {
       if (!this.state.reputation) this.state.reputation = {};
       this.state.reputation[fac] = (this.state.reputation[fac]||0) + amt;

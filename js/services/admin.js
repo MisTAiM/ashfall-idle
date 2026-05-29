@@ -4432,8 +4432,8 @@ function applyAdminPanel() {
           ${canManageDangerous ? `<button class="btn btn-sm btn-danger" onclick="if(confirm('Reset all?')){game.state.quests={completed:[],active:[]};ui.renderPage('admin')}">Reset All</button>` : `<button class="btn btn-sm btn-danger" disabled style="opacity:0.5;cursor:not-allowed" title="Requires manage:dangerous permission">Reset All</button>`}
         </div>`;
       if (GAME_DATA.quests) for (const q of GAME_DATA.quests) {
-        const done=s.quests?.completed?.includes(q.id),active=s.quests?.active?.find(a=>a.id===q.id);
-        html+=`<div class="adm-quest-row ${done?'adm-q-done':active?'adm-q-active':''}"><span class="adm-q-status">${done?'✓':active?'▶':'○'}</span><span class="adm-q-name">${q.name}</span><span class="adm-q-id">${q.id}</span>${!done?`<button class="btn btn-xs" onclick="if(!game.state.quests.completed.includes('${q.id}'))game.state.quests.completed.push('${q.id}');game.state.quests.active=game.state.quests.active.filter(a=>a.id!=='${q.id}');ui.renderPage('admin')">Complete</button>`:''}${done?`<button class="btn btn-xs btn-danger" onclick="game.state.quests.completed=game.state.quests.completed.filter(id=>id!=='${q.id}');ui.renderPage('admin')">Undo</button>`:''}</div>`;
+        const done=s.quests?.completed?.includes(q.id),active=s.quests?.active?.includes(q.id);
+        html+=`<div class="adm-quest-row ${done?'adm-q-done':active?'adm-q-active':''}"><span class="adm-q-status">${done?'✓':active?'▶':'○'}</span><span class="adm-q-name">${q.name}</span><span class="adm-q-id">${q.id}</span>${!done?`<button class="btn btn-xs" onclick="ui._admForceCompleteQuest('${q.id}')">Complete</button>`:''}${done?`<button class="btn btn-xs btn-danger" onclick="game.state.quests.completed=game.state.quests.completed.filter(id=>id!=='${q.id}');let qp=0;for(const cId of game.state.quests.completed){const cq=GAME_DATA.quests.find(x=>x.id===cId);if(cq&&cq.qp)qp+=cq.qp;}game.state.questPoints=qp;ui.renderPage('admin')">Undo</button>`:''}</div>`;
       }
       html+=`</div>`;
     }
@@ -5330,7 +5330,42 @@ function applyAdminPanel() {
   UI.prototype._admFullHeal = function(){game.state.combat.playerHp=game.getMaxHp();this.toast({type:'success',text:'Healed'});this.renderPage('admin');};
   UI.prototype._admGiveAllItems = function(){let c=0;for(const id of Object.keys(GAME_DATA.items)){if(!game.state.bank[id]){game.addItem(id,10);c++;}}this.toast({type:'success',text:`Given ${c} item types`});this.renderPage('admin');};
   UI.prototype._admClearBank = function(){if(!confirm('Clear entire bank?'))return;game.state.bank={};this.toast({type:'success',text:'Bank cleared'});this.renderPage('admin');};
-  UI.prototype._admCompleteQuests = function(){if(!GAME_DATA.quests)return;for(const q of GAME_DATA.quests)if(!game.state.quests.completed.includes(q.id))game.state.quests.completed.push(q.id);game.state.quests.active=[];this.toast({type:'success',text:`${GAME_DATA.quests.length} quests done`});this.renderPage('admin');};
+  UI.prototype._admCompleteQuests = function(){
+    if(!GAME_DATA.quests)return;
+    for(const q of GAME_DATA.quests){
+      if(!game.state.quests.completed.includes(q.id)){
+        game.state.quests.completed.push(q.id);
+      }
+    }
+    game.state.quests.active=[];
+    game.state.quests.stages={};
+    game.state.quests.progress={};
+    // Recalculate QP live
+    let qp=0;
+    for(const qId of game.state.quests.completed){const q=GAME_DATA.quests.find(x=>x.id===qId);if(q&&q.qp)qp+=q.qp;}
+    game.state.questPoints=qp;
+    game.emit('questsChanged');
+    this.toast({type:'success',text:`${GAME_DATA.quests.length} quests done · ${qp} QP`});
+    this.renderPage('admin');
+  };
+  // Force-complete a single quest with proper cleanup and QP sync
+  UI.prototype._admForceCompleteQuest = function(questId){
+    const q = GAME_DATA.quests.find(x=>x.id===questId); if(!q) return;
+    // Remove from active if present
+    game.state.quests.active = game.state.quests.active.filter(id=>id!==questId);
+    // Add to completed if not already
+    if(!game.state.quests.completed.includes(questId)) game.state.quests.completed.push(questId);
+    // Clean up stage/progress data
+    if(game.state.quests.stages) delete game.state.quests.stages[questId];
+    if(game.state.quests.progress) delete game.state.quests.progress[questId];
+    if(game.state.quests._readyToComplete) delete game.state.quests._readyToComplete[questId];
+    // Recalculate QP live — never trust cumulative
+    let qp=0;
+    for(const qId of game.state.quests.completed){const cq=GAME_DATA.quests.find(x=>x.id===qId);if(cq&&cq.qp)qp+=cq.qp;}
+    game.state.questPoints=qp;
+    game.emit('questsChanged');
+    this.renderPage('admin');
+  };
   UI.prototype._admResetFightCave = function(){Object.assign(game.state.stats,{fightCaveAttempts:0,fightCaveCompletions:0,fightCaveDeaths:0,fightCaveBestWave:0,jadKills:0,jadDeaths:0});this.toast({type:'success',text:'FC stats reset'});this.renderPage('admin');};
 
   console.log(`[Ashfall] Admin panel v${ADMIN_VERSION} loaded.`);
