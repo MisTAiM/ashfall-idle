@@ -61,10 +61,34 @@ const GAME_DATA = {
   },
 
   factions: {
-    silver_order:{id:'silver_order',name:'The Silver Order',desc:'A holy order of paladins.',tiers:[{rep:0,title:'Stranger',perk:'None'},{rep:500,title:'Squire',perk:'+2% melee accuracy'},{rep:2000,title:'Knight',perk:'+5% melee accuracy'},{rep:10000,title:'Paladin',perk:'+10% accuracy, +5% dmg vs evil'},{rep:50000,title:'Grandmaster',perk:'Silver Champion access'}]},
-    ashen_guild:{id:'ashen_guild',name:'The Ashen Merchant Guild',desc:'Neutral traders.',tiers:[{rep:0,title:'Wanderer',perk:'None'},{rep:500,title:'Customer',perk:'-5% shop prices'},{rep:2000,title:'Associate',perk:'-10% shop, +10% sell'},{rep:10000,title:'Partner',perk:'-15% shop, +20% sell'},{rep:50000,title:'Guildmaster',perk:'Black market access'}]},
-    bloodfang_clan:{id:'bloodfang_clan',name:'The Bloodfang Clan',desc:'Bandits and raiders.',tiers:[{rep:0,title:'Outsider',perk:'None'},{rep:500,title:'Initiate',perk:'+5% loot from humanoids'},{rep:2000,title:'Raider',perk:'+10% loot'},{rep:10000,title:'Warchief',perk:'+15% loot, Bloodfang armor'},{rep:50000,title:'Bloodlord',perk:'Bloodforge weapons'}]},
-    veiled_circle:{id:'veiled_circle',name:'The Veiled Circle',desc:'A cabal of wizards.',tiers:[{rep:0,title:'Apprentice',perk:'None'},{rep:500,title:'Acolyte',perk:'+5% magic XP'},{rep:2000,title:'Adept',perk:'+10% magic XP'},{rep:10000,title:'Archmage',perk:'+15% magic XP'},{rep:50000,title:'Voidseer',perk:'Forbidden void magic'}]},
+    silver_order:{id:'silver_order',name:'The Silver Order',desc:'A holy order of paladins.',tiers:[
+      {rep:0,     title:'Stranger',    label:'None',                          perk:{}},
+      {rep:500,   title:'Squire',      label:'+2% melee accuracy',            perk:{meleeAccuracy:2}},
+      {rep:2000,  title:'Knight',      label:'+5% melee accuracy',            perk:{meleeAccuracy:5}},
+      {rep:10000, title:'Paladin',     label:'+10% melee accuracy',           perk:{meleeAccuracy:10}},
+      {rep:50000, title:'Grandmaster', label:'+10% accuracy, Silver Champion',perk:{meleeAccuracy:10}},
+    ]},
+    ashen_guild:{id:'ashen_guild',name:'The Ashen Merchant Guild',desc:'Neutral traders.',tiers:[
+      {rep:0,     title:'Wanderer',    label:'None',                          perk:{}},
+      {rep:500,   title:'Customer',    label:'-5% shop prices',               perk:{shopDiscount:5}},
+      {rep:2000,  title:'Associate',   label:'-10% shop, +10% sell',          perk:{shopDiscount:10, sellBonus:10}},
+      {rep:10000, title:'Partner',     label:'-15% shop, +20% sell',          perk:{shopDiscount:15, sellBonus:20}},
+      {rep:50000, title:'Guildmaster', label:'-15% shop, +20% sell, Black Market',perk:{shopDiscount:15, sellBonus:20}},
+    ]},
+    bloodfang_clan:{id:'bloodfang_clan',name:'The Bloodfang Clan',desc:'Bandits and raiders.',tiers:[
+      {rep:0,     title:'Outsider',    label:'None',                          perk:{}},
+      {rep:500,   title:'Initiate',    label:'+5% loot from humanoids',       perk:{humanoidLoot:5}},
+      {rep:2000,  title:'Raider',      label:'+10% loot from humanoids',      perk:{humanoidLoot:10}},
+      {rep:10000, title:'Warchief',    label:'+15% loot from humanoids',      perk:{humanoidLoot:15}},
+      {rep:50000, title:'Bloodlord',   label:'+15% loot, Bloodforge weapons', perk:{humanoidLoot:15}},
+    ]},
+    veiled_circle:{id:'veiled_circle',name:'The Veiled Circle',desc:'A cabal of wizards.',tiers:[
+      {rep:0,     title:'Apprentice',  label:'None',                          perk:{}},
+      {rep:500,   title:'Acolyte',     label:'+5% magic XP',                  perk:{magicXpBonus:5}},
+      {rep:2000,  title:'Adept',       label:'+10% magic XP',                 perk:{magicXpBonus:10}},
+      {rep:10000, title:'Archmage',    label:'+15% magic XP',                 perk:{magicXpBonus:15}},
+      {rep:50000, title:'Voidseer',    label:'+15% magic XP, Void magic',     perk:{magicXpBonus:15}},
+    ]},
   },
 
   npcs: [

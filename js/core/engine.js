@@ -717,6 +717,11 @@ class GameEngine {
       if (align.bonus.gatherXp && skill?.type === 'gathering') amount = Math.floor(amount * (1 + align.bonus.gatherXp/100));
       if (align.bonus.diplomacyXp && skillId === 'diplomacy') amount = Math.floor(amount * (1 + align.bonus.diplomacyXp/100));
     }
+    // Faction tier: Veiled Circle grants bonus magic XP
+    if (skillId === 'magic') {
+      const _vcTier = this.getFactionTier('veiled_circle');
+      if (_vcTier?.perk?.magicXpBonus) amount = Math.floor(amount * (1 + _vcTier.perk.magicXpBonus/100));
+    }
     // ── ADMIN XP MULTIPLIER (NEW) ──────────────────────────────────
     if (typeof realAdminPanel !== 'undefined' && realAdminPanel.multipliers?.xp) {
       amount = Math.floor(amount * realAdminPanel.multipliers.xp);
@@ -1092,6 +1097,11 @@ class GameEngine {
     // Pet stat bonuses (accuracyMult, damageMult)
     const petAccMult = this.getPetBonus('accuracyMult');
     if (petAccMult > 1) accuracy = Math.floor(accuracy * petAccMult);
+    // Faction tier: Silver Order grants melee accuracy bonus
+    if (style === 'melee') {
+      const _soTier = this.getFactionTier('silver_order');
+      if (_soTier?.perk?.meleeAccuracy) accuracy = Math.floor(accuracy * (1 + _soTier.perk.meleeAccuracy/100));
+    }
     const petDmgMult = this.getPetBonus('damageMult');
     if (petDmgMult > 1) maxHit = Math.floor(maxHit * petDmgMult);
     const petCombatDmg = this.getPetBonus('combatDmg');
@@ -1623,6 +1633,9 @@ class GameEngine {
 
     const lootBonus = GAME_DATA.alignments[this.state.alignment]?.bonus?.lootQty || 0;
     const petLootBonus = this.getPetBonus('lootQty');
+    // Faction tier: Bloodfang grants bonus loot quantity from humanoid monsters
+    const _bfTier = this.getFactionTier('bloodfang_clan');
+    const _bfLootBonus = (monster.type === 'humanoid' || monster.tags?.includes('humanoid')) ? (_bfTier?.perk?.humanoidLoot || 0) : 0;
     const drops = monster.drops || monster.rewards || [];
     const _lootBag = []; // Track drops for loot bag display
     for (const drop of drops) {
@@ -1640,7 +1653,7 @@ class GameEngine {
         let qty = drop.qty;
         // Quantity scaling for stackable resources
         if (qty > 1 && GAME_DATA.items[drop.item]?.type === 'resource') {
-          qty = Math.floor(qty * (1 + lootBonus/100));
+          qty = Math.floor(qty * (1 + (lootBonus + _bfLootBonus)/100));
         }
         this.addItem(drop.item, qty);
         const _dItem = GAME_DATA.items[drop.item];
@@ -3240,6 +3253,9 @@ class GameEngine {
     gold = Math.floor(gold * (1 + tLvl * 0.005));
     const al = GAME_DATA.alignments[this.state.alignment];
     if (al?.bonus?.sellBonus) gold = Math.floor(gold * (1 + al.bonus.sellBonus/100));
+    // Faction tier: Ashen Guild sell bonus
+    const _agSellTier = this.getFactionTier('ashen_guild');
+    if (_agSellTier?.perk?.sellBonus) gold = Math.floor(gold * (1 + _agSellTier.perk.sellBonus/100));
     this.removeItem(id, qty);
     this.state.gold += gold;
     this.state.stats.goldEarned += gold;
@@ -3257,6 +3273,9 @@ class GameEngine {
     if (al?.bonus?.shopDiscount) price = Math.floor(price * (1 - al.bonus.shopDiscount/100));
     const tLvl = this.state.skills.trading?.level || 1;
     price = Math.max(1, Math.floor(price * (1 - tLvl * 0.003)));
+    // Faction tier: Ashen Guild shop discount
+    const _agBuyTier = this.getFactionTier('ashen_guild');
+    if (_agBuyTier?.perk?.shopDiscount) price = Math.max(1, Math.floor(price * (1 - _agBuyTier.perk.shopDiscount/100)));
     const total = price * qty;
     if (this.state.gold < total) { this.emit('notification', { type:'warn', text:'Not enough gold.' }); return; }
     this.state.gold = Math.max(0, this.state.gold - total);
@@ -3586,7 +3605,7 @@ class GameEngine {
     { let _qp=0; for(const _id of this.state.quests.completed){const _cq=GAME_DATA.quests.find(x=>x.id===_id);if(_cq&&_cq.qp)_qp+=_cq.qp;} this.state.questPoints=_qp; }
     if (q.rewards.rep)   for (const [fac,amt] of Object.entries(q.rewards.rep)) {
       if (!this.state.reputation) this.state.reputation = {};
-      this.state.reputation[fac] = (this.state.reputation[fac]||0) + amt;
+      this.addReputation(fac, amt); // routes through diplomacy bonus + earns diplomacy XP
     }
     this.state.stats.questsCompleted++;
     this.emit('questComplete', { quest:q });

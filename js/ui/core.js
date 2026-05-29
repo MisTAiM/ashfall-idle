@@ -3979,7 +3979,7 @@ class UI {
         <p class="area-desc">${fac.desc}</p>
         <div class="rep-bar"><div class="rep-fill" style="width:${pct}%"></div></div>
         <div class="ac-footer"><span>Rep: ${this.fmt(rep)}</span>${next?`<span>Next: ${this.fmt(next.rep)}</span>`:'<span>MAX</span>'}</div>
-        <div class="faction-perk">Current Perk: ${tier.perk}</div>
+        <div class="faction-perk">Active: ${tier.label || 'None'}</div>${next ? `<div class="faction-next-perk">Next: ${next.label}</div>` : ''}
       </div>`;
     }
     html += '</div>';
