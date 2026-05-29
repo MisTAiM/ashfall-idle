@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 160" fill="none">
+  <defs>
+    <linearGradient id="ashGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0c060"/>
+      <stop offset="40%" stop-color="#c9873e"/>
+      <stop offset="100%" stop-color="#7a4a00"/>
+    </linearGradient>
+    <linearGradient id="ashGold2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e0a040"/>
+      <stop offset="100%" stop-color="#c9873e"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Decorative center ember above text -->
+  <g transform="translate(240, 22)">
+    <!-- Outer ring -->
+    <circle cx="0" cy="0" r="14" stroke="url(#ashGold)" stroke-width="0.8" fill="none" opacity="0.5"/>
+    <!-- Inner diamond -->
+    <polygon points="0,-8 5,0 0,8 -5,0" fill="url(#ashGold)" opacity="0.9" filter="url(#softglow)"/>
+    <!-- Tiny center dot -->
+    <circle cx="0" cy="0" r="2" fill="#f0d080"/>
+    <!-- Corner ticks on ring -->
+    <line x1="0" y1="-14" x2="0" y2="-18" stroke="#c9873e" stroke-width="1" opacity="0.6"/>
+    <line x1="0" y1="14"  x2="0" y2="18"  stroke="#c9873e" stroke-width="1" opacity="0.6"/>
+    <line x1="-14" y1="0" x2="-18" y2="0" stroke="#c9873e" stroke-width="1" opacity="0.6"/>
+    <line x1="14"  y1="0" x2="18"  y2="0" stroke="#c9873e" stroke-width="1" opacity="0.6"/>
+  </g>
+
+  <!-- Horizontal rule lines flanking ember -->
+  <line x1="20" y1="22" x2="212" y2="22" stroke="url(#ashGold)" stroke-width="0.6" opacity="0.35"/>
+  <line x1="268" y1="22" x2="460" y2="22" stroke="url(#ashGold)" stroke-width="0.6" opacity="0.35"/>
+
+  <!-- ASHFALL wordmark -->
+  <text x="240" y="90"
+    font-family="Cinzel, Georgia, serif"
+    font-size="64"
+    font-weight="700"
+    text-anchor="middle"
+    letter-spacing="12"
+    fill="url(#ashGold)"
+    filter="url(#softglow)">ASHFALL</text>
+
+  <!-- IDLE subtitle -->
+  <text x="240" y="118"
+    font-family="Cinzel, Georgia, serif"
+    font-size="16"
+    font-weight="400"
+    text-anchor="middle"
+    letter-spacing="18"
+    fill="#7a5a30"
+    opacity="0.9">IDLE</text>
+
+  <!-- Bottom rule with diamonds -->
+  <line x1="40" y1="136" x2="195" y2="136" stroke="url(#ashGold)" stroke-width="0.6" opacity="0.25"/>
+  <polygon points="240,130 247,136 240,142 233,136" fill="none" stroke="#c9873e" stroke-width="0.8" opacity="0.5"/>
+  <line x1="285" y1="136" x2="440" y2="136" stroke="url(#ashGold)" stroke-width="0.6" opacity="0.25"/>
+
+  <!-- Tagline -->
+  <text x="240" y="155"
+    font-family="Cinzel, Georgia, serif"
+    font-size="9"
+    font-weight="400"
+    text-anchor="middle"
+    letter-spacing="4"
+    fill="#5a3a1a"
+    opacity="0.8">DARK FANTASY IDLE RPG</text>
+</svg>

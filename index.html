@@ -15,7 +15,8 @@
   <meta name="twitter:description" content="Train 28+ skills, slay 100+ monsters, forge legendary gear. Free to play dark fantasy idle RPG.">
   <meta name="twitter:image" content="logo.png">
   <link rel="icon" type="image/x-icon" href="logo.ico">
-  <link rel="icon" id="dynamic-favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="icon" type="image/x-icon" href="logo.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
@@ -23,245 +24,431 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
   <style>
-    /* ═══════════════════════════════════════════════════════════
-       ASHFALL IDLE — LANDING PAGE
-       Dark, cinematic, built like a real game's title screen.
-    ══════════════════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ═══════════════════════════════════════════════════════════
+       ASHFALL IDLE — LANDING PAGE  v2.0
+       Cinematic. Oppressive. Beautiful. Built like a title screen.
+    ═══════════════════════════════════════════════════════════ */
+
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --amber: #c9873e;
+      --amber-bright: #f0c060;
+      --amber-dim: #7a4a00;
+      --blood: #8a1a1a;
+      --bg-deep: #030205;
+      --bg-mid: #07050a;
+    }
+
+    body { background: var(--bg-deep); overflow-x: hidden; }
 
     .af-landing {
       position: fixed; inset: 0; z-index: 9999;
-      background: #050408;
+      background: var(--bg-deep);
       display: flex; align-items: center; justify-content: center;
       overflow: hidden;
-      transition: opacity 0.8s ease;
+      transition: opacity 1s ease;
     }
 
-    /* ── BACKGROUND LAYERS ── */
-    .af-bg {
+    /* ═══════════════════════════════
+       BACKGROUND — layered atmosphere
+    ═══════════════════════════════ */
+
+    /* Deep void sky */
+    .af-sky {
       position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 100%, rgba(180,60,10,0.18) 0%, transparent 65%),
-                  radial-gradient(ellipse at 30% 40%, rgba(100,30,10,0.10) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 20%, rgba(10,5,30,0.40) 0%, transparent 60%),
-                  linear-gradient(180deg, #050408 0%, #0c0608 40%, #100806 70%, #060304 100%);
+      background:
+        radial-gradient(ellipse 120% 60% at 50% -10%, rgba(30,10,5,0.95) 0%, transparent 70%),
+        radial-gradient(ellipse 80% 40% at 20% 100%, rgba(120,40,10,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 80% 40% at 80% 100%, rgba(100,30,8,0.10) 0%, transparent 60%),
+        linear-gradient(180deg, #030106 0%, #080309 25%, #0e060a 50%, #120808 75%, #0a0404 100%);
     }
-    .af-horizon {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 35%;
-      background: linear-gradient(180deg, transparent 0%, rgba(160,50,10,0.06) 40%, rgba(200,80,15,0.12) 100%);
+
+    /* Distant volcanic mountain silhouette */
+    .af-mountains {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 50%;
     }
+    .af-mountains svg {
+      width: 100%; height: 100%;
+      position: absolute; bottom: 0;
+    }
+
+    /* Lava horizon glow — pulsing */
+    .af-lava-glow {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 280px;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(180,50,10,0.04) 30%,
+        rgba(220,80,15,0.10) 60%,
+        rgba(255,100,20,0.18) 85%,
+        rgba(255,120,30,0.25) 100%
+      );
+      animation: lavaBreath 6s ease-in-out infinite;
+    }
+    @keyframes lavaBreath {
+      0%,100% { opacity: 0.7; transform: scaleY(1); }
+      50%      { opacity: 1.0; transform: scaleY(1.08); }
+    }
+
+    /* Ash cloud layers */
+    .af-ash-clouds {
+      position: absolute; inset: 0; overflow: hidden;
+    }
+    .af-cloud {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(80,60,50,0.06);
+      filter: blur(40px);
+      animation: cloudDrift linear infinite;
+    }
+    @keyframes cloudDrift {
+      0%   { transform: translateX(-120%) translateY(0); }
+      100% { transform: translateX(120vw) translateY(var(--cy,0px)); }
+    }
+
+    /* Scanline / grain texture overlay */
+    .af-grain {
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Vignette — heavy edges */
     .af-vignette {
       position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(2,1,4,0.7) 100%);
+      background: radial-gradient(ellipse 80% 80% at 50% 50%,
+        transparent 30%,
+        rgba(2,1,4,0.5) 70%,
+        rgba(1,0,2,0.85) 100%
+      );
     }
 
-    /* ── ASH PARTICLES ── */
+    /* ═══════════════════════════════
+       PARTICLES
+    ═══════════════════════════════ */
     .af-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+    /* Ash flakes — slow upward drift */
     .af-ash {
       position: absolute;
-      background: rgba(200,190,180,0.25);
+      background: rgba(220,210,200,0.20);
       border-radius: 50%;
       animation: ashDrift linear infinite;
     }
     @keyframes ashDrift {
       0%   { transform: translateY(110vh) translateX(0) rotate(0deg); opacity: 0; }
       5%   { opacity: 1; }
-      95%  { opacity: 0.4; }
-      100% { transform: translateY(-10vh) translateX(var(--drift)) rotate(360deg); opacity: 0; }
-    }
-    /* Ember sparks */
-    .af-ember {
-      position: absolute;
-      width: 2px; height: 2px;
-      background: #d67338;
-      border-radius: 50%;
-      box-shadow: 0 0 6px rgba(214,115,56,0.8);
-      animation: emberFloat linear infinite;
-    }
-    @keyframes emberFloat {
-      0%   { transform: translateY(0) translateX(0); opacity: 0; }
-      10%  { opacity: 1; }
-      85%  { opacity: 0.6; }
-      100% { transform: translateY(calc(-60vh - 100px)) translateX(var(--edrift)); opacity: 0; }
+      95%  { opacity: 0.3; }
+      100% { transform: translateY(-10vh) translateX(var(--drift)) rotate(var(--rot,360deg)); opacity: 0; }
     }
 
-    /* ── MAIN CONTENT ── */
+    /* Ember sparks — fast, orange */
+    .af-ember {
+      position: absolute;
+      border-radius: 50%;
+      animation: emberRise linear infinite;
+    }
+    @keyframes emberRise {
+      0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+      8%   { opacity: 1; }
+      80%  { opacity: 0.8; }
+      100% { transform: translateY(-70vh) translateX(var(--edrift)) scale(0.3); opacity: 0; }
+    }
+
+    /* Cinder — large slow glowing pieces */
+    .af-cinder {
+      position: absolute;
+      border-radius: 2px;
+      background: rgba(220,100,30,0.7);
+      box-shadow: 0 0 8px rgba(255,120,40,0.6), 0 0 20px rgba(200,60,10,0.3);
+      animation: cinderFloat linear infinite;
+    }
+    @keyframes cinderFloat {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.8; }
+      90%  { opacity: 0.4; }
+      100% { transform: translateY(-60vh) rotate(var(--crot,180deg)); opacity: 0; }
+    }
+
+    /* ═══════════════════════════════
+       CONTENT
+    ═══════════════════════════════ */
     .af-content {
       position: relative; z-index: 10;
       display: flex; flex-direction: column; align-items: center;
-      text-align: center; max-width: 680px; padding: 40px 24px;
-      animation: contentRise 1.4s cubic-bezier(0.16,1,0.3,1) both;
-    }
-    @keyframes contentRise {
-      from { opacity: 0; transform: translateY(30px); }
-      to   { opacity: 1; transform: translateY(0); }
+      text-align: center;
+      max-width: 720px; width: 100%;
+      padding: 32px 24px 48px;
     }
 
     /* ── LOGO ── */
     .af-logo-wrap {
-      margin-bottom: 6px;
-      filter: drop-shadow(0 0 40px rgba(201,135,62,0.4)) drop-shadow(0 0 80px rgba(201,135,62,0.15));
-      animation: logoPulse 4s ease-in-out infinite;
+      margin-bottom: 4px;
+      position: relative;
+      animation: logoReveal 2s cubic-bezier(0.16,1,0.3,1) both;
+      animation-delay: 0.3s;
+    }
+    @keyframes logoReveal {
+      from { opacity: 0; transform: translateY(-20px) scale(0.96); filter: blur(4px); }
+      to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    .af-logo-svg {
+      width: 420px; max-width: 88vw; height: auto;
+      display: block;
+      filter:
+        drop-shadow(0 0 30px rgba(201,135,62,0.5))
+        drop-shadow(0 0 80px rgba(201,135,62,0.2))
+        drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+      animation: logoPulse 5s ease-in-out infinite;
+      animation-delay: 2.3s;
     }
     @keyframes logoPulse {
-      0%,100% { filter: drop-shadow(0 0 30px rgba(201,135,62,0.35)) drop-shadow(0 0 60px rgba(201,135,62,0.1)); }
-      50%     { filter: drop-shadow(0 0 50px rgba(201,135,62,0.55)) drop-shadow(0 0 100px rgba(201,135,62,0.2)); }
-    }
-    .af-logo { width: 380px; max-width: 90vw; height: auto; }
-
-    /* ── WORDMARK (if no logo image) ── */
-    .af-wordmark {
-      font-family: 'Cinzel', 'Georgia', serif;
-      font-size: clamp(36px, 8vw, 72px);
-      font-weight: 700;
-      letter-spacing: 8px;
-      color: #c9873e;
-      text-transform: uppercase;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .af-wordmark span { color: #d4a83a; }
-
-    /* ── TAGLINE ── */
-    .af-tagline {
-      font-family: 'Crimson Text', 'Georgia', serif;
-      font-size: clamp(13px, 2.5vw, 17px);
-      color: #7a6050;
-      letter-spacing: 3px;
-      font-style: italic;
-      margin-bottom: 28px;
-      text-transform: uppercase;
+      0%,100% { filter: drop-shadow(0 0 25px rgba(201,135,62,0.4)) drop-shadow(0 0 60px rgba(201,135,62,0.15)) drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+      50%     { filter: drop-shadow(0 0 45px rgba(201,135,62,0.65)) drop-shadow(0 0 100px rgba(201,135,62,0.25)) drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
     }
 
-    /* ── LORE LINE ── */
+    /* ── SCROLL indicator / version ── */
+    .af-ver {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 3px; color: #3a2a15;
+      text-transform: uppercase; margin-bottom: 32px;
+      animation: fadeUp 1.8s ease both; animation-delay: 0.9s;
+    }
+
+    /* ── LORE ── */
     .af-lore {
       font-family: 'Crimson Text', 'Georgia', serif;
-      font-size: clamp(14px, 2.2vw, 16px);
-      color: #5a4a3a;
-      line-height: 1.7;
-      max-width: 520px;
-      margin-bottom: 36px;
+      font-size: clamp(15px, 2.5vw, 18px);
+      color: #6a5040;
+      line-height: 1.8;
+      max-width: 560px;
+      margin-bottom: 42px;
       font-style: italic;
+      animation: fadeUp 1.8s ease both; animation-delay: 1.1s;
     }
-    .af-lore strong { color: #8a6a4a; font-style: normal; }
+    .af-lore strong { color: #9a7050; font-style: normal; font-weight: 600; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
     /* ── ENTER BUTTON ── */
-    .af-enter {
-      position: relative; display: flex; flex-direction: column; align-items: center;
-      padding: 18px 56px 16px;
-      background: transparent;
-      border: 1px solid rgba(201,135,62,0.45);
-      cursor: pointer; outline: none;
-      transition: all 0.3s ease;
-      overflow: hidden;
-      margin-bottom: 40px;
+    .af-enter-wrap {
+      margin-bottom: 48px;
+      animation: fadeUp 1.8s ease both; animation-delay: 1.3s;
+      position: relative;
     }
+
+    /* Glow ring behind button */
+    .af-enter-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -20px;
+      background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(201,135,62,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      animation: ringPulse 4s ease-in-out infinite;
+      animation-delay: 2s;
+    }
+    @keyframes ringPulse {
+      0%,100% { opacity: 0.6; transform: scale(1); }
+      50%      { opacity: 1; transform: scale(1.1); }
+    }
+
+    .af-enter {
+      position: relative;
+      display: inline-flex; flex-direction: column; align-items: center;
+      padding: 22px 72px 20px;
+      background: linear-gradient(180deg, rgba(201,135,62,0.10) 0%, rgba(201,135,62,0.04) 100%);
+      border: 1px solid rgba(201,135,62,0.40);
+      cursor: pointer; outline: none;
+      transition: all 0.35s ease;
+      overflow: hidden;
+      clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+    }
+    /* Shimmer sweep on hover */
     .af-enter::before {
       content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(201,135,62,0.12) 0%, rgba(201,135,62,0.04) 100%);
-      opacity: 0; transition: opacity 0.3s;
+      position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,200,100,0.08), transparent);
+      transition: left 0.5s ease;
     }
+    /* Bottom accent line */
     .af-enter::after {
       content: '';
       position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(201,135,62,0.6), transparent);
-      transform: scaleX(0); transition: transform 0.4s ease;
+      background: linear-gradient(90deg, transparent 0%, rgba(201,135,62,0.8) 50%, transparent 100%);
+      transform: scaleX(0.4); transition: transform 0.4s ease;
     }
-    .af-enter:hover { border-color: rgba(212,168,58,0.7); transform: translateY(-2px); }
-    .af-enter:hover::before { opacity: 1; }
+    .af-enter:hover { border-color: rgba(240,192,96,0.65); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 30px rgba(201,135,62,0.1); }
+    .af-enter:hover::before { left: 160%; }
     .af-enter:hover::after  { transform: scaleX(1); }
-    .af-enter:hover .af-enter-icon { animation: swordPulse 0.4s ease; }
-    @keyframes swordPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
-    .af-enter-icon {
-      font-size: 22px; margin-bottom: 6px;
-      filter: drop-shadow(0 0 8px rgba(201,135,62,0.6));
+    .af-enter:active { transform: translateY(-1px); }
+
+    .af-enter-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 3px;
+      color: rgba(201,135,62,0.5); text-transform: uppercase;
+      margin-bottom: 4px;
     }
     .af-enter-text {
       font-family: 'Cinzel', 'Georgia', serif;
-      font-size: clamp(14px, 3vw, 18px);
-      font-weight: 600; letter-spacing: 4px;
+      font-size: clamp(15px, 3vw, 20px);
+      font-weight: 700; letter-spacing: 5px;
       color: #c9873e; text-transform: uppercase;
       position: relative; z-index: 1;
     }
     .af-enter-sub {
       font-family: 'Crimson Text', 'Georgia', serif;
-      font-size: 11px; letter-spacing: 1px;
-      color: #4a3a2a; margin-top: 3px;
+      font-size: 11px; letter-spacing: 1.5px;
+      color: #4a3520; margin-top: 5px;
       position: relative; z-index: 1;
     }
 
     /* ── STATS ROW ── */
     .af-stats {
-      display: flex; gap: 0; margin-bottom: 36px;
-      border: 1px solid rgba(201,135,62,0.12);
-      overflow: hidden;
+      display: flex; gap: 0; margin-bottom: 32px;
+      border: 1px solid rgba(201,135,62,0.10);
+      background: rgba(0,0,0,0.3);
+      animation: fadeUp 1.8s ease both; animation-delay: 1.5s;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
     }
     .af-stat {
-      padding: 14px 22px;
-      border-right: 1px solid rgba(201,135,62,0.12);
-      min-width: 90px;
+      padding: 16px 24px;
+      border-right: 1px solid rgba(201,135,62,0.10);
+      min-width: 90px; position: relative;
+      transition: background 0.3s;
     }
     .af-stat:last-child { border-right: none; }
+    .af-stat:hover { background: rgba(201,135,62,0.05); }
+    .af-stat::before {
+      content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 0; height: 1px; background: rgba(201,135,62,0.6);
+      transition: width 0.3s ease;
+    }
+    .af-stat:hover::before { width: 60%; }
     .af-stat-n {
-      font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700;
+      font-family: 'Cinzel', serif; font-size: 26px; font-weight: 700;
       color: #c9873e; line-height: 1; display: block;
+      text-shadow: 0 0 20px rgba(201,135,62,0.4);
     }
     .af-stat-l {
-      font-size: 9px; letter-spacing: 1.5px; color: #4a3a2a;
-      text-transform: uppercase; display: block; margin-top: 3px;
+      font-size: 9px; letter-spacing: 1.5px; color: #3a2a18;
+      text-transform: uppercase; display: block; margin-top: 4px;
     }
 
     /* ── FEATURE PILLS ── */
     .af-pills {
-      display: flex; flex-wrap: wrap; gap: 6px;
-      justify-content: center; margin-bottom: 28px;
+      display: flex; flex-wrap: wrap; gap: 5px;
+      justify-content: center; margin-bottom: 32px; max-width: 600px;
+      animation: fadeUp 1.8s ease both; animation-delay: 1.7s;
     }
     .af-pill {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px; letter-spacing: 1px;
-      color: #5a4a3a; border: 1px solid rgba(201,135,62,0.15);
-      padding: 4px 12px; text-transform: uppercase;
+      font-size: 9px; letter-spacing: 1px;
+      color: #4a3525; border: 1px solid rgba(201,135,62,0.12);
+      padding: 5px 12px; text-transform: uppercase;
+      transition: all 0.2s; cursor: default;
+      background: rgba(201,135,62,0.03);
+    }
+    .af-pill:hover { color: #8a6040; border-color: rgba(201,135,62,0.3); background: rgba(201,135,62,0.07); }
+
+    /* ── DIVIDER ── */
+    .af-divider {
+      width: 100%; display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+      animation: fadeUp 1.8s ease both; animation-delay: 1.9s;
+    }
+    .af-divider-line { flex: 1; height: 1px; background: rgba(201,135,62,0.08); }
+    .af-divider-diamond {
+      width: 6px; height: 6px;
+      background: rgba(201,135,62,0.3);
+      transform: rotate(45deg);
+      flex-shrink: 0;
     }
 
-    /* ── BOTTOM STRIP ── */
+    /* ── BOTTOM ── */
     .af-bottom {
-      display: flex; gap: 24px; align-items: center;
-      border-top: 1px solid rgba(255,255,255,0.04);
-      padding-top: 20px;
+      display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap;
+      animation: fadeUp 1.8s ease both; animation-delay: 2.1s;
     }
     .af-badge {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 9px; letter-spacing: 1px;
-      color: #3a2a1a; text-transform: uppercase;
-      display: flex; align-items: center; gap: 5px;
+      font-size: 9px; letter-spacing: 2px;
+      color: #3a2a18; text-transform: uppercase;
+      display: flex; align-items: center; gap: 6px;
     }
-    .af-badge::before { content: '—'; color: #c9873e; margin-right: 2px; font-size: 10px; }
+    .af-badge-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: rgba(201,135,62,0.4);
+      animation: badgePulse 3s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+      0%,100% { opacity: 0.4; }
+      50%      { opacity: 1; }
+    }
     .af-version {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 9px; color: #2a1a0a; letter-spacing: 1px;
-      margin-left: auto;
+      font-size: 9px; color: #2a1a0a; letter-spacing: 2px;
     }
 
-    /* ── SIDE RUNES (decorative) ── */
-    .af-rune-left, .af-rune-right {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      width: 60px; opacity: 0.06;
-      animation: runeFloat 8s ease-in-out infinite;
+    /* ── SCROLL HINT ── */
+    .af-scroll-hint {
+      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      animation: hintFade 2s ease both; animation-delay: 3s;
+      opacity: 0;
     }
-    .af-rune-left  { left: 40px; }
-    .af-rune-right { right: 40px; animation-delay: -4s; }
-    @keyframes runeFloat {
-      0%,100% { opacity: 0.06; transform: translateY(-50%) translateY(0); }
-      50%     { opacity: 0.10; transform: translateY(-50%) translateY(-12px); }
+    @keyframes hintFade {
+      0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      100% { opacity: 0.35; transform: translateX(-50%) translateY(0); }
+    }
+    .af-scroll-line {
+      width: 1px; height: 36px;
+      background: linear-gradient(180deg, rgba(201,135,62,0.8) 0%, transparent 100%);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+    @keyframes scrollPulse {
+      0%,100% { transform: scaleY(1) translateY(0); opacity: 0.5; }
+      50%      { transform: scaleY(0.6) translateY(8px); opacity: 1; }
+    }
+    .af-scroll-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px; letter-spacing: 3px; color: rgba(201,135,62,0.5);
+      text-transform: uppercase;
     }
 
-    /* ── RESPONSIVE ── */
+    /* ── CORNER RUNES (decorative) ── */
+    .af-corner {
+      position: absolute; opacity: 0.08;
+      animation: cornerFade 10s ease-in-out infinite;
+    }
+    .af-corner-tl { top: 24px; left: 24px; }
+    .af-corner-tr { top: 24px; right: 24px; transform: scaleX(-1); }
+    .af-corner-bl { bottom: 24px; left: 24px; transform: scaleY(-1); }
+    .af-corner-br { bottom: 24px; right: 24px; transform: scale(-1); }
+    @keyframes cornerFade {
+      0%,100% { opacity: 0.06; }
+      50%      { opacity: 0.12; }
+    }
+
+    /* Responsive */
     @media (max-width: 600px) {
-      .af-stat { padding: 10px 14px; min-width: 70px; }
-      .af-stat-n { font-size: 18px; }
-      .af-rune-left, .af-rune-right { display: none; }
-      .af-bottom { flex-wrap: wrap; gap: 12px; }
+      .af-stat { padding: 12px 16px; min-width: 70px; }
+      .af-stat-n { font-size: 20px; }
+      .af-enter { padding: 18px 48px 16px; clip-path: none; }
+      .af-corner { display: none; }
+      .af-lore { font-size: 14px; }
+      .af-scroll-hint { display: none; }
     }
+
+    /* ── LOGO in game sidebar ── */
+    .af-logo-wrap, .af-logo { width: 380px; max-width: 90vw; height: auto; }
   </style>
 </head>
 <body>
@@ -270,91 +457,160 @@
        ASHFALL IDLE — LANDING SCREEN
   ═══════════════════════════════════════════════════════════ -->
   <div id="af-landing" class="af-landing">
-    <div class="af-bg"></div>
-    <div class="af-horizon"></div>
-    <div class="af-vignette"></div>
+
+    <!-- Background layers -->
+    <div class="af-sky"></div>
+
+    <!-- Mountain silhouette -->
+    <div class="af-mountains">
+      <svg viewBox="0 0 1400 400" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="mountGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a0a06" stop-opacity="0.95"/>
+            <stop offset="100%" stop-color="#0a0305" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="lavaCrack" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ff6020" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#c03000" stop-opacity="0.1"/>
+          </linearGradient>
+        </defs>
+        <!-- Far mountains -->
+        <polygon points="0,400 0,280 120,200 200,240 280,160 360,200 420,140 500,180 560,120 640,160 700,100 760,150 840,80 920,140 980,90 1060,150 1120,110 1200,160 1260,130 1320,170 1400,140 1400,400" fill="url(#mountGrad)" opacity="0.6"/>
+        <!-- Mid mountains -->
+        <polygon points="0,400 0,340 80,290 180,260 240,300 320,240 400,280 480,220 560,270 640,200 720,250 800,180 880,230 960,170 1040,220 1120,190 1200,240 1280,200 1360,250 1400,220 1400,400" fill="url(#mountGrad)" opacity="0.8"/>
+        <!-- Foreground rubble -->
+        <polygon points="0,400 0,370 100,350 200,360 300,345 420,355 500,340 620,352 700,338 800,350 920,340 1020,355 1140,342 1240,358 1340,348 1400,355 1400,400" fill="#0a0304"/>
+        <!-- Lava cracks in foreground -->
+        <line x1="350" y1="400" x2="330" y2="350" stroke="url(#lavaCrack)" stroke-width="2" opacity="0.4"/>
+        <line x1="750" y1="400" x2="770" y2="345" stroke="url(#lavaCrack)" stroke-width="1.5" opacity="0.3"/>
+        <line x1="1100" y1="400" x2="1085" y2="352" stroke="url(#lavaCrack)" stroke-width="2" opacity="0.35"/>
+        <!-- Volcanic ash plume from tallest peak -->
+        <ellipse cx="840" cy="72" rx="60" ry="30" fill="rgba(40,25,20,0.35)" filter="url(#ashBlur)"/>
+        <defs><filter id="ashBlur"><feGaussianBlur stdDeviation="15"/></filter></defs>
+      </svg>
+    </div>
+
+    <!-- Lava horizon glow -->
+    <div class="af-lava-glow"></div>
+
+    <!-- Ash cloud layers -->
+    <div class="af-ash-clouds">
+      <div class="af-cloud" style="width:600px;height:200px;left:-10%;top:10%;animation-duration:90s;animation-delay:-20s;--cy:-20px"></div>
+      <div class="af-cloud" style="width:400px;height:150px;left:-5%;top:35%;animation-duration:70s;animation-delay:-40s;--cy:30px;opacity:0.7"></div>
+      <div class="af-cloud" style="width:500px;height:180px;left:-8%;top:55%;animation-duration:110s;animation-delay:0s;--cy:-10px;opacity:0.5"></div>
+    </div>
+
+    <!-- Film grain -->
+    <div class="af-grain"></div>
+
+    <!-- Particles -->
     <div class="af-particles" id="af-particles"></div>
 
-    <!-- Decorative rune columns -->
-    <svg class="af-rune-left" viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <line x1="30" y1="0" x2="30" y2="400" stroke="#c9873e" stroke-width="1"/>
-      <circle cx="30" cy="50" r="8" stroke="#c9873e" stroke-width="1"/>
-      <rect x="22" y="100" width="16" height="16" stroke="#c9873e" stroke-width="1"/>
-      <circle cx="30" cy="180" r="5" stroke="#c9873e" stroke-width="1"/>
-      <polygon points="30,240 22,260 38,260" stroke="#c9873e" stroke-width="1" fill="none"/>
-      <circle cx="30" cy="320" r="10" stroke="#c9873e" stroke-width="1"/>
-      <rect x="24" y="350" width="12" height="12" stroke="#c9873e" stroke-width="1" transform="rotate(45 30 356)"/>
+    <!-- Corner decorations -->
+    <svg class="af-corner af-corner-tl" width="80" height="80" viewBox="0 0 80 80" fill="none">
+      <line x1="0" y1="0" x2="60" y2="0" stroke="#c9873e" stroke-width="1"/>
+      <line x1="0" y1="0" x2="0" y2="60" stroke="#c9873e" stroke-width="1"/>
+      <rect x="10" y="10" width="8" height="8" stroke="#c9873e" stroke-width="0.8" transform="rotate(45 14 14)"/>
+      <circle cx="30" cy="8" r="3" stroke="#c9873e" stroke-width="0.8"/>
+      <circle cx="8" cy="30" r="3" stroke="#c9873e" stroke-width="0.8"/>
     </svg>
-    <svg class="af-rune-right" viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <line x1="30" y1="0" x2="30" y2="400" stroke="#c9873e" stroke-width="1"/>
-      <rect x="22" y="40" width="16" height="16" stroke="#c9873e" stroke-width="1" transform="rotate(45 30 48)"/>
-      <circle cx="30" cy="120" r="8" stroke="#c9873e" stroke-width="1"/>
-      <polygon points="30,180 22,200 38,200" stroke="#c9873e" stroke-width="1" fill="none"/>
-      <circle cx="30" cy="260" r="5" stroke="#c9873e" stroke-width="1"/>
-      <rect x="22" y="310" width="16" height="16" stroke="#c9873e" stroke-width="1"/>
-      <circle cx="30" cy="370" r="10" stroke="#c9873e" stroke-width="1"/>
+    <svg class="af-corner af-corner-tr" width="80" height="80" viewBox="0 0 80 80" fill="none">
+      <line x1="0" y1="0" x2="60" y2="0" stroke="#c9873e" stroke-width="1"/>
+      <line x1="0" y1="0" x2="0" y2="60" stroke="#c9873e" stroke-width="1"/>
+      <rect x="10" y="10" width="8" height="8" stroke="#c9873e" stroke-width="0.8" transform="rotate(45 14 14)"/>
+      <circle cx="30" cy="8" r="3" stroke="#c9873e" stroke-width="0.8"/>
+      <circle cx="8" cy="30" r="3" stroke="#c9873e" stroke-width="0.8"/>
+    </svg>
+    <svg class="af-corner af-corner-bl" width="80" height="80" viewBox="0 0 80 80" fill="none">
+      <line x1="0" y1="0" x2="60" y2="0" stroke="#c9873e" stroke-width="1"/>
+      <line x1="0" y1="0" x2="0" y2="60" stroke="#c9873e" stroke-width="1"/>
+      <rect x="10" y="10" width="8" height="8" stroke="#c9873e" stroke-width="0.8" transform="rotate(45 14 14)"/>
+    </svg>
+    <svg class="af-corner af-corner-br" width="80" height="80" viewBox="0 0 80 80" fill="none">
+      <line x1="0" y1="0" x2="60" y2="0" stroke="#c9873e" stroke-width="1"/>
+      <line x1="0" y1="0" x2="0" y2="60" stroke="#c9873e" stroke-width="1"/>
+      <rect x="10" y="10" width="8" height="8" stroke="#c9873e" stroke-width="0.8" transform="rotate(45 14 14)"/>
     </svg>
 
+    <!-- Heavy vignette -->
+    <div class="af-vignette"></div>
+
+    <!-- MAIN CONTENT -->
     <div class="af-content">
-      <!-- Logo / Wordmark -->
+
+      <!-- SVG Logo — transparent, no background box -->
       <div class="af-logo-wrap">
-        <img src="logo.png?v=1" alt="Ashfall Idle" class="af-logo" id="landing-logo"
-             onerror="this.style.display='none';document.getElementById('af-wordmark').style.display='block'">
-        <div class="af-wordmark" id="af-wordmark" style="display:none">
-          ASH<span>FALL</span><br><span style="font-size:0.5em;letter-spacing:12px;color:#4a3a2a">IDLE</span>
-        </div>
+        <img src="assets/logo.svg" alt="Ashfall Idle" class="af-logo-svg" id="landing-logo">
       </div>
 
-      <p class="af-tagline">Dark Fantasy Idle RPG</p>
+      <div class="af-ver">Chronicle of the Ashen Age</div>
 
       <p class="af-lore">
-        The world is <strong>buried beneath endless volcanic ash</strong>. Ancient kingdoms crumble.
-        Monsters pour from the rifts. You are the last ember — train, forge, and fight your way
-        from the ruins to <strong>forge a legend that outlasts the Ashfall</strong>.
+        The world is <strong>buried beneath endless volcanic ash</strong>. Ancient kingdoms fell to ruin.
+        Monsters pour from the rifts between worlds. You are the last ember still burning —
+        train your skills, forge legendary weapons, and fight your way from the ruins
+        to <strong>become legend before the Ashfall consumes everything</strong>.
       </p>
 
-      <button class="af-enter" onclick="enterAshfall()">
-        <span class="af-enter-icon">⚔</span>
-        <span class="af-enter-text">Enter the Ashfall</span>
-        <span class="af-enter-sub">Free to play · No download · Cloud saves</span>
-      </button>
+      <div class="af-enter-wrap">
+        <button class="af-enter" onclick="enterAshfall()">
+          <span class="af-enter-eyebrow">Begin Your Journey</span>
+          <span class="af-enter-text">Enter the Ashfall</span>
+          <span class="af-enter-sub">Free to play &nbsp;·&nbsp; Cloud saves &nbsp;·&nbsp; No ads &nbsp;·&nbsp; No download</span>
+        </button>
+      </div>
 
       <div class="af-stats">
         <div class="af-stat"><span class="af-stat-n">28</span><span class="af-stat-l">Skills</span></div>
         <div class="af-stat"><span class="af-stat-n">800+</span><span class="af-stat-l">Items</span></div>
         <div class="af-stat"><span class="af-stat-n">100+</span><span class="af-stat-l">Monsters</span></div>
-        <div class="af-stat"><span class="af-stat-n">20+</span><span class="af-stat-l">Dungeons</span></div>
+        <div class="af-stat"><span class="af-stat-n">60+</span><span class="af-stat-l">Quests</span></div>
         <div class="af-stat"><span class="af-stat-n">25+</span><span class="af-stat-l">Pets</span></div>
       </div>
 
       <div class="af-pills">
         <span class="af-pill">6 Spellbooks</span>
         <span class="af-pill">Combat Pets</span>
-        <span class="af-pill">Multi-Mob Encounters</span>
         <span class="af-pill">Fight Cave</span>
         <span class="af-pill">Theatre of Ash</span>
-        <span class="af-pill">Barrows</span>
+        <span class="af-pill">World Bosses</span>
         <span class="af-pill">Guild System</span>
         <span class="af-pill">PvP Arena</span>
+        <span class="af-pill">Slayer System</span>
+        <span class="af-pill">Barrows</span>
         <span class="af-pill">Bazaar</span>
-        <span class="af-pill">World Bosses</span>
         <span class="af-pill">Special Attacks</span>
-        <span class="af-pill">Clue Scrolls</span>
         <span class="af-pill">Prestige System</span>
+        <span class="af-pill">Clue Scrolls</span>
         <span class="af-pill">Cloud Saves</span>
       </div>
 
+      <div class="af-divider">
+        <div class="af-divider-line"></div>
+        <div class="af-divider-diamond"></div>
+        <div class="af-divider-line"></div>
+      </div>
+
       <div class="af-bottom">
-        <span class="af-badge">Free to Play</span>
-        <span class="af-badge">Cross-Device</span>
-        <span class="af-badge">No Ads</span>
-        <span class="af-version">v9.5</span>
+        <span class="af-badge"><span class="af-badge-dot"></span>Free to Play</span>
+        <span class="af-badge"><span class="af-badge-dot" style="animation-delay:1s"></span>Cross-Device</span>
+        <span class="af-badge"><span class="af-badge-dot" style="animation-delay:2s"></span>No Ads</span>
+        <span class="af-badge"><span class="af-badge-dot" style="animation-delay:0.5s"></span>No Downloads</span>
+        <span class="af-version">v9.6</span>
       </div>
     </div>
+
+    <!-- Scroll hint -->
+    <div class="af-scroll-hint">
+      <div class="af-scroll-line"></div>
+      <span class="af-scroll-text">enter</span>
+    </div>
+
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
        GAME APP
+
   ═══════════════════════════════════════════════════════════ -->
   <div class="app" id="game-app" style="display:none">
     <nav id="sidebar"></nav>
@@ -367,40 +623,69 @@
   <div id="toast-container"></div>
 
   <script>
-    // ── PARTICLE SYSTEM ──
+    // ── PARTICLE SYSTEM ── Ash + Embers + Cinders
     (function buildParticles() {
       const c = document.getElementById('af-particles');
       if (!c) return;
-      // Ash particles (larger, slow)
-      for (let i = 0; i < 40; i++) {
+
+      // Ash flakes — slow, large, drifting
+      for (let i = 0; i < 55; i++) {
         const a = document.createElement('div');
         a.className = 'af-ash';
-        a.style.cssText = `
-          left:${Math.random()*110-5}%;
-          bottom:${Math.random()*-20}%;
-          width:${1+Math.random()*4}px;
-          height:${1+Math.random()*4}px;
-          animation-duration:${10+Math.random()*18}s;
-          animation-delay:${Math.random()*15}s;
-          --drift:${(Math.random()-0.5)*120}px;
-          opacity:${0.1+Math.random()*0.3};
-        `;
+        const size = 1 + Math.random() * 3.5;
+        a.style.cssText = [
+          `left:${Math.random()*110-5}%`,
+          `bottom:${Math.random()*-30}%`,
+          `width:${size}px`,
+          `height:${size}px`,
+          `animation-duration:${12+Math.random()*22}s`,
+          `animation-delay:${Math.random()*18}s`,
+          `--drift:${(Math.random()-0.5)*140}px`,
+          `--rot:${Math.random()*720}deg`,
+          `opacity:${0.08+Math.random()*0.22}`,
+          `background:rgba(${210+Math.random()*20},${195+Math.random()*15},${180+Math.random()*15},${0.15+Math.random()*0.2})`
+        ].join(';');
         c.appendChild(a);
       }
-      // Ember sparks (small, faster)
-      for (let i = 0; i < 18; i++) {
+
+      // Ember sparks — fast, orange/red, rising from bottom
+      const emberColors = ['#ff6020','#ff8040','#d04010','#ff4400','#e05020'];
+      for (let i = 0; i < 28; i++) {
         const e = document.createElement('div');
         e.className = 'af-ember';
-        e.style.cssText = `
-          left:${20+Math.random()*60}%;
-          bottom:${Math.random()*30}%;
-          animation-duration:${4+Math.random()*8}s;
-          animation-delay:${Math.random()*8}s;
-          --edrift:${(Math.random()-0.5)*80}px;
-          width:${1+Math.random()*2}px;
-          height:${1+Math.random()*2}px;
-        `;
+        const size = 1.5 + Math.random() * 2.5;
+        const color = emberColors[Math.floor(Math.random() * emberColors.length)];
+        a.style && 0;
+        e.style.cssText = [
+          `left:${15+Math.random()*70}%`,
+          `bottom:${Math.random()*20}%`,
+          `width:${size}px`,
+          `height:${size}px`,
+          `animation-duration:${3+Math.random()*7}s`,
+          `animation-delay:${Math.random()*10}s`,
+          `--edrift:${(Math.random()-0.5)*100}px`,
+          `background:${color}`,
+          `box-shadow:0 0 ${4+Math.random()*6}px ${color},0 0 ${8+Math.random()*12}px ${color}88`
+        ].join(';');
         c.appendChild(e);
+      }
+
+      // Cinders — larger glowing chunks, slow
+      for (let i = 0; i < 10; i++) {
+        const ci = document.createElement('div');
+        ci.className = 'af-cinder';
+        const w = 2 + Math.random() * 3;
+        const h = 1.5 + Math.random() * 2;
+        ci.style.cssText = [
+          `left:${10+Math.random()*80}%`,
+          `bottom:${Math.random()*15}%`,
+          `width:${w}px`,
+          `height:${h}px`,
+          `animation-duration:${8+Math.random()*14}s`,
+          `animation-delay:${Math.random()*12}s`,
+          `--crot:${(Math.random()-0.5)*360}deg`
+        ].join(';');
+        c.appendChild(ci);
       }
     })();
 

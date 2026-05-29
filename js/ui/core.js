@@ -341,7 +341,7 @@ class UI {
     const _seed = _prof.avatarSeed || (typeof online !== 'undefined' ? online?.displayName : '') || 'Survivor';
     const _avUrl = this.getAvatarUrl(32);  // always uses current profile settings
     let html = `<div class="sidebar-header">
-      <img src="logo.png" alt="Ashfall Idle" class="sidebar-logo-img">
+      <img src="assets/logo.svg" alt="Ashfall Idle" class="sidebar-logo-img" style="filter:drop-shadow(0 0 8px rgba(201,135,62,0.3))">
     </div>
     <div class="global-search-bar">
       <input type="text" id="global-search-input" class="gsi-input" placeholder="Search skills, items, monsters..." oninput="ui._handleSearch(this.value)" onkeydown="ui._handleSearchKeydown(event)">

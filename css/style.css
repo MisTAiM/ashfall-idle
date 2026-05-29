@@ -4187,11 +4187,15 @@ html, body {
   50% { transform: translateY(-6px); }
 }
 .sidebar-logo-img {
-  width: 160px;
+  width: 170px;
   height: auto;
   display: block;
   margin: 0 auto;
-  filter: drop-shadow(0 0 8px rgba(201,135,62,0.2));
+  filter: drop-shadow(0 0 12px rgba(201,135,62,0.35)) drop-shadow(0 0 30px rgba(201,135,62,0.1));
+  transition: filter 0.4s ease;
+}
+.sidebar-logo-img:hover {
+  filter: drop-shadow(0 0 20px rgba(201,135,62,0.6)) drop-shadow(0 0 50px rgba(201,135,62,0.2));
 }
 .landing-stats {
   display: flex;
