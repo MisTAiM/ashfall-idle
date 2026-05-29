@@ -10765,3 +10765,220 @@ body.perf-mode .hit-splat { display:none !important; }
 .obs-collect-btn { font-size:11px; padding:4px 10px; }
 .obs-collect-btn:disabled { opacity:0.4; cursor:not-allowed; }
 .ore-bag-section.ob-full { border-color:rgba(200,68,68,0.4); background:rgba(200,68,68,0.04); }
+
+/* ============================================================
+   SUPPORT SKILL PAGES — Diplomacy, Tactics, Trading
+   ============================================================ */
+
+/* ── Shared skill hero banner ── */
+.sp-hero {
+  display: flex; align-items: center; gap: 18px;
+  background: linear-gradient(135deg, rgba(201,135,62,0.12) 0%, rgba(201,135,62,0.04) 100%);
+  border: 1px solid rgba(201,135,62,0.25);
+  border-radius: 14px; padding: 18px 22px; margin-bottom: 18px; flex-wrap: wrap;
+  position: relative; overflow: hidden;
+}
+.sp-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(201,135,62,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.sp-hero-level {
+  text-align: center; min-width: 60px;
+}
+.sp-hero-num {
+  font-family: 'Cinzel', serif; font-size: 48px; font-weight: 700;
+  color: #c9873e; line-height: 1; display: block;
+  text-shadow: 0 0 20px rgba(201,135,62,0.4);
+}
+.sp-hero-lbl {
+  font-size: 9px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 1.5px; margin-top: 2px;
+}
+.sp-hero-center { flex: 1; min-width: 180px; }
+.sp-hero-name {
+  font-family: 'Cinzel', serif; font-size: 18px; color: var(--text);
+  font-weight: 600; margin-bottom: 4px;
+}
+.sp-hero-desc { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+.sp-xp-track {
+  height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px;
+  overflow: hidden; border: 1px solid rgba(201,135,62,0.15); margin-bottom: 4px;
+}
+.sp-xp-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, #7a4a00, #c9873e, #f0b060);
+  transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 8px rgba(201,135,62,0.5);
+}
+.sp-xp-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); }
+.sp-hero-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+.sp-stat { text-align: center; min-width: 60px; }
+.sp-stat-val {
+  font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; display: block; line-height: 1.1;
+}
+.sp-stat-lbl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── Section header with accent line ── */
+.sp-section { margin-bottom: 18px; }
+.sp-section-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  padding-bottom: 6px; border-bottom: 1px solid rgba(201,135,62,0.15);
+}
+.sp-section-title {
+  font-family: 'Cinzel', serif; font-size: 13px; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.sp-section-badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--text-dim); background: rgba(255,255,255,0.05);
+  padding: 2px 7px; border-radius: 8px; border: 1px solid var(--border);
+}
+
+/* ── Diplomacy faction cards ── */
+.dip-fac-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;
+}
+.dip-fac-card {
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.dip-fac-card:hover { border-color: rgba(201,135,62,0.35); transform: translateY(-1px); }
+.dip-fac-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--dip-color, #c9873e), transparent);
+}
+.dip-fac-top {
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px;
+}
+.dip-fac-name { font-family: 'Cinzel', serif; font-size: 13px; color: var(--text); font-weight: 600; }
+.dip-fac-tier {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+  color: var(--dip-color, #c9873e);
+  background: rgba(201,135,62,0.1); border: 1px solid rgba(201,135,62,0.2);
+}
+.dip-rep-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); margin-bottom: 5px;
+}
+.dip-rep-val { color: var(--text); font-weight: 700; }
+.dip-rep-bar { height: 5px; background: rgba(0,0,0,0.4); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.dip-rep-fill { height: 100%; border-radius: 3px; transition: width 0.5s; background: linear-gradient(90deg, var(--dip-fill-a, #7a4a00), var(--dip-fill-b, #c9873e)); }
+.dip-perk-active {
+  font-size: 11px; color: var(--text); padding: 5px 8px;
+  background: rgba(201,135,62,0.07); border-radius: 6px;
+  border-left: 2px solid var(--dip-color, #c9873e); margin-bottom: 5px;
+}
+.dip-perk-next {
+  font-size: 10px; color: var(--text-dim); padding: 4px 8px;
+  background: rgba(255,255,255,0.03); border-radius: 6px;
+  border-left: 2px solid #333;
+}
+.dip-maxed {
+  text-align: center; font-family: 'Cinzel', serif; font-size: 10px;
+  color: #c9873e; letter-spacing: 1px; padding: 5px;
+}
+
+/* ── Milestone timeline ── */
+.sp-milestones { display: flex; flex-direction: column; gap: 0; }
+.sp-milestone {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 12px 14px; position: relative;
+}
+.sp-milestone::before {
+  content: ''; position: absolute; left: 27px; top: 32px; bottom: -12px;
+  width: 1px; background: var(--border);
+}
+.sp-milestone:last-child::before { display: none; }
+.sp-ms-dot {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+  border: 2px solid var(--border); background: var(--bg-deep);
+  transition: all 0.2s;
+}
+.sp-ms-dot.met {
+  border-color: #c9873e; background: rgba(201,135,62,0.2);
+  color: #c9873e; box-shadow: 0 0 8px rgba(201,135,62,0.3);
+}
+.sp-ms-dot.current {
+  border-color: #f0b060; background: rgba(201,135,62,0.3);
+  color: #f0b060; box-shadow: 0 0 12px rgba(201,135,62,0.5);
+  animation: sp-pulse 2s infinite;
+}
+@keyframes sp-pulse { 0%,100%{box-shadow:0 0 8px rgba(201,135,62,0.3)} 50%{box-shadow:0 0 18px rgba(201,135,62,0.6)} }
+.sp-ms-body { flex: 1; padding-top: 3px; }
+.sp-ms-lv { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
+.sp-ms-text { font-size: 12px; color: var(--text); line-height: 1.4; }
+.sp-ms-bonus { font-size: 11px; color: #c9873e; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── Ability cards (Tactics) ── */
+.tac-ab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 10px; }
+.tac-ab-card {
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; position: relative;
+  transition: all 0.15s;
+}
+.tac-ab-card.unlocked { border-color: rgba(201,135,62,0.25); }
+.tac-ab-card.unlocked:hover { border-color: rgba(201,135,62,0.5); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.tac-ab-card.locked { opacity: 0.45; }
+.tac-ab-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.tac-ab-name { font-family: 'Cinzel', serif; font-size: 12px; color: var(--text); font-weight: 600; }
+.tac-ab-style {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 1px 6px; border-radius: 4px; font-weight: 700;
+}
+.tac-ab-style.melee { background: rgba(200,80,80,0.15); color: #e07070; border: 1px solid rgba(200,80,80,0.2); }
+.tac-ab-style.ranged { background: rgba(80,180,80,0.15); color: #70cc70; border: 1px solid rgba(80,180,80,0.2); }
+.tac-ab-style.magic { background: rgba(100,100,220,0.15); color: #8888ee; border: 1px solid rgba(100,100,220,0.2); }
+.tac-ab-style.any { background: rgba(201,135,62,0.12); color: #c9873e; border: 1px solid rgba(201,135,62,0.2); }
+.tac-ab-desc { font-size: 11px; color: var(--text-dim); line-height: 1.4; margin-bottom: 6px; }
+.tac-ab-cd {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim);
+  display: flex; align-items: center; gap: 4px;
+}
+.tac-ab-req { font-size: 10px; color: #c9873e; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+.tac-ab-lock-badge {
+  position: absolute; top: 10px; right: 10px;
+  font-size: 14px; opacity: 0.6;
+}
+.tac-slot-track {
+  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.tac-slot {
+  width: 48px; height: 48px; border-radius: 10px;
+  border: 2px solid var(--border); background: var(--bg-deep);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-dim);
+  transition: all 0.2s; position: relative;
+}
+.tac-slot.active {
+  border-color: #c9873e; background: rgba(201,135,62,0.12);
+  color: #c9873e; box-shadow: 0 0 10px rgba(201,135,62,0.2);
+}
+.tac-slot-num { font-size: 9px; }
+
+/* ── Trading bonus breakdown ── */
+.trd-bonus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 10px; margin-bottom: 14px; }
+.trd-bonus-card {
+  background: var(--bg-mid); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+}
+.trd-bonus-src { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trd-bonus-vals { display: flex; gap: 10px; }
+.trd-buy { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #4db8ff; }
+.trd-sell { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #4dcc6a; }
+.trd-total-card {
+  background: linear-gradient(135deg, rgba(201,135,62,0.1), rgba(201,135,62,0.05));
+  border: 1px solid rgba(201,135,62,0.3); border-radius: 10px; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;
+}
+.trd-total-label { font-family: 'Cinzel', serif; font-size: 13px; color: var(--text); }
+.trd-total-vals { display: flex; gap: 18px; }
+.trd-total-buy { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #4db8ff; }
+.trd-total-sell { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #4dcc6a; }
+.trd-xp-hint {
+  font-size: 12px; color: var(--text-dim); background: var(--bg-mid);
+  border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  border-left: 3px solid rgba(201,135,62,0.4);
+}
