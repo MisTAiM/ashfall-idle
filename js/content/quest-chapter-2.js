@@ -28,7 +28,7 @@ _q({id:'a_taste_of_danger', name:'A Taste of Danger', type:'chain', npcId:'old_p
 
 _q({id:'miners_troubles', name:"Miner's Troubles", type:'chain', npcId:'garrick', qp:1, series:'Garrick', length:'short', difficulty:'Novice',prereqs:[],
   desc:"The mine collapsed. Help recover valuable ore before it's too late.",
-  objectives:[{type:'gather',item:'iron_ore',qty:30,desc:'Mine 30 Iron Ore — Mining page → click Iron Rock (requires Mining level 15)'},{type:'gather',item:'coal',qty:20,desc:'Mine 20 Coal — Mining page → Coal Rock (level 30), or get from monster drops'}],
+  objectives:[{type:'gather',item:'iron_ore',qty:30,desc:'Mine 30 Iron Ore — Mining page → click Iron Rock (requires Mining level 15)'},{type:'gather',item:'coal_ore',qty:20,desc:'Mine 20 Coal — Mining page → Coal Rock (level 30), or get from monster drops'}],
   rewards:{xp:{mining:600},gold:400,qp:1}});
 
 _q({id:'the_apprentice', name:'The Apprentice', type:'chain', npcId:'ilyana', qp:1, series:'Ilyana', length:'short', difficulty:'Novice',prereqs:[],
@@ -213,8 +213,8 @@ _q({id:'runecrafting_awakening', name:'The Rune Awakening', type:'chain', npcId:
 
 _q({id:'herblore_secrets', name:'Potion Master', type:'chain', npcId:'grey', qp:3, series:'Artisan Path', length:'long', difficulty:'Hard',prereqs:[],
   desc:"Grey's medicinal knowledge runs deep. Learn everything about herblore to become a true master.",
-  objectives:[{type:'skill_level',skill:'herblore',level:65,qty:1,desc:'Reach Herblore level 65'},{type:'gather',item:'super_combat',qty:5,desc:'Brew 5 super combat potions'},{type:'gather',item:'overload_potion',qty:2,desc:'Brew 2 overload potions'}],
-  rewards:{xp:{herblore:25000},gold:20000,items:[{item:'bastion_potion',qty:10},{item:'battlemage_potion',qty:10}],qp:3}});
+  objectives:[{type:'skill_level',skill:'alchemy',level:65,qty:1,desc:'Reach Herblore level 65'},{type:'gather',item:'super_combat',qty:5,desc:'Brew 5 super combat potions'},{type:'gather',item:'overload_potion',qty:2,desc:'Brew 2 overload potions'}],
+  rewards:{xp:{alchemy:25000},gold:20000,items:[{item:'bastion_potion',qty:10},{item:'battlemage_potion',qty:10}],qp:3}});
 
 // ═══ LORE QUESTS (Story arcs) ════════════════════════════════
 

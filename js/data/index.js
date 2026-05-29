@@ -4259,3 +4259,130 @@ if (GAME_DATA.combatAreas) {
 
 console.log('[Ashfall] Endgame drop tables loaded — raid-only items properly gated');
 })();
+
+// ================================================================
+// QUEST COMPLETABILITY PATCH — adds all missing monsters, items,
+// recipes, fishing spots, and the void_rift dungeon so every
+// quest objective can be fulfilled. Runs after all other data.
+// ================================================================
+(function() {
+'use strict';
+
+// ── MISSING MONSTERS ────────────────────────────────────
+const _m = (id, d) => { if (!GAME_DATA.monsters[id]) GAME_DATA.monsters[id] = Object.assign({id}, d); };
+
+_m('moss_snake',     {name:'Moss Snake',    hp:50, maxHit:6,  attackSpeed:2.4, combatLevel:5,  style:'melee', evasion:{melee:10,ranged:8,magic:6},  xp:35,  gold:{min:1,max:8},   alignment:'NN', drops:[{item:'bones',qty:1,chance:0.5}]});
+_m('barbarian',      {name:'Barbarian',     hp:140,maxHit:16, attackSpeed:2.2, combatLevel:16, style:'melee', evasion:{melee:20,ranged:16,magic:12}, xp:95,  gold:{min:8,max:30},  alignment:'CN', type:'humanoid', drops:[{item:'bones',qty:1,chance:1.0},{item:'iron_ore',qty:1,chance:0.20}]});
+_m('dark_wizard',    {name:'Dark Wizard',   hp:90, maxHit:18, attackSpeed:2.4, combatLevel:20, style:'magic', evasion:{melee:12,ranged:14,magic:30}, xp:115, gold:{min:10,max:40}, alignment:'NE', type:'humanoid', drops:[{item:'bones',qty:1,chance:1.0},{item:'chaos_rune',qty:3,chance:0.25}]});
+_m('ankou',          {name:'Ankou',         hp:280,maxHit:30, attackSpeed:2.2, combatLevel:45, style:'melee', evasion:{melee:42,ranged:38,magic:28}, xp:200, gold:{min:20,max:80}, alignment:'NE', drops:[{item:'big_bones',qty:1,chance:1.0},{item:'death_rune',qty:3,chance:0.15},{item:'soul_rune',qty:2,chance:0.10}]});
+_m('cave_kraken',    {name:'Cave Kraken',   hp:600,maxHit:50, attackSpeed:2.0, combatLevel:87, style:'magic', evasion:{melee:45,ranged:40,magic:70}, xp:700, gold:{min:50,max:200},alignment:'CE', slayerReq:87, drops:[{item:'big_bones',qty:1,chance:1.0},{item:'trident_swamp',qty:1,chance:0.003},{item:'death_rune',qty:10,chance:0.25}]});
+_m('banshee',        {name:'Banshee',       hp:180,maxHit:22, attackSpeed:2.4, combatLevel:37, style:'magic', evasion:{melee:28,ranged:24,magic:45}, xp:130, gold:{min:15,max:55}, alignment:'NE', slayerReq:15, drops:[{item:'bones',qty:1,chance:1.0},{item:'chaos_rune',qty:5,chance:0.20},{item:'mithril_ore',qty:2,chance:0.15}]});
+_m('smoke_devil',    {name:'Smoke Devil',   hp:400,maxHit:38, attackSpeed:2.2, combatLevel:160,style:'magic', evasion:{melee:35,ranged:30,magic:55}, xp:300, gold:{min:40,max:150},alignment:'CE', slayerReq:93, drops:[{item:'big_bones',qty:1,chance:1.0},{item:'smoke_staff',qty:1,chance:0.01},{item:'death_rune',qty:8,chance:0.20}]});
+_m('thermonuclear_smoke_devil',{name:'Thermonuclear Smoke Devil',hp:2400,maxHit:95,attackSpeed:2.2,combatLevel:301,style:'magic',evasion:{melee:60,ranged:55,magic:80},xp:800,gold:{min:200,max:800},alignment:'CE',slayerReq:93,boss:true,drops:[{item:'smoke_staff',qty:1,chance:0.05},{item:'occult_necklace',qty:1,chance:0.003},{item:'dragon_bones',qty:3,chance:1.0}]});
+_m('mithril_dragon', {name:'Mithril Dragon',hp:3000,maxHit:130,attackSpeed:3.0,combatLevel:304,style:'melee',evasion:{melee:180,ranged:165,magic:180},xp:1000,gold:{min:600,max:2000},alignment:'NE',drops:[{item:'dragon_bones',qty:2,chance:1.0},{item:'mithril_bar',qty:3,chance:0.30},{item:'draconic_visage',qty:1,chance:0.001}]});
+
+// ── MISSING ITEMS ────────────────────────────────────────
+const _i = (id, d) => { if (!GAME_DATA.items[id]) GAME_DATA.items[id] = Object.assign({id}, d); };
+
+_i('logs',           {name:'Logs',          type:'resource',subtype:'log',   sellPrice:1,   sprite:'log-brown', desc:'Basic logs.'});
+_i('raw_chicken',    {name:'Raw Chicken',   type:'food',    raw:true, cookLevel:1,           sellPrice:3,   sprite:'food-chicken',desc:'Cook before eating.'});
+_i('cooked_chicken', {name:'Cooked Chicken',type:'food',    heals:3,                          sellPrice:8,   sprite:'food-chicken',desc:'A cooked chicken.'});
+_i('cooked_shrimp',  {name:'Cooked Shrimp', type:'food',    heals:3,                          sellPrice:5,   sprite:'fish-small',  desc:'A cooked shrimp.'});
+_i('coal',           {name:'Coal',          type:'resource',subtype:'ore',   sellPrice:15,  sprite:'ore-coal',  desc:'Coal ore. Used in smithing.'});
+
+// ── FIX: cook_shrimp outputs 'shrimp', quests expect 'cooked_shrimp' ─
+// Alias: make 'shrimp' point to cooked_shrimp definition, and add cooked_shrimp recipe
+if (GAME_DATA.recipes?.cooking) {
+  // Fix existing cook_shrimp output
+  const shrimpRecipe = GAME_DATA.recipes.cooking.find(r => r.id === 'cook_shrimp');
+  if (shrimpRecipe) shrimpRecipe.output = {item:'cooked_shrimp', qty:1};
+  // Add chicken recipe if missing
+  if (!GAME_DATA.recipes.cooking.find(r => r.id === 'cook_chicken')) {
+    GAME_DATA.recipes.cooking.unshift(
+      {id:'cook_chicken', name:'Cook Chicken', level:1, xp:30, time:2.5, input:[{item:'raw_chicken',qty:1}], output:{item:'cooked_chicken',qty:1}, burnChance:0.35}
+    );
+  }
+  // Add shark cooking
+  if (!GAME_DATA.recipes.cooking.find(r => r.id === 'cook_shark')) {
+    GAME_DATA.recipes.cooking.push(
+      {id:'cook_shark', name:'Cook Shark', level:76, xp:210, time:4.5, input:[{item:'raw_shark',qty:1}], output:{item:'cooked_shark',qty:1}, burnChance:0.08}
+    );
+  }
+  // Add anglerfish cooking
+  if (!GAME_DATA.recipes.cooking.find(r => r.id === 'cook_anglerfish')) {
+    GAME_DATA.recipes.cooking.push(
+      {id:'cook_anglerfish', name:'Cook Anglerfish', level:84, xp:230, time:5.0, input:[{item:'raw_anglerfish',qty:1}], output:{item:'cooked_anglerfish',qty:1}, burnChance:0.05}
+    );
+  }
+}
+
+// ── FIX: chicken drops raw_chicken ───────────────────────
+if (GAME_DATA.monsters.chicken && !GAME_DATA.monsters.chicken.drops.find(d=>d.item==='raw_chicken')) {
+  GAME_DATA.monsters.chicken.drops.push({item:'raw_chicken', qty:1, chance:0.80});
+}
+
+// ── FIX: add logs as alias for normal tree output ─────────
+// Normal tree loot is 'logs' — ensure action exists
+if (GAME_DATA.gatheringActions?.woodcutting) {
+  const normalTree = GAME_DATA.gatheringActions.woodcutting.find(a => a.id === 'chop_tree' || a.id === 'chop_logs');
+  if (normalTree && normalTree.loot?.[0]) normalTree.loot[0].item = 'logs';
+  // If no normal tree exists at all, add one
+  if (!GAME_DATA.gatheringActions.woodcutting.find(a => a.loot?.[0]?.item === 'logs')) {
+    GAME_DATA.gatheringActions.woodcutting.unshift(
+      {id:'chop_tree', name:'Tree', level:1, xp:25, time:2.5, loot:[{item:'logs',qty:1}], masteryId:'logs', category:'Basic', desc:'A standard tree. Gives logs.'}
+    );
+  }
+}
+
+// ── FIX: raw_shark fishing spot ──────────────────────────
+if (GAME_DATA.gatheringActions?.fishing) {
+  if (!GAME_DATA.gatheringActions.fishing.find(a => a.id === 'fish_shark')) {
+    GAME_DATA.gatheringActions.fishing.push(
+      {id:'fish_shark', name:'Shark Spot', level:76, xp:110, time:8.0, loot:[{item:'raw_shark',qty:1}], masteryId:'shark', category:'Deep Sea', desc:'Deep sea shark fishing. Level 76 required.'}
+    );
+  }
+}
+
+// ── FIX: herblore skill alias → alchemy ──────────────────
+// Quest chapter 2 references 'herblore' but the skill is 'alchemy'
+// Register herblore as alias so skill_level objectives work
+if (!GAME_DATA.skills.herblore) {
+  GAME_DATA.skills.herblore = GAME_DATA.skills.alchemy;
+}
+
+// ── FIX: void_rift dungeon ───────────────────────────────
+if (!GAME_DATA.dungeons.find(d => d.id === 'void_rift')) {
+  GAME_DATA.dungeons.push({
+    id:'void_rift', name:'The Void Rift', levelReq:70,
+    waves:['void_walker','void_walker','demon','void_walker','abyssal_horror'],
+    rewards:[{item:'death_rune',qty:20,chance:0.40},{item:'soul_rune',qty:10,chance:0.25},{item:'elder_staff',qty:1,chance:0.03}],
+    desc:'A tear in reality leaking void energy. Extremely dangerous.'
+  });
+}
+
+// ── FIX: quest tracking — 'herblore' skill_level check uses alchemy state
+// Patch _trackAllQuests to treat herblore as alchemy
+const _origTrackAllQuests = GameEngine.prototype._trackAllQuests;
+GameEngine.prototype._trackAllQuests = function(type, data) {
+  // Mirror herblore XP/level events to alchemy
+  if (type === 'skill_level' && data.skill === 'alchemy') {
+    _origTrackAllQuests.call(this, type, {skill:'herblore', level:data.level});
+  }
+  return _origTrackAllQuests.call(this, type, data);
+};
+
+// ── FIX: 'coal' objective → treat as 'coal_ore' in quest tracking ─
+// Some older quests still reference item:'coal' — patch addItem to also
+// fire trackQuestProgress for coal_ore when coal is gathered (they're same item)
+const _origAddItem = GameEngine.prototype.addItem;
+GameEngine.prototype.addItem = function(id, qty) {
+  _origAddItem.call(this, id, qty);
+  // Mirror coal_ore <-> coal for quest purposes
+  if (id === 'coal_ore' && qty > 0) this.trackQuestProgress('gather', {item:'coal', qty});
+  if (id === 'coal'     && qty > 0) this.trackQuestProgress('gather', {item:'coal_ore', qty});
+  // Mirror shrimp <-> cooked_shrimp (old recipe outputs 'shrimp')
+  if (id === 'shrimp'   && qty > 0) this.trackQuestProgress('gather', {item:'cooked_shrimp', qty});
+};
+
+console.log('[Ashfall] Quest completability patch loaded — monsters, items, recipes, aliases all wired.');
+})();
