@@ -1913,9 +1913,15 @@ class UI {
       }
       html += '</div></div></div>';
 
-      // XP Stats grid
+      // XP Stats grid (collapsible on mobile)
       const _cSkills = ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer','tactics'];
-      html += '<div class="combat-xp-panel">';
+      const _xpOpen = this._combatXpOpen !== false;
+      html += `<div class="combat-xp-panel">
+        <div class="cxp-toggle-header" onclick="ui._combatXpOpen=!ui._combatXpOpen;document.querySelector('.cxp-body')?.classList.toggle('cxp-open',ui._combatXpOpen)">
+          <span class="cxp-toggle-title">Combat Stats</span>
+          <span class="cxp-toggle-chevron">${_xpOpen?'⌄':'›'}</span>
+        </div>
+        <div class="cxp-body ${_xpOpen?'cxp-open':''}">`;
       for (const sk of _cSkills) {
         const skill = s.skills[sk]; if (!skill) continue;
         const _p = this.engine.getXpProgress ? this.engine.getXpProgress(sk) : 0;
@@ -1928,7 +1934,7 @@ class UI {
           <span class="cxp-xp">${this.fmt(skill.xp)}</span>
         </div>`;
       }
-      html += '</div>';
+      html += '</div></div>'; // close cxp-body and combat-xp-panel
 
       // Area grid — grouped by tier
       const _cb = this.engine.getCombatLevel();
@@ -9022,6 +9028,17 @@ class UI {
             const el = document.getElementById('fb-qty-' + i);
             if (el && s.foodBag[i]) el.textContent = 'x' + s.foodBag[i].qty;
           }
+          // Mobile action bar live update
+          const _mobFill = document.getElementById('mob-hp-fill');
+          const _mobTxt  = document.getElementById('mob-hp-text');
+          const _mobEat  = document.querySelector('.mob-eat-btn');
+          if (_mobFill) {
+            const _mpct = Math.min(100, Math.max(0, (pHp / max * 100)));
+            _mobFill.style.width = _mpct.toFixed(1) + '%';
+            _mobFill.style.background = _mpct > 60 ? '#4abe6c' : _mpct > 30 ? '#d4a83a' : '#c44040';
+          }
+          if (_mobTxt) _mobTxt.textContent = Math.floor(pHp) + ' / ' + max + ' HP';
+          if (_mobEat) _mobEat.disabled = !(s.foodBag||[]).some(f=>f.qty>0);
           // Combat XP bars
           for (const sId of ['attack','strength','defence','hitpoints','ranged','magic','prayer','slayer']) {
             const sk = s.skills[sId]; if (!sk) continue;

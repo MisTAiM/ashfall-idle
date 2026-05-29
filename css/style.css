@@ -11001,3 +11001,349 @@ body.perf-mode .hit-splat { display:none !important; }
   0%,100% { box-shadow: 0 0 8px rgba(201,135,62,0.3); }
   50%      { box-shadow: 0 0 18px rgba(201,135,62,0.6); }
 }
+
+/* ============================================================
+   MOBILE COMBAT OVERHAUL — @media (max-width: 680px)
+   Full rethink for thumb-first mobile play
+   ============================================================ */
+
+@media (max-width: 680px) {
+
+  /* ── Page layout: single column, tight padding ── */
+  .cv3-page {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+    padding-bottom: 100px !important; /* room for sticky action bar */
+  }
+  .cv3-sidebar { display: none !important; } /* sidebar moves into inline sections */
+
+  /* ── ARENA: stack player/monster vertically, monster on top ── */
+  .arena-v3 {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: 0;
+  }
+  .arena-main {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0;
+    min-height: auto;
+  }
+
+  /* Monster first on mobile (they fight you — see them first) */
+  .arena-player  { order: 2; }
+  .arena-center  { order: 1; }
+  .arena-monster { order: 0; }
+
+  /* Monster section: centered, large art */
+  .arena-monster {
+    align-items: center !important;
+    padding: 12px 16px 8px !important;
+    background: linear-gradient(180deg, rgba(139,0,0,0.08) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .arena-mon-name {
+    font-size: 18px !important;
+    font-family: 'Cinzel', serif;
+    text-align: center;
+  }
+  .arena-mon-level {
+    font-size: 11px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .arena-monster-art {
+    min-height: 120px !important;
+  }
+  .arena-monster-art svg,
+  .arena-monster-art img {
+    max-width: 140px !important;
+    max-height: 140px !important;
+  }
+  .mon-hp-bar-wrap { width: 100%; max-width: 300px; }
+  .mon-hp-bar-track { height: 16px !important; border-radius: 8px; }
+  .arena-status-right { justify-content: center !important; }
+
+  /* Center section: compact stats row */
+  .arena-center {
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    padding: 8px 16px !important;
+    background: rgba(0,0,0,0.4);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 6px !important;
+  }
+  .arena-vs {
+    font-size: 12px !important;
+    opacity: 0.5;
+  }
+  .arena-center-stats {
+    flex-direction: row !important;
+    gap: 12px !important;
+  }
+  .arena-stat-line { flex-direction: column; align-items: center; gap: 0; }
+  .arena-stat-label { font-size: 9px; }
+  .arena-stat-val { font-size: 14px; font-weight: 700; }
+  .arena-weakness { font-size: 10px; padding: 3px 8px; }
+  .arena-mon-desc { display: none; } /* hide on mobile — save space */
+
+  /* Flee / force escape in center — prominent */
+  .arena-flee-btn {
+    padding: 8px 20px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Player section: horizontal layout, bars take priority */
+  .arena-player {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    padding: 10px 14px !important;
+    gap: 10px !important;
+    background: linear-gradient(180deg, transparent, rgba(201,135,62,0.04));
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .arena-player-top {
+    flex-direction: column !important;
+    align-items: center !important;
+    flex-shrink: 0;
+    gap: 2px !important;
+  }
+  .arena-avatar { width: 44px !important; height: 44px !important; }
+  .arena-pname { font-size: 10px !important; text-align: center; max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .arena-plevel { font-size: 9px !important; text-align: center; }
+  .arena-bars { flex: 1 !important; gap: 7px !important; }
+  .arena-bar-track { height: 14px !important; }
+  .arena-bar-text { font-size: 10px !important; min-width: 45px !important; }
+  .arena-buff-row { flex-wrap: wrap; gap: 3px; }
+  .arena-mini-buff { padding: 2px 5px; font-size: 9px; }
+
+  /* ── ABILITY BAR: full-width buttons, 2-column grid ── */
+  .ability-bar-v3 {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    margin-bottom: 0 !important;
+    padding: 10px 12px !important;
+  }
+  .ab3-specials {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  .ab3-btn {
+    min-width: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    padding: 12px 8px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+    min-height: 52px;
+  }
+  .ab3-icon { font-size: 20px !important; flex-shrink: 0; }
+  .ab3-name { font-size: 12px !important; text-align: left; flex: 1; }
+  .ab3-status { font-size: 11px !important; white-space: nowrap; }
+  .ab3-cd-sweep { border-radius: 10px !important; }
+  .ab3-buffs { gap: 6px; }
+  .ab3-buff-chip { padding: 5px 10px; }
+
+  /* ── PRAYERS: 3-per-row grid, larger tap targets ── */
+  .prayer-v3 {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    margin-bottom: 0 !important;
+  }
+  .pv3-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 7px !important;
+  }
+  .pv3-btn {
+    padding: 10px 4px !important;
+    border-radius: 10px !important;
+    min-height: 64px !important;
+  }
+  .pv3-btn-icon { font-size: 20px !important; }
+  .pv3-btn-name { font-size: 9px !important; line-height: 1.2; }
+  .pv3-btn-meta { gap: 3px; }
+  .pv3-tier { font-size: 8px !important; padding: 1px 4px !important; }
+  .pv3-cost { font-size: 8px !important; }
+
+  /* ── COMBAT AREA SELECTION (not in combat) ── */
+  .combat-controls {
+    padding: 12px !important;
+    gap: 8px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .cc-group { flex-direction: column; align-items: stretch; gap: 4px; }
+  .cc-btns { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 6px; }
+  .cc-btn {
+    padding: 12px 6px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    min-height: 48px !important;
+  }
+  .cc-label { font-size: 12px !important; text-align: center; margin-bottom: 2px; }
+
+  /* Area grid: full-width cards */
+  .area-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+  }
+  .area-card-v2 {
+    padding: 12px 14px !important;
+  }
+  .area-name { font-size: 15px !important; }
+  .area-monster-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+  }
+  .area-monster-btn {
+    padding: 10px 8px !important;
+    min-height: 48px !important;
+    border-radius: 8px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
+  .amb-name { font-size: 11px !important; }
+  .amb-level { font-size: 10px !important; }
+
+  /* ── FOOD / POTIONS / GEAR: stack vertically ── */
+  .combat-loadout {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .combat-loadout > div {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  .food-bag { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
+  .fb-slot { padding: 10px 10px !important; border-radius: 8px !important; min-height: 48px !important; }
+  .fb-name { font-size: 11px !important; }
+  .fb-qty  { font-size: 13px !important; }
+  .fb-heals { font-size: 11px !important; }
+  .cl-food-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+  /* Potion belt: 2-per-row */
+  .potion-belt { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
+  .pb-slot { padding: 10px 8px !important; border-radius: 8px !important; min-height: 52px; }
+  .pb-name { font-size: 11px !important; }
+
+  /* ── RUNE POUCH: wrap nicely ── */
+  .rune-pouch-section {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+  .rune-pouch-grid { gap: 8px !important; }
+  .rp3-rune { min-width: 42px !important; }
+
+  /* ── Gear strip ── */
+  .gear-strip-v3 {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  /* ── STICKY MOBILE ACTION BAR ─────────────────────────────── */
+  /* Fixed at bottom: HP display + eat + flee, always visible    */
+  .mobile-action-bar {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    background: rgba(8,9,11,0.97);
+    border-top: 1px solid rgba(201,135,62,0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 8px 12px env(safe-area-inset-bottom, 8px);
+    gap: 8px;
+    align-items: center;
+  }
+  .mob-hp-compact {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .mob-hp-track {
+    height: 10px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .mob-hp-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.15s ease-out;
+  }
+  .mob-hp-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .mob-eat-btn {
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+    border-radius: 10px !important;
+    min-height: 44px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .mob-flee-btn {
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    min-height: 44px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    background: rgba(180,40,40,0.2) !important;
+    border-color: rgba(180,40,40,0.5) !important;
+    color: #ff6060 !important;
+  }
+
+  /* ── XP mode selector: smaller + wrap ── */
+  .xp-mode-btns { flex-wrap: wrap !important; gap: 4px !important; }
+  .xp-mode-btn  { padding: 6px 10px !important; font-size: 11px !important; }
+
+  /* ── Combat XP panel: collapse by default on mobile ── */
+  .combat-xp-panel { margin-bottom: 0; }
+  .cxp-body { display: none; }
+  .cxp-body.cxp-open { display: block; }
+
+  /* ── Session loot grid ── */
+  .sl-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 5px !important; }
+
+  /* ── Fight cave wave bar: full width, taller ── */
+  .fc-wave-bar { height: 20px !important; border-radius: 0 !important; }
+  .fc-wave-label { font-size: 12px !important; }
+
+  /* Section title margins */
+  .section-title { padding: 10px 14px !important; margin: 0 !important; font-size: 11px !important; }
+}
+
+/* ── MOBILE ACTION BAR: hidden on desktop ── */
+.mobile-action-bar { display: none; }
+
+/* ── Ensure area-monster-btn is flexbox by default ── */
+.area-monster-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
