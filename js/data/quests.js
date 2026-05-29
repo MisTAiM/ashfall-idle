@@ -287,7 +287,7 @@ stages:[
 {id:'start',type:'dialogue',npcId:'slayer_master_dorn',dialogue:[{speaker:'slayer_master_dorn',text:"Twenty-five hard tasks. Then the abyssal demons. Survive that, and I'll call you Master."},{speaker:'player',choices:[{text:"I'm ready.",next:'accept'}]}],giveItems:[{id:'dorn_manifest',qty:1}],transitions:{accept:'stage_grind'}},
 {id:'stage_grind',type:'objectives',journalText:"Complete 25 Slayer tasks.",objectives:[{type:'slayer_tasks',qty:25,desc:'Complete 25 tasks'},{type:'skill_level',skill:'slayer',level:65,qty:1,desc:'Reach Slayer 65'}],onComplete:'stage_abyssal'},
 {id:'stage_abyssal',type:'dialogue',npcId:'slayer_master_dorn',dialogue:[{speaker:'slayer_master_dorn',text:"Now for the real test. Abyssal demons. Kill fifty."}],transitions:{default:'stage_hunt'}},
-{id:'stage_hunt',type:'objectives',journalText:"Hunt 50 Abyssal Demons.",objectives:[{type:'kill',monster:'abyssal_horror',qty:50,desc:'Slay 50 Abyssal Demons'}],onComplete:'stage_done'},
+{id:'stage_hunt',type:'objectives',journalText:"Hunt 50 Abyssal Demons.",objectives:[{type:'kill',monster:'abyssal_demon',qty:50,desc:'Slay 50 Abyssal Demons'}],onComplete:'stage_done'},
 {id:'stage_done',type:'dialogue',npcId:'slayer_master_dorn',dialogue:[{speaker:'slayer_master_dorn',text:"You're a Master Slayer now. Only three others alive hold this title."}],consumeItems:[{item:'dorn_manifest',qty:1}],transitions:{default:'complete'}}],
 rewards:{xp:{slayer:40000,attack:15000,strength:15000},gold:30000,qp:6,items:[{id:'abyssal_whip',qty:1},{id:'slayer_ring',qty:1},{id:'xp_lamp_large',qty:1}],unlocks:'Unlocks: Master Slayer title.'}});
 
