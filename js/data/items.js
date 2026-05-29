@@ -951,7 +951,7 @@ const _moreMonsters = {
     drops:[{item:'bones',qty:1,chance:1.0},{item:'iron_bar',qty:1,chance:0.10},{item:'raw_beef',qty:1,chance:0.20}]},
   giant_bat:  {id:'giant_bat', name:'Giant Bat', hp:50, maxHit:6, attackSpeed:2.0, combatLevel:6, style:'melee', evasion:{melee:12,ranged:8,magic:10}, xp:42, gold:{min:2,max:8}, alignment:'CN',
     drops:[{item:'bones',qty:1,chance:1.0},{item:'feather',qty:3,chance:0.40}]},
-  hill_giant: {id:'hill_giant', name:'Hill Giant', hp:150, maxHit:15, attackSpeed:2.8, combatLevel:22, style:'melee', evasion:{melee:22,ranged:18,magic:14}, xp:110, gold:{min:15,max:45}, alignment:'CE',
+  hill_giant: {id:'hill_giant',type:'humanoid', name:'Hill Giant', hp:150, maxHit:15, attackSpeed:2.8, combatLevel:22, style:'melee', evasion:{melee:22,ranged:18,magic:14}, xp:110, gold:{min:15,max:45}, alignment:'CE',
     drops:[{item:'bones',qty:1,chance:1.0},{item:'iron_bar',qty:2,chance:0.12},{item:'steel_bar',qty:1,chance:0.08},{item:'cowhide',qty:2,chance:0.30}]},
   earth_warrior:{id:'earth_warrior', name:'Earth Warrior', hp:180, maxHit:16, attackSpeed:2.4, combatLevel:26, style:'melee', evasion:{melee:28,ranged:24,magic:18}, xp:130, gold:{min:20,max:55}, alignment:'NE',
     drops:[{item:'bones',qty:1,chance:1.0},{item:'earth_rune',qty:5,chance:0.25},{item:'mithril_bar',qty:1,chance:0.06}]},
@@ -1149,7 +1149,7 @@ const _newMonsters = {
       {item:'bones',qty:1,chance:1.0},
       {item:'feather',qty:2,chance:0.20},
     ]},
-  guard: {id:'guard', name:'Rogue Guard', hp:120, maxHit:14, attackSpeed:2.2, combatLevel:18, style:'melee',
+  guard: {id:'guard',type:'humanoid', name:'Rogue Guard', hp:120, maxHit:14, attackSpeed:2.2, combatLevel:18, style:'melee',
     evasion:{melee:25,ranged:20,magic:18}, xp:100, gold:{min:15,max:40}, alignment:'LE',
     drops:[
       {item:'bones',qty:1,chance:1.0},
@@ -1165,7 +1165,7 @@ const _newMonsters = {
       {item:'raw_beef',qty:2,chance:0.60},
       {item:'cowhide',qty:1,chance:0.40},
     ]},
-  moss_giant: {id:'moss_giant', name:'Moss Giant', hp:180, maxHit:18, attackSpeed:2.8, combatLevel:28, style:'melee',
+  moss_giant: {id:'moss_giant',type:'humanoid', name:'Moss Giant', hp:180, maxHit:18, attackSpeed:2.8, combatLevel:28, style:'melee',
     evasion:{melee:30,ranged:25,magic:20}, xp:140, gold:{min:20,max:60}, alignment:'CN',
     drops:[
       {item:'bones',qty:1,chance:1.0},
@@ -1173,7 +1173,7 @@ const _newMonsters = {
       {item:'nature_rune',qty:3,chance:0.15},
       {item:'mushroom',qty:2,chance:0.25},
     ]},
-  ice_warrior: {id:'ice_warrior', name:'Ice Warrior', hp:200, maxHit:20, attackSpeed:2.2, combatLevel:35, style:'melee',
+  ice_warrior: {id:'ice_warrior',type:'humanoid', name:'Ice Warrior', hp:200, maxHit:20, attackSpeed:2.2, combatLevel:35, style:'melee',
     evasion:{melee:35,ranged:30,magic:25}, xp:160, gold:{min:30,max:80}, alignment:'NE',
     drops:[
       {item:'bones',qty:1,chance:1.0},
@@ -1181,7 +1181,7 @@ const _newMonsters = {
       {item:'water_rune',qty:5,chance:0.20},
       {item:'sapphire',qty:1,chance:0.08},
     ]},
-  fire_giant: {id:'fire_giant', name:'Fire Giant', hp:300, maxHit:25, attackSpeed:2.6, combatLevel:45, style:'melee',
+  fire_giant: {id:'fire_giant',type:'humanoid', name:'Fire Giant', hp:300, maxHit:25, attackSpeed:2.6, combatLevel:45, style:'melee',
     evasion:{melee:45,ranged:40,magic:30}, xp:250, gold:{min:50,max:150}, alignment:'CE',
     drops:[
       {item:'bones',qty:1,chance:1.0},
@@ -1190,7 +1190,7 @@ const _newMonsters = {
       {item:'ruby',qty:1,chance:0.06},
       {item:'steel_plate',qty:1,chance:0.10},
     ]},
-  black_knight: {id:'black_knight', name:'Black Knight', hp:250, maxHit:22, attackSpeed:2.0, combatLevel:40, style:'melee',
+  black_knight: {id:'black_knight',type:'humanoid', name:'Black Knight', hp:250, maxHit:22, attackSpeed:2.0, combatLevel:40, style:'melee',
     evasion:{melee:42,ranged:38,magic:28}, xp:200, gold:{min:40,max:120}, alignment:'LE',
     drops:[
       {item:'bones',qty:1,chance:1.0},
