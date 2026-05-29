@@ -594,6 +594,40 @@ class UI {
         _mAllOres.forEach(id=>{const it=GAME_DATA.items[id];const c=_rockCol[id]||'#888';html+='<div class="mine-ore-chip"><svg viewBox="0 0 16 12" width="16" height="12"><polygon points="2,10 4,3 10,2 14,5 13,10 9,12 3,12" fill="'+c+'"/></svg><span>'+(it?.name||id)+'</span><span class="mrc-own-yes" id="mro-'+id+'">'+this.fmt(s.bank[id]||0)+'</span></div>';});
         html += '</div>';
       }
+      // ── ORE BAG SECTION ─────────────────────────────────────
+      if (s.oreBag) {
+        const ob = s.oreBag;
+        const totalInBag = Object.values(ob.contents).reduce((sum,e) => sum + (e.qty||0), 0);
+        const capPct = Math.min(100, totalInBag / ob.capacity * 100).toFixed(0);
+        const isFull = totalInBag >= ob.capacity;
+        let oreContentsHtml = '';
+        for (const [oreId, entry] of Object.entries(ob.contents)) {
+          if ((entry.qty||0) <= 0) continue;
+          const ore = GAME_DATA.items[oreId];
+          const c = _rockCol[oreId] || '#888';
+          oreContentsHtml += `<div class="ob-ore-chip">
+            <svg viewBox="0 0 16 12" width="14" height="14"><polygon points="2,10 4,3 10,2 14,5 13,10 9,12 3,12" fill="${c}"/></svg>
+            <span class="ob-ore-name">${ore?.name||oreId}</span>
+            <span class="ob-ore-qty">x${this.fmt(entry.qty)}</span>
+          </div>`;
+        }
+        if (!oreContentsHtml) oreContentsHtml = '<span class="ob-empty">Empty — mine ores to fill</span>';
+        html += `<div class="ore-bag-section ${isFull?'ob-full':''}">
+          <div class="obs-header">
+            <div class="obs-title">
+              <svg viewBox="0 0 20 20" width="16" height="16"><rect x="3" y="7" width="14" height="11" rx="2" fill="#c9873e"/><path d="M7 7 Q7 3 10 3 Q13 3 13 7" fill="none" stroke="#c9873e" stroke-width="2"/><rect x="8" y="11" width="4" height="3" rx="1" fill="#08090b"/></svg>
+              Ore Bag
+            </div>
+            <span class="obs-cap${isFull?' obs-cap-full':''}">${totalInBag} / ${ob.capacity}</span>
+          </div>
+          <div class="ob-bar-wrap"><div class="ob-bar"><div class="ob-fill" style="width:${capPct}%;background:${isFull?'#c44':'#c9873e'}"></div></div></div>
+          <div class="ob-contents">${oreContentsHtml}</div>
+          <div class="obs-footer">
+            <div class="ob-stats"><span>Mined: ${this.fmt(s.miningStats?.totalMined||0)}</span><span>Events: ${s.miningStats?.eventsTriggered||0}</span></div>
+            <button class="btn btn-sm obs-collect-btn" onclick="game.collectOreBag();ui.renderPage('mining')" ${totalInBag===0?'disabled':''}>Collect All → Bank</button>
+          </div>
+        </div>`;
+      }
       el.innerHTML = html;
       clearInterval(window._mineTimerInterval);
       window._mineTimerInterval = setInterval(()=>{_mineActions.flatMap(a=>a.loot||[]).map(l=>l.item).forEach(id=>{const e=document.getElementById('mro-'+id);if(e){const q=s.bank[id]||0;e.textContent=q>0?'x'+q.toLocaleString():'—';e.className=q>0?'mrc-ore-own mrc-own-yes':'mrc-ore-own';}});},500);

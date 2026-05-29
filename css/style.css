@@ -10751,3 +10751,17 @@ body.perf-mode .hit-splat { display:none !important; }
    ════════════════════════════════════════════════════════════ */
 .ab3-btn { border-right: none !important; }
 .pv3-btn { border-right: none !important; }
+
+/* ── ORE BAG SECTION (mining page) ───────────────────── */
+.obs-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.obs-title { display:flex; align-items:center; gap:6px; font-family:'Cinzel',serif; font-size:13px; color:var(--accent); }
+.obs-cap { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); }
+.obs-cap-full { color:#c44; font-weight:700; }
+.ob-bar-wrap { margin-bottom:8px; }
+.ob-ore-chip { display:flex; align-items:center; gap:4px; padding:3px 8px; background:var(--bg-card); border:1px solid var(--border); border-radius:4px; font-size:11px; }
+.ob-ore-name { color:var(--text); }
+.ob-ore-qty { font-family:'JetBrains Mono',monospace; color:var(--accent); font-weight:700; }
+.obs-footer { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+.obs-collect-btn { font-size:11px; padding:4px 10px; }
+.obs-collect-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.ore-bag-section.ob-full { border-color:rgba(200,68,68,0.4); background:rgba(200,68,68,0.04); }
