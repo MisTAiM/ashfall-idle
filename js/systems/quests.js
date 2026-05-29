@@ -62,15 +62,40 @@ E.acceptQuest = function(questId) {
     this.state.quests.stages[questId] = { currentStageId: firstStage.id, stageHistory: [] };
     this._processQuestStage(questId);
   } else {
-    // Legacy flat quest — auto-populate; skill_level checks current level on accept
+    // Legacy flat quest — pre-populate all objective types from current state on accept
     if (!this.state.quests._readyToComplete) this.state.quests._readyToComplete = {};
     const _st = this.state;
     this.state.quests.progress[questId] = (q.objectives||[]).map(obj => {
-      if (obj.type === 'skill_level') {
-        return (_st.skills[obj.skill]?.level||1) >= obj.level ? (obj.qty||1) : 0;
+      if (obj.type === 'skill_level' || obj.type === 'level') {
+        const lvl = _st.skills[obj.skill || obj.stat]?.level || 1;
+        return lvl >= (obj.level || obj.qty || 1) ? (obj.qty||1) : 0;
+      }
+      if (obj.type === 'stat') {
+        const lvl = _st.skills[obj.stat]?.level || 1;
+        return lvl >= (obj.qty||1) ? 1 : 0;
+      }
+      if (obj.type === 'gather' || obj.type === 'item') {
+        return Math.min(obj.qty||1, _st.bank[obj.item]||0);
+      }
+      if (obj.type === 'gold') {
+        return Math.min(obj.qty||1, _st.gold||0);
+      }
+      if (obj.type === 'pets') {
+        return Math.min(obj.qty||1, (_st.pets||[]).length);
+      }
+      if (obj.type === 'slayer_tasks') {
+        return Math.min(obj.qty||1, _st.stats?.slayerTasksCompleted||0);
       }
       return 0;
     });
+
+    // Immediately check if all objectives already satisfied (e.g. Road to Max at 99 everything)
+    const _prog = this.state.quests.progress[questId];
+    if ((q.objectives||[]).every((obj, i) => (_prog[i]||0) >= (obj.qty||1))) {
+      // All done on accept — complete immediately
+      this.completeQuest(questId);
+      return;
+    }
   }
 
   this.emit('notification',{type:'success',text:`Quest accepted: ${q.name}`});
@@ -222,11 +247,34 @@ E._trackAllQuests = function(type, data) {
     } else if (q.objectives && q.objectives.length > 0) {
       // LEGACY FLAT quest (no stages, uses q.objectives directly)
       const p = this.state.quests.progress[qId] || [];
-      if (_trackObjectives(q.objectives, p, type, data, this.state)) {
+      // Refresh absolute-set objectives (skill_level, gold, pets, slayer_tasks) on every tick
+      // so quests where you already meet requirements don't get stuck
+      let _absUpdated = false;
+      (q.objectives||[]).forEach((obj, i) => {
+        if (obj.type === 'skill_level' || obj.type === 'level') {
+          const lvl = this.state.skills[obj.skill || obj.stat]?.level || 1;
+          const val = lvl >= (obj.level || obj.qty || 1) ? (obj.qty||1) : 0;
+          if (val !== (p[i]||0)) { p[i] = val; _absUpdated = true; }
+        } else if (obj.type === 'stat') {
+          const lvl = this.state.skills[obj.stat]?.level || 1;
+          const val = lvl >= (obj.qty||1) ? 1 : 0;
+          if (val !== (p[i]||0)) { p[i] = val; _absUpdated = true; }
+        } else if (obj.type === 'gold') {
+          const val = Math.min(obj.qty||1, this.state.gold||0);
+          if (val !== (p[i]||0)) { p[i] = val; _absUpdated = true; }
+        } else if (obj.type === 'pets') {
+          const val = Math.min(obj.qty||1, (this.state.pets||[]).length);
+          if (val !== (p[i]||0)) { p[i] = val; _absUpdated = true; }
+        } else if (obj.type === 'slayer_tasks') {
+          const val = Math.min(obj.qty||1, this.state.stats?.slayerTasksCompleted||0);
+          if (val !== (p[i]||0)) { p[i] = val; _absUpdated = true; }
+        }
+      });
+      if (_trackObjectives(q.objectives, p, type, data, this.state) || _absUpdated) {
         this.state.quests.progress[qId] = p;
       }
-      // Auto-complete when all objectives done. Emit notification.
-      if (q.objectives.every((_, i) => (p[i]||0) >= (q.objectives[i].qty||1))) {
+      // Auto-complete when all objectives done.
+      if (q.objectives.every((obj, i) => (p[i]||0) >= (obj.qty||1))) {
         this.completeQuest(qId);
       }
     }
@@ -435,6 +483,36 @@ U.renderQuestsPage = function(el) {
   s.quests.completed = (s.quests.completed||[]).filter(id => GAME_DATA.quests.find(q=>q.id===id));
   if (s.quests.completed.length !== beforeLen) {
     console.log(`[Ashfall] Cleaned ${beforeLen - s.quests.completed.length} orphaned quest IDs`);
+  }
+
+  // ── SWEEP: complete any flat quests whose objectives are already all met ──
+  // Catches cases like Road to Max where skills were already 99 on accept
+  for (const qId of [...(s.quests.active||[])]) {
+    const _q = GAME_DATA.quests.find(x => x.id === qId);
+    if (!_q || (_q.stages && _q.stages.length > 0)) continue; // skip staged quests
+    if (!_q.objectives || _q.objectives.length === 0) continue;
+    const _p = s.quests.progress[qId] || [];
+    // Refresh skill_level / stat / gold / pet objectives from live state
+    let _anyMet = false;
+    _q.objectives.forEach((obj, i) => {
+      if (obj.type === 'skill_level' || obj.type === 'level') {
+        const lvl = s.skills[obj.skill || obj.stat]?.level || 1;
+        _p[i] = lvl >= (obj.level || obj.qty || 1) ? (obj.qty||1) : 0;
+      } else if (obj.type === 'stat') {
+        _p[i] = (s.skills[obj.stat]?.level||1) >= (obj.qty||1) ? 1 : 0;
+      } else if (obj.type === 'gold') {
+        _p[i] = Math.min(obj.qty||1, s.gold||0);
+      } else if (obj.type === 'pets') {
+        _p[i] = Math.min(obj.qty||1, (s.pets||[]).length);
+      } else if (obj.type === 'slayer_tasks') {
+        _p[i] = Math.min(obj.qty||1, s.stats?.slayerTasksCompleted||0);
+      }
+      if ((_p[i]||0) >= (obj.qty||1)) _anyMet = true;
+    });
+    s.quests.progress[qId] = _p;
+    if (_q.objectives.every((obj, i) => (_p[i]||0) >= (obj.qty||1))) {
+      this.engine.completeQuest(qId);
+    }
   }
 
   // ── LIVE QP: always recalculate from completed quests, never trust saved value ──

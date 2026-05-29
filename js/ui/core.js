@@ -68,10 +68,6 @@ const NAV = [
     {id:'dungeons',     label:'Dungeons',      icon:'dungeon'},
     {id:'fight_cave',   label:'Fight Cave',    icon:'combat'},
     {id:'theatre',      label:'Theatre of Ash',icon:'combat'},
-    {id:'chambers',     label:'Chambers',      icon:'dungeon'},
-    {id:'ashen_crypts', label:'Ashen Crypts',       icon:'skull'},
-    {id:'unholy_prayers',label:'Unholy Prayers',  icon:'skull'},
-    {id:'void_gauntlet', label:'Void Gauntlet',   icon:'skull'},
   ]},
   { header:'Magic', icon:'🔮', items:[
     {id:'spellbooks',   label:'Spellbooks',   icon:'wand'},
@@ -451,6 +447,9 @@ class UI {
     // Named pages that override the generic skill renderer
     if (pageId === 'agility') { this.renderAgilityPage(main); return; }
     if (pageId === 'thieving') { this.renderThievingPage(main); return; }
+    if (pageId === 'diplomacy') { this.renderDiplomacyPage(main); return; }
+    if (pageId === 'tactics') { this.renderTacticsPage(main); return; }
+    if (pageId === 'trading') { this.renderTradingPage(main); return; }
     if (pageId === 'clue_scrolls') { this.renderClueScrollPage(main); return; }
     const skill = GAME_DATA.skills[pageId];
     if (skill && (skill.type === 'gathering' || skill.type === 'artisan')) this.renderSkillPage(main, pageId, skill);
@@ -6672,6 +6671,204 @@ class UI {
     }
   }
 
+
+  // ── DIPLOMACY PAGE ──────────────────────────────────────
+  renderDiplomacyPage(el) {
+    const s = this.engine.state;
+    const dipLv = s.skills.diplomacy?.level || 1;
+    const dipXp = s.skills.diplomacy?.xp || 0;
+    const prog = this.engine.getXpProgress?.('diplomacy') || 0;
+    const xpNext = this.engine.getXpToNextLevel?.('diplomacy') || 0;
+    let html = this.header('Diplomacy','scroll',`Level ${dipLv} · Earn reputation with factions to gain XP`,null);
+
+    // Level bar
+    html += `<div class="mine-skill-header">
+      <div class="msh-left"><div class="msh-level">${dipLv}</div><div class="msh-label">Diplomacy</div></div>
+      <div class="msh-center">
+        <div class="msh-xp-bar"><div class="msh-xp-fill" style="width:${(prog*100).toFixed(1)}%"></div></div>
+        <div class="msh-xp-text">${this.fmt(dipXp)} XP &middot; ${xpNext>0?this.fmt(xpNext)+' to next':'MAX'}</div>
+      </div>
+      <div class="msh-stats">
+        <div class="msh-stat"><span class="msh-val" style="color:#c9873e">+${(dipLv*0.5).toFixed(1)}%</span><span class="msh-lbl">Rep Bonus</span></div>
+      </div>
+    </div>`;
+
+    // How to earn XP
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">How to earn Diplomacy XP</span></div>
+      <div class="faction-perk">Complete quests that reward faction reputation. 10% of all reputation gained converts to Diplomacy XP — boosted by your current level (+0.5% rep per level).</div>
+    </div>`;
+
+    // Faction status with active perks
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Active Faction Perks</span></div><div class="actions-grid">`;
+    for (const fac of Object.values(GAME_DATA.factions||{})) {
+      const rep = s.reputation?.[fac.id] || 0;
+      const tier = this.engine.getFactionTier(fac.id);
+      const idx = fac.tiers.indexOf(tier);
+      const next = fac.tiers[idx + 1];
+      const pct = next ? Math.min(100, ((rep - tier.rep) / (next.rep - tier.rep)) * 100) : 100;
+      const perkStr = tier.label || 'None';
+      html += `<div class="action-card">
+        <div class="ac-header"><span class="ac-name">${fac.name}</span><span class="ac-level" style="color:#c9873e">${tier.title}</span></div>
+        <div class="rep-bar"><div class="rep-fill" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="ac-footer"><span>Rep: ${this.fmt(rep)}</span>${next?`<span>Next: ${this.fmt(next.rep)}</span>`:'<span style="color:#c9873e">MAX RANK</span>'}</div>
+        <div class="faction-perk" style="margin-top:4px">Active: <span style="color:#c9873e">${perkStr}</span></div>
+        ${next ? `<div class="faction-next-perk">Next: ${next.label}</div>` : ''}
+      </div>`;
+    }
+    html += '</div></div>';
+
+    // Level milestones
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Level Milestones</span></div><div class="stats-grid">`;
+    const milestones = [
+      {lv:1, text:'Unlocked. Rep bonus starts at +0.5%.'},
+      {lv:10, text:'+5% reputation from all sources.'},
+      {lv:25, text:'+12.5% reputation from all sources.'},
+      {lv:50, text:'+25% reputation from all sources.'},
+      {lv:75, text:'+37.5% reputation from all sources.'},
+      {lv:99, text:'+49.5% reputation. Max diplomacy — master negotiator.'},
+    ];
+    for (const m of milestones) {
+      const met = dipLv >= m.lv;
+      html += `<div class="stat-card" style="border-left:3px solid ${met?'#c9873e':'#333'};opacity:${met?1:0.5}">
+        <div class="stat-label">Level ${m.lv}</div>
+        <div class="stat-value" style="font-size:12px">${m.text}</div>
+      </div>`;
+    }
+    html += '</div></div>';
+    el.innerHTML = html;
+  }
+
+  // ── TACTICS PAGE ─────────────────────────────────────────
+  renderTacticsPage(el) {
+    const s = this.engine.state;
+    const tacLv = s.skills.tactics?.level || 0;
+    const tacXp = s.skills.tactics?.xp || 0;
+    const prog = this.engine.getXpProgress?.('tactics') || 0;
+    const xpNext = this.engine.getXpToNextLevel?.('tactics') || 0;
+    let html = this.header('Tactics','banner',`Level ${tacLv} · Unlocks abilities and enhances combat status effects`,null);
+
+    html += `<div class="mine-skill-header">
+      <div class="msh-left"><div class="msh-level">${tacLv}</div><div class="msh-label">Tactics</div></div>
+      <div class="msh-center">
+        <div class="msh-xp-bar"><div class="msh-xp-fill" style="width:${(prog*100).toFixed(1)}%"></div></div>
+        <div class="msh-xp-text">${this.fmt(tacXp)} XP &middot; ${xpNext>0?this.fmt(xpNext)+' to next':'MAX'}</div>
+      </div>
+      <div class="msh-stats">
+        <div class="msh-stat"><span class="msh-val" style="color:#c9873e">${Math.floor(tacLv/10)+1}</span><span class="msh-lbl">Ability Slots</span></div>
+      </div>
+    </div>`;
+
+    // How to earn
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">How to earn Tactics XP</span></div>
+      <div class="faction-perk">Tactics XP is earned by using combat abilities, completing dungeons, and winning boss fights. Higher level unlocks more ability slots and boosts status effect potency (poison, burn, freeze, bleed).</div>
+    </div>`;
+
+    // Ability slots unlocked
+    const unlockedAbilities = (GAME_DATA.abilities||[]).filter(a => tacLv >= (a.tacticsReq||0));
+    const lockedAbilities   = (GAME_DATA.abilities||[]).filter(a => tacLv < (a.tacticsReq||0));
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Unlocked Abilities (${unlockedAbilities.length}/${(GAME_DATA.abilities||[]).length})</span></div><div class="stats-grid">`;
+    for (const ab of unlockedAbilities) {
+      html += `<div class="stat-card" style="border-left:3px solid #c9873e">
+        <div class="stat-label">${ab.name} <span style="font-size:10px;color:var(--text-dim)">[${ab.style}]</span></div>
+        <div class="stat-value" style="font-size:11px">${ab.desc}</div>
+      </div>`;
+    }
+    if (lockedAbilities.length) {
+      html += `</div><div class="qs-header" style="margin-top:12px"><span class="qs-title">Locked Abilities</span></div><div class="stats-grid">`;
+      for (const ab of lockedAbilities) {
+        html += `<div class="stat-card" style="opacity:0.45;border-left:3px solid #333">
+          <div class="stat-label">🔒 ${ab.name} <span style="font-size:10px">[Tactics ${ab.tacticsReq}]</span></div>
+          <div class="stat-value" style="font-size:11px">${ab.desc}</div>
+        </div>`;
+      }
+    }
+    html += '</div></div>';
+
+    // Milestones
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Milestones</span></div><div class="stats-grid">`;
+    const tMilestones = [
+      {lv:1, text:'First ability slot. Basic combat abilities unlocked.'},
+      {lv:10, text:'Second ability slot.'},
+      {lv:20, text:'Third ability slot. +10% status effect duration.'},
+      {lv:30, text:'Fourth ability slot.'},
+      {lv:50, text:'Fifth ability slot. +25% status effect potency.'},
+      {lv:75, text:'Sixth ability slot. +40% status potency.'},
+      {lv:99, text:'Max Tactics. All abilities unlocked. +50% status potency.'},
+    ];
+    for (const m of tMilestones) {
+      const met = tacLv >= m.lv;
+      html += `<div class="stat-card" style="border-left:3px solid ${met?'#c9873e':'#333'};opacity:${met?1:0.5}">
+        <div class="stat-label">Level ${m.lv}</div>
+        <div class="stat-value" style="font-size:12px">${m.text}</div>
+      </div>`;
+    }
+    html += '</div></div>';
+    el.innerHTML = html;
+  }
+
+  // ── TRADING PAGE ─────────────────────────────────────────
+  renderTradingPage(el) {
+    const s = this.engine.state;
+    const trdLv = s.skills.trading?.level || 1;
+    const trdXp = s.skills.trading?.xp || 0;
+    const prog = this.engine.getXpProgress?.('trading') || 0;
+    const xpNext = this.engine.getXpToNextLevel?.('trading') || 0;
+    const shopDiscount = (trdLv * 0.3).toFixed(1);
+    const sellBonus    = (trdLv * 0.5).toFixed(1);
+    let html = this.header('Trading','scale',`Level ${trdLv} · Reduce shop prices and boost sell values`,null);
+
+    html += `<div class="mine-skill-header">
+      <div class="msh-left"><div class="msh-level">${trdLv}</div><div class="msh-label">Trading</div></div>
+      <div class="msh-center">
+        <div class="msh-xp-bar"><div class="msh-xp-fill" style="width:${(prog*100).toFixed(1)}%"></div></div>
+        <div class="msh-xp-text">${this.fmt(trdXp)} XP &middot; ${xpNext>0?this.fmt(xpNext)+' to next':'MAX'}</div>
+      </div>
+      <div class="msh-stats">
+        <div class="msh-stat"><span class="msh-val" style="color:#4db8ff">-${shopDiscount}%</span><span class="msh-lbl">Buy Price</span></div>
+        <div class="msh-stat"><span class="msh-val" style="color:#4dcc6a">+${sellBonus}%</span><span class="msh-lbl">Sell Value</span></div>
+      </div>
+    </div>`;
+
+    // How to earn
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">How to earn Trading XP</span></div>
+      <div class="faction-perk">Trading XP is earned by selling items to the shop. Every gold earned from selling gives 5% of its value as Trading XP. Higher level means better prices — compounding over time.</div>
+    </div>`;
+
+    // Current bonuses live
+    const agTier = this.engine.getFactionTier?.('ashen_guild');
+    const agShop = agTier?.perk?.shopDiscount || 0;
+    const agSell = agTier?.perk?.sellBonus || 0;
+    const alBonus = GAME_DATA.alignments?.[s.alignment]?.bonus;
+    const alShop = alBonus?.shopDiscount || 0;
+    const alSell = alBonus?.sellBonus || 0;
+    const totalBuy  = (parseFloat(shopDiscount) + agShop + alShop).toFixed(1);
+    const totalSell = (parseFloat(sellBonus) + agSell + alSell).toFixed(1);
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Current Bonuses</span></div><div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Trading Skill</div><div class="stat-value" style="color:#4db8ff">-${shopDiscount}% buy / +${sellBonus}% sell</div></div>
+      ${agShop||agSell?`<div class="stat-card"><div class="stat-label">Ashen Guild (${agTier?.title})</div><div class="stat-value" style="color:#c9873e">-${agShop}% buy / +${agSell}% sell</div></div>`:''}
+      ${alShop||alSell?`<div class="stat-card"><div class="stat-label">Alignment</div><div class="stat-value" style="color:#9b59b6">-${alShop}% buy / +${alSell}% sell</div></div>`:''}
+      <div class="stat-card" style="border-left:3px solid #c9873e"><div class="stat-label">Total Effective</div><div class="stat-value"><span style="color:#4db8ff">-${totalBuy}% buy</span> / <span style="color:#4dcc6a">+${totalSell}% sell</span></div></div>
+    </div></div>`;
+
+    // Milestones
+    html += `<div class="quest-section"><div class="qs-header"><span class="qs-title">Milestones</span></div><div class="stats-grid">`;
+    const trMilestones = [
+      {lv:10, text:'-3% buy prices, +5% sell prices.'},
+      {lv:25, text:'-7.5% buy prices, +12.5% sell prices.'},
+      {lv:50, text:'-15% buy prices, +25% sell prices.'},
+      {lv:75, text:'-22.5% buy prices, +37.5% sell prices.'},
+      {lv:99, text:'-29.7% buy prices, +49.5% sell prices. Master trader.'},
+    ];
+    for (const m of trMilestones) {
+      const met = trdLv >= m.lv;
+      html += `<div class="stat-card" style="border-left:3px solid ${met?'#c9873e':'#333'};opacity:${met?1:0.5}">
+        <div class="stat-label">Level ${m.lv}</div>
+        <div class="stat-value" style="font-size:12px">${m.text}</div>
+      </div>`;
+    }
+    html += '</div></div>';
+    el.innerHTML = html;
+  }
 
   renderChambersOfAshPage(el) {
     const s = this.engine.state;
