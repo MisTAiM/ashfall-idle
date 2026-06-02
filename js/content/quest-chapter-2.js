@@ -80,7 +80,7 @@ _q({id:'giant_slayer', name:'Giant Slayer', type:'chain', npcId:'dorn', qp:3, se
   objectives:[{type:'kill',monster:'hill_giant',qty:30,desc:'Slay 30 Hill Giants — Combat page → Giant Stronghold area (Combat level 30+)'},{type:'kill',monster:'moss_giant',qty:15,desc:'Slay 15 Moss Giants — Combat page → Giant Stronghold area (Combat level 40+)'},{type:'kill',monster:'fire_giant',qty:5,desc:'Slay 5 Fire Giants — Combat page → Demon Ruins area (Combat level 60+ recommended)'}],
   rewards:{xp:{attack:8000,strength:8000,slayer:5000},gold:8000,items:[{item:'rune_battleaxe',qty:1}],qp:3}});
 
-_q({id:'demon_realm_incursion', name:'Demon Realm Incursion', type:'chain', npcId:'dorn', qp:3, series:'Dorn', length:'long', difficulty:'Medium',prereqs:['blood_moon_rising'],
+_q({id:'demon_realm_incursion', name:'Demon Realm Incursion', type:'chain', npcId:'dorn', qp:3, series:'Dorn', length:'long', difficulty:'Medium',prereqs:['giant_slayer'],
   desc:"A permanent rift to the demon realm has opened in the mountains. Seal it.",
   objectives:[{type:'kill',monster:'lesser_demon',qty:50,desc:'Slay 50 Lesser Demons — Combat page → Lesser Abyss or Demon Ruins areas'},{type:'gather',item:'death_rune',qty:100,desc:'Gather 100 Death Runes — buy from Magic Shop, or get from Ankous/Dark Wizards as drops'},{type:'skill_level',skill:'magic',level:55,qty:1,desc:'Reach Magic level 55 — set combat style to Magic and fight monsters, or cast spells on the Magic page'}],
   rewards:{xp:{magic:12000,attack:8000},gold:12000,items:[{item:'occult_necklace',qty:1}],qp:3}});
@@ -105,7 +105,7 @@ _q({id:'the_banshee_cry', name:'The Banshee Cry', type:'chain', npcId:'grey', qp
   objectives:[{type:'kill',monster:'banshee',qty:25,desc:'Slay 25 Banshees — Combat page → Slayer Dungeons (Slayer level 15 required)'},{type:'kill',monster:'aberrant_spectre',qty:5,desc:'Slay 5 Aberrant Spectres — Combat page → Slayer Dungeons (Slayer level 60 required, bring nosepeg)'},{type:'skill_level',skill:'slayer',level:15,qty:1,desc:'Reach Slayer level 15 — get assignments from the Slayer page and complete them'}],
   rewards:{xp:{slayer:8000,prayer:5000},gold:10000,items:[{item:'slayer_helm',qty:1}],qp:2}});
 
-_q({id:'rangers_secret', name:"Ranger's Secret", type:'chain', npcId:'grey', qp:3, series:'Grey', length:'long', difficulty:'Medium',prereqs:['frozen_in_time'],
+_q({id:'rangers_secret', name:"Ranger's Secret", type:'chain', npcId:'grey', qp:3, series:'Grey', length:'long', difficulty:'Medium',prereqs:['swamp_stalker'],
   desc:"Grey's sister teaches you the art of advanced archery — techniques lost for decades.",
   objectives:[{type:'skill_level',skill:'ranged',level:50,qty:1,desc:'Reach Ranged level 50 — set combat style to Ranged on the Combat page and fight monsters'},{type:'kill',monster:'steel_dragon',qty:1,desc:'Slay a Steel Dragon using only ranged'},{type:'gather',item:'rune_bolt',qty:500,desc:'Purchase 500 rune bolts'}],
   rewards:{xp:{ranged:15000},gold:12000,items:[{item:'armadyl_crossbow_weapon',qty:1}],qp:3}});
@@ -147,7 +147,7 @@ _q({id:'arcane_summit', name:'Arcane Summit', type:'chain', npcId:'ilyana', qp:4
   objectives:[{type:'skill_level',skill:'magic',level:75,qty:1,desc:'Reach Magic level 75'},{type:'kill',monster:'cave_kraken',qty:5,desc:'Slay 5 Cave Krakens using magic'},{type:'gather',item:'soul_rune',qty:100,desc:'Obtain 100 soul runes'},{type:'gather',item:'blood_rune',qty:100,desc:'Obtain 100 blood runes'}],
   rewards:{xp:{magic:40000},gold:40000,items:[{item:'harmonised_nightmare',qty:1}],qp:4}});
 
-_q({id:'wilderness_warrior', name:'Wilderness Warrior', type:'chain', npcId:'dorn', qp:4, series:'Dorn', length:'long', difficulty:'Hard',prereqs:['wild_surge'],
+_q({id:'wilderness_warrior', name:'Wilderness Warrior', type:'chain', npcId:'dorn', qp:4, series:'Dorn', length:'long', difficulty:'Hard',prereqs:['master_slayer'],
   desc:"Dorn knows the Wilderness holds the strongest monsters. Prove dominance there.",
   objectives:[{type:'kill',monster:'scorpia',qty:1,desc:"Defeat Scorpia"},{type:'kill',monster:'callisto',qty:1,desc:'Defeat Callisto'},{type:'kill',monster:'venenatis',qty:1,desc:'Defeat Venenatis'}],
   rewards:{xp:{attack:30000,strength:30000,defence:20000},gold:80000,items:[{item:'berserker_ring_i',qty:1}],qp:4}});
@@ -169,7 +169,7 @@ _q({id:'master_slayer', name:'Master of All Slayers', type:'chain', npcId:'dorn'
   objectives:[{type:'skill_level',skill:'slayer',level:95,qty:1,desc:'Reach Slayer level 95'},{type:'kill',monster:'cerberus',qty:3,desc:'Slay Cerberus 3 times'},{type:'kill',monster:'alchemical_hydra',qty:3,desc:'Slay Alchemical Hydra 3 times'},{type:'kill',monster:'thermonuclear_smoke_devil',qty:3,desc:'Slay Thermonuclear Smoke Devil 3 times'}],
   rewards:{xp:{slayer:100000,attack:50000},gold:100000,items:[{item:'infernal_cape',qty:1}],qp:5}});
 
-_q({id:'maxed_warrior', name:'Road to Max', type:'chain', npcId:'dorn', qp:5, series:'Endgame', length:'very_long', difficulty:'Grandmaster',prereqs:['champions_gauntlet','master_slayer'],
+_q({id:'maxed_warrior', name:'Road to Max', type:'chain', npcId:'dorn', qp:5, series:'Endgame', length:'very_long', difficulty:'Grandmaster',prereqs:['master_slayer'],
   desc:"The gods of the Ashfall challenge you to prove total mastery. Max every combat skill.",
   objectives:[{type:'skill_level',skill:'attack',level:99,qty:1,desc:'Reach 99 Attack'},{type:'skill_level',skill:'strength',level:99,qty:1,desc:'Reach 99 Strength'},{type:'skill_level',skill:'defence',level:99,qty:1,desc:'Reach 99 Defence'},{type:'skill_level',skill:'hitpoints',level:99,qty:1,desc:'Reach 99 Hitpoints'}],
   rewards:{xp:{attack:100000,strength:100000,defence:100000},gold:500000,items:[{item:'infernal_cape',qty:1},{item:'ferocious_gloves',qty:1},{item:'primordial_boots',qty:1}],qp:5,unlocks:'Max Combat Achievement — exclusive title and cosmetic'}});
@@ -218,17 +218,17 @@ _q({id:'herblore_secrets', name:'Potion Master', type:'chain', npcId:'grey', qp:
 
 // ═══ LORE QUESTS (Story arcs) ════════════════════════════════
 
-_q({id:'the_first_ashfall', name:'The First Ashfall', type:'chain', npcId:'vex', qp:4, series:'Void Chronicle', length:'very_long', difficulty:'Elite',prereqs:['ashen_chronicle'],
+_q({id:'the_first_ashfall', name:'The First Ashfall', type:'chain', npcId:'vex', qp:4, series:'Void Chronicle', length:'very_long', difficulty:'Elite',prereqs:['nightmare_beast'],
   desc:"The Chronicle reveals the first Ashfall was a weapon. Who built it — and can it be deactivated?",
   objectives:[{type:'gather',item:'ancient_scroll',qty:5,desc:'Find 5 ancient scrolls in the Ashfall ruins'},{type:'kill',monster:'elder_ash_golem',qty:5,desc:'Destroy 5 Elder Ash Golems who guard the truth'},{type:'kill',monster:'ash_titan',qty:2,desc:'Defeat 2 Ash Titans protecting the central core'}],
   rewards:{xp:{magic:40000,attack:30000},gold:60000,items:[{item:'elder_core',qty:5},{item:'ancient_staff',qty:1}],qp:4,lore:"The Ashfall was a doomsday weapon — built by the Ancient Order to stop the Void Emperor. Its creator could not activate it. You may have to."}});
 
-_q({id:'void_emperor_origins', name:"Void Emperor's Origins", type:'chain', npcId:'vex', qp:5, series:'Void Chronicle', length:'very_long', difficulty:'Grandmaster',prereqs:['the_first_ashfall','void_emperors_warning'],
+_q({id:'void_emperor_origins', name:"Void Emperor's Origins", type:'chain', npcId:'vex', qp:5, series:'Void Chronicle', length:'very_long', difficulty:'Grandmaster',prereqs:['the_first_ashfall'],
   desc:"Everything Vex knows about the Void Emperor is wrong. The truth is more terrifying.",
   objectives:[{type:'kill',monster:'void_emperor_spawn',qty:30,desc:"Destroy 30 Void Emperor's Spawns to weaken the barrier"},{type:'gather',item:'void_essence',qty:15,desc:'Collect 15 void essence from the core'},{type:'skill_level',skill:'magic',level:85,qty:1,desc:'Reach Magic level 85'}],
   rewards:{xp:{magic:80000,hitpoints:40000},gold:150000,items:[{item:'void_wand',qty:1},{item:'zaryte_crossbow',qty:1}],qp:5,lore:'The Void Emperor was once a player — a warrior who sacrificed themselves to stop an even greater threat. They became what they fought.'}});
 
-_q({id:'the_void_war', name:'The Void War', type:'chain', npcId:'dorn', qp:5, series:'Void Chronicle', length:'very_long', difficulty:'Grandmaster',prereqs:['void_emperor_origins','celestial_accord'],
+_q({id:'the_void_war', name:'The Void War', type:'chain', npcId:'dorn', qp:5, series:'Void Chronicle', length:'very_long', difficulty:'Grandmaster',prereqs:['void_emperor_origins'],
   desc:"The final confrontation. The Void Emperor must be defeated before the second Ashfall destroys everything.",
   objectives:[{type:'kill',monster:'void_titan',qty:20,desc:'Defeat 20 Void Titans in the advance'},{type:'kill',monster:'demon_lord',qty:5,desc:'Break the demon flank'},{type:'kill',monster:'void_emperor',qty:1,desc:'Defeat the Void Emperor'}],
   rewards:{xp:{attack:200000,strength:200000,magic:200000,defence:100000},gold:1000000,items:[{item:'void_emperor_cape',qty:1},{item:'celestial_blade',qty:1},{item:'ancestral_robe',qty:1}],qp:5,unlocks:'Void Conqueror title and access to post-game content'}});
