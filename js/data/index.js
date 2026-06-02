@@ -614,6 +614,12 @@ const GAME_DATA = {
       effect:{type:'multi', shots:1, mult:1.5, style:'ranged'}},
     {id:'double_shot',     name:'Double Shot',      style:'ranged',tacticsReq:12, cooldown:16, desc:'Two rapid shots at 80% weapon damage each.',
       effect:{type:'multi', shots:2, mult:0.8, style:'ranged'}},
+    {id:'snipe',           name:'Snipe',            style:'ranged',tacticsReq:20, cooldown:30, desc:'Take careful aim — single shot at 250% weapon damage. Ignores 50% of monster evasion.',
+      effect:{type:'snipe', mult:2.5, ignoreEvasionPct:50}},
+    {id:'poison_shot',     name:'Poison Shot',      style:'ranged',tacticsReq:30, cooldown:22, desc:'Fire a poison-tipped arrow. Deals 120% damage and applies 6 stacks of Poison.',
+      effect:{type:'poison_shot', mult:1.2, poisonStacks:6}},
+    {id:'eagle_eye_shot',  name:'Eagle Eye',        style:'ranged',tacticsReq:40, cooldown:35, desc:'Channel your sight — 3 rapid shots each at 90% damage. Shortbows: +1 extra shot. Longbows: +50% per shot.',
+      effect:{type:'eagle_eye_shot', shots:3, mult:0.9}},
     {id:'barrage',         name:'Barrage',          style:'ranged',tacticsReq:25, cooldown:28, desc:'Fire 5 arrows at 65% damage each (325% total).',
       effect:{type:'barrage', hits:5, mult:0.65}},
 
@@ -655,6 +661,9 @@ const GAME_DATA = {
     {item:'chaos_rune',price:60,category:'runes'},{item:'death_rune',price:150,category:'runes'},
     {item:'potato_seed',price:5,category:'seeds'},{item:'onion_seed',price:10,category:'seeds'},{item:'herb_seed',price:25,category:'seeds'},{item:'blood_seed',price:60,category:'seeds'},
     {item:'enchant_scroll',price:500,category:'special'},
+    {item:'bronze_arrows',price:3,category:'equipment'},{item:'iron_arrows',price:8,category:'equipment'},
+    {item:'steel_arrows',price:18,category:'equipment'},{item:'mithril_arrows',price:40,category:'equipment'},
+    {item:'adamant_arrows',price:90,category:'equipment'},{item:'runite_arrows',price:200,category:'equipment'},
     {item:'bronze_sword',price:30,category:'equipment'},{item:'bronze_shield',price:25,category:'equipment'},{item:'bronze_helm',price:20,category:'equipment'},{item:'bronze_plate',price:50,category:'equipment'},{item:'bronze_legs',price:35,category:'equipment'},
     {item:'apprentice_wand',price:50,category:'equipment'},{item:'oak_shortbow',price:40,category:'equipment'},
   ],
@@ -763,6 +772,7 @@ GAME_DATA.pets = [
   {id:'shadow_imp',name:'Shadow Imp',      source:'demon',       dropRate:0.003,  bonus:{type:'magicDmg', value:5},                         desc:'A shadow imp. +5% magic damage.'},
   {id:'void_wisp',name:'Void Wisp',        source:'void_walker', dropRate:0.005,  bonus:{type:'evasion', value:5},                          desc:'A void wisp. +5% evasion.'},
   {id:'ash_sprite',name:'Ash Sprite',      source:'ashfall_titan',dropRate:0.01,  bonus:{type:'allXp', value:2},                            desc:'An ash sprite. +2% all XP.'},
+  {id:'falcon_pet',name:'Ashen Falcon',    source:'wyvern',       dropRate:0.003, bonus:{type:'rangedDmg', value:8},                        desc:'A hunting falcon. +8% ranged damage and +10% ranged accuracy.'},
   // World boss pets
   {id:'blight_pup',name:'Blighted Pup',    source:'blight_warden',dropRate:0.02, bonus:{type:'poisonChance', value:10},                     desc:'A plagued pup. +10% poison chance.'},
   {id:'storm_cub', name:'Storm Cub',       source:'storm_reaver', dropRate:0.015,bonus:{type:'freezeChance', value:10},                     desc:'A storm cub. +10% freeze chance.'},
@@ -964,6 +974,20 @@ _i('crypts_gloves',    { name:"Crypts Gloves",    type:'armor', slot:'gloves', r
 _i('dark_artifact',    { name:'Dark Artifact',     type:'quest',  subtype:'quest', rarity:'rare',  sellPrice:0, questItem:true, desc:"A relic torn from Krolgar's lair. Proof of the Bloodfang's dark dealings." });
 _i('ashen_tablet',     { name:'Ashen Tablet',      type:'quest',  subtype:'quest', rarity:'rare',  sellPrice:0, questItem:true, desc:'An ancient stone tablet covered in ash-script. Contains forgotten lore of the Ashfall.' });
 
+
+// Monster weaknesses (extra damage when using the correct style)
+GAME_DATA.monsterWeaknesses = {
+  wyvern:           { weak:'ranged', bonus:20 },
+  frost_drake:      { weak:'ranged', bonus:15 },
+  bloodfang_alpha:  { weak:'ranged', bonus:15 },
+  steel_dragon:     { weak:'magic',  bonus:20 },
+  void_walker:      { weak:'ranged', bonus:25 },
+  aviansie:         { weak:'ranged', bonus:20 },
+  ashling:          { weak:'frost',  bonus:20 },
+  ember_wraith:     { weak:'frost',  bonus:25 },
+  frost_spirit:     { weak:'fire',   bonus:20 },
+  frost_wraith:     { weak:'fire',   bonus:25 },
+};
 // ── PVP LOOT TABLE ───────────────────────────────────────
 GAME_DATA.pvpLoot = [
   {item:'potion_healing_ii', qty:3, chance:0.40, minLevel:1},
@@ -2376,7 +2400,15 @@ GAME_DATA.combatPets = [
     passive:{ freezeResist:5 },
     sprite:'pet_frost_sprite',
   },
-];
+,
+  {
+    id:'falcon_pet', name:'Ashen Falcon', source:'wyvern', dropRate:0.003,
+    desc:'A hunting falcon from the volcanic peaks. Boosts ranged attacks and poisons on hit.',
+    combatType:'debuff', element:'fire',
+    action:{ every:4, type:'poison', stacks:3, desc:'Falcon Dive — claws leave poison' },
+    passive:{ rangedDmg:8, rangedAccuracy:10 },
+    sprite:'pet_falcon',
+  }];
 
 // Keep GAME_DATA.pets for legacy compat (pets page still lists all)
 GAME_DATA.pets = GAME_DATA.combatPets;

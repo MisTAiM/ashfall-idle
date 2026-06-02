@@ -1083,8 +1083,25 @@ class GameEngine {
         this.stopCombat();
         return;
       }
+      // Base ranged formula
       accuracy = (rL + 8) * (rB + 64);
       maxHit = Math.floor((1 + rL / 10) * (1 + rB / 80) * 4);
+      // Shortbow: +15% accuracy (fast, close-range precision)
+      // Longbow:  +15% max hit (powerful, heavy draw weight)
+      const bowType = weapon?.bowType;
+      if (bowType === 'shortbow') { accuracy = Math.floor(accuracy * 1.15); }
+      else if (bowType === 'longbow') { maxHit = Math.floor(maxHit * 1.15); }
+      // Slayer helm ranged bonus on task
+      if (this.state.equipment.head === 'slayer_helm' && this.state.slayerTask?.monster === this.state.combat.monster) {
+        maxHit = Math.floor(maxHit * 1.15);
+        accuracy = Math.floor(accuracy * 1.15);
+      }
+      // Pet ranged bonuses (Ashen Falcon and future ranged pets)
+      const _petRngDmg = this.getPetBonus('rangedDmg');
+      const _petRngAcc = this.getPetBonus('rangedAccuracy');
+      if (_petRngDmg > 0) maxHit = Math.floor(maxHit * (1 + _petRngDmg/100));
+      if (_petRngAcc > 0) accuracy = Math.floor(accuracy * (1 + _petRngAcc/100));
+      // Ava's Accumulator/Assembler: arrow retrieval + ranged bonus already in getStatTotal
       this.consumeAmmo();
     } else {
       const mL = Math.floor(this.state.skills.magic.level * (1 + pMagB/100));
@@ -2696,7 +2713,10 @@ class GameEngine {
       if (style === 'ranged') {
         const rL = this.state.skills.ranged.level;
         const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
-        return Math.max(1, Math.floor(0.5 + rL * (rB + 64) / 640));
+        const _wep = this.getEquippedItem('weapon');
+        const _bt = _wep?.bowType;
+        const _base = Math.max(1, Math.floor((1 + rL/10) * (1 + rB/80) * 4));
+        return _bt === 'longbow' ? Math.floor(_base * 1.15) : _base;
       }
       const sL = this.state.skills.strength.level;
       const sB = this.getStatTotal('strengthBonus');
@@ -2900,6 +2920,51 @@ class GameEngine {
         totalDmg = Math.floor(this.randInt(Math.floor(_mh*0.6), _mh) * (eff.mult || 2.0));
         if (eff.ignoreDefence) noteSuffix = ' (defence ignored)';
         break;
+      }
+
+      // ── SNIPE: single high-damage shot, bypasses evasion ────
+      case 'snipe': {
+        const mh = _physMaxHit('ranged');
+        const ignoreEvasion = eff.ignoreEvasionPct || 50;
+        // Apply temporary accuracy buff then deal damage
+        const baseDmg = Math.floor(this.randInt(Math.floor(mh*0.4), mh) * (eff.mult || 2.5));
+        totalDmg = baseDmg;
+        noteSuffix = ` (${ignoreEvasion}% evasion ignored)`;
+        // Snipe ignores evasion: grant a temporary huge accuracy boost
+        c.activeBuffs.push({ stat:'attackBonus', value: ignoreEvasion * 5, remaining: 1, _ability:true });
+        break;
+      }
+
+      // ── POISON SHOT: ranged hit + heavy poison ────────────
+      case 'poison_shot': {
+        const mh = _physMaxHit('ranged');
+        totalDmg = Math.floor(this.randInt(Math.floor(mh*0.3), mh) * (eff.mult || 1.2));
+        const stacks = eff.poisonStacks || 6;
+        this.applyStatus('monster', 'poison', stacks, 15);
+        noteSuffix = ` (${stacks} poison stacks)`;
+        break;
+      }
+
+      // ── EAGLE EYE SHOT: multi-shot, shortbow/longbow bonus ─
+      case 'eagle_eye_shot': {
+        const mh = _physMaxHit('ranged');
+        const weapon = this.getEquippedItem('weapon');
+        const bowType = weapon?.bowType || 'shortbow';
+        let shots = eff.shots || 3;
+        let mult  = eff.mult  || 0.9;
+        // Shortbow: faster, one extra shot
+        if (bowType === 'shortbow') { shots += 1; }
+        // Longbow: slower but each shot hits harder
+        else if (bowType === 'longbow') { mult *= 1.5; }
+        for (let i = 0; i < shots; i++) {
+          const dmg = Math.floor(this.randInt(Math.floor(mh*0.3), mh) * mult);
+          totalDmg += dmg;
+          this.emit('combatHit', { who:'player', dmg, style:'ranged', source:'ability' });
+        }
+        noteSuffix = ` (${shots} shots, ${bowType})`;
+        // Don't double-emit at end since we already emitted per-shot
+        if (totalDmg > 0) { c.monsterHp -= totalDmg; this.emit('abilityUsed',{ability:ab,totalDmg}); }
+        return; // Early return - already handled
       }
 
       default:
