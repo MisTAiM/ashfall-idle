@@ -198,7 +198,7 @@ _q({id:'master_miner', name:'Heart of the Mountain', type:'chain', npcId:'garric
 
 _q({id:'grandmaster_chef', name:'The Grand Feast', type:'chain', npcId:'old_pete', qp:2, series:'Old Pete', length:'medium', difficulty:'Medium',prereqs:[],
   desc:"The village needs a feast to lift morale. Cook the finest meal ever seen.",
-  objectives:[{type:'skill_level',skill:'cooking',level:70,qty:1,desc:'Reach Cooking level 70 — cook food on the Cooking page. Lobster→Swordfish→Shark'},{type:'gather',item:'cooked_shark',qty:20,desc:'Cook 20 Raw Sharks — buy Raw Sharks from the Shop or fish them (Fishing level 76). Cook on Cooking page'},{type:'gather',item:'cooked_anglerfish',qty:10,desc:'Cook 10 Raw Anglerfish — buy from Shop or fish at level 82. Cook on Cooking page (level 84 required)'}],
+  objectives:[{type:'skill_level',skill:'cooking',level:70,qty:1,desc:'Reach Cooking level 70 — cook food on the Cooking page. Lobster→Swordfish→Shark'},{type:'gather',item:'shark',qty:20,desc:'Cook 20 Raw Sharks — buy Raw Sharks from the Shop or fish them (Fishing level 76). Cook on Cooking page'},{type:'gather',item:'anglerfish',qty:10,desc:'Cook 10 Raw Anglerfish — buy from Shop or fish at level 82. Cook on Cooking page (level 84 required)'}],
   rewards:{xp:{cooking:20000},gold:8000,items:[{item:'chef_hat',qty:1}],qp:2}});
 
 _q({id:'farming_secrets', name:"Farmer's Almanac", type:'chain', npcId:'old_pete', qp:2, series:'Artisan Path', length:'medium', difficulty:'Medium',prereqs:['the_farmers_plea'],
