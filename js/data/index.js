@@ -958,6 +958,12 @@ GAME_DATA.achievements.push(
   {id:'slay_100_tasks',name:'Professional',   desc:'Complete 100 slayer tasks.',check:(g)=>(g.stats.slayerTasksCompleted||0)>=100},
 );
 
+
+// ── MISSING ITEM DEFINITIONS ────────────────────────────
+_i('crypts_gloves',    { name:"Crypts Gloves",    type:'armor', slot:'gloves', rarity:'legendary', sellPrice:0, stats:{attackBonus:12,strengthBonus:8,defenceBonus:18,rangedBonus:8,magicBonus:8,damageReduction:1}, levelReq:{defence:70}, desc:'Gloves forged in the depths of the Abyssal Crypts. Best-in-slot gloves.' });
+_i('dark_artifact',    { name:'Dark Artifact',     type:'quest',  subtype:'quest', rarity:'rare',  sellPrice:0, questItem:true, desc:"A relic torn from Krolgar's lair. Proof of the Bloodfang's dark dealings." });
+_i('ashen_tablet',     { name:'Ashen Tablet',      type:'quest',  subtype:'quest', rarity:'rare',  sellPrice:0, questItem:true, desc:'An ancient stone tablet covered in ash-script. Contains forgotten lore of the Ashfall.' });
+
 // ── PVP LOOT TABLE ───────────────────────────────────────
 GAME_DATA.pvpLoot = [
   {item:'potion_healing_ii', qty:3, chance:0.40, minLevel:1},
@@ -2523,7 +2529,7 @@ for (const acc of _newAccessories) {
 // Add meaningful mid/endgame drops to monsters
 const _dropPatches = {
   dragon: [
-    {item:'amulet_of_fury',     qty:1, chance:0.003},
+    {item:'fury_amulet',     qty:1, chance:0.003},
     {item:'dragonite_bar',      qty:3, chance:0.15},
     {item:'dragon_bones',       qty:1, chance:1.0},
     {item:'dragon_scale',       qty:2, chance:0.50},
@@ -2549,7 +2555,7 @@ const _dropPatches = {
     {item:'obsidian_plate',     qty:1, chance:0.04},
     {item:'obsidian_legs',      qty:1, chance:0.04},
     {item:'obsidian_helm',      qty:1, chance:0.04},
-    {item:'amulet_of_fury',     qty:1, chance:0.005},
+    {item:'fury_amulet',     qty:1, chance:0.005},
     {item:'berserker_ring',     qty:1, chance:0.006},
     {item:'armadyl_godsword',   qty:1, chance:0.002},
   ],
@@ -3649,7 +3655,7 @@ _dm('demon', {
   style:'melee', attackSpeed:2.0, evasion:{melee:120,ranged:100,magic:120},
   xp:180, gold:{min:200,max:500},
   desc:'A mid-tier demon. Hits hard in melee.',
-  drops:[{item:'death_rune',qty:15,chance:0.4},{item:'coins',qty:200,chance:0.9}]
+  drops:[{item:'death_rune',qty:15,chance:0.4},{item:'death_rune',qty:15,chance:0.9}]
 });
 _dm('dark_beast', {
   name:'Dark Beast', combatLevel:182, hp:350, maxHit:35,
@@ -4098,7 +4104,7 @@ console.log('[Ashfall] Shop overhaul loaded:',
 (function() {
 // ── THEATRE OF BLOOD DROPS ────────────────────────────────────────
 const _tobDrops = [
-  {item:'amulet_of_fury',    chance:0.015, qty:1, rarity:'legendary', source:'Verzik Vitur'},
+  {item:'fury_amulet',    chance:0.015, qty:1, rarity:'legendary', source:'Verzik Vitur'},
   {item:'berserker_ring',    chance:0.020, qty:1, rarity:'legendary', source:'Theatre of Blood'},
   {item:'archers_ring',      chance:0.020, qty:1, rarity:'legendary', source:'Theatre of Blood'},
   {item:'seers_ring',        chance:0.020, qty:1, rarity:'legendary', source:'Theatre of Blood'},
@@ -4219,7 +4225,7 @@ if (!GAME_DATA.monsters.tormented_demon) {
     style:'melee', attackSpeed:2.4, evasion:{melee:200,ranged:180,magic:200},
     xp:1800, gold:{min:3000,max:8000}, alignment:'CE',
     drops:[
-      {item:'amulet_of_fury',  qty:1, chance:0.004, rarity:'legendary'},
+      {item:'fury_amulet',  qty:1, chance:0.004, rarity:'legendary'},
       {item:'fury_amulet',     qty:1, chance:0.004, rarity:'legendary'},
       {item:'onyx',            qty:1, chance:0.02,  rarity:'epic'},
       {item:'dragon_bones',    qty:1, chance:1.0},

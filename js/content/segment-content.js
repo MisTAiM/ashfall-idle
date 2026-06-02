@@ -24,7 +24,7 @@ if (!GAME_DATA.gatheringActions.agility) {
   GAME_DATA.gatheringActions.agility = [
     {
       id:'course_ruins',   name:'Ashfall Ruins Course', level:1,  xp:180,  time:8.0,
-      loot:[{item:'mark_of_grace',qty:1,chance:0.08},{item:'coins',qty:1,chance:0}],
+      loot:[{item:'mark_of_grace',qty:1,chance:0.08}],
       masteryId:'ruins',   desc:'Beginner agility course through crumbling ruins.',
       obstacles:['Cracked Wall','Balance Beam','Low Gap','Slope Dash','Rope Swing'],
       lapBonus:10
