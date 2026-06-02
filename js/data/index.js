@@ -2463,7 +2463,6 @@ GAME_DATA.combatPets = [
     passive:{ freezeResist:5 },
     sprite:'pet_frost_sprite',
   },
-,
   {
     id:'falcon_pet', name:'Ashen Falcon', source:'wyvern', dropRate:0.003,
     desc:'A hunting falcon from the volcanic peaks. Boosts ranged attacks and poisons on hit.',
@@ -3078,6 +3077,7 @@ GAME_DATA.affixChances = {
 
 // Function to generate an affixed weapon name
 function generateAffixedWeapon(baseItemId) {
+  if (!GAME_DATA.affixChances || !GAME_DATA.weaponPrefixes || !GAME_DATA.weaponSuffixes) return null;
   const item = GAME_DATA.items[baseItemId];
   if (!item || item.slot !== 'weapon') return null;
   const rarity = item.rarity || 'common';
