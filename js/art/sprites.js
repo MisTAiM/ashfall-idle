@@ -1076,29 +1076,69 @@ Object.assign(GAME_DATA.petArt, {
   </svg>`,
 
   pet_spider_hatchling: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-    <!-- legs -->
-    <line x1="20" y1="24" x2="6" y2="16" stroke="#2a1a3a" stroke-width="2"/>
-    <line x1="20" y1="26" x2="6" y2="26" stroke="#2a1a3a" stroke-width="2"/>
-    <line x1="20" y1="28" x2="8" y2="36" stroke="#2a1a3a" stroke-width="2"/>
-    <line x1="28" y1="24" x2="42" y2="16" stroke="#2a1a3a" stroke-width="2"/>
-    <line x1="28" y1="26" x2="42" y2="26" stroke="#2a1a3a" stroke-width="2"/>
-    <line x1="28" y1="28" x2="40" y2="36" stroke="#2a1a3a" stroke-width="2"/>
-    <!-- abdomen -->
-    <ellipse cx="24" cy="32" rx="9" ry="8" fill="#3a1a4a"/>
-    <!-- hourglass marking -->
-    <polygon points="24,28 26,31 24,34 22,31" fill="#c44040" opacity="0.8"/>
-    <!-- cephalothorax -->
-    <circle cx="24" cy="22" r="7" fill="#4a2a5a"/>
-    <!-- 8 eyes -->
-    <circle cx="20" cy="19" r="1.5" fill="#0a0000"/><circle cx="20" cy="19" r="0.9" fill="#60c060"/>
-    <circle cx="24" cy="18" r="1.5" fill="#0a0000"/><circle cx="24" cy="18" r="0.9" fill="#60c060"/>
-    <circle cx="28" cy="19" r="1.5" fill="#0a0000"/><circle cx="28" cy="19" r="0.9" fill="#60c060"/>
-    <circle cx="21" cy="22" r="1" fill="#0a0000"/><circle cx="27" cy="22" r="1" fill="#0a0000"/>
-    <!-- fangs -->
-    <line x1="22" y1="25" x2="20" y2="28" stroke="#2a1a3a" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="26" y1="25" x2="28" y2="28" stroke="#2a1a3a" stroke-width="1.5" stroke-linecap="round"/>
-    <!-- silk thread -->
-    <line x1="24" y1="40" x2="24" y2="48" stroke="#a0a0c0" stroke-width="0.8" opacity="0.5"/>
+    <!-- silk thread dangling from top -->
+    <line x1="24" y1="0" x2="24" y2="10" stroke="#c0b8d8" stroke-width="0.8" opacity="0.6"/>
+
+    <!-- 8 legs — jointed, tapered, reaching outward in pairs -->
+    <!-- LEFT legs (back to front) -->
+    <path d="M19 29 Q12 34 6 38 Q9 35 14 32 Q16 30 19 29Z" fill="#3a1a5a"/>
+    <path d="M18 26 Q10 28 4 26 Q8 25 13 25 Q16 25 18 26Z" fill="#3a1a5a"/>
+    <path d="M19 23 Q11 18 5 14 Q9 17 14 20 Q16 21 19 23Z" fill="#3a1a5a"/>
+    <path d="M21 21 Q16 12 16 6 Q18 10 20 15 Q21 18 21 21Z" fill="#3a1a5a"/>
+    <!-- RIGHT legs -->
+    <path d="M29 29 Q36 34 42 38 Q39 35 34 32 Q32 30 29 29Z" fill="#3a1a5a"/>
+    <path d="M30 26 Q38 28 44 26 Q40 25 35 25 Q32 25 30 26Z" fill="#3a1a5a"/>
+    <path d="M29 23 Q37 18 43 14 Q39 17 34 20 Q32 21 29 23Z" fill="#3a1a5a"/>
+    <path d="M27 21 Q32 12 32 6 Q30 10 28 15 Q27 18 27 21Z" fill="#3a1a5a"/>
+
+    <!-- leg joint dots for depth -->
+    <circle cx="13" cy="24" r="1.2" fill="#5a2a7a" opacity="0.7"/>
+    <circle cx="10" cy="20" r="1" fill="#5a2a7a" opacity="0.6"/>
+    <circle cx="35" cy="24" r="1.2" fill="#5a2a7a" opacity="0.7"/>
+    <circle cx="38" cy="20" r="1" fill="#5a2a7a" opacity="0.6"/>
+
+    <!-- large round abdomen — swollen, glossy -->
+    <ellipse cx="24" cy="34" rx="11" ry="10" fill="#2a0a3a"/>
+    <!-- abdomen sheen -->
+    <ellipse cx="22" cy="30" rx="5" ry="3.5" fill="#4a1a6a" opacity="0.6"/>
+    <!-- hourglass / skull pattern — venom marking -->
+    <ellipse cx="24" cy="33" rx="3" ry="2" fill="#c44040" opacity="0.9"/>
+    <ellipse cx="24" cy="38" rx="2" ry="1.5" fill="#c44040" opacity="0.8"/>
+    <rect x="23" y="34.5" width="2" height="2" fill="#c44040" opacity="0.7"/>
+    <!-- web pattern on abdomen -->
+    <path d="M16 34 Q24 28 32 34" fill="none" stroke="#5a2a7a" stroke-width="0.6" opacity="0.4"/>
+    <path d="M17 38 Q24 32 31 38" fill="none" stroke="#5a2a7a" stroke-width="0.5" opacity="0.3"/>
+
+    <!-- cephalothorax (head+thorax fused) — compact, rounded -->
+    <ellipse cx="24" cy="22" rx="8" ry="7" fill="#4a1a6a"/>
+    <!-- thorax sheen -->
+    <ellipse cx="22" cy="19" rx="4" ry="3" fill="#6a2a8a" opacity="0.5"/>
+
+    <!-- chelicerae / fangs — prominent, curved downward -->
+    <path d="M21 26 Q19 30 18 33" stroke="#3a1060" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M27 26 Q29 30 30 33" stroke="#3a1060" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- fang tips — venom drop -->
+    <circle cx="18" cy="33" r="1.8" fill="#4abe6c" opacity="0.85"/>
+    <circle cx="30" cy="33" r="1.8" fill="#4abe6c" opacity="0.85"/>
+    <circle cx="18" cy="33" r="0.7" fill="#a0ff80" opacity="0.9"/>
+    <circle cx="30" cy="33" r="0.7" fill="#a0ff80" opacity="0.9"/>
+
+    <!-- 8 eyes arranged in two rows — all glowing green -->
+    <!-- front row: 4 large primary eyes -->
+    <circle cx="19.5" cy="18" r="2.5" fill="#060010"/><circle cx="19.5" cy="18" r="1.6" fill="#3a9a20"/><circle cx="19.9" cy="17.6" r="0.6" fill="#a0ff60"/>
+    <circle cx="24"   cy="17" r="2.5" fill="#060010"/><circle cx="24"   cy="17" r="1.6" fill="#3a9a20"/><circle cx="24.4" cy="16.6" r="0.6" fill="#a0ff60"/>
+    <circle cx="28.5" cy="18" r="2.5" fill="#060010"/><circle cx="28.5" cy="18" r="1.6" fill="#3a9a20"/><circle cx="28.9" cy="17.6" r="0.6" fill="#a0ff60"/>
+    <!-- back row: 4 smaller secondary eyes -->
+    <circle cx="21" cy="22" r="1.4" fill="#060010"/><circle cx="21" cy="22" r="0.9" fill="#2a7a10"/>
+    <circle cx="24" cy="22.5" r="1.2" fill="#060010"/><circle cx="24" cy="22.5" r="0.7" fill="#2a7a10"/>
+    <circle cx="27" cy="22" r="1.4" fill="#060010"/><circle cx="27" cy="22" r="0.9" fill="#2a7a10"/>
+    <circle cx="24" cy="14.5" r="1.2" fill="#060010"/><circle cx="24" cy="14.5" r="0.7" fill="#2a7a10"/>
+
+    <!-- silk spinnerets on abdomen tip -->
+    <ellipse cx="24" cy="44" rx="2.5" ry="1.5" fill="#3a1a5a"/>
+    <line x1="24" y1="45" x2="24" y2="48" stroke="#c0b8d8" stroke-width="0.8" opacity="0.5"/>
+    <line x1="22" y1="45" x2="20" y2="48" stroke="#c0b8d8" stroke-width="0.6" opacity="0.4"/>
+    <line x1="26" y1="45" x2="28" y2="48" stroke="#c0b8d8" stroke-width="0.6" opacity="0.4"/>
   </svg>`,
 
   pet_magma_mite: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
