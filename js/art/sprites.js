@@ -1012,6 +1012,21 @@ Object.assign(GAME_DATA.petArt, {
     <path d="M32 38 Q38 42 40 46" stroke="#1a0a00" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
   </svg>`,
 });
+
+// ── PET ART KEY ALIASES — pet.id lookup without prefix ─────────────
+// These 8 pets have art stored as 'pet_X' but the game looks up by pet.id (no prefix)
+(function() {
+  const aliases = [
+    'void_hatchling','storm_chick','dungeon_rat','spider_hatchling',
+    'magma_mite','ice_familiar','fishing_spirit','phoenix_chick'
+  ];
+  for (const id of aliases) {
+    if (GAME_DATA.petArt['pet_'+id] && !GAME_DATA.petArt[id]) {
+      GAME_DATA.petArt[id] = GAME_DATA.petArt['pet_'+id];
+    }
+  }
+})();
+
 console.log('[Ashfall] Pet art loaded:', Object.keys(GAME_DATA.petArt).length, 'pets');
 
 // ── EXPANSION PET ART ──────────────────────────────────────────────

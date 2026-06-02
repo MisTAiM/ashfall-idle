@@ -446,6 +446,12 @@ _i('explorers_ring_1',{name:"Explorer's Ring 1",type:'armor',slot:'ring',stats:{
 _i('explorers_ring_2',{name:"Explorer's Ring 2",type:'armor',slot:'ring',stats:{defenceBonus:1},levelReq:{},sellPrice:0,desc:'Lumbridge Medium diary reward.'});
 _i('explorers_ring_3',{name:"Explorer's Ring 3",type:'armor',slot:'ring',stats:{defenceBonus:2,strengthBonus:1},levelReq:{},sellPrice:0,desc:'Lumbridge Hard diary reward.'});
 _i('explorers_ring_4',{name:"Explorer's Ring 4",type:'armor',slot:'ring',stats:{defenceBonus:3,strengthBonus:2,magicBonus:1},levelReq:{},sellPrice:0,desc:'Lumbridge Elite diary reward. Full alchemy x6/day.'});
+// ── EXPLORER'S RING DIARY REWARDS ───────────────────────────
+_i('explorers_ring_1', {name:"Explorer's Ring 1", type:'armor',slot:'ring',  stats:{attackBonus:2,strengthBonus:1},levelReq:{},sellPrice:0,desc:'Easy Lumbridge diary reward. Teleport to Lumbridge once/hour.'});
+_i('explorers_ring_2', {name:"Explorer's Ring 2", type:'armor',slot:'ring',  stats:{attackBonus:4,strengthBonus:2,defenceBonus:2},levelReq:{},sellPrice:0,desc:'Medium Lumbridge diary reward. Teleport 3x/hour + run energy bonus.'});
+_i('explorers_ring_3', {name:"Explorer's Ring 3", type:'armor',slot:'ring',  stats:{attackBonus:6,strengthBonus:3,defenceBonus:3,rangedBonus:2},levelReq:{},sellPrice:0,desc:'Hard Lumbridge diary reward. Unlimited teleports + alchemy boost.'});
+_i('explorers_ring_4', {name:"Explorer's Ring 4", type:'armor',slot:'ring',  stats:{attackBonus:8,strengthBonus:4,defenceBonus:4,rangedBonus:4,magicBonus:4},levelReq:{},sellPrice:0,desc:'Elite Lumbridge diary reward. Best-in-slot diary ring. All skills boosted.'});
+
 _i('ash_cape_easy',   {name:'Ash Cape (Easy)',   type:'armor',slot:'cape',stats:{defenceBonus:2},levelReq:{},sellPrice:0,desc:'Ashen Peaks Easy diary cape.'});
 _i('ash_cape_medium', {name:'Ash Cape (Medium)', type:'armor',slot:'cape',stats:{defenceBonus:4,strengthBonus:2},levelReq:{},sellPrice:0,desc:'Ashen Peaks Medium diary cape.'});
 _i('ash_cape_hard',   {name:'Ash Cape (Hard)',   type:'armor',slot:'cape',stats:{defenceBonus:6,strengthBonus:4,rangedBonus:4},levelReq:{},sellPrice:0,desc:'Ashen Peaks Hard diary cape.'});

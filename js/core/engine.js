@@ -685,6 +685,8 @@ class GameEngine {
       } finally { this._thievingInProgress = false; }
     }
     this.addXp(skillId, action.xp);
+    // Check diary tasks on every skill action complete
+    if (typeof this.checkDiaries === 'function') { this._diaryCheckTimer = (this._diaryCheckTimer||0)+1; if (this._diaryCheckTimer % 10 === 0) this.checkDiaries(); }
     // ── SMITHING HEAT BONUS ──────────────────────────────────
     if (skillId === 'smithing' && GAME_DATA.smeltingHeat?.enabled) {
       const cfg = GAME_DATA.smeltingHeat;
@@ -760,6 +762,8 @@ class GameEngine {
       this.emit('levelup', { skill:skillId, level:this.state.skills[skillId].level });
       // Track skill_level quest objectives whenever any skill levels up
       this.trackQuestProgress('skill_level', { skill:skillId, level:this.state.skills[skillId].level });
+      // Check diary tasks on every level-up (catches non-combat diary tasks)
+      if (typeof this.checkDiaries === 'function') this.checkDiaries();
     }
   }
 
