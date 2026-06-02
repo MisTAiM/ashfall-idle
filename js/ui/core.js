@@ -4671,54 +4671,272 @@ class UI {
   // ── SLAYER PAGE ────────────────────────────────────────
   renderSlayerPage(el) {
     const s = this.engine.state;
-    let html = this.header('Slayer','target','Complete assigned kill tasks for Slayer XP and Slayer Coins.','slayer');
-    html += `<div class="prayer-info">
-      <div class="stat-row"><span>Slayer Coins</span><span class="pi-val gold-val">${this.fmt(s.slayerCoins)}</span></div>
-      <div class="stat-row"><span>Tasks Completed</span><span class="pi-val">${s.stats.slayerTasksCompleted||0}</span></div>
-      <div class="stat-row"><span>Auto-Slayer</span><span class="pi-val">${s.slayerAutoEnabled?'Enabled':'Disabled'}</span></div>
-    </div>`;
+    const slayerLv  = s.skills.slayer?.level || 1;
+    const slayerXp  = s.skills.slayer?.xp    || 0;
+    const slayerProg = this.engine.getXpProgress('slayer');
+    const slayerNext = this.engine.getXpToNextLevel('slayer');
+    const tasksCompleted = s.stats.slayerTasksCompleted || 0;
+    const slayerCoins    = s.slayerCoins || 0;
+    const blockList      = s.slayerBlockList || [];
 
-    // Current task
+    // ── TIER COLOURS ──────────────────────────────────────
+    const TIER_COLORS = {
+      easy:   { bg:'#1a2a1a', border:'#3a6a3a', accent:'#4abe6c', glow:'rgba(74,190,108,0.15)', label:'EASY',   icon:'🐾' },
+      normal: { bg:'#1a1f2a', border:'#3a4a6a', accent:'#6a9ed4', glow:'rgba(106,158,212,0.15)', label:'NORMAL', icon:'⚔️' },
+      hard:   { bg:'#2a1a0a', border:'#6a3a0a', accent:'#d4a83a', glow:'rgba(212,168,58,0.15)',  label:'HARD',   icon:'🔥' },
+      elite:  { bg:'#1a0a2a', border:'#5a2a7a', accent:'#b585e0', glow:'rgba(181,133,224,0.15)', label:'ELITE',  icon:'💜' },
+      master: { bg:'#2a0a0a', border:'#7a1a1a', accent:'#d63a1a', glow:'rgba(214,58,26,0.20)',   label:'MASTER', icon:'💀' },
+    };
+
+    // ── SHOP CATEGORY ICONS ───────────────────────────────
+    const SHOP_ICONS = {
+      task_skip:'⏭', task_extend:'⏫', task_block:'🚫', auto_slayer:'🤖',
+      slayer_helm:'⛑', slayer_helm_i:'✨', slayer_ring:'💍', slayer_ring_eternal:'♾️',
+      broad_arrows:'🏹', broad_bolts:'🔩', slayer_staff:'🪄', bone_crusher:'💀',
+      herb_sack_sl:'🌿', gem_bag:'💎', imbue_slayer_helm:'⚗️',
+      unlock_superior:'👹', unlock_slayer_xp:'📈',
+    };
+    const SHOP_CATS = [
+      { label:'Task Management', ids:['task_skip','task_extend','task_block','auto_slayer'] },
+      { label:'Equipment',       ids:['slayer_helm','slayer_helm_i','slayer_ring','slayer_ring_eternal','slayer_staff'] },
+      { label:'Ammunition',      ids:['broad_arrows','broad_bolts'] },
+      { label:'Tools',           ids:['bone_crusher','herb_sack_sl','gem_bag'] },
+      { label:'Imbues & Unlocks',ids:['imbue_slayer_helm','unlock_superior','unlock_slayer_xp'] },
+    ];
+
+    // ── MASTER TITLE ──────────────────────────────────────
+    const masterTitle = slayerLv >= 99 ? 'Grand Master Slayer' : slayerLv >= 80 ? 'Master Slayer' : slayerLv >= 60 ? 'Elite Slayer' : slayerLv >= 40 ? 'Slayer' : slayerLv >= 20 ? 'Apprentice Slayer' : 'Novice Slayer';
+
+    let html = `
+    <div class="slp-root">
+
+      <!-- ══ HERO HEADER ══════════════════════════════════ -->
+      <div class="slp-hero">
+        <div class="slp-hero-bg"></div>
+        <div class="slp-hero-skull">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
+            <circle cx="40" cy="35" r="24" fill="#1a0808" stroke="#d63a1a" stroke-width="1.5"/>
+            <circle cx="32" cy="34" r="7" fill="#0a0404" stroke="#d63a1a" stroke-width="1"/>
+            <circle cx="48" cy="34" r="7" fill="#0a0404" stroke="#d63a1a" stroke-width="1"/>
+            <circle cx="32" cy="34" r="3" fill="#d63a1a" opacity="0.8"/>
+            <circle cx="48" cy="34" r="3" fill="#d63a1a" opacity="0.8"/>
+            <path d="M33 50 L33 60 L36 60 L36 56 L40 56 L40 60 L43 60 L43 56 L47 56 L47 60 L47 50 Z" fill="#1a0808" stroke="#d63a1a" stroke-width="1"/>
+            <path d="M25 42 Q40 48 55 42" fill="none" stroke="#d63a1a" stroke-width="1.2" opacity="0.6"/>
+            <path d="M28 14 L26 6 L30 10" fill="none" stroke="#d63a1a" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M52 14 L54 6 L50 10" fill="none" stroke="#d63a1a" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="slp-hero-info">
+          <div class="slp-hero-title">Slayer</div>
+          <div class="slp-hero-rank">${masterTitle}</div>
+          <div class="slp-hero-xpbar">
+            <div class="slp-hero-xpfill" style="width:${(slayerProg*100).toFixed(1)}%"></div>
+          </div>
+          <div class="slp-hero-xplabel">Lv ${slayerLv} — ${slayerNext > 0 ? this.fmt(slayerNext)+' XP to next level' : 'MAX LEVEL'}</div>
+        </div>
+        <div class="slp-hero-stats">
+          <div class="slp-hstat">
+            <div class="slp-hstat-val gold-val">${this.fmt(slayerCoins)}</div>
+            <div class="slp-hstat-label">Slayer Coins</div>
+          </div>
+          <div class="slp-hstat">
+            <div class="slp-hstat-val">${this.fmt(tasksCompleted)}</div>
+            <div class="slp-hstat-label">Tasks Done</div>
+          </div>
+          <div class="slp-hstat">
+            <div class="slp-hstat-val" style="color:${s.slayerAutoEnabled?'#4abe6c':'#666'}">${s.slayerAutoEnabled?'ON':'OFF'}</div>
+            <div class="slp-hstat-label">Auto-Slayer</div>
+          </div>
+          <div class="slp-hstat">
+            <div class="slp-hstat-val" style="color:#d63a1a">${blockList.length}/6</div>
+            <div class="slp-hstat-label">Blocks Used</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ ACTIVE TASK ══════════════════════════════════ -->`;
+
     if (s.slayerTask) {
-      const m = GAME_DATA.monsters[s.slayerTask.monster];
-      const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
-      html += `<div class="active-action-bar" style="margin:16px 0">
-        <div class="aa-label">Task: Kill ${s.slayerTask.amount}x ${m?.name||s.slayerTask.monster} (${s.slayerTask.tier})</div>
-        <div class="aa-progress"><div class="aa-fill" style="width:${pct.toFixed(0)}%"></div></div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:12px"><span id="slayer-page-killed">${s.slayerTask.killed}</span>/<span id="slayer-page-amount">${s.slayerTask.amount}</span></span>
-        <button class="btn btn-xs btn-danger" onclick="game.skipSlayerTask()">Skip (30 SC)</button>
+      const task = s.slayerTask;
+      const m    = GAME_DATA.monsters[task.monster];
+      const tc   = TIER_COLORS[task.tier] || TIER_COLORS.normal;
+      const pct  = Math.min(100, (task.killed / task.amount) * 100);
+      const left = task.amount - task.killed;
+      const art  = GAME_DATA.monsterArt?.[task.monster] || '';
+      const isExtended = task._coinRewardBonus > 0;
+
+      html += `
+      <div class="slp-active-task" style="--tc-border:${tc.border};--tc-accent:${tc.accent};--tc-glow:${tc.glow};--tc-bg:${tc.bg}">
+        <div class="slp-at-glow"></div>
+        <div class="slp-at-top">
+          <div class="slp-at-badge" style="background:${tc.accent}22;color:${tc.accent};border-color:${tc.accent}50">
+            ${tc.icon} ${tc.label}
+          </div>
+          <div class="slp-at-title">Active Task</div>
+          ${isExtended ? '<div class="slp-at-extended-badge">⏫ EXTENDED</div>' : ''}
+        </div>
+        <div class="slp-at-body">
+          ${art ? `<div class="slp-at-art">${art}</div>` : ''}
+          <div class="slp-at-info">
+            <div class="slp-at-monster" style="color:${tc.accent}">${m?.name || task.monster}</div>
+            <div class="slp-at-meta">
+              <span>${m?.combatLevel ? `Combat Lv ${m.combatLevel}` : ''}</span>
+              ${m?.style ? `<span class="slp-at-style slp-style-${m.style}">${m.style.toUpperCase()}</span>` : ''}
+            </div>
+            <div class="slp-at-reward">~${this.fmt(task.amount * task.coins)} coins on completion</div>
+          </div>
+        </div>
+        <div class="slp-at-progress">
+          <div class="slp-at-bar-track">
+            <div class="slp-at-bar-fill" id="slayer-page-bar" style="width:${pct.toFixed(1)}%;background:${tc.accent}"></div>
+            <div class="slp-at-bar-shine"></div>
+          </div>
+          <div class="slp-at-counts">
+            <span class="slp-at-killed" id="slayer-page-killed" style="color:${tc.accent}">${task.killed}</span>
+            <span class="slp-at-sep">/</span>
+            <span class="slp-at-total" id="slayer-page-amount">${task.amount}</span>
+            <span class="slp-at-pct">${pct.toFixed(0)}%</span>
+            <span class="slp-at-left">${this.fmt(left)} left</span>
+          </div>
+        </div>
+        <div class="slp-at-actions">
+          <button class="btn btn-sm btn-danger slp-skip-btn" onclick="game.skipSlayerTask()">
+            ⏭ Skip <span style="opacity:0.7;font-size:10px">(30 SC)</span>
+          </button>
+          ${!isExtended ? `<button class="btn btn-sm slp-extend-btn" onclick="game.buySlayerItem(${GAME_DATA.slayerShop.findIndex(x=>x.id==='task_extend')});ui.renderPage('slayer')" ${slayerCoins < 50 ? 'disabled' : ''}>
+            ⏫ Extend <span style="opacity:0.7;font-size:10px">(50 SC)</span>
+          </button>` : ''}
+        </div>
       </div>`;
     } else {
-      html += '<div class="bank-empty" style="margin:12px 0">No active slayer task. Choose a tier below.</div>';
+      html += `
+      <div class="slp-no-task">
+        <div class="slp-no-task-skull">
+          <svg viewBox="0 0 40 40" width="32" height="32"><circle cx="20" cy="18" r="11" fill="none" stroke="rgba(201,135,62,0.3)" stroke-width="1.5" stroke-dasharray="4 3"/><line x1="20" y1="4" x2="20" y2="32" stroke="rgba(201,135,62,0.15)" stroke-width="1"/><line x1="4" y1="18" x2="36" y2="18" stroke="rgba(201,135,62,0.15)" stroke-width="1"/></svg>
+        </div>
+        <div class="slp-no-task-text">No task assigned</div>
+        <div class="slp-no-task-sub">Choose a tier below to receive your assignment</div>
+      </div>`;
     }
 
-    // Task tiers
-    html += '<h2 class="section-title">Get Task</h2><div class="actions-grid">';
+    // ── BLOCK LIST ────────────────────────────────────────
+    if (blockList.length > 0) {
+      html += `<div class="slp-section-header">
+        <span class="slp-section-icon">🚫</span>
+        <span class="slp-section-title">Blocked Monsters</span>
+        <span class="slp-section-count">${blockList.length}/6</span>
+      </div>
+      <div class="slp-blocklist">`;
+      for (const mId of blockList) {
+        const bm = GAME_DATA.monsters[mId];
+        html += `<div class="slp-blocked-tag">
+          <span>${bm?.name || mId}</span>
+          <button class="slp-unblock-btn" title="Unblock" onclick="
+            if(!game.state.slayerBlockList) game.state.slayerBlockList=[];
+            game.state.slayerBlockList=game.state.slayerBlockList.filter(x=>x!=='${mId}');
+            ui.renderPage('slayer')">✕</button>
+        </div>`;
+      }
+      html += '</div>';
+    }
+
+    // ── TASK TIERS ────────────────────────────────────────
+    html += `<div class="slp-section-header">
+      <span class="slp-section-icon">⚔</span>
+      <span class="slp-section-title">Get Assignment</span>
+    </div>
+    <div class="slp-tiers">`;
+
     for (const [tier, data] of Object.entries(GAME_DATA.slayerTasks)) {
-      const locked = s.skills.slayer.level < data.slayerReq || this.engine.getCombatLevel() < data.combatReq;
-      html += `<div class="action-card ${locked?'locked':''}">
-        <div class="ac-header"><span class="ac-name">${data.name}</span><span class="ac-level">Slayer ${data.slayerReq}+</span></div>
-        <div class="recipe-output">Kills: ${data.killRange[0]}-${data.killRange[1]} | Coins: ${data.coinReward}/kill</div>
-        <div class="ac-footer"><span>Combat Lv ${data.combatReq}+</span></div>
-        <button class="btn btn-sm" ${locked||s.slayerTask?'disabled':''} onclick="game.getSlayerTask('${tier}')">Assign</button>
-        ${locked?`<div class="locked-overlay">Slayer ${data.slayerReq} / Combat ${data.combatReq}</div>`:''}
+      const tc     = TIER_COLORS[tier] || TIER_COLORS.normal;
+      const locked = slayerLv < data.slayerReq || this.engine.getCombatLevel() < data.combatReq;
+      const active = s.slayerTask?.tier === tier;
+
+      // Pick 3 sample monsters to show as previews
+      const sampleMonsters = data.monsters.slice(0, 3).map(mId => {
+        const mo = GAME_DATA.monsters[mId];
+        return mo?.name || mId;
+      });
+
+      html += `<div class="slp-tier-card ${locked ? 'slp-tier-locked' : ''} ${active ? 'slp-tier-active' : ''}"
+        style="--tc-border:${tc.border};--tc-accent:${tc.accent};--tc-glow:${tc.glow};--tc-bg:${tc.bg}">
+        <div class="slp-tier-glow"></div>
+        <div class="slp-tier-top">
+          <div class="slp-tier-icon">${tc.icon}</div>
+          <div class="slp-tier-info">
+            <div class="slp-tier-name" style="color:${tc.accent}">${data.name}</div>
+            <div class="slp-tier-reqs">Slayer ${data.slayerReq}+ · Combat ${data.combatReq}+</div>
+          </div>
+          <div class="slp-tier-coins">
+            <div class="slp-tier-coins-val" style="color:${tc.accent}">${data.coinReward}</div>
+            <div class="slp-tier-coins-lbl">coins/kill</div>
+          </div>
+        </div>
+        <div class="slp-tier-monsters">
+          ${sampleMonsters.map(n => `<span class="slp-tier-monster-tag" style="border-color:${tc.accent}30;color:${tc.accent}aa">${n}</span>`).join('')}
+          ${data.monsters.length > 3 ? `<span class="slp-tier-monster-tag slp-tier-more" style="border-color:${tc.accent}20;color:${tc.accent}60">+${data.monsters.length-3} more</span>` : ''}
+        </div>
+        <div class="slp-tier-meta">
+          <span>🎯 ${data.killRange[0]}–${data.killRange[1]} kills</span>
+          <span>💰 ${data.killRange[0]*data.coinReward}–${data.killRange[1]*data.coinReward} total</span>
+        </div>
+        ${locked
+          ? `<div class="slp-tier-locked-msg">Requires Slayer ${data.slayerReq} and Combat ${data.combatReq}</div>`
+          : `<button class="slp-tier-btn" style="--tc-accent:${tc.accent}" ${s.slayerTask ? 'disabled' : ''} onclick="game.getSlayerTask('${tier}');ui.renderPage('slayer')">
+              ${s.slayerTask ? '⚔ Task in progress' : `${tc.icon} Get ${data.name} Task`}
+            </button>`
+        }
       </div>`;
     }
     html += '</div>';
 
-    // Slayer shop
-    html += '<h2 class="section-title">Slayer Shop</h2><div class="actions-grid">';
-    for (let i = 0; i < GAME_DATA.slayerShop.length; i++) {
-      const item = GAME_DATA.slayerShop[i];
-      const canAfford = s.slayerCoins >= item.cost;
-      const owned = item.id === 'auto_slayer' && s.slayerAutoEnabled;
-      html += `<div class="action-card ${canAfford?'':'locked'}">
-        <div class="ac-header"><span class="ac-name">${item.name}</span><span class="ac-level">${item.cost} SC</span></div>
-        <p class="area-desc">${item.desc}</p>
-        <button class="btn btn-sm" ${canAfford&&!owned?'':'disabled'} onclick="game.buySlayerItem(${i})">${owned?'Owned':'Buy'}</button>
-      </div>`;
+    // ── SLAYER SHOP ───────────────────────────────────────
+    html += `<div class="slp-section-header" style="margin-top:24px">
+      <span class="slp-section-icon">🏪</span>
+      <span class="slp-section-title">Slayer Shop</span>
+      <span class="slp-section-count slp-coins-badge">${this.fmt(slayerCoins)} SC</span>
+    </div>`;
+
+    for (const cat of SHOP_CATS) {
+      const catItems = GAME_DATA.slayerShop
+        .map((item, idx) => ({item, idx}))
+        .filter(({item}) => cat.ids.includes(item.id));
+      if (catItems.length === 0) continue;
+
+      html += `<div class="slp-shop-cat-label">${cat.label}</div>
+      <div class="slp-shop-grid">`;
+
+      for (const {item, idx} of catItems) {
+        const canAfford = slayerCoins >= item.cost;
+        const ownedAuto = item.id === 'auto_slayer' && s.slayerAutoEnabled;
+        const ownedUnlock = item.type === 'unlock' && s.slayerUnlocks?.[item.unlockId];
+        const ownedItem = ownedAuto || ownedUnlock;
+        const icon = SHOP_ICONS[item.id] || '📦';
+        const typeColor = {
+          consumable:'#d4a83a', equipment:'#6a9ed4', upgrade:'#4abe6c',
+          item:'#d4a83a', imbue:'#b585e0', unlock:'#d63a1a'
+        }[item.type] || 'var(--accent)';
+
+        html += `<div class="slp-shop-item ${canAfford && !ownedItem ? '' : 'slp-shop-dim'}">
+          <div class="slp-shop-icon" style="background:${typeColor}18;border-color:${typeColor}30">${icon}</div>
+          <div class="slp-shop-info">
+            <div class="slp-shop-name">${item.name}</div>
+            <div class="slp-shop-desc">${item.desc}</div>
+          </div>
+          <div class="slp-shop-right">
+            <div class="slp-shop-cost" style="color:${canAfford?'#d4a83a':'#666'}">${this.fmt(item.cost)} SC</div>
+            <button class="slp-shop-btn ${typeColor === '#d63a1a' ? 'slp-shop-btn-red' : ''}" style="--btn-accent:${typeColor}"
+              ${canAfford && !ownedItem ? '' : 'disabled'}
+              onclick="game.buySlayerItem(${idx});ui.renderPage('slayer')">
+              ${ownedItem ? '✓ Owned' : canAfford ? 'Buy' : 'Need SC'}
+            </button>
+          </div>
+        </div>`;
+      }
+      html += '</div>';
     }
-    html += '</div>';
+
+    html += '</div>'; // slp-root
     el.innerHTML = html;
   }
 
@@ -9065,7 +9283,14 @@ class UI {
           }
           // Slayer task counter (slayer page)
           const slayerPageKilledEl = document.getElementById('slayer-page-killed');
-          if (slayerPageKilledEl && s.slayerTask) slayerPageKilledEl.textContent = s.slayerTask.killed;
+          if (slayerPageKilledEl && s.slayerTask) {
+            slayerPageKilledEl.textContent = s.slayerTask.killed;
+            const slayerBarEl = document.getElementById('slayer-page-bar');
+            if (slayerBarEl) {
+              const pct = Math.min(100, (s.slayerTask.killed / s.slayerTask.amount) * 100);
+              slayerBarEl.style.width = pct.toFixed(1) + '%';
+            }
+          }
           // Spec bar
           const specFill = document.getElementById('spec-fill');
           const specPct  = document.getElementById('spec-pct');
