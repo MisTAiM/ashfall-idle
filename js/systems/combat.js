@@ -496,6 +496,25 @@
         this.emit('notification',{type:'achievement',text:`Twisted Bow spec — scales with target magic level ${Math.round(magicScale)}!`});
       }
       this.emit('notification',{type:'achievement',text:`SPECIAL ATTACK! (${this.state.specEnergy}% energy left)`});
+    } else if (spec.type === 'blowpipeSpec') {
+      // Toxic Blowpipe: double dart hit + guaranteed 8-stack venom
+      const rB = this.getStatTotal('rangedBonus') + this.getAmmoBonus();
+      const rL = this.state.skills.ranged?.level || 1;
+      const mh = Math.max(1, Math.floor((1 + rL/10) * (1 + rB/80) * 4));
+      let totalBp = 0;
+      for (let i = 0; i < 2; i++) {
+        const dmg = this.randInt(Math.floor(mh*0.15), mh);
+        c.monsterHp -= dmg;
+        totalBp += dmg;
+        this.emit('combatHit',{who:'player',dmg,crit:i===0,source:'spec'});
+        this.consumeAmmo();
+      }
+      // Guaranteed venom — 8 poison stacks
+      this.applyStatus('monster','poison',8,20);
+      // Consume 25 extra scales for the spec shot
+      const scalesNow = this.state.bank['zulrah_scales'] || 0;
+      if (scalesNow >= 25) this.removeItem('zulrah_scales', 25);
+      this.emit('notification',{type:'achievement',text:`Blowpipe Spec: ${totalBp} dmg — Venom injected (8 stacks)!`});
     } else {
       // All other spec types handled by engine.js
       _origUseSpec.call(this);

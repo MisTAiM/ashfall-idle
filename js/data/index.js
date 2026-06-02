@@ -793,16 +793,40 @@ GAME_DATA.slayerTasks = {
 };
 
 GAME_DATA.slayerShop = [
-  {id:'slayer_helm',    name:'Slayer Helm',      cost:500,  type:'equipment', itemId:'slayer_helm',     desc:'A helm that boosts damage vs slayer task targets.'},
-  {id:'slayer_ring',    name:'Slayer Ring',       cost:300,  type:'equipment', itemId:'slayer_ring',     desc:'Teleports to slayer task monster areas.'},
-  {id:'auto_slayer',    name:'Auto-Slayer',       cost:1000, type:'upgrade',   desc:'Automatically assigns a new task when one is completed.'},
-  {id:'task_skip',      name:'Skip Task',         cost:30,   type:'consumable',desc:'Skip your current slayer task.'},
-  {id:'task_extend',    name:'Extend Task',       cost:50,   type:'consumable',desc:'Double your current task kill count for +50% coins.'},
-  {id:'broad_arrows',   name:'Broad Arrows (100)',cost:100,  type:'item',      itemId:'broad_arrows',   desc:'Arrows effective vs slayer creatures.'},
+  // ── TASK MANAGEMENT ──
+  {id:'task_skip',      name:'Skip Task',           cost:30,   type:'consumable',                       desc:'Skip your current slayer task.'},
+  {id:'task_extend',    name:'Extend Task',          cost:50,   type:'consumable',                       desc:'Double kill count on current task for +50% coins.'},
+  {id:'task_block',     name:'Block Task (3)',        cost:75,   type:'consumable',                       desc:'Permanently block the current monster from being assigned.'},
+  {id:'auto_slayer',    name:'Auto-Slayer',           cost:1000, type:'upgrade',                          desc:'Automatically assigns a new task when one is completed.'},
+  // ── EQUIPMENT ──
+  {id:'slayer_helm',    name:'Slayer Helm',           cost:500,  type:'equipment', itemId:'slayer_helm',  desc:'+15% damage and accuracy vs slayer targets.'},
+  {id:'slayer_helm_i',  name:'Slayer Helm (i)',        cost:1200, type:'equipment', itemId:'slayer_helm_i',desc:'+15% all combat styles vs slayer targets. Imbued upgrade.'},
+  {id:'slayer_ring',    name:'Slayer Ring',            cost:300,  type:'equipment', itemId:'slayer_ring',   desc:'+5% Slayer XP. Teleport to task areas.'},
+  {id:'slayer_ring_eternal',name:'Eternal Slayer Ring',cost:1500, type:'equipment', itemId:'slayer_ring_eternal',desc:'+8% Slayer XP. Never runs out of charges.'},
+  // ── AMMUNITION ──
+  {id:'broad_arrows',   name:'Broad Arrows (100)',     cost:100,  type:'item',      itemId:'broad_arrows',  qty:100, desc:'Arrows effective vs slayer creatures. +20% on task.'},
+  {id:'broad_bolts',    name:'Broad Bolts (100)',       cost:120,  type:'item',      itemId:'broad_bolts',   qty:100, desc:'Bolts for crossbows vs slayer creatures. +20% on task.'},
+  // ── TOOLS ──
+  {id:'slayer_staff',   name:'Slayer Staff',            cost:800,  type:'equipment', itemId:'slayer_staff',  desc:'Magic staff: free crumble undead spell vs undead slayer targets.'},
+  {id:'bone_crusher',   name:'Bonecrusher',             cost:900,  type:'upgrade',   itemId:'bonecrusher',   desc:'Automatically crushes bones for Prayer XP. Never bury again.'},
+  {id:'herb_sack_sl',   name:'Herb Sack',               cost:750,  type:'equipment', itemId:'herb_sack',     desc:'Auto-collects herbs while on a Slayer task.'},
+  {id:'gem_bag',        name:'Gem Bag',                  cost:600,  type:'equipment', itemId:'gem_bag',       desc:'Auto-collects gems dropped by slayer creatures.'},
+  // ── IMBUES ──
+  {id:'imbue_slayer_helm',name:'Imbue Slayer Helm',     cost:800,  type:'imbue',     targetItem:'slayer_helm',resultItem:'slayer_helm_i', desc:'Imbue your Slayer Helm so it boosts all combat styles on task.'},
+  // ── UNLOCKS ──
+  {id:'unlock_superior', name:'Superior Slayer',        cost:2000, type:'unlock',    unlockId:'superior_slayer', desc:'Unlock superior versions of slayer monsters (much harder, unique drops).'},
+  {id:'unlock_slayer_xp', name:'Slayer XP Boost',       cost:500,  type:'unlock',    unlockId:'slayer_xp_boost', desc:'Permanently earn +10% Slayer XP from all tasks.'},
 ];
 
 // Slayer items
 GAME_DATA.items.slayer_helm = {id:'slayer_helm',name:'Slayer Helm',type:'armor',slot:'head',stats:{attackBonus:3,strengthBonus:3,defenceBonus:10,rangedBonus:3,magicBonus:3,damageReduction:2},levelReq:{defence:10,slayer:20},sellPrice:0,sprite:'helm-iron',desc:'+15% damage and accuracy vs slayer targets.',unique:true,slayerBonus:15};
+
+// ── NEW SLAYER SHOP ITEMS ─────────────────────────────────
+GAME_DATA.items.slayer_ring_eternal = {id:'slayer_ring_eternal',name:'Eternal Slayer Ring',type:'armor',slot:'ring',stats:{attackBonus:6,strengthBonus:3,rangedBonus:3,magicBonus:3},levelReq:{slayer:40},sellPrice:0,sprite:'ring-ruby',desc:'+8% Slayer XP. Infinite charges.',unique:true,slayerXpBonus:8};
+GAME_DATA.items.slayer_staff = {id:'slayer_staff',name:'Slayer Staff',type:'weapon',slot:'weapon',style:'magic',attackSpeed:2.4,stats:{magicBonus:55,attackBonus:8},levelReq:{magic:50,slayer:50},sellPrice:0,sprite:'staff-dark',providesRune:'death_rune',desc:'Unlimited death runes. Crumble Undead is free vs undead slayer targets. +25% magic damage on task.',unique:true};
+GAME_DATA.items.bonecrusher = {id:'bonecrusher',name:'Bonecrusher',type:'tool',subtype:'misc',rarity:'rare',sellPrice:0,desc:'Auto-crushes bones for Prayer XP when equipped. Works in all combat.',unique:true};
+GAME_DATA.items.gem_bag = {id:'gem_bag',name:'Gem Bag',type:'tool',subtype:'misc',rarity:'rare',sellPrice:0,desc:'Automatically collects gems dropped while Slaying. Holds 60 gems.',unique:true};
+
 GAME_DATA.items.slayer_ring = {id:'slayer_ring',name:'Slayer Ring',type:'armor',slot:'ring',stats:{attackBonus:4,strengthBonus:2},levelReq:{slayer:15},sellPrice:0,sprite:'ring-ruby',desc:'+5% Slayer XP.',unique:true,slayerXpBonus:5};
 GAME_DATA.items.broad_arrows = {id:'broad_arrows',name:'Broad Arrows',type:'ammo',slot:'ammo',subtype:'arrow',ammoType:'arrow',stackable:true,rangedBonus:12,sellPrice:5,sprite:'arrow-steel',desc:'Effective vs slayer creatures. +20% damage on task.'};
 
@@ -988,6 +1012,45 @@ GAME_DATA.monsterWeaknesses = {
   frost_spirit:     { weak:'fire',   bonus:20 },
   frost_wraith:     { weak:'fire',   bonus:25 },
 };
+
+_i96('serpentine_helm',{name:'Serpentine Helm',type:'armor',slot:'head',rarity:'mythic',sellPrice:0,stats:{defenceBonus:45,attackBonus:5,strengthBonus:5,rangedBonus:5,magicBonus:5,damageReduction:3},levelReq:{defence:75,slayer:75},venomImmunity:true,desc:'Helm of the great serpent. Immune to venom. Degrades with Zulrah scales.'});
+
+// ── ZULRAH CRAFTING RECIPES ─────────────────────────────
+// These are added to crafting recipes so players can use their Zulrah drops
+if (!GAME_DATA.recipes.crafting) GAME_DATA.recipes.crafting = [];
+// Helper to avoid duplicates
+function _addCraftRecipe(r) {
+  if (!GAME_DATA.recipes.crafting.find(x => x.id === r.id)) GAME_DATA.recipes.crafting.push(r);
+}
+_addCraftRecipe({
+  id:'craft_blowpipe', name:'Toxic Blowpipe', category:'Zulrah',
+  level:75, xp:500, time:8.0,
+  input:[{item:'tanzanite_fang',qty:1},{item:'zulrah_scales',qty:100}],
+  output:{item:'blowpipe',qty:1},
+  desc:'Craft a Toxic Blowpipe from a Tanzanite Fang. Requires 75 Crafting.'
+});
+_addCraftRecipe({
+  id:'craft_toxic_trident', name:'Toxic Trident', category:'Zulrah',
+  level:80, xp:600, time:10.0,
+  input:[{item:'magic_fang',qty:1},{item:'trident_swamp',qty:1},{item:'zulrah_scales',qty:150}],
+  output:{item:'toxic_staff',qty:1},
+  desc:'Upgrade a Swamp Trident to the Toxic Trident using a Magic Fang.'
+});
+_addCraftRecipe({
+  id:'craft_serpentine_helm', name:'Serpentine Helm', category:'Zulrah',
+  level:85, xp:700, time:12.0,
+  input:[{item:'serpentine_visage',qty:1},{item:'zulrah_scales',qty:200}],
+  output:{item:'serpentine_helm',qty:1},
+  desc:'Craft a Serpentine Helm from a Serpentine Visage. Provides venom immunity.'
+});
+_addCraftRecipe({
+  id:'craft_blowpipe_scales', name:'Charge Blowpipe (500)', category:'Zulrah',
+  level:1, xp:10, time:2.0,
+  input:[{item:'zulrah_scales',qty:500}],
+  output:{item:'zulrah_scales_charge',qty:500},
+  desc:'Convert Zulrah scales into blowpipe charges.'
+});
+
 // ── PVP LOOT TABLE ───────────────────────────────────────
 GAME_DATA.pvpLoot = [
   {item:'potion_healing_ii', qty:3, chance:0.40, minLevel:1},
@@ -3361,7 +3424,7 @@ _i('cannon_barrels',    { name:'Cannon Barrels',     type:'resource',   subtype:
 // ── RESTORE KEY MISSING WEAPONS ──────────────────────────────
 _i('armadyl_crossbow_weapon', { name:'Armadyl Crossbow', type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6, stats:{rangedBonus:100}, levelReq:{ranged:70}, sellPrice:0, desc:'A blessed crossbow. Pearl bolt special: +15% ranged accuracy.', specCost:40, specEffect:{type:'accuracyBurst',accMult:1.15,dur:10} });
 _i('dragon_crossbow_weapon',  { name:'Dragon Crossbow',  type:'weapon',slot:'weapon',style:'ranged',attackSpeed:2.6, stats:{rangedBonus:95},  levelReq:{ranged:64}, sellPrice:120000, desc:'Dragon limbs and stock. Powerful crossbow.', specCost:60, specEffect:{type:'rangedSpec',mult:1.5} });
-_i('blowpipe',                { name:'Toxic Blowpipe',   type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.2, stats:{rangedBonus:70},  levelReq:{ranged:75}, sellPrice:0, desc:'Extremely fast. Poisons on hit. Consumes zulrah scales.', specCost:50, specEffect:{type:'blowpipeSpec',mult:1.0,extraHit:true} });
+_i('blowpipe',                { name:'Toxic Blowpipe',   type:'weapon',slot:'weapon',style:'ranged',attackSpeed:1.2, stats:{rangedBonus:70},  levelReq:{ranged:75}, ammoType:'dart', bowType:'blowpipe', usesScales:true, scalesPerShot:1, sellPrice:0, desc:'Extremely fast blowpipe — fires darts, consumes Zulrah scales. Poisons on hit. Spec: double-hit + guaranteed poison.', specCost:50, specEffect:{type:'blowpipeSpec',mult:1.0,extraHit:true} });
 
 // ── WHIPS & SPEC WEAPONS ─────────────────────────────────────
 _i('abyssal_tentacle',        { name:'Abyssal Tentacle',    type:'weapon',slot:'weapon',style:'melee',attackSpeed:1.6, stats:{attackBonus:90,strengthBonus:86},  levelReq:{attack:75}, sellPrice:0, desc:'Upgraded whip. Spec: 125% + 10% drain + chance to stun.' });

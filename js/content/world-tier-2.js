@@ -105,7 +105,8 @@ const _ammo = [
 ];
 for (const [id,rb,lr,sell] of _ammo) {
   const name = id.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-  _add(id, {name, type:'ammo', stackable:true, stats:{rangedBonus:rb}, levelReq:{ranged:lr}, sellPrice:sell});
+  const isDart = id.includes('_dart'); const isBolt = id.includes('_bolt');
+  _add(id, {name, type:'ammo', subtype: isDart?'dart':isBolt?'bolt':'arrow', ammoType: isDart?'dart':isBolt?'bolt':'arrow', stackable:true, rangedBonus:rb, levelReq:{ranged:lr}, sellPrice:sell});
 }
 
 // ── RANGED ARMOUR ─────────────────────────────────────────────

@@ -1101,6 +1101,15 @@ class GameEngine {
       const _petRngAcc = this.getPetBonus('rangedAccuracy');
       if (_petRngDmg > 0) maxHit = Math.floor(maxHit * (1 + _petRngDmg/100));
       if (_petRngAcc > 0) accuracy = Math.floor(accuracy * (1 + _petRngAcc/100));
+      // Blowpipe: always poisons on hit and consumes Zulrah scales per shot
+      if (weapon?.usesScales) {
+        const scales = this.state.bank['zulrah_scales'] || 0;
+        if (scales <= 0) {
+          this.emit('notification',{type:'warn',text:'Blowpipe out of Zulrah scales! Add scales to use it.'});
+          this.stopCombat(); return;
+        }
+        this.removeItem('zulrah_scales', weapon.scalesPerShot || 1);
+      }
       // Ava's Accumulator/Assembler: arrow retrieval + ranged bonus already in getStatTotal
       this.consumeAmmo();
     } else {
@@ -1224,6 +1233,12 @@ class GameEngine {
 
       // Track last hit for bleed calculations
       this.state.combat._lastPlayerHit = dmg;
+      // Blowpipe: guaranteed poison on every hit
+      if (style === 'ranged') {
+        const _wp = this.getEquippedItem('weapon');
+        if (_wp?.usesScales) this.applyStatus('monster','poison',2,10);
+        // Bonecrusher: auto-bury bones after kill is handled in onMonsterDeath
+      }
 
       // ── SESSION + LIFETIME DAMAGE TRACKING ──
       const sd = this.state.combat._sessionDmg || (this.state.combat._sessionDmg = { melee:0, ranged:0, magic:0, ability:0, burn:0, poison:0, bleed:0, total:0, taken:0, hits:0, misses:0, crits:0 });
@@ -1754,6 +1769,21 @@ class GameEngine {
     }
 
     this.trackQuestProgress('kill', { monster:mId, qty:1 });
+    // Bonecrusher: auto-bury bones from monster kill
+    if (this.state.bank['bonecrusher'] > 0 || this.state.equipment.head === 'bonecrusher') {
+      // Check if monster drops bones
+      const _bc_monster = GAME_DATA.monsters[mId];
+      if (_bc_monster?.drops) {
+        for (const drop of _bc_monster.drops) {
+          if (drop.item && drop.item.includes('bones') && Math.random() < drop.chance) {
+            const boneItem = GAME_DATA.items[drop.item];
+            const prayerXp = drop.item === 'dragon_bones' ? 288 : drop.item === 'big_bones' ? 60 : drop.item === 'ash_bones' ? 80 : 30;
+            this.addXp('prayer', prayerXp);
+            // Don't add to inventory - crushed automatically
+          }
+        }
+      }
+    }
     // Quest-specific drops (multi-stage system)
     if (this.checkQuestDrop) this.checkQuestDrop(mId);
     // v3: Slayer, Pets, Magic kills
@@ -4448,7 +4478,11 @@ class GameEngine {
     if (this.getCombatLevel() < tierData.combatReq) {
       this.emit('notification', { type:'warn', text:`Requires Combat level ${tierData.combatReq}.` }); return;
     }
-    const monster = tierData.monsters[Math.floor(Math.random() * tierData.monsters.length)];
+    // Filter out blocked monsters
+    const _blockList = this.state.slayerBlockList || [];
+    const _available = tierData.monsters.filter(m => !_blockList.includes(m));
+    const _pool = _available.length > 0 ? _available : tierData.monsters;
+    const monster = _pool[Math.floor(Math.random() * _pool.length)];
     const amount = this.randInt(tierData.killRange[0], tierData.killRange[1]);
     this.state.slayerTask = {
       tier, monster, amount, killed: 0, coins: tierData.coinReward,
@@ -4493,6 +4527,12 @@ class GameEngine {
     const coins = task.coins * task.amount;
     this.state.slayerCoins += coins;
     this.state.stats.slayerTasksCompleted = (this.state.stats.slayerTasksCompleted || 0) + 1;
+    // Apply slayer XP boost unlock if purchased
+    if (this.state.slayerUnlocks?.slayer_xp_boost) {
+      this.addXp('slayer', Math.floor(task.amount * 5)); // bonus XP on task completion
+    }
+    // Apply coin bonus from task_extend
+    if (task._coinRewardBonus) coins = Math.floor(coins * (1 + task._coinRewardBonus));
     this.trackQuestProgress('slayer_tasks', { qty:1 });
     this.emit('notification', { type:'success', text:`Slayer task complete! +${coins} Slayer Coins.` });
     this.state.slayerTask = null;
@@ -4516,6 +4556,29 @@ class GameEngine {
       this.emit('notification', { type:'success', text:'Auto-Slayer unlocked!' });
     } else if (item.id === 'task_skip') {
       this.skipSlayerTask();
+    } else if (item.id === 'task_extend') {
+      if (!this.state.slayerTask) { this.emit('notification',{type:'warn',text:'No active task to extend.'}); this.state.slayerCoins += item.cost; return; }
+      this.state.slayerTask.amount = Math.floor(this.state.slayerTask.amount * 2);
+      this.state.slayerTask._coinRewardBonus = 0.5; // +50% coins on completion
+      this.emit('notification',{type:'success',text:`Task extended to ${this.state.slayerTask.amount} kills! +50% coin reward.`});
+    } else if (item.id === 'task_block') {
+      if (!this.state.slayerTask) { this.emit('notification',{type:'warn',text:'No active task to block.'}); this.state.slayerCoins += item.cost; return; }
+      if (!this.state.slayerBlockList) this.state.slayerBlockList = [];
+      if (this.state.slayerBlockList.length >= 6) { this.emit('notification',{type:'warn',text:'Block list full (6 max). Unblock one first.'}); this.state.slayerCoins += item.cost; return; }
+      const blocked = this.state.slayerTask.monster;
+      if (!this.state.slayerBlockList.includes(blocked)) this.state.slayerBlockList.push(blocked);
+      this.skipSlayerTask();
+      this.emit('notification',{type:'success',text:`${blocked} permanently blocked from tasks!`});
+    } else if (item.id === 'imbue_slayer_helm') {
+      const hasHelm = (this.state.bank['slayer_helm'] || 0) > 0;
+      if (!hasHelm) { this.emit('notification',{type:'warn',text:'Need a Slayer Helm to imbue.'}); this.state.slayerCoins += item.cost; return; }
+      this.removeItem('slayer_helm', 1);
+      this.addItem('slayer_helm_i', 1);
+      this.emit('notification',{type:'achievement',text:'Slayer Helm imbued! All combat styles now boosted on task.'});
+    } else if (item.type === 'unlock') {
+      if (!this.state.slayerUnlocks) this.state.slayerUnlocks = {};
+      this.state.slayerUnlocks[item.unlockId] = true;
+      this.emit('notification',{type:'achievement',text:`Unlocked: ${item.name}!`});
     }
     this.emit('slayerChanged');
   }
