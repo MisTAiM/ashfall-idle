@@ -2257,3 +2257,259 @@ Object.assign(GAME_DATA.monsterArt, {
 });
 
 console.log('[Ashfall] Dungeon boss art loaded');
+
+// ── MISSING PET ART — All unique hand-crafted SVGs ─────────────────
+Object.assign(GAME_DATA.petArt, {
+
+  heron: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- ash-grey heron with burnt wing tips -->
+    <!-- long neck and body -->
+    <ellipse cx="26" cy="34" rx="9" ry="7" fill="#8a8a7a"/>
+    <!-- wings folded -->
+    <path d="M17 30 Q8 24 10 34 Q16 38 18 34Z" fill="#6a6a5a"/>
+    <path d="M35 30 Q44 24 42 34 Q36 38 34 34Z" fill="#6a6a5a"/>
+    <!-- charred wing tips -->
+    <path d="M10 34 Q6 36 8 40 Q12 40 12 36Z" fill="#2a2a1a"/>
+    <path d="M42 34 Q46 36 44 40 Q40 40 40 36Z" fill="#2a2a1a"/>
+    <!-- long neck -->
+    <path d="M24 34 Q22 28 20 20 Q21 14 24 12" stroke="#9a9a8a" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- head -->
+    <ellipse cx="24" cy="11" rx="6" ry="5" fill="#9a9a8a"/>
+    <!-- black crest plume -->
+    <path d="M28 8 Q34 4 38 2 Q34 6 30 8Z" fill="#1a1a1a"/>
+    <path d="M27 7 Q30 2 34 0 Q30 4 28 7Z" fill="#2a2a2a"/>
+    <!-- sharp beak -->
+    <polygon points="28,10 40,10 40,12 28,12" fill="#d4a83a"/>
+    <!-- pale eye with black pupil -->
+    <circle cx="27" cy="9" r="2.5" fill="#e8e0d4"/><circle cx="27" cy="9" r="1.5" fill="#1a1a0a"/><circle cx="27.4" cy="8.6" r="0.5" fill="#fff"/>
+    <!-- long legs -->
+    <line x1="22" y1="40" x2="20" y2="48" stroke="#9a9a7a" stroke-width="2"/>
+    <line x1="28" y1="40" x2="30" y2="48" stroke="#9a9a7a" stroke-width="2"/>
+    <!-- feet spread -->
+    <path d="M18 47 Q20 48 24 47" stroke="#8a8a6a" stroke-width="1.5" fill="none"/>
+    <path d="M28 47 Q30 48 34 47" stroke="#8a8a6a" stroke-width="1.5" fill="none"/>
+  </svg>`,
+
+  tangleroot: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- walking root creature -->
+    <!-- root legs -->
+    <path d="M20 36 Q16 40 12 46" stroke="#5a3a1a" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M28 36 Q32 40 36 46" stroke="#5a3a1a" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M20 38 Q17 44 14 47" stroke="#6a4a2a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M28 38 Q31 44 34 47" stroke="#6a4a2a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- root arms reaching out -->
+    <path d="M16 24 Q8 18 4 14" stroke="#5a3a1a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M32 24 Q40 18 44 14" stroke="#5a3a1a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <!-- finger roots on arms -->
+    <path d="M4 14 Q2 10 0 8" stroke="#4a2a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M4 14 Q4 9 5 6" stroke="#4a2a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M44 14 Q46 10 48 8" stroke="#4a2a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- main body: gnarled root ball -->
+    <ellipse cx="24" cy="28" rx="12" ry="10" fill="#5a3a1a"/>
+    <ellipse cx="24" cy="26" rx="10" ry="8" fill="#6a4a2a"/>
+    <!-- bark texture lines -->
+    <path d="M18 22 Q20 26 18 30" stroke="#4a2a0a" stroke-width="1" fill="none" opacity="0.6"/>
+    <path d="M28 22 Q30 26 28 30" stroke="#4a2a0a" stroke-width="1" fill="none" opacity="0.6"/>
+    <!-- leafy head -->
+    <circle cx="24" cy="16" r="8" fill="#3a6a1a"/>
+    <path d="M18 12 Q14 6 18 4 Q20 8 18 12Z" fill="#4a8a2a"/>
+    <path d="M24 10 Q22 4 24 2 Q26 4 24 10Z" fill="#4a8a2a"/>
+    <path d="M30 12 Q34 6 30 4 Q28 8 30 12Z" fill="#4a8a2a"/>
+    <!-- mossy eyes -->
+    <circle cx="21" cy="16" r="2.5" fill="#1a0a00"/><circle cx="21" cy="16" r="1.5" fill="#5a9a2a"/><circle cx="21.4" cy="15.6" r="0.5" fill="#aada5a"/>
+    <circle cx="27" cy="16" r="2.5" fill="#1a0a00"/><circle cx="27" cy="16" r="1.5" fill="#5a9a2a"/><circle cx="27.4" cy="15.6" r="0.5" fill="#aada5a"/>
+    <!-- tiny sprout on top -->
+    <path d="M24 8 Q23 4 24 2" stroke="#3a7a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="24" cy="2" rx="3" ry="2" fill="#4a9a2a"/>
+  </svg>`,
+
+  squirrel: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- charred forest squirrel -->
+    <!-- enormous fluffy tail curls over body -->
+    <path d="M32 38 Q46 32 46 20 Q44 10 36 12 Q30 14 28 20 Q26 28 30 34Z" fill="#3a2a1a"/>
+    <path d="M32 36 Q44 30 44 20 Q42 12 36 14 Q32 16 30 22 Q28 28 32 34Z" fill="#5a3a1a"/>
+    <path d="M32 34 Q42 28 42 20 Q40 14 36 16 Q33 18 32 24Z" fill="#6a4a2a" opacity="0.7"/>
+    <!-- body -->
+    <ellipse cx="22" cy="32" rx="10" ry="8" fill="#5a3a1a"/>
+    <!-- burnt charcoal patches -->
+    <ellipse cx="18" cy="30" rx="4" ry="3" fill="#2a1a0a" opacity="0.6"/>
+    <!-- front legs -->
+    <path d="M18 36 Q16 42 14 46" stroke="#4a2a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M24 38 Q24 44 24 47" stroke="#4a2a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- paws holding acorn -->
+    <ellipse cx="18" cy="36" rx="3" ry="2" fill="#6a4a2a"/>
+    <ellipse cx="22" cy="37" rx="3" ry="2" fill="#6a4a2a"/>
+    <!-- acorn -->
+    <ellipse cx="20" cy="36" rx="3" ry="3.5" fill="#8a6a2a"/>
+    <ellipse cx="20" cy="33" rx="3.5" ry="2" fill="#4a3a0a"/>
+    <line x1="20" y1="32" x2="20" y2="30" stroke="#3a2a0a" stroke-width="1"/>
+    <!-- head -->
+    <circle cx="22" cy="20" r="9" fill="#6a4a2a"/>
+    <!-- pointy ears -->
+    <polygon points="16,16 14,8 20,14" fill="#5a3a1a"/>
+    <polygon points="28,16 30,8 24,14" fill="#5a3a1a"/>
+    <polygon points="17,15 15,10 20,14" fill="#c44a3a" opacity="0.5"/>
+    <polygon points="27,15 29,10 24,14" fill="#c44a3a" opacity="0.5"/>
+    <!-- bright curious eyes -->
+    <circle cx="18" cy="19" r="3" fill="#0a0000"/><circle cx="18" cy="19" r="2" fill="#8a5a20"/><circle cx="18.5" cy="18.5" r="0.7" fill="#fff" opacity="0.9"/>
+    <circle cx="26" cy="19" r="3" fill="#0a0000"/><circle cx="26" cy="19" r="2" fill="#8a5a20"/><circle cx="26.5" cy="18.5" r="0.7" fill="#fff" opacity="0.9"/>
+    <!-- little nose -->
+    <ellipse cx="22" cy="23" rx="2" ry="1.5" fill="#3a1a0a"/>
+    <!-- whiskers -->
+    <line x1="18" y1="23" x2="8" y2="21" stroke="#8a7a5a" stroke-width="0.8" opacity="0.7"/>
+    <line x1="18" y1="24" x2="8" y2="25" stroke="#8a7a5a" stroke-width="0.8" opacity="0.7"/>
+    <line x1="26" y1="23" x2="36" y2="21" stroke="#8a7a5a" stroke-width="0.8" opacity="0.7"/>
+  </svg>`,
+
+  raccoon: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- bandit raccoon thief -->
+    <!-- bushy ringed tail -->
+    <path d="M34 34 Q44 32 44 42 Q44 46 40 46 Q36 46 34 40Z" fill="#5a5a4a"/>
+    <path d="M34 34 Q42 33 42 40 Q42 44 40 44 Q37 44 35 40Z" fill="#e8e0d0"/>
+    <path d="M34 36 Q40 35 40 40 Q40 42 38 42 Q36 42 35 39Z" fill="#5a5a4a"/>
+    <!-- body -->
+    <ellipse cx="22" cy="32" rx="11" ry="9" fill="#6a6a5a"/>
+    <!-- front paws outstretched (holding loot) -->
+    <ellipse cx="12" cy="32" rx="4" ry="3" fill="#5a5a4a"/>
+    <!-- coin bag in paws -->
+    <circle cx="12" cy="30" r="4" fill="#d4a83a"/>
+    <path d="M10 28 Q12 26 14 28" stroke="#8a6a10" stroke-width="1.5" fill="none"/>
+    <circle cx="12" cy="30" r="1.5" fill="#ffd080"/>
+    <!-- head -->
+    <circle cx="22" cy="20" r="10" fill="#7a7a6a"/>
+    <!-- classic raccoon face mask — black -->
+    <ellipse cx="19" cy="19" rx="4.5" ry="3.5" fill="#1a1a10"/>
+    <ellipse cx="25" cy="19" rx="4.5" ry="3.5" fill="#1a1a10"/>
+    <!-- white eye rings -->
+    <ellipse cx="19" cy="19" rx="3" ry="2.5" fill="#e8e0d0"/>
+    <ellipse cx="25" cy="19" rx="3" ry="2.5" fill="#e8e0d0"/>
+    <!-- gleaming eyes -->
+    <circle cx="19" cy="19" r="2" fill="#0a0a00"/><circle cx="19" cy="19" r="1.2" fill="#4a8a2a"/><circle cx="19.4" cy="18.6" r="0.5" fill="#fff"/>
+    <circle cx="25" cy="19" r="2" fill="#0a0a00"/><circle cx="25" cy="19" r="1.2" fill="#4a8a2a"/><circle cx="25.4" cy="18.6" r="0.5" fill="#fff"/>
+    <!-- round nose -->
+    <ellipse cx="22" cy="23" rx="2.5" ry="2" fill="#2a2a1a"/>
+    <circle cx="22" cy="22.5" r="0.8" fill="#4a4a3a" opacity="0.5"/>
+    <!-- ears -->
+    <circle cx="14" cy="13" r="4" fill="#6a6a5a"/>
+    <circle cx="14" cy="13" r="2.5" fill="#c44a3a" opacity="0.4"/>
+    <circle cx="30" cy="13" r="4" fill="#6a6a5a"/>
+    <circle cx="30" cy="13" r="2.5" fill="#c44a3a" opacity="0.4"/>
+    <!-- white face sides -->
+    <ellipse cx="14" cy="22" rx="3" ry="4" fill="#e8e0d0" opacity="0.5"/>
+    <ellipse cx="30" cy="22" rx="3" ry="4" fill="#e8e0d0" opacity="0.5"/>
+  </svg>`,
+
+  phoenix: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- Cinderwing — tiny cook's phoenix -->
+    <!-- flame halo glow -->
+    <circle cx="24" cy="18" r="16" fill="#ff6020" opacity="0.12"/>
+    <!-- tail feathers — long trailing flames -->
+    <path d="M24 36 Q18 44 14 48" stroke="#ff6020" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M24 36 Q24 44 22 48" stroke="#d67338" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M24 36 Q30 44 34 48" stroke="#ff8040" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M24 36 Q28 46 26 48" stroke="#ffa060" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- wings spread wide -->
+    <path d="M12 22 Q2 12 4 22 Q8 30 14 26Z" fill="#d63a1a" opacity="0.9"/>
+    <path d="M14 24 Q4 16 6 26 Q10 32 16 28Z" fill="#ff6020" opacity="0.7"/>
+    <path d="M36 22 Q46 12 44 22 Q40 30 34 26Z" fill="#d63a1a" opacity="0.9"/>
+    <path d="M34 24 Q44 16 42 26 Q38 32 32 28Z" fill="#ff6020" opacity="0.7"/>
+    <!-- wing flame feather tips -->
+    <path d="M4 20 Q0 16 2 12 Q5 16 4 20Z" fill="#ffd080" opacity="0.8"/>
+    <path d="M44 20 Q48 16 46 12 Q43 16 44 20Z" fill="#ffd080" opacity="0.8"/>
+    <!-- body -->
+    <ellipse cx="24" cy="28" rx="8" ry="7" fill="#d63a1a"/>
+    <ellipse cx="24" cy="26" rx="6" ry="5" fill="#ff6020"/>
+    <!-- chest gold -->
+    <ellipse cx="24" cy="26" rx="3" ry="3.5" fill="#ffd080" opacity="0.7"/>
+    <!-- head -->
+    <circle cx="24" cy="16" r="8" fill="#d63a1a"/>
+    <!-- golden crest feathers -->
+    <path d="M22 8 Q20 2 22 0 Q24 2 22 8Z" fill="#ffd080"/>
+    <path d="M24 8 Q24 1 24 0 Q26 1 24 8Z" fill="#ffd080"/>
+    <path d="M26 8 Q28 2 26 0 Q24 2 26 8Z" fill="#ffd080"/>
+    <!-- bright golden eyes -->
+    <circle cx="21" cy="15" r="3" fill="#0a0000"/><circle cx="21" cy="15" r="2" fill="#ffd080"/><circle cx="21.5" cy="14.5" r="0.8" fill="#fff"/>
+    <circle cx="27" cy="15" r="3" fill="#0a0000"/><circle cx="27" cy="15" r="2" fill="#ffd080"/><circle cx="27.5" cy="14.5" r="0.8" fill="#fff"/>
+    <!-- hooked beak -->
+    <path d="M24 19 Q28 19 28 21 Q26 21 24 20Z" fill="#d4a83a"/>
+  </svg>`,
+
+  smithy_hammer: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- Living blacksmith hammer pet -->
+    <!-- glowing forge energy from base -->
+    <ellipse cx="24" cy="44" rx="12" ry="4" fill="#d67338" opacity="0.3"/>
+    <!-- handle — dark wood, scarred -->
+    <rect x="21" y="26" width="6" height="20" rx="2" fill="#5a3a1a"/>
+    <rect x="22" y="26" width="4" height="18" rx="1" fill="#6a4a2a"/>
+    <!-- leather grip wrapping -->
+    <rect x="21" y="32" width="6" height="3" rx="0.5" fill="#3a2010" opacity="0.7"/>
+    <rect x="21" y="37" width="6" height="3" rx="0.5" fill="#3a2010" opacity="0.7"/>
+    <!-- hammer head — polished dark iron -->
+    <rect x="10" y="14" width="28" height="14" rx="3" fill="#3a3a3a"/>
+    <rect x="12" y="16" width="24" height="10" rx="2" fill="#4a4a4a"/>
+    <!-- striking face — glowing hot from forge -->
+    <rect x="10" y="14" width="10" height="14" rx="2" fill="#5a4a3a"/>
+    <rect x="11" y="15" width="8" height="12" rx="1" fill="#d67338" opacity="0.8"/>
+    <!-- glowing runes on side -->
+    <path d="M16 20 L18 17 L20 20 L18 23Z" fill="#ff8040" opacity="0.6"/>
+    <!-- face on hammer flat — mischievous -->
+    <circle cx="34" cy="18" r="2.5" fill="#1a1a10"/><circle cx="34" cy="18" r="1.5" fill="#c9873e"/><circle cx="34.4" cy="17.6" r="0.5" fill="#fff"/>
+    <circle cx="40" cy="18" r="2.5" fill="#1a1a10"/><circle cx="40" cy="18" r="1.5" fill="#c9873e"/><circle cx="40.4" cy="17.6" r="0.5" fill="#fff"/>
+    <path d="M33 23 Q37 25 41 23" fill="none" stroke="#c9873e" stroke-width="1.5"/>
+    <!-- sparks flying -->
+    <circle cx="8" cy="16" r="1.5" fill="#ffd080" opacity="0.8"/>
+    <circle cx="6" cy="12" r="1" fill="#ff8040" opacity="0.7"/>
+    <circle cx="42" cy="10" r="1.2" fill="#ffd080" opacity="0.6"/>
+    <circle cx="44" cy="14" r="1" fill="#ff6020" opacity="0.5"/>
+    <path d="M8 16 L4 12" stroke="#ff8040" stroke-width="1" opacity="0.5"/>
+    <!-- tiny feet (!!) -->
+    <ellipse cx="18" cy="46" rx="4" ry="2.5" fill="#3a3a3a"/>
+    <ellipse cx="30" cy="46" rx="4" ry="2.5" fill="#3a3a3a"/>
+  </svg>`,
+
+  falcon_pet: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- Ashen Falcon — volcanic hunting bird -->
+    <!-- heat shimmer / glow -->
+    <circle cx="24" cy="22" r="18" fill="#d67338" opacity="0.08"/>
+    <!-- tail feathers — layered, charred tips -->
+    <path d="M24 38 Q20 44 16 48" stroke="#5a3a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M24 38 Q22 46 20 48" stroke="#7a5a2a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M24 38 Q24 46 24 48" stroke="#6a4a2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M24 38 Q26 46 28 48" stroke="#7a5a2a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M24 38 Q28 44 32 48" stroke="#5a3a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- wings — swept back, sharp -->
+    <path d="M14 22 Q4 10 6 18 Q10 28 16 26Z" fill="#3a2a1a"/>
+    <path d="M14 22 Q6 14 8 20 Q12 28 16 25Z" fill="#5a3a1a"/>
+    <!-- ash markings on left wing -->
+    <path d="M8 18 Q10 14 12 18 Q10 20 8 18Z" fill="#c9873e" opacity="0.5"/>
+    <path d="M34 22 Q44 10 42 18 Q38 28 32 26Z" fill="#3a2a1a"/>
+    <path d="M34 22 Q42 14 40 20 Q36 28 32 25Z" fill="#5a3a1a"/>
+    <!-- body — sleek, dark brown -->
+    <ellipse cx="24" cy="30" rx="9" ry="8" fill="#4a3020"/>
+    <ellipse cx="24" cy="28" rx="7" ry="6" fill="#6a4a2a"/>
+    <!-- chest — pale ash-cream -->
+    <ellipse cx="24" cy="28" rx="4" ry="5" fill="#c4a870" opacity="0.6"/>
+    <!-- head — angular, hunter's gaze -->
+    <circle cx="24" cy="18" r="8" fill="#4a3020"/>
+    <!-- helmet-like dark cap -->
+    <path d="M16 16 Q20 10 24 10 Q28 10 32 16 Q30 14 24 14 Q18 14 16 16Z" fill="#1a1010"/>
+    <!-- sharp yellow eyes — fierce -->
+    <circle cx="21" cy="17" r="3" fill="#0a0000"/><circle cx="21" cy="17" r="2" fill="#d4a83a"/><circle cx="21" cy="17" r="1" fill="#ffd080"/><circle cx="21.4" cy="16.6" r="0.4" fill="#fff"/>
+    <circle cx="27" cy="17" r="3" fill="#0a0000"/><circle cx="27" cy="17" r="2" fill="#d4a83a"/><circle cx="27" cy="17" r="1" fill="#ffd080"/><circle cx="27.4" cy="16.6" r="0.4" fill="#fff"/>
+    <!-- eye stripe — classic falcon mask -->
+    <path d="M17 16 Q19 14 21 15" stroke="#1a1010" stroke-width="2" fill="none"/>
+    <path d="M31 16 Q29 14 27 15" stroke="#1a1010" stroke-width="2" fill="none"/>
+    <!-- hooked beak — powerful -->
+    <path d="M22 20 Q24 22 26 20 Q26 24 24 24 Q22 24 22 20Z" fill="#d4a83a"/>
+    <!-- talons -->
+    <path d="M18 38 Q14 42 10 44" stroke="#3a2a10" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M30 38 Q34 42 38 44" stroke="#3a2a10" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- talon claws -->
+    <line x1="10" y1="44" x2="8" y2="46" stroke="#2a1a0a" stroke-width="1.5"/>
+    <line x1="12" y1="44" x2="12" y2="47" stroke="#2a1a0a" stroke-width="1.5"/>
+    <line x1="38" y1="44" x2="40" y2="46" stroke="#2a1a0a" stroke-width="1.5"/>
+    <line x1="36" y1="44" x2="36" y2="47" stroke="#2a1a0a" stroke-width="1.5"/>
+  </svg>`,
+
+});
+console.log('[Ashfall] Missing pet art loaded: heron, tangleroot, squirrel, raccoon, phoenix, smithy_hammer, falcon_pet');

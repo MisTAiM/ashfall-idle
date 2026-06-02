@@ -5002,68 +5002,189 @@ class UI {
   renderPetsPage(el) {
     const s = this.engine.state;
     const allPets = GAME_DATA.combatPets || GAME_DATA.pets || [];
-    const owned   = s.pets || [];
+    const owned   = new Set(s.pets || []);
     const active  = s.activePet;
 
-    let html = this.header('Pets','paw',`${owned.length}/${allPets.length} pets collected. Combat pets fight alongside you — each has a unique ability.`,null);
+    // ── ELEMENT PALETTES ───────────────────────────────
+    const ELEM = {
+      fire:      { color:'#d63a1a', bg:'#1a0808', glow:'rgba(214,58,26,0.25)',    icon:'🔥', label:'Fire'     },
+      ice:       { color:'#7ac4e8', bg:'#081220', glow:'rgba(122,196,232,0.2)',   icon:'❄',  label:'Ice'      },
+      void:      { color:'#b585e0', bg:'#0a0518', glow:'rgba(181,133,224,0.2)',   icon:'✦',  label:'Void'     },
+      nature:    { color:'#4abe6c', bg:'#081408', glow:'rgba(74,190,108,0.2)',    icon:'🌿', label:'Nature'   },
+      dark:      { color:'#9a60d0', bg:'#0a0514', glow:'rgba(154,96,208,0.2)',    icon:'🌑', label:'Dark'     },
+      lightning: { color:'#60c0ff', bg:'#081020', glow:'rgba(96,192,255,0.2)',    icon:'⚡', label:'Lightning'},
+      earth:     { color:'#c9873e', bg:'#120c04', glow:'rgba(201,135,62,0.2)',    icon:'⛏',  label:'Earth'    },
+      default:   { color:'#c9873e', bg:'#120c04', glow:'rgba(201,135,62,0.2)',    icon:'✦',  label:'Combat'   },
+    };
+    const TYPE_ELEM = {
+      damage:'fire', debuff:'dark', support:'nature', pierce:'void',
+      stun:'lightning', slow:'ice', poison:'nature', bleed:'fire', skilling:'earth',
+    };
 
-    // Active pet display
+    // ── SECTION CONFIG ─────────────────────────────────
+    const SECTIONS = [
+      { id:'combat',   label:'Combat Pets',  icon:'⚔',  types:['damage','debuff','pierce','bleed','stun','slow','poison'] },
+      { id:'support',  label:'Support Pets', icon:'✦',  types:['support','heal'] },
+      { id:'skilling', label:'Skilling Pets',icon:'⚒',  types:['skilling',''] },
+    ];
+
+    const getElem = (pet) => ELEM[pet.element] || ELEM[TYPE_ELEM[pet.combatType||'skilling']] || ELEM.default;
+
+    // ── ACTIVE PET BANNER ─────────────────────────────
+    let activeBannerHtml = '';
     if (active) {
       const pet = allPets.find(p => p.id === active);
       if (pet) {
-        html += `<div class="active-pet-banner">
-          <div class="apb-art">${GAME_DATA.petArt?.[pet.id]||this._defaultPetSvg(pet)}</div>
-          <div class="apb-info">
-            <div class="apb-name">${pet.name} <span class="apb-active-badge">ACTIVE</span></div>
-            <div class="apb-desc">${pet.desc}</div>
-            <div class="apb-action">⚔ <strong>${pet.action?.desc||'Combat ability'}</strong> — every ${pet.action?.every||3} player attacks</div>
-            ${pet.passive ? `<div class="apb-passive">📿 Passive: ${Object.entries(pet.passive).map(([k,v])=>k+' +'+v).join(', ')}</div>` : ''}
+        const el = getElem(pet);
+        const art = GAME_DATA.petArt?.[pet.id] || this._defaultPetSvg(pet);
+        const passiveText = pet.passive
+          ? Object.entries(pet.passive).map(([k,v]) => `+${v} ${k.replace(/([A-Z])/g,' $1').toLowerCase()}`).join(' · ')
+          : '';
+        activeBannerHtml = `
+        <div class="pp-active-banner" style="--el-color:${el.color};--el-bg:${el.bg};--el-glow:${el.glow}">
+          <div class="pp-ab-glow"></div>
+          <div class="pp-ab-art">${art}</div>
+          <div class="pp-ab-body">
+            <div class="pp-ab-head">
+              <div class="pp-ab-name">${pet.name}</div>
+              <div class="pp-ab-badge" style="background:${el.color}22;color:${el.color};border-color:${el.color}50">
+                ${el.icon} ${el.label} · ${(pet.combatType||'skilling').toUpperCase()}
+              </div>
+              <span class="pp-ab-active-pill">ACTIVE</span>
+            </div>
+            <div class="pp-ab-desc">${pet.desc}</div>
+            <div class="pp-ab-stats">
+              ${pet.action ? `<div class="pp-ab-stat pp-ab-ability">
+                <span class="pp-ab-stat-label">⚔ Ability</span>
+                <span class="pp-ab-stat-val">${pet.action.desc||'Combat ability'} <span style="opacity:0.6">every ${pet.action.every} attacks</span></span>
+              </div>` : ''}
+              ${passiveText ? `<div class="pp-ab-stat">
+                <span class="pp-ab-stat-label">✦ Passive</span>
+                <span class="pp-ab-stat-val">${passiveText}</span>
+              </div>` : ''}
+            </div>
           </div>
-          <button class="btn btn-sm btn-danger" onclick="game.equipPet('${pet.id}');ui.renderPage('pets')">Unequip</button>
+          <button class="pp-ab-unequip" onclick="game.equipPet('${pet.id}');ui.renderPage('pets')">Unequip</button>
         </div>`;
       }
     }
 
-    // Pet categories
-    const categories = [
-      { label:'Combat Pets', types:['damage','debuff','pierce','bleed','stun','slow','poison'] },
-      { label:'Support Pets', types:['support'] },
-      { label:'Skilling Pets', types:[''] },
-    ];
+    // ── STATS BAR ─────────────────────────────────────
+    const totalOwned = owned.size;
+    const totalPets  = allPets.length;
+    const pct = Math.round((totalOwned / totalPets) * 100);
 
-    // Group pets: owned first sorted by combat type
-    const sorted = [...allPets].sort((a,b) => {
-      const ao = owned.includes(a.id)?0:1, bo = owned.includes(b.id)?0:1;
-      return ao-bo;
-    });
-
-    html += '<h2 class="section-title">Pet Collection</h2><div class="pet-grid">';
-    for (const pet of sorted) {
-      const have    = owned.includes(pet.id);
+    // ── RENDER CARDS ──────────────────────────────────
+    const renderCard = (pet) => {
+      const have    = owned.has(pet.id);
       const isActive = active === pet.id;
-      const src      = GAME_DATA.monsters[pet.source]?.name || GAME_DATA.skills[pet.source]?.name || pet.source;
-      const rarity   = 1/pet.dropRate >= 200 ? 'rare' : 1/pet.dropRate >= 100 ? 'uncommon' : 'common';
-      const typeColors = { damage:'#d67338', debuff:'#d4a83a', support:'#4abe6c', pierce:'#7ac4e8', stun:'#d4a83a', slow:'#4a9ed4', poison:'#7ab030', bleed:'#c44040' };
-      const typeColor = typeColors[pet.combatType||''] || 'var(--accent)';
+      const el = getElem(pet);
+      const art = GAME_DATA.petArt?.[pet.id] || this._defaultPetSvg(pet);
+      const dropOdds = Math.floor(1 / pet.dropRate).toLocaleString();
+      const src = GAME_DATA.monsters[pet.source]?.name || GAME_DATA.skills[pet.source]?.name || pet.source;
 
-      html += `<div class="pet-card ${have?'pet-owned':'pet-locked'} ${isActive?'pet-active-card':''}">
-        <div class="pet-art-wrap">${have ? (GAME_DATA.petArt?.[pet.id]||this._defaultPetSvg(pet)) : '<div class="pet-unknown-art">?</div>'}</div>
-        <div class="pet-info">
-          <div class="pet-name">${have?pet.name:'???'}</div>
-          ${have ? `<div class="pet-type-badge" style="background:${typeColor}22;color:${typeColor};border-color:${typeColor}50">${pet.combatType||'skilling'}</div>` : ''}
-          <div class="pet-desc">${have?pet.desc:'Unknown pet. Keep fighting to discover.'}</div>
-          ${have && pet.action ? `<div class="pet-ability">⚔ ${pet.action.desc||'ability'} every ${pet.action.every} attacks</div>` : ''}
-          <div class="pet-source">Source: ${src} <span style="color:var(--text-dim)">(1/${Math.floor(1/pet.dropRate).toLocaleString()})</span></div>
+      if (!have) {
+        return `<div class="pp-card pp-card-locked">
+          <div class="pp-card-art-wrap pp-locked-art">
+            <div class="pp-mystery-silhouette"></div>
+            <div class="pp-card-question">?</div>
+          </div>
+          <div class="pp-card-body">
+            <div class="pp-card-name pp-unknown-name">???</div>
+            <div class="pp-card-hint">Drops from: ${src}</div>
+            <div class="pp-card-odds">1 in ${dropOdds}</div>
+          </div>
+        </div>`;
+      }
+
+      return `<div class="pp-card pp-card-owned ${isActive ? 'pp-card-active' : ''}"
+        style="--el-color:${el.color};--el-bg:${el.bg};--el-glow:${el.glow}">
+        <div class="pp-card-glow"></div>
+        <div class="pp-card-art-wrap">
+          <div class="pp-card-art-bg" style="background:radial-gradient(circle, ${el.color}20 0%, transparent 70%)"></div>
+          ${art}
+          ${isActive ? '<div class="pp-card-active-ring"></div>' : ''}
         </div>
-        <div class="pet-card-btns">
-          ${have && !isActive ? `<button class="btn btn-sm" onclick="game.equipPet('${pet.id}');ui.renderPage('pets')">Equip</button>` : ''}
-          ${isActive ? '<div class="pet-equipped-label">Equipped</div>' : ''}
+        <div class="pp-card-body">
+          <div class="pp-card-head">
+            <div class="pp-card-name">${pet.name}</div>
+            <div class="pp-card-elem-badge" style="background:${el.color}18;color:${el.color};border-color:${el.color}35">${el.icon} ${el.label}</div>
+          </div>
+          <div class="pp-card-desc">${pet.desc}</div>
+          ${pet.action ? `<div class="pp-card-ability">⚔ <strong>${pet.action.desc||'ability'}</strong> <span>/ ${pet.action.every} atk</span></div>` : ''}
+          <div class="pp-card-footer">
+            <div class="pp-card-source">${src} · 1/${dropOdds}</div>
+            ${isActive
+              ? `<div class="pp-equipped-pill">✓ Equipped</div>`
+              : `<button class="pp-equip-btn" style="--el-color:${el.color}" onclick="game.equipPet('${pet.id}');ui.renderPage('pets')">Equip</button>`
+            }
+          </div>
         </div>
       </div>`;
+    };
+
+    // ── ASSEMBLE ──────────────────────────────────────
+    let sectionsHtml = '';
+    for (const sec of SECTIONS) {
+      const secPets = allPets.filter(p => {
+        const ct = p.combatType || 'skilling';
+        return sec.types.includes(ct) || (sec.id === 'skilling' && !SECTIONS.slice(0,2).flatMap(s=>s.types).includes(ct));
+      });
+      if (secPets.length === 0) continue;
+
+      const ownedCount = secPets.filter(p => owned.has(p.id)).length;
+      const sorted = [...secPets].sort((a,b) => {
+        const ao = owned.has(a.id) ? 0 : 1;
+        const bo = owned.has(b.id) ? 0 : 1;
+        return ao - bo;
+      });
+
+      sectionsHtml += `
+      <div class="pp-section">
+        <div class="pp-section-header">
+          <span class="pp-section-icon">${sec.icon}</span>
+          <span class="pp-section-title">${sec.label}</span>
+          <span class="pp-section-count">${ownedCount}/${secPets.length}</span>
+        </div>
+        <div class="pp-grid">${sorted.map(renderCard).join('')}</div>
+      </div>`;
     }
-    html += '</div>';
-    el.innerHTML = html;
+
+    el.innerHTML = `
+    <div class="pp-root">
+
+      <!-- HERO BAR -->
+      <div class="pp-hero">
+        <div class="pp-hero-bg"></div>
+        <div class="pp-hero-paw">
+          <svg viewBox="0 0 48 48" width="42" height="42" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="28" r="12" fill="#c9873e" opacity="0.9"/>
+            <circle cx="14" cy="18" r="6" fill="#c9873e" opacity="0.8"/>
+            <circle cx="24" cy="14" r="6" fill="#c9873e" opacity="0.8"/>
+            <circle cx="34" cy="18" r="6" fill="#c9873e" opacity="0.8"/>
+            <circle cx="24" cy="28" r="8" fill="#0a0b0f" opacity="0.3"/>
+          </svg>
+        </div>
+        <div class="pp-hero-info">
+          <div class="pp-hero-title">Pet Collection</div>
+          <div class="pp-hero-sub">Companions that fight and skill alongside you</div>
+          <div class="pp-hero-bar-track">
+            <div class="pp-hero-bar-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="pp-hero-bar-label">${totalOwned} / ${totalPets} pets collected · ${pct}%</div>
+        </div>
+        ${active ? '' : '<div class="pp-hero-hint">Select a pet below to make it active</div>'}
+      </div>
+
+      <!-- ACTIVE PET -->
+      ${activeBannerHtml}
+
+      <!-- SECTIONS -->
+      ${sectionsHtml}
+
+    </div>`;
   }
+
 
   _defaultPetSvg(pet) {
     // Generate a simple colored SVG for pets without art
