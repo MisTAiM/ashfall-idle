@@ -994,9 +994,9 @@ GAME_DATA.achievements.push(
 
 
 // ── MISSING ITEM DEFINITIONS ────────────────────────────
-_i('crypts_gloves',    { name:"Crypts Gloves",    type:'armor', slot:'gloves', rarity:'legendary', sellPrice:0, stats:{attackBonus:12,strengthBonus:8,defenceBonus:18,rangedBonus:8,magicBonus:8,damageReduction:1}, levelReq:{defence:70}, desc:'Gloves forged in the depths of the Abyssal Crypts. Best-in-slot gloves.' });
-_i('dark_artifact',    { name:'Dark Artifact',     type:'quest',  subtype:'quest', rarity:'rare',  sellPrice:0, questItem:true, desc:"A relic torn from Krolgar's lair. Proof of the Bloodfang's dark dealings." });
-_i('ashen_tablet',     { name:'Ashen Tablet',      type:'quest',  subtype:'quest', rarity:'rare',  sellPrice:0, questItem:true, desc:'An ancient stone tablet covered in ash-script. Contains forgotten lore of the Ashfall.' });
+if (!GAME_DATA.items.crypts_gloves) GAME_DATA.items.crypts_gloves = {id:'crypts_gloves', name:"Crypts Gloves", type:'armor', slot:'gloves', rarity:'legendary', sellPrice:0, stats:{attackBonus:12,strengthBonus:8,defenceBonus:18,rangedBonus:8,magicBonus:8,damageReduction:1}, levelReq:{defence:70}, desc:'Gloves forged in the depths of the Abyssal Crypts. Best-in-slot gloves.'};
+if (!GAME_DATA.items.dark_artifact) GAME_DATA.items.dark_artifact = {id:'dark_artifact', name:'Dark Artifact', type:'quest', subtype:'quest', rarity:'rare', sellPrice:0, questItem:true, desc:"A relic torn from Krolgar's lair. Proof of the Bloodfang's dark dealings."};
+if (!GAME_DATA.items.ashen_tablet)  GAME_DATA.items.ashen_tablet  = {id:'ashen_tablet',  name:'Ashen Tablet',  type:'quest', subtype:'quest', rarity:'rare', sellPrice:0, questItem:true, desc:'An ancient stone tablet covered in ash-script. Contains forgotten lore of the Ashfall.'};
 
 
 // Monster weaknesses (extra damage when using the correct style)
@@ -1013,7 +1013,7 @@ GAME_DATA.monsterWeaknesses = {
   frost_wraith:     { weak:'fire',   bonus:25 },
 };
 
-_i96('serpentine_helm',{name:'Serpentine Helm',type:'armor',slot:'head',rarity:'mythic',sellPrice:0,stats:{defenceBonus:45,attackBonus:5,strengthBonus:5,rangedBonus:5,magicBonus:5,damageReduction:3},levelReq:{defence:75,slayer:75},venomImmunity:true,desc:'Helm of the great serpent. Immune to venom. Degrades with Zulrah scales.'});
+if (!GAME_DATA.items.serpentine_helm) GAME_DATA.items.serpentine_helm = {id:'serpentine_helm',name:'Serpentine Helm',type:'armor',slot:'head',rarity:'mythic',sellPrice:0,stats:{defenceBonus:45,attackBonus:5,strengthBonus:5,rangedBonus:5,magicBonus:5,damageReduction:3},levelReq:{defence:75,slayer:75},venomImmunity:true,desc:'Helm of the great serpent. Immune to venom. Degrades with Zulrah scales.'};
 
 // ── ZULRAH CRAFTING RECIPES ─────────────────────────────
 // These are added to crafting recipes so players can use their Zulrah drops

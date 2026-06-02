@@ -130,6 +130,7 @@ window.renderItemSprite = function(itemId, size = 32) {
 // ── NPC PORTRAITS ────────────────────────────────────────────────
 // All seven missing NPCs, matched to the five existing portrait styles
 
+if (!GAME_DATA.npcArt) GAME_DATA.npcArt = {};
 Object.assign(GAME_DATA.npcArt, {
 
   // Greybeard — Hermit Sage, Ashfall Monastery

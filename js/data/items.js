@@ -799,7 +799,7 @@ console.log('  Total recipes:', Object.values(GAME_DATA.recipes).reduce((a,r)=>a
     else r.category = 'Other';
   }
   // Categorize incantation
-  for (const r of GAME_DATA.recipes.incantation) {
+  for (const r of (GAME_DATA.recipes.incantation||[])) {
     if (r.category) continue;
     if (r.id.includes('_x10'))       r.category = 'Bulk Crafting';
     else r.category = 'Runes';

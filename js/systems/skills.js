@@ -104,7 +104,7 @@ const SKILL_WEAPON_TYPES = {
   sceptre: { id: 'sceptre', name: 'Sceptre', damage: 0.80, speed: 0.95, spellDamage: 1.2, manaCostReduction: 0.15 },
 };
 
-if (!GAME_DATA.weaponTypes) GAME_DATA.weaponTypes = WEAPON_TYPES;
+if (!GAME_DATA.weaponTypes) GAME_DATA.weaponTypes = (typeof WEAPON_TYPES !== 'undefined') ? WEAPON_TYPES : {};
 
 // ── AMMO SYSTEM ───────────────────────────────────────────────
 // Ranged weapons consume ammo
