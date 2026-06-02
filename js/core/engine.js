@@ -774,6 +774,13 @@ class GameEngine {
     return Math.min(1, cur / need);
   }
 
+  // Returns XP remaining until next level for a skill (used by all skill page XP bars)
+  getXpToNextLevel(skillId) {
+    const s = this.state.skills[skillId];
+    if (!s || s.level >= 99) return 0;
+    return Math.max(0, this.getXpForLevel(s.level + 1) - s.xp);
+  }
+
   addMasteryXp(skillId, masteryId, baseXp) {
     if (!this.state.mastery[skillId]) this.state.mastery[skillId] = {};
     if (!this.state.mastery[skillId][masteryId]) this.state.mastery[skillId][masteryId] = { level:1, xp:0 };
