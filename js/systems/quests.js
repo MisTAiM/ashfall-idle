@@ -86,6 +86,9 @@ E.acceptQuest = function(questId) {
       if (obj.type === 'slayer_tasks') {
         return Math.min(obj.qty||1, _st.stats?.slayerTasksCompleted||0);
       }
+      if (obj.type === 'slayer_kills') {
+        return Math.min(obj.qty||1, _st.stats?.slayerKillsOnTask||0);
+      }
       return 0;
     });
 
@@ -192,7 +195,7 @@ function _matchObj(obj, type, data, state) {
     case 'dungeon':      return type==='dungeon' && obj.dungeon===data.dungeon ? 1 : 0;
     case 'dungeon_any':  return type==='dungeon' ? 1 : 0;
     case 'slayer_tasks': return type==='slayer_tasks' ? -(state.stats.slayerTasksCompleted||0) : 0; // negative = absolute set
-    case 'slayer_kills': return type==='kill' && state.combat?.onSlayerTask ? data.qty : 0;
+    case 'slayer_kills': return type==='kill' && state.slayerTask ? data.qty : 0; // count kills while task is active
     case 'skill_level':  return type==='skill_level' && obj.skill===data.skill ? -((state.skills[obj.skill]?.level||1)>=obj.level?(obj.qty||1):0) : 0;
     // Convenience aliases used in chapter-2 quests
     case 'stat':         return type==='skill_level' && obj.stat===data.skill ? -((state.skills[obj.stat]?.level||1)>=(obj.qty||1)?1:0) : 0;
@@ -267,6 +270,9 @@ E._trackAllQuests = function(type, data) {
           if (val !== (p[i]||0)) { p[i] = val; _absUpdated = true; }
         } else if (obj.type === 'slayer_tasks') {
           const val = Math.min(obj.qty||1, this.state.stats?.slayerTasksCompleted||0);
+          if (val !== (p[i]||0)) { p[i] = val; _absUpdated = true; }
+        } else if (obj.type === 'slayer_kills') {
+          const val = Math.min(obj.qty||1, this.state.stats?.slayerKillsOnTask||0);
           if (val !== (p[i]||0)) { p[i] = val; _absUpdated = true; }
         }
       });
@@ -506,6 +512,8 @@ U.renderQuestsPage = function(el) {
         _p[i] = Math.min(obj.qty||1, (s.pets||[]).length);
       } else if (obj.type === 'slayer_tasks') {
         _p[i] = Math.min(obj.qty||1, s.stats?.slayerTasksCompleted||0);
+      } else if (obj.type === 'slayer_kills') {
+        _p[i] = Math.min(obj.qty||1, s.stats?.slayerKillsOnTask||0);
       }
       if ((_p[i]||0) >= (obj.qty||1)) _anyMet = true;
     });
