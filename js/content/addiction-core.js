@@ -115,6 +115,7 @@ _i('sang_trident',{name:'Sang Trident',type:'weapon',slot:'weapon',style:'magic'
 
 // ── SLAYER GEAR ────────────────────────────────────────────────
 _i('slayer_helm',{name:'Slayer Helm',type:'armor',slot:'head',stats:{defenceBonus:10,attackBonus:5,strengthBonus:3},levelReq:{slayer:10,defence:10},sellPrice:0,desc:'+15% melee accuracy and damage on Slayer task.'});
+_i('chef_hat',{name:"Chef's Hat",type:'armor',slot:'head',stats:{defenceBonus:2},cookingBonus:10,rarity:'rare',sellPrice:2000,desc:"A grand chef's hat. Grants +10% cooking XP. Reward for completing The Grand Feast."});
 _i('slayer_helm_i',{name:'Slayer Helm (i)',type:'armor',slot:'head',stats:{defenceBonus:12,attackBonus:8,strengthBonus:5,rangedBonus:8,magicBonus:8},levelReq:{slayer:10,defence:10},sellPrice:0,desc:'+15% accuracy and damage all styles on task.'});
 _i('abyssal_bludgeon',{name:'Abyssal Bludgeon',type:'weapon',slot:'weapon',style:'melee',attackSpeed:3.0,stats:{attackBonus:85,strengthBonus:125},levelReq:{attack:70,slayer:85},sellPrice:0,desc:'Made from 3 abyssal orphans. Spec: +0.5% per missing prayer point.'});
 _i('cerberus_crystal',{name:'Cerberus Crystal',type:'resource',subtype:'misc',sellPrice:5000,desc:'Drop from Cerberus. Used to make primordial/pegasian/eternal boots.'});
